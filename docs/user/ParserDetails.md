@@ -10,7 +10,7 @@ This guide describes how Python files are parsed by GraalPy.
 
 ## Creating and Managing pyc Files
 
->GraalPy automatically creates a _.pyc_ file when there is an invalid or absent _.pyc_ file that matches the corresponding _.py_ file.
+GraalPy automatically creates a _.pyc_ file when there is an invalid or absent _.pyc_ file that matches the corresponding _.py_ file.
 
 When a Python source file (module) is imported during an execution for the first time, the appropriate _.pyc_ file is created automatically.
 If the same module is imported again, then the existing _.pyc_ file is used.

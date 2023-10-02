@@ -32,7 +32,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -75,9 +75,8 @@ public final class PByteArray extends PBytesLike {
 
     @TruffleBoundary
     public String formatByteArray(String typeName) {
-        if (getSequenceStorage() instanceof ByteSequenceStorage) {
-            byte[] barr = ((ByteSequenceStorage) getSequenceStorage()).getInternalByteArray();
-            return String.format("%s(%s)", typeName, BytesUtils.bytesRepr(barr, barr.length));
+        if (getSequenceStorage() instanceof ByteSequenceStorage byteSequenceStorage) {
+            return String.format("%s(%s)", typeName, BytesUtils.bytesRepr(byteSequenceStorage.getInternalByteArray(), byteSequenceStorage.length()));
         } else {
             return String.format("%s(%s)", typeName, getSequenceStorage());
         }
@@ -95,9 +94,16 @@ public final class PByteArray extends PBytesLike {
         this.exports = exports;
     }
 
-    public void checkCanResize(PythonBuiltinBaseNode node) {
+    // TODO replace with the lazy version
+    public void checkCanResize(PRaiseNode node) {
         if (exports != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
+    }
+
+    public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+        if (exports != 0) {
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
     }
 

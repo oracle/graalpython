@@ -101,10 +101,10 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
                             null, // placeholder for object so we do not redefine the access indexes
                                   // for the other attributes, although this exception does not have
                                   // an encoding set
-                            getArgAsString(inliningTarget, args, 0, this, toStringNode),
-                            getArgAsInt(inliningTarget, args, 1, this, toJavaIntExactNode),
-                            getArgAsInt(inliningTarget, args, 2, this, toJavaIntExactNode),
-                            getArgAsString(inliningTarget, args, 3, this, toStringNode)
+                            getArgAsString(inliningTarget, args, 0, getRaiseNode(), toStringNode),
+                            getArgAsInt(inliningTarget, args, 1, getRaiseNode(), toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 2, getRaiseNode(), toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 3, getRaiseNode(), toStringNode)
             });
             return PNone.NONE;
         }

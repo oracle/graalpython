@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -97,6 +98,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -109,6 +111,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -340,19 +343,22 @@ public class StructSequence {
         }
 
         @Specialization(guards = "isNoValue(dict)")
+        @SuppressWarnings("truffle-static-method")
         PTuple withoutDict(VirtualFrame frame, Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached FastConstructListNode fastConstructListNode,
                         @Exclusive @Cached ToArrayNode toArrayNode,
                         @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
                         @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
-                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile) {
-            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
-            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
+                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
+            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
             for (int i = src.length; i < dst.length; ++i) {
                 dst[i] = PNone.NONE;
             }
-            return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
+            return factory.createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
         }
 
         @Specialization
@@ -364,36 +370,39 @@ public class StructSequence {
                         @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
                         @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
                         @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
-                        @Cached HashingStorageGetItem getItem) {
-            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
-            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
+                        @Cached HashingStorageGetItem getItem,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
+            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
             HashingStorage hs = dict.getDictStorage();
             for (int i = src.length; i < dst.length; ++i) {
                 Object o = getItem.execute(inliningTarget, hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
-            return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
+            return factory.createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
         }
 
         @Specialization(guards = {"!isNoValue(dict)", "!isDict(dict)"})
         @SuppressWarnings("unused")
-        PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict) {
-            throw raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
+        static PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
         }
 
-        private Object[] sequenceToArray(VirtualFrame frame, Node inliningTarget, Object sequence, FastConstructListNode fastConstructListNode,
-                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile) {
+        private static Object[] sequenceToArray(VirtualFrame frame, Node inliningTarget, Object sequence, FastConstructListNode fastConstructListNode,
+                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile, PRaiseNode.Lazy raiseNode) {
             PSequence seq;
             try {
                 seq = fastConstructListNode.execute(frame, inliningTarget, sequence);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, notASequenceProfile);
-                throw raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
             }
             return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
         }
 
-        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile) {
+        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile, PRaiseNode.Lazy raiseNode) {
             int len = src.length;
             int minLen = inSequence;
             int maxLen = fieldNames.length;
@@ -401,12 +410,12 @@ public class StructSequence {
             if (len < minLen || len > maxLen) {
                 wrongLenProfile.enter(inliningTarget);
                 if (minLen == maxLen) {
-                    throw raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 }
                 if (len < minLen) {
-                    throw raise(TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 } else {    // len > maxLen
-                    throw raise(TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
                 }
             }
 
@@ -432,28 +441,29 @@ public class StructSequence {
         }
 
         @Specialization
-        public PTuple reduce(PTuple self,
+        PTuple reduce(PTuple self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
             Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
             assert data.length == fieldNames.length;
             PTuple seq;
             PDict dict;
             if (fieldNames.length == inSequence) {
-                seq = factory().createTuple(data);
-                dict = factory().createDict();
+                seq = factory.createTuple(data);
+                dict = factory.createDict();
             } else {
                 HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
                     storage = setHashingStorageItem.execute(inliningTarget, storage, fieldNames[i], data[i]);
                 }
-                seq = factory().createTuple(Arrays.copyOf(data, inSequence));
-                dict = factory().createDict(storage);
+                seq = factory.createTuple(Arrays.copyOf(data, inSequence));
+                dict = factory.createDict(storage);
             }
-            PTuple seqDictPair = factory().createTuple(new Object[]{seq, dict});
-            return factory().createTuple(new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
+            PTuple seqDictPair = factory.createTuple(new Object[]{seq, dict});
+            return factory.createTuple(new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
         }
     }
 

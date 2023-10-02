@@ -58,6 +58,7 @@
 #include "hpynative.h"
 
 #include "autogen_ctx_init_jni.h"
+#include "autogen_c_access.h"
 
 /* definitions for HPyTracker */
 #include "hpy/runtime/ctx_funcs.h"
@@ -328,8 +329,9 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
 }
 
 /* Initialize the jmethodID pointers for all the context functions implemented via JNI. */
-JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject jbackend, jobject jctx, jlongArray jctx_handles) {
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject jbackend, jobject jctx, jlongArray jctx_handles, jintArray ctype_sizes, jintArray cfield_offsets) {
     LOG("%s", "hpy_jni.c:initJNI\n");
+    int res;
     GraalHPyContext *graal_hpy_context = (GraalHPyContext *) calloc(1, sizeof(GraalHPyContext));
     HPyContext *ctx = graal_native_context_get_hpy_context(graal_hpy_context);
     ctx->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -338,6 +340,20 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject j
     jniEnv = env;
 
     if (init_autogen_jni_ctx(env, clazz, ctx, jctx_handles)) {
+        return PTR_UP(NULL);
+    }
+
+    assert(sizeof(int32_t) == sizeof(jint));
+    int32_t *ctype_sizes_data = (*env)->GetPrimitiveArrayCritical(env, ctype_sizes, 0);
+    res = fill_c_type_sizes(ctype_sizes_data);
+    (*env)->ReleasePrimitiveArrayCritical(env, ctype_sizes, ctype_sizes_data, 0);
+    if (res) {
+        return PTR_UP(NULL);
+    }
+    int32_t *cfield_offsets_data = (*env)->GetPrimitiveArrayCritical(env, cfield_offsets, 0);
+    res = fill_c_field_offsets(cfield_offsets_data);
+    (*env)->ReleasePrimitiveArrayCritical(env, cfield_offsets, cfield_offsets_data, 0);
+    if (res) {
         return PTR_UP(NULL);
     }
 
@@ -479,6 +495,18 @@ JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNITraceContext)(JNIEnv *env, jclass c
 JNIEXPORT jlong JNICALL JNI_HELPER(initJNITraceModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
     LOG("%s", "hpy_jni.c:initJNITraceModule\n");
     return PTR_UP(HPyInit__trace());
+}
+
+JNIEXPORT void JNICALL JNI_HELPER(bulkFreeNativeSpace)(JNIEnv *env, jclass clazz, jlongArray nativeSpacePtrs, jlongArray destroyFuncPtrs, jint n) {
+    jlong *native_space_ptrs_data = (*env)->GetLongArrayElements(env, nativeSpacePtrs, 0);
+    jlong *destroy_func_ptrs_data = (*env)->GetLongArrayElements(env, destroyFuncPtrs, 0);
+    for (jint i=0; i < n; i++)
+    {
+        HPyFunc_destroyfunc destroy_func = (HPyFunc_destroyfunc) destroy_func_ptrs_data[i];
+        destroy_func((void *)native_space_ptrs_data[i]);
+    }
+    (*jniEnv)->ReleaseLongArrayElements(env, nativeSpacePtrs, native_space_ptrs_data, JNI_ABORT);
+    (*jniEnv)->ReleaseLongArrayElements(env, destroyFuncPtrs, destroy_func_ptrs_data, JNI_ABORT);
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(strcmp)(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {

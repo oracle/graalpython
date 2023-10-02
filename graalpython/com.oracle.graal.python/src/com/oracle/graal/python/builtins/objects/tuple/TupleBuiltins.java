@@ -95,6 +95,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -147,7 +148,8 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached InlinedBranchProfile startLe0Profile,
                         @Cached InlinedBranchProfile endLe0Profile,
-                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, self);
             int start = startIn;
             if (start < 0) {
@@ -169,7 +171,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
     }
 
@@ -411,15 +413,15 @@ public final class TupleBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBuiltinNode {
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        PTuple doTuple(Object left, Object right,
+        static PTuple doTuple(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
                         @Cached GetTupleStorage getLeft,
                         @Cached GetTupleStorage getRight,
-                        @Cached("createConcat()") ConcatNode concatNode) {
+                        @Cached("createConcat()") ConcatNode concatNode,
+                        @Cached PythonObjectFactory factory) {
             SequenceStorage concatenated = concatNode.execute(getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
-            return factory().createTuple(concatenated);
+            return factory.createTuple(concatenated);
         }
 
         @NeverDefault
@@ -439,18 +441,19 @@ public final class TupleBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object doTuple(VirtualFrame frame, Object left, Object right,
+        static Object doTuple(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTupleCheckExactNode checkTuple,
                         @Cached GetTupleStorage getLeft,
                         @Cached InlinedConditionProfile isSingleRepeat,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached PythonObjectFactory.Lazy factory) {
             int repeats = asSizeNode.executeExact(frame, inliningTarget, right);
             if (isSingleRepeat.profile(inliningTarget, repeats == 1 && checkTuple.execute(inliningTarget, left))) {
                 return left;
             } else {
-                return factory().createTuple(repeatNode.execute(frame, getLeft.execute(inliningTarget, left), repeats));
+                return factory.get(inliningTarget).createTuple(repeatNode.execute(frame, getLeft.execute(inliningTarget, left), repeats));
             }
         }
     }
@@ -472,33 +475,39 @@ public final class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
-        PIntegerSequenceIterator doPTupleInt(PTuple primary) {
-            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+        static PIntegerSequenceIterator doPTupleInt(PTuple primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isObjectStorage(primary)"})
-        PObjectSequenceIterator doPTupleObject(PTuple primary) {
-            return factory().createObjectSequenceIterator((ObjectSequenceStorage) primary.getSequenceStorage(), primary);
+        static PObjectSequenceIterator doPTupleObject(PTuple primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createObjectSequenceIterator((ObjectSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
-        PLongSequenceIterator doPTupleLong(PTuple primary) {
-            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+        static PLongSequenceIterator doPTupleLong(PTuple primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
-        PDoubleSequenceIterator doPTupleDouble(PTuple primary) {
-            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+        static PDoubleSequenceIterator doPTupleDouble(PTuple primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        PSequenceIterator doPTuple(PTuple primary) {
-            return factory().createSequenceIterator(primary);
+        static PSequenceIterator doPTuple(PTuple primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSequenceIterator(primary);
         }
 
         @Specialization
-        PSequenceIterator doNativeTuple(PythonAbstractNativeObject primary) {
-            return factory().createSequenceIterator(primary);
+        static PSequenceIterator doNativeTuple(PythonAbstractNativeObject primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSequenceIterator(primary);
         }
     }
 
@@ -558,10 +567,11 @@ public final class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PTuple doIt(Object self,
+        static PTuple doIt(Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetTupleStorage getTupleStorage) {
-            return factory().createTuple(new Object[]{factory().createTuple(getTupleStorage.execute(inliningTarget, self))});
+                        @Cached GetTupleStorage getTupleStorage,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{factory.createTuple(getTupleStorage.execute(inliningTarget, self))});
         }
     }
 
@@ -569,8 +579,9 @@ public final class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

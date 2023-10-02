@@ -67,6 +67,7 @@ import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -281,9 +282,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!callableCheck.execute(this, idNum)", limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
+        @Specialization(guards = "!callableCheck.execute(inliningTarget, idNum)", limit = "1")
+        static Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
@@ -297,11 +297,11 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             } catch (CannotCastException | PException e) {
                 id = -1;
             }
-            return signal(asSizeNode.executeExact(frame, inliningTarget, signal), id);
+            return signal(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, signal), id);
         }
 
         @TruffleBoundary
-        private Object signal(int signum, int id) {
+        private static Object signal(Node raisingNode, int signum, int id) {
             SignalHandler oldHandler;
             try {
                 if (id == Signals.SIG_DFL && defaultSignalHandlers.containsKey(signum)) {
@@ -310,25 +310,24 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                     oldHandler = Signals.setSignalHandler(signum, id);
                 }
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
+                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
             Object result = handlerToPython(oldHandler, signum);
             signalHandlers.remove(signum);
             return result;
         }
 
-        @Specialization(guards = "callableCheck.execute(this, handler)", limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
+        @Specialization(guards = "callableCheck.execute(inliningTarget, handler)", limit = "1")
+        static Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode) {
-            return signal(self, asSizeNode.executeExact(frame, inliningTarget, signal), handler, readModuleDataNode);
+            return signal(inliningTarget, self, asSizeNode.executeExact(frame, inliningTarget, signal), handler, readModuleDataNode);
         }
 
         @TruffleBoundary
-        private Object signal(PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readModuleDataNode) {
+        private static Object signal(Node raisingNode, PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readModuleDataNode) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             SignalHandler oldHandler;
             SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
@@ -338,7 +337,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                     moduleData.signalSema.release();
                 });
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.ValueError, e);
+                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, e);
             }
             Object result = handlerToPython(oldHandler, signum);
             signalHandlers.put(signum, handler);
@@ -389,14 +388,15 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            PTuple resultTuple = GetitimerNode.createResultTuple(factory(), moduleData);
+            PTuple resultTuple = GetitimerNode.createResultTuple(factory, moduleData);
             setitimer(moduleData, usDelay, usInterval);
             return resultTuple;
         }
@@ -454,15 +454,16 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doIt(VirtualFrame frame, PythonModule self, int which,
+        static Object doIt(VirtualFrame frame, PythonModule self, int which,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            return createResultTuple(factory(), moduleData);
+            return createResultTuple(factory, moduleData);
         }
 
         static PTuple createResultTuple(PythonObjectFactory factory, ModuleData moduleData) {

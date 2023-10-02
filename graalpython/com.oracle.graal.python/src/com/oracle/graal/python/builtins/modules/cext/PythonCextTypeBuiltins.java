@@ -64,14 +64,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CreateFunctionNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyObjectSetAttrNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -241,10 +240,11 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
         static Object classOrStatic(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode) {
-            Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
+            Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
                 function = factory.createClassmethodFromCallableObj(func);
@@ -259,11 +259,11 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
         static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttrNode setattr,
                         @Cached WriteAttributeToObjectNode write,
                         @Shared("cf") @Cached CreateFunctionNode createFunctionNode) {
-            Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
+            Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
             setattr.execute(func, T___NAME__, name);
             setattr.execute(func, T___DOC__, doc);
             write.execute(func, PythonCextMethodBuiltins.METHOD_DEF_PTR, methodDefPtr);
@@ -295,7 +295,7 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
             // create wrapper descriptor
-            Object wrapperDescriptor = CreateFunctionNodeGen.getUncached().execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
+            Object wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
             WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add wrapper descriptor to tp_dict

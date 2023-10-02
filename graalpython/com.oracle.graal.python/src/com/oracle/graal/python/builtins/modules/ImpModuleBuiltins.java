@@ -85,8 +85,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -119,6 +117,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -259,19 +258,21 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             MAGIC_NUMBER_BYTES[3] = '\n';
         }
 
+        @Child PythonObjectFactory factory = PythonObjectFactory.create();        // GR-47032
+
         @Specialization(guards = "isSingleContext()")
-        public PBytes runCachedSingleContext(
+        PBytes runCachedSingleContext(
                         @Cached(value = "getMagicNumberPBytes()", weak = true) PBytes magicBytes) {
             return magicBytes;
         }
 
         @Specialization(replaces = "runCachedSingleContext")
-        public PBytes run() {
-            return factory().createBytes(MAGIC_NUMBER_BYTES);
+        PBytes run() {
+            return factory.createBytes(MAGIC_NUMBER_BYTES);
         }
 
         protected PBytes getMagicNumberPBytes() {
-            return factory().createBytes(MAGIC_NUMBER_BYTES);
+            return factory.createBytes(MAGIC_NUMBER_BYTES);
         }
     }
 
@@ -280,7 +281,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class CreateDynamic extends PythonBinaryBuiltinNode {
 
         @Child private CheckFunctionResultNode checkResultNode;
-        @Child private HPyCheckFunctionResultNode checkHPyResultNode;
 
         public abstract Object execute(VirtualFrame frame, PythonObject moduleSpec, Object filename);
 
@@ -317,7 +317,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             if (existingModule != null) {
                 return existingModule;
             }
-            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode(), getCheckHPyResultNode());
+            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode());
         }
 
         @SuppressWarnings({"static-method", "unused"})
@@ -333,14 +333,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
-        }
-
-        private HPyCheckFunctionResultNode getCheckHPyResultNode() {
-            if (checkHPyResultNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                checkHPyResultNode = insert(HPyCheckHandleResultNodeGen.create());
-            }
-            return checkHPyResultNode;
         }
     }
 
@@ -609,7 +601,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, TruffleString name, boolean withData,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory) {
             FrozenResult result = findFrozen(getContext(), name, equalNode);
             FrozenStatus status = result.status;
             FrozenInfo info = result.info;
@@ -626,7 +619,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             PMemoryView data = null;
 
             if (withData) {
-                data = memoryViewNode.execute(frame, factory().createBytes(info.data));
+                data = memoryViewNode.execute(frame, factory.createBytes(info.data));
             }
 
             Object[] returnValues = new Object[]{
@@ -635,7 +628,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                             info.origName == null ? PNone.NONE : info.origName
             };
 
-            return factory().createTuple(returnValues);
+            return factory.createTuple(returnValues);
         }
     }
 
@@ -770,11 +763,12 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        PBytes run(long magicNumber, Object sourceBuffer,
+        static PBytes run(long magicNumber, Object sourceBuffer,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.HashBufferNode hashBufferNode) {
+                        @Cached BytesNodes.HashBufferNode hashBufferNode,
+                        @Cached PythonObjectFactory factory) {
             long sourceHash = hashBufferNode.execute(inliningTarget, sourceBuffer);
-            return factory().createBytes(computeHash(magicNumber, sourceHash));
+            return factory.createBytes(computeHash(magicNumber, sourceHash));
         }
 
         @TruffleBoundary
@@ -817,8 +811,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
-        Object run() {
-            return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), T_EXT_SO, T_EXT_PYD});
+        Object run(
+                        @Cached PythonObjectFactory factory) {
+            return factory.createList(new Object[]{PythonContext.get(this).getSoAbi(), T_EXT_SO, T_EXT_PYD});
         }
     }
 

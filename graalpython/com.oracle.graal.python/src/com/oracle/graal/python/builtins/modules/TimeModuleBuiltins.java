@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -304,9 +305,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
 
         @Specialization
-        public PTuple gmtime(VirtualFrame frame, Object seconds,
-                        @Cached ToLongTime toLongTime) {
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, this, seconds)));
+        static PTuple gmtime(VirtualFrame frame, Object seconds,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ToLongTime toLongTime,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -338,12 +341,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonLocalTimeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
+        static PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId,
-                        @Cached ToLongTime toLongTime) {
+                        @Cached ToLongTime toLongTime,
+                        @Cached PythonObjectFactory factory) {
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds)));
+            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -621,10 +625,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         protected static int[] checkStructtime(VirtualFrame frame, Node inliningTarget, PTuple time,
                         SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         PyNumberAsSizeNode asSizeNode,
-                        PRaiseNode raise) {
+                        PRaiseNode.Lazy raiseNode) {
             Object[] otime = getInternalObjectArrayNode.execute(inliningTarget, time.getSequenceStorage());
             if (time.getSequenceStorage().length() != 9) {
-                throw raise.raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
             }
             int[] date = new int[9];
             for (int i = 0; i < 9; i++) {
@@ -633,37 +637,37 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
             // This is specific to java
             if (date[TM_YEAR] < Year.MIN_VALUE || date[TM_YEAR] > Year.MAX_VALUE) {
-                throw raise.raise(OverflowError, ErrorMessages.YEAR_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.YEAR_OUT_OF_RANGE);
             }
 
             if (date[TM_MON] == 0) {
                 date[TM_MON] = 1;
             } else if (date[TM_MON] < 0 || date[TM_MON] > 12) {
-                throw raise.raise(ValueError, ErrorMessages.MONTH_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MONTH_OUT_OF_RANGE);
             }
 
             if (date[TM_MDAY] == 0) {
                 date[TM_MDAY] = 1;
             } else if (date[TM_MDAY] < 0 || date[TM_MDAY] > 31) {
-                throw raise.raise(ValueError, ErrorMessages.DAY_OF_MONTH_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.DAY_OF_MONTH_OUT_OF_RANGE);
             }
 
             if (date[TM_HOUR] < 0 || date[TM_HOUR] > 23) {
-                throw raise.raise(ValueError, ErrorMessages.HOUR_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HOUR_OUT_OF_RANGE);
             }
 
             if (date[TM_MIN] < 0 || date[TM_MIN] > 59) {
-                throw raise.raise(ValueError, ErrorMessages.MINUTE_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MINUTE_OUT_OF_RANGE);
             }
 
             if (date[TM_SEC] < 0 || date[TM_SEC] > 61) {
-                throw raise.raise(ValueError, ErrorMessages.SECONDS_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SECONDS_OUT_OF_RANGE);
             }
 
             if (date[TM_WDAY] == -1) {
                 date[TM_WDAY] = 6;
             } else if (date[TM_WDAY] < 0) {
-                throw raise.raise(ValueError, ErrorMessages.DAY_OF_WEEK_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.DAY_OF_WEEK_OUT_OF_RANGE);
             } else if (date[TM_WDAY] > 6) {
                 date[TM_WDAY] = date[TM_WDAY] % 7;
             }
@@ -671,7 +675,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (date[TM_YDAY] == 0) {
                 date[TM_YDAY] = 1;
             } else if (date[TM_YDAY] < 0 || date[TM_YDAY] > 366) {
-                throw raise.raise(ValueError, ErrorMessages.DAY_OF_YEAR_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.DAY_OF_YEAR_OUT_OF_RANGE);
             }
 
             if (date[TM_ISDST] < -1) {
@@ -931,38 +935,41 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
+        static TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
             return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(zoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        public TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, PTuple time,
+        static TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, PTuple time,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            int[] date = checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, getRaiseNode());
+            int[] date = checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, raiseNode);
             return format(toJavaStringNode.execute(format), date, fromJavaStringNode);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        public TruffleString formatTime(PythonModule module, TruffleString format, Object time) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
+        static TruffleString formatTime(PythonModule module, TruffleString format, Object time,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
     }
 
@@ -1036,7 +1043,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         };
 
         @Specialization
-        public static TruffleString localtime(PythonModule module, @SuppressWarnings("unused") PNone time,
+        static TruffleString localtime(PythonModule module, @SuppressWarnings("unused") PNone time,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
@@ -1044,13 +1051,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        public TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
+        static TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return format(StrfTimeNode.checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, getRaiseNode()), fromJavaStringNode);
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            return format(StrfTimeNode.checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, raiseNode), fromJavaStringNode);
         }
 
         @Fallback
@@ -1100,9 +1107,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getClockInfo(TruffleString name,
+        Object getClockInfo(TruffleString name,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PythonObjectFactory factory) {
             final boolean adjustable;
             final boolean monotonic;
 
@@ -1117,7 +1125,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
             }
 
-            final PSimpleNamespace ns = factory().createSimpleNamespace();
+            final PSimpleNamespace ns = factory.createSimpleNamespace();
             dyLib.put(ns, T_ADJUSTABLE, adjustable);
             dyLib.put(ns, T_IMPLEMENTATION, name);
             dyLib.put(ns, T_MONOTONIC, monotonic);

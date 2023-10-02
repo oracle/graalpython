@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -65,9 +66,11 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -114,33 +117,36 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEOF()"})
-        PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
+        static PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
+                        @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress,
+                        @Shared @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
                 int len = data.getSequenceStorage().length();
-                return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
+                return factory.createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
             }
         }
 
         @Specialization(guards = {"!self.isEOF()"})
-        PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
+        static PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
+                        @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress,
+                        @Shared @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;
-                return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
+                return factory.createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
             }
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
-        Object err(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength) {
-            throw raise(EOFError, END_OF_STREAM_ALREADY_REACHED);
+        static Object err(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(EOFError, END_OF_STREAM_ALREADY_REACHED);
         }
     }
 
@@ -148,8 +154,9 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PBytes doit(BZ2Object.BZ2Decompressor self) {
-            return factory().createBytes(self.getUnusedData());
+        static PBytes doit(BZ2Object.BZ2Decompressor self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(self.getUnusedData());
         }
     }
 

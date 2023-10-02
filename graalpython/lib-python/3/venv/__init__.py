@@ -180,8 +180,6 @@ class EnvBuilder:
                                '  Actual location:    "%s"',
                                context.env_exe, real_env_exe)
                 context.env_exec_cmd = real_env_exe
-            # Truffle change: we install a .cmd script
-            context.env_exec_cmd = os.path.splitext(context.env_exec_cmd)[0] + ".cmd"
         return context
 
 
@@ -273,8 +271,6 @@ class EnvBuilder:
             """
             Try symlinking a file, and if that fails, fall back to copying.
             """
-            # Truffle change: keep src argument around
-            src_argument = src
             bad_src = os.path.lexists(src) and not os.path.exists(src)
             if self.symlinks and not bad_src and not os.path.islink(dst):
                 try:
@@ -313,13 +309,14 @@ class EnvBuilder:
                 return
 
             shutil.copyfile(src, dst)
-            # Truffle change: setup our a launcher script
+            # Truffle change: setup our a launcher by appending the path to the creating executable
             if src == srcfn:
-                with open(dst) as f:
-                    contents = f.read()
-                with open(dst, "w") as f:
-                    f.write(contents.replace("<target>", src_argument))
-                os.rename(dst, os.path.join(os.path.dirname(dst), basename + ".cmd"))
+                with open(dst, "ab") as f:
+                    sz = f.write((__graalpython__.venvlauncher_command or sys.executable).encode("utf-16le"))
+                    import struct
+                    assert f.write(struct.pack("@I", sz)) == 4
+                    f.flush()
+            # End of Truffle change
 
     def setup_python(self, context):
         """
@@ -361,16 +358,19 @@ class EnvBuilder:
                         os.path.normcase(f).startswith(('python', 'vcruntime'))
                     ]
             else:
-                # Truffle change: we add 'graalpy' to the list
-                suffixes = {'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe', 'graalpy.exe'}
+                # Truffle change: we add 'graalpy' to the list and remove the w and d variants
+                # suffixes = {'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe'}
+                suffixes = {'python.exe', 'graalpy.exe'}
                 base_exe = os.path.basename(context.env_exe)
                 suffixes.add(base_exe)
 
             for suffix in suffixes:
-                # Truffle change: we look in 'bin'
-                src = os.path.join(dirname, 'bin', suffix)
-                if os.path.lexists(src):
-                    copier(src, os.path.join(binpath, suffix))
+                src = os.path.join(dirname, suffix)
+                # Truffle change: we do it like for posix, install all links
+                # if os.path.lexists(src):
+                #     copier(src, os.path.join(binpath, suffix))
+                copier(src, os.path.join(binpath, suffix))
+                # End of Truffle change
 
             if sysconfig.is_python_build(True):
                 # copy init.tcl
@@ -464,6 +464,10 @@ class EnvBuilder:
                         dirs.remove(d)
                 continue # ignore files in top level
             for f in files:
+                # Truffle change: add graalpy.exe to skip
+                if (os.name == 'nt' and f == "graalpy.exe"):
+                    continue
+                # End of Truffle change
                 if (os.name == 'nt' and f.startswith('python')
                         and f.endswith(('.exe', '.pdb'))):
                     continue

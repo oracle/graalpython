@@ -63,9 +63,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -96,24 +96,25 @@ public final class GroupByBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PGroupBy self,
+        static Object next(VirtualFrame frame, PGroupBy self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached InlinedBranchProfile eqProfile,
                         @Cached InlinedConditionProfile hasFuncProfile,
-                        @Cached InlinedLoopConditionProfile loopConditionProfile) {
+                        @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Cached PythonObjectFactory factory) {
             self.setCurrGrouper(null);
             while (loopConditionProfile.profile(inliningTarget, doGroupByStep(frame, inliningTarget, self, eqProfile, eqNode))) {
                 self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
             }
             self.setTgtKey(self.getCurrKey());
-            PGrouper grouper = factory().createGrouper(self, self.getTgtKey());
-            return factory().createTuple(new Object[]{self.getCurrKey(), grouper});
+            PGrouper grouper = factory.createGrouper(self, self.getTgtKey());
+            return factory.createTuple(new Object[]{self.getCurrKey(), grouper});
         }
 
-        protected boolean doGroupByStep(VirtualFrame frame, Node inliningTarget, PGroupBy self, InlinedBranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
+        private static boolean doGroupByStep(VirtualFrame frame, Node inliningTarget, PGroupBy self, InlinedBranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
             if (self.getCurrKey() == null) {
                 return true;
             } else if (self.getTgtKey() == null) {
@@ -131,53 +132,28 @@ public final class GroupByBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"!valuesSet(self)", "isNull(self.getKeyFunc())"})
-        Object reduce(PGroupBy self,
+        @Specialization
+        static Object reduceMarkerNotSet(PGroupBy self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode) {
-            return reduce(inliningTarget, self, PNone.NONE, getClassNode);
-        }
-
-        @Specialization(guards = {"!valuesSet(self)", "!isNull(self.getKeyFunc())"})
-        Object reduceNoFunc(PGroupBy self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode) {
-            return reduce(inliningTarget, self, self.getKeyFunc(), getClassNode);
-        }
-
-        private Object reduce(Node inliningTarget, PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
+                        @Cached InlinedConditionProfile noKeyFuncProfile,
+                        @Cached InlinedConditionProfile noValuesProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            Object keyFunc = self.getKeyFunc();
+            if (noKeyFuncProfile.profile(inliningTarget, keyFunc == null)) {
+                keyFunc = PNone.NONE;
+            }
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getIt(), keyFunc});
-            return factory().createTuple(new Object[]{type, tuple});
+            PTuple tuple1 = factory.createTuple(new Object[]{self.getIt(), keyFunc});
+            if (noValuesProfile.profile(inliningTarget, !valuesSet(self))) {
+                return factory.createTuple(new Object[]{type, tuple1});
+            }
+            PTuple tuple2 = factory.createTuple(new Object[]{self.getCurrValue(), self.getTgtKey(), self.getCurrKey()});
+            return factory.createTuple(new Object[]{type, tuple1, tuple2});
         }
 
-        @Specialization(guards = {"valuesSet(self)", "isNull(self.getKeyFunc())"})
-        Object reduceMarkerNotSet(PGroupBy self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode) {
-            return reduceOther(inliningTarget, self, PNone.NONE, getClassNode);
-        }
-
-        @Specialization(guards = {"valuesSet(self)", "!isNull(self.getKeyFunc())"})
-        Object reduceMarkerNotSetNoFunc(PGroupBy self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode) {
-            return reduceOther(inliningTarget, self, self.getKeyFunc(), getClassNode);
-        }
-
-        private Object reduceOther(Node inliningTarget, PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
-            Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple1 = factory().createTuple(new Object[]{self.getIt(), keyFunc});
-            PTuple tuple2 = factory().createTuple(new Object[]{self.getCurrValue(), self.getTgtKey(), self.getCurrKey()});
-            return factory().createTuple(new Object[]{type, tuple1, tuple2});
-        }
-
-        protected boolean valuesSet(PGroupBy self) {
+        private static boolean valuesSet(PGroupBy self) {
             return self.getTgtKey() != null && self.getCurrKey() != null && self.getCurrValue() != null;
-        }
-
-        protected boolean isNull(Object obj) {
-            return obj == null;
         }
 
     }

@@ -40,14 +40,25 @@
 import textwrap
 from copy import deepcopy
 from . import conf
-from .autogenfile import AutoGenFile
+from .autogenfile import C_DISCLAIMER
 from .parse import toC, find_typedecl, get_context_return_type, \
     maybe_make_void, make_void, get_return_constant
 import re
 
 
-class GraalPyAutoGenFile(AutoGenFile):
+class GraalPyAutoGenFile:
+    LANGUAGE = 'C'
+    PATH = None
+    DISCLAIMER = None
     COPYRIGHT_FILE = 'mx.graalpython/copyrights/oracle.copyright.star'
+
+    def __init__(self, api):
+        if self.DISCLAIMER is None and self.LANGUAGE == 'C':
+            self.DISCLAIMER = C_DISCLAIMER
+        self.api = api
+
+    def generate(self, root):
+        raise NotImplementedError
 
     def write(self, root):
         cls = self.__class__
@@ -58,7 +69,7 @@ class GraalPyAutoGenFile(AutoGenFile):
             f.write(copyright_header + '\n')
             if self.DISCLAIMER is not None:
                 f.write(self.DISCLAIMER.format(clsname=clsname) + '\n')
-            f.write(self.generate())
+            f.write(self.generate(root))
             f.write('\n')
 
 class AutoGenFilePart:
@@ -79,7 +90,7 @@ class AutoGenFilePart:
             if indent_match:
                 self.INDENT = indent_match.group(1)
 
-    def generate(self, old):
+    def generate(self, old, root):
         raise NotImplementedError
 
     def write(self, root):
@@ -97,7 +108,7 @@ class AutoGenFilePart:
             raise RuntimeError(f'end marker "{self.END_MARKER}" not found in'
                                f'file {self.PATH}')
         old_content = content[(start+n_begin):end]
-        new_content = self.generate(old_content)
+        new_content = self.generate(old_content, root)
         if self.LANGUAGE.lower() == 'java':
             gen_prefix = []
             if self.JAVA_FORMATTER_STOP is not None:
@@ -139,6 +150,13 @@ HPY_CONTEXT_CLASS = 'GraalHPyNativeContext'
 HPY_CONTEXT_MEMBER_CLASS = 'HPyContextMember'
 HPY_CONTEXT_FUNCTIONS_CLASS = 'GraalHPyContextFunctions'
 
+# A set of C structs for which we will generate descriptors such that they can
+# be accessed from Java.
+GENERATE_STRUCT_ACCESS = {
+    'HPyType_Spec', 'HPyType_Spec', 'HPyType_SpecParam',
+    'HPyCapsule_Destructor', 'HPyCallFunction'
+}
+
 ###############################################################################
 #                                COMMON PARTS                                 #
 ###############################################################################
@@ -152,7 +170,7 @@ class autogen_ctx_member_enum(AutoGenFilePart):
     BEGIN_MARKER = INDENT + '// {{start ctx members}}\n'
     END_MARKER = INDENT + '// {{end ctx members}}\n'
 
-    def generate(self, old):
+    def generate(self, old, root):
         lines = []
         w = lines.append
         for var in self.api.variables:
@@ -190,19 +208,9 @@ class autogen_ctx_function_factory(AutoGenFilePart):
     CTX_FUNC_ANNOTATION_REGEX = re.compile(r'\s*@HPyContextFunction\("(?P<ctx_name>\w+)"\)')
     CTX_FUNC_ANNOTATION= '@HPyContextFunction'
 
-    def __init__(self, api):
-        super().__init__(api)
-        self.root = None
-
-
-    def write(self, root):
-        self.root = root
-        super().write(root)
-        self.root = None
-
-    def generate(self, old):
+    def generate(self, old, root):
         ctx_func_nodes = {}
-        with self.root.join(self.INPUT_FILE).open('r') as f:
+        with root.join(self.INPUT_FILE).open('r') as f:
             func_node = []
             for line in f.readlines():
                 match_annotation = self.CTX_FUNC_ANNOTATION_REGEX.match(line)
@@ -504,7 +512,7 @@ AUTOGEN_CTX_INIT_JNI_H_FILE = 'autogen_ctx_init_jni.h'
 class autogen_ctx_init_jni_h(GraalPyAutoGenFile):
     PATH = 'graalpython/com.oracle.graal.python.jni/src/' + AUTOGEN_CTX_INIT_JNI_H_FILE
 
-    def generate(self):
+    def generate(self, root):
         lines = []
         w = lines.append
         w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG}, jlongArray jctx_handles);')
@@ -523,7 +531,7 @@ class autogen_ctx_init_jni_h(GraalPyAutoGenFile):
 class autogen_wrappers_jni(GraalPyAutoGenFile):
     PATH = 'graalpython/com.oracle.graal.python.jni/src/autogen_wrappers_jni.c'
 
-    def generate(self):
+    def generate(self, root):
         lines = []
         w = lines.append
         w('#include "hpy_jni.h"')
@@ -656,7 +664,7 @@ class autogen_ctx_jni_upcall_enum(AutoGenFilePart):
     BEGIN_MARKER = INDENT + '// {{start jni upcalls}}\n'
     END_MARKER = INDENT + '// {{end jni upcalls}}\n'
 
-    def generate(self, old):
+    def generate(self, old, root):
         lines = []
         w = lines.append
         for func in self.api.functions:
@@ -686,7 +694,7 @@ class autogen_ctx_handles_init(AutoGenFilePart):
     BEGIN_MARKER = INDENT + '// {{start ctx handles array}}\n'
     END_MARKER = INDENT + '// {{end ctx handles array}}'
 
-    def generate(self, old):
+    def generate(self, old, root):
         lines = []
         w = lines.append
         max_ctx_index = max([v.ctx_index for v in self.api.variables])
@@ -706,12 +714,12 @@ class autogen_ctx_handles_init(AutoGenFilePart):
 class autogen_svm_jni_upcall_config(AutoGenFilePart):
     """
     """
-    LANGUAGE = 'json'
-    PATH = 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/niresources/jni-config.json'
-    BEGIN_MARKER = '  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext",\n  "methods":[\n'
-    END_MARKER = ',\n    {"name":"getHPyDebugContext","parameterTypes":[] },'
+    INDENT = '                '
+    PATH = 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/JNIFeature.java'
+    BEGIN_MARKER = INDENT + '// {{start jni upcall config}}\n'
+    END_MARKER = INDENT + '// {{end jni upcall config}}'
 
-    def generate(self, old):
+    def generate(self, old, root):
         lines = []
         w = lines.append
         for func in self.api.functions:
@@ -719,12 +727,13 @@ class autogen_svm_jni_upcall_config(AutoGenFilePart):
                 continue
             node = func.node
             jname = func.ctx_name().replace('_', '')
-            jni_params = []
+            jni_params = [f'"{jname}"']
             for p in node.type.args.params[1:]:
                 jtype = get_java_signature_type(p.type)
-                jni_params.append(f'"{jtype}"')
-            w(f'  {{"name":"{jname}","parameterTypes":[{",".join(jni_params)}]}}')
-        return ',\n'.join(lines)
+                jni_params.append(f'{jtype}.class')
+            w(f'RuntimeJNIAccess.register(GraalHPyJNIContext.class.getDeclaredMethod({", ".join(jni_params)}));')
+
+        return '\n'.join(lines)
 
 
 class autogen_jni_upcall_method_stub(AutoGenFilePart):
@@ -744,7 +753,7 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
     JAVA_FORMATTER_RESUME = None
     JAVA_DISCLAIMER = None
 
-    def generate(self, old):
+    def generate(self, old, root):
         # We need to remove indentation from 'old' otherwise it would be
         # indented again
         lines = [textwrap.dedent(old)]
@@ -817,7 +826,7 @@ class autogen_ctx_jni(AutoGenFilePart):
     BEGIN_MARKER = '    // {{start autogen}}\n'
     END_MARKER = '    // {{end autogen}}\n'
 
-    def generate(self, old):
+    def generate(self, old, root):
         lines_universal = []
         u = lines_universal.append
         lines_debug = []
@@ -854,7 +863,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
     """
     PATH = 'graalpython/com.oracle.graal.python.jni/src/autogen_ctx_call_jni.c'
 
-    def generate(self):
+    def generate(self, root):
         lines = []
         w = lines.append
         jni_include = JNI_HPY_CONTEXT_PKG.replace('.', '_') + JNI_HPY_TRAMPOLINES_CLASS
@@ -993,7 +1002,6 @@ LLVM_HPY_BACKEND_CLASS = 'GraalHPyLLVMContext'
 # The name of the native HPy context (will be used for HPyContext.name)
 LLVM_HPY_CONTEXT_NAME = 'HPy Universal ABI (GraalVM backend, LLVM)'
 
-AUTOGEN_CTX_INIT_H_FILE = 'autogen_ctx_init.h'
 
 def get_signature_type(type):
     """
@@ -1036,7 +1044,7 @@ class autogen_ctx_llvm_init(AutoGenFilePart):
     BEGIN_MARKER = INDENT + '// {{start llvm ctx init}}\n'
     END_MARKER = INDENT + '// {{end llvm ctx init}}\n'
 
-    def generate(self, old):
+    def generate(self, old, root):
         lines = []
         w = lines.append
         def gen_ctor(var_name):
@@ -1074,13 +1082,14 @@ llvm_param_cast_func = {
     'HPyListBuilder': 'UNWRAP_LIST_BUILDER',
     'HPyTupleBuilder': 'UNWRAP_TUPLE_BUILDER',
     'HPyThreadState': 'UNWRAP_THREADSTATE',
+    'HPy_SourceKind': 'UNWRAP_SOURCE_KIND',
 }
 
 
 class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
     PATH = 'graalpython/com.oracle.graal.python.hpy.llvm/include/hpy/universal/autogen_trampolines.h'
 
-    def generate(self):
+    def generate(self, root):
         lines = []
         w = lines.append
         w('#ifdef GRAALVM_PYTHON_LLVM')
@@ -1098,6 +1107,7 @@ class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
         w('#define WRAP_FIELD(_ptr) ((HPyField){(_ptr)})')
         w('#define UNWRAP_GLOBAL(_h) ((_h)._i)')
         w('#define WRAP_GLOBAL(_ptr) ((HPyGlobal){(_ptr)})')
+        w('#define UNWRAP_SOURCE_KIND(_h) ((int)(_h))')
         w('#else')
         w('#define UNWRAP(_h) _h')
         w('#define WRAP(_ptr) _ptr')
@@ -1113,6 +1123,7 @@ class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
         w('#define WRAP_FIELD(_ptr) _ptr')
         w('#define UNWRAP_GLOBAL(_h) _h')
         w('#define WRAP_GLOBAL(_ptr) _ptr')
+        w('#define UNWRAP_SOURCE_KIND(_h) _h')
         w('#endif')
         for func in self.api.functions:
             trampoline = self.gen_trampoline(func)
@@ -1169,36 +1180,83 @@ class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
         return '\n'.join(parts)
 
 
-class autogen_llvm_upcall_wrappers(GraalPyAutoGenFile):
+class autogen_c_access(GraalPyAutoGenFile):
     """
-    Generates the
+    Generates the enum of context members.
     """
-    PATH = 'graalpython/com.oracle.graal.python.cext/hpy/autogen_llvm_wrappers.c'
+    INDENT = '    '
+    PATH = 'graalpython/com.oracle.graal.python.hpy.llvm/src/autogen_c_access.h'
+    INPUT_FILE = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + 'HPyContextSignatureType')
+    CFIELD_FILE = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + 'GraalHPyCField')
 
-    def generate(self):
+    #     HPyType_SpecParam("HPyType_SpecParam", null, null),
+    CTYPE_REGEX = re.compile(r'\s*(?P<val_name>[\w_]+)\("(?P<c_name>[\w_ \*]+)".*\)(?P<terminator>[,;])\s*')
+
+    #    HPyType_SpecParam__kind(Int32_t),
+    CFIELD_REGEX = re.compile(r'\s*(?P<val_name>[\w_]+)\((?:[\w_]+)\)(?P<terminator>[,;])\s*')
+
+    BEGIN_MARKER = 'enum HPyContextSignatureType'
+    BEGIN_MARKER_CFIELD = 'enum GraalHPyCField'
+
+    def generate(self, root):
         lines = []
         w = lines.append
-        w('#include "hpynative.h"')
-        w('')
-        w('#define COPY(MEMBER) native_ctx->MEMBER = managed_ctx->MEMBER')
-        w('')
 
-        # start of 'init_autogen_jni_ctx'
-        w(f'_HPy_HIDDEN int init_autogen_llvm_ctx(HPyContext *managed_ctx, HPyContext *native_ctx)')
+        c_types = []
+        with root.join(self.INPUT_FILE).open('r') as f:
+            read_enum_value = False
+            i = 0
+            for line in f.readlines():
+                if self.BEGIN_MARKER in line:
+                    read_enum_value = True
+                elif read_enum_value:
+                    match = self.CTYPE_REGEX.match(line)
+                    if match:
+                        c_types.append((i, match.group('c_name')))
+                        read_enum_value = match.group('terminator') == ','
+                    if line:
+                        i += 1
+
+        c_fields = []
+        with root.join(self.CFIELD_FILE).open('r') as f:
+            read_enum_value = False
+            i = 0
+            for line in f.readlines():
+                if self.BEGIN_MARKER_CFIELD in line:
+                    read_enum_value = True
+                elif read_enum_value:
+                    match = self.CFIELD_REGEX.match(line)
+                    if match:
+                        val_name = match.group('val_name').replace("__", ".")
+                        first_dot = val_name.find('.')
+                        if first_dot:
+                            c_fields.append((i, val_name[:first_dot], val_name[first_dot+1:]))
+                        read_enum_value = match.group('terminator') == ','
+                    if line:
+                        i += 1
+
+        w('#ifndef _AUTOGEN_C_ACCESS_H')
+        w('#define _AUTOGEN_C_ACCESS_H')
+        w('#include <stddef.h>')
+        w('')
+        w('#include "Python.h"')
+        w('#include "structmember.h"')
+        w('')
+        w('static int fill_c_type_sizes(int32_t *ctype_sizes)')
         w('{')
-
-        # initialize context handles
-        for var in self.api.variables:
-            w(f'    COPY({var.ctx_name()});')
+        for i, c_name in c_types:
+            w(f'{self.INDENT}ctype_sizes[{i}] = (int32_t) sizeof({c_name});' )
+        w(f'{self.INDENT}return 0;')
+        w('};')
         w('')
-
-        # initialize context function pointers
-        for func in self.api.functions:
-            if func.name not in NO_WRAPPER:
-                w(f'    COPY({func.ctx_name()});')
-        w(f'    return 0;')
-
-        w('}')
+        w('static int fill_c_field_offsets(int32_t *cfield_offsets)')
+        w('{')
+        for i, struct_name, field_name in c_fields:
+            w(f'{self.INDENT}cfield_offsets[{i}] = (int32_t) offsetof({struct_name}, {field_name});' )
+        w(f'{self.INDENT}return 0;')
+        w('};')
+        w('')
+        w('#endif')
         w('')
         return '\n'.join(lines)
 
@@ -1215,4 +1273,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_llvm_init,
               autogen_ctx_function_factory,
               autogen_llvm_trampolines_h,
-              autogen_llvm_upcall_wrappers)
+              # autogen_llvm_upcall_wrappers,
+              autogen_c_access)

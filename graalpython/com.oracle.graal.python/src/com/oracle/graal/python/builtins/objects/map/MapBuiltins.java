@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -141,12 +142,13 @@ public final class MapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
-        PTuple doit(PMap self, @SuppressWarnings("unused") Object ignored) {
+        static PTuple doit(PMap self, @SuppressWarnings("unused") Object ignored,
+                        @Cached PythonObjectFactory factory) {
             Object[] iterators = self.getIterators();
             Object[] args = new Object[iterators.length + 1];
             args[0] = self.getFunction();
             System.arraycopy(iterators, 0, args, 1, iterators.length);
-            return factory().createTuple(new Object[]{PythonBuiltinClassType.PMap, factory().createTuple(args)});
+            return factory.createTuple(new Object[]{PythonBuiltinClassType.PMap, factory.createTuple(args)});
         }
     }
 }

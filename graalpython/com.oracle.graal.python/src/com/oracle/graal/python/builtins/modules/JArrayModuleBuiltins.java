@@ -55,7 +55,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -70,6 +71,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -89,8 +92,10 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
         return JArrayModuleBuiltinsFactory.getFactories();
     }
 
-    abstract static class ArrayFromTypeCode extends PNodeWithRaise {
-        public abstract Object execute(int length, String typeCode);
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class ArrayFromTypeCode extends PNodeWithContext {
+        public abstract Object execute(Node inliningTarget, int length, String typeCode);
 
         protected static final String Z = "z";
         protected static final String C = "c";
@@ -143,8 +148,9 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(int length, String typeCode) {
-            throw raise(ValueError, ErrorMessages.INVALID_TYPE_CODE, typeCode);
+        static Object error(int length, String typeCode,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.INVALID_TYPE_CODE, typeCode);
         }
 
         protected static boolean eq(String a, String b) {
@@ -160,10 +166,11 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(typeCodeObj)")
         Object fromTypeCode(int length, Object typeCodeObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode cast,
                         @Cached ArrayFromTypeCode fromTypeCodeNode) {
             String typeCode = cast.execute(typeCodeObj);
-            Object array = fromTypeCodeNode.execute(length, typeCode);
+            Object array = fromTypeCodeNode.execute(inliningTarget, length, typeCode);
             return getContext().getEnv().asGuestValue(array);
         }
 

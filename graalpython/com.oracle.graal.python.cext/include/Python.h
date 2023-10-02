@@ -43,7 +43,7 @@
 #ifndef MS_WINDOWS
 #include <unistd.h>
 #else
-#include <winsock.h>
+struct timeval;
 #endif
 
 /* For size_t? */

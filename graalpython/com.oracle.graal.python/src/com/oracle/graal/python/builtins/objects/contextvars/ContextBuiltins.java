@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -103,8 +104,9 @@ public final class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Iter extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PContextVarsContext self) {
-            return factory().createContextIterator(self, PContextIterator.ItemKind.KEYS);
+        static Object iter(PContextVarsContext self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createContextIterator(self, PContextIterator.ItemKind.KEYS);
         }
     }
 
@@ -112,8 +114,9 @@ public final class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Keys extends PythonUnaryBuiltinNode {
         @Specialization
-        Object keys(PContextVarsContext self) {
-            return factory().createContextIterator(self, PContextIterator.ItemKind.KEYS);
+        static Object keys(PContextVarsContext self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createContextIterator(self, PContextIterator.ItemKind.KEYS);
         }
     }
 
@@ -121,8 +124,9 @@ public final class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Values extends PythonUnaryBuiltinNode {
         @Specialization
-        Object values(PContextVarsContext self) {
-            return factory().createContextIterator(self, PContextIterator.ItemKind.VALUES);
+        static Object values(PContextVarsContext self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createContextIterator(self, PContextIterator.ItemKind.VALUES);
         }
     }
 
@@ -130,8 +134,9 @@ public final class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Items extends PythonUnaryBuiltinNode {
         @Specialization
-        Object items(PContextVarsContext self) {
-            return factory().createContextIterator(self, PContextIterator.ItemKind.ITEMS);
+        static Object items(PContextVarsContext self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createContextIterator(self, PContextIterator.ItemKind.ITEMS);
         }
     }
 
@@ -157,8 +162,9 @@ public final class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Copy extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doCopy(PContextVarsContext self) {
-            PContextVarsContext ret = factory().createContextVarsContext();
+        static Object doCopy(PContextVarsContext self,
+                        @Cached PythonObjectFactory factory) {
+            PContextVarsContext ret = factory.createContextVarsContext();
             ret.contextVarValues = self.contextVarValues;
             return ret;
         }

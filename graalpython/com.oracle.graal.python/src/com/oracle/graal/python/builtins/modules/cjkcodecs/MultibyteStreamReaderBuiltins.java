@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -103,21 +104,23 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
-        protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object stream, Object err,
+        static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object stream, Object err,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached TruffleString.EqualNode isEqual) { // "O|s:StreamReader"
+                        @Cached TruffleString.EqualNode isEqual,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamReader"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteStreamReaderObject self = factory().createMultibyteStreamReaderObject(type);
+            MultibyteStreamReaderObject self = factory.createMultibyteStreamReaderObject(type);
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -146,7 +149,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
 
         // mbstreamreader_iread
         @Specialization
-        TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
+        static TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached GetClassNode getClassNode,
@@ -200,7 +203,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (rsize > 0) {
-                    decoderFeedBuffer(frame, self, buf, decodeErrorNode, raiseNode.get(inliningTarget));
+                    decoderFeedBuffer(frame, self, buf, decodeErrorNode, inliningTarget);
                 }
 
                 if (endoffile || sizehint < 0) {
@@ -211,7 +214,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (!buf.isFull()) { /* pending sequence exists */
-                    decoderAppendPending(self, buf, raiseNode.get(inliningTarget));
+                    decoderAppendPending(inliningTarget, self, buf, raiseNode);
                 }
 
                 if (sizehint < 0 || buf.getOutpos() != 0 || rsize == 0) {

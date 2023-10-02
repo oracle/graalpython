@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -84,7 +83,8 @@ public class BufferedWriterNodes {
         }
     }
 
-    abstract static class WriteNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 132 -> 115
+    abstract static class WriteNode extends Node {
 
         public abstract int execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object buffer);
 
@@ -293,12 +293,12 @@ public class BufferedWriterNodes {
             /*-
                This ensures that after return from this function,
                VALID_WRITE_BUFFER(self) returns false.
-            
+
                This is a required condition because when a tell() is called
                after flushing and if VALID_READ_BUFFER(self) is false, we need
                VALID_WRITE_BUFFER(self) to be false to have
                RAW_OFFSET(self) == 0.
-            
+
                Issue: https://bugs.python.org/issue32228
             */
             self.resetWrite(); // _bufferedwriter_reset_buf

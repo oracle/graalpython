@@ -38,7 +38,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class ByteSequenceStorage extends TypedSequenceStorage {
@@ -95,16 +94,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return boxed;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    @Ignore
-    public byte[] getInternalByteArray() {
-        if (length != values.length) {
-            assert length < values.length;
-            return Arrays.copyOf(values, length);
-        }
-        return values;
     }
 
     @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
@@ -293,8 +282,8 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return true;
     }
 
-    @ExportMessage(name = "getInternalByteArray")
-    byte[] getInternalByteArrayMessage() {
+    @ExportMessage
+    public byte[] getInternalByteArray() {
         return values;
     }
 

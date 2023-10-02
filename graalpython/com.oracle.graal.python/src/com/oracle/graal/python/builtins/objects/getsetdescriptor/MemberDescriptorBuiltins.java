@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,10 +107,11 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
         @Specialization
         Object doGeneric(GetSetDescriptor descr,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                        @Cached GetIdNode getIdNode) {
+                        @Cached GetIdNode getIdNode,
+                        @Cached PythonObjectFactory factory) {
             Object getattr = readAttributeFromObjectNode.execute(getContext().getBuiltins(), BuiltinNames.T_GETATTR);
             Object id = getIdNode.execute(getattr);
-            return factory().createTuple(new Object[]{id, factory().createTuple(new Object[]{descr.getType(), descr.getName()})});
+            return factory.createTuple(new Object[]{id, factory.createTuple(new Object[]{descr.getType(), descr.getName()})});
         }
     }
 

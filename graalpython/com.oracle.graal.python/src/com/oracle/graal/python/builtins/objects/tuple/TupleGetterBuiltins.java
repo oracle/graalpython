@@ -58,11 +58,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -82,11 +84,12 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PTupleGetter self,
+        static Object reduce(PTupleGetter self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
-            PTuple args = factory().createTuple(new Object[]{self.getIndex(), self.getDoc()});
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            PTuple args = factory.createTuple(new Object[]{self.getIndex(), self.getDoc()});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 
@@ -94,16 +97,15 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TupleGetterGetNode extends PythonTernaryBuiltinNode {
         @Specialization()
-        @SuppressWarnings("truffle-static-method")
-        Object getTuple(VirtualFrame frame, PTupleGetter self, PTuple instance, @SuppressWarnings("unused") Object owner,
+        static Object getTuple(VirtualFrame frame, PTupleGetter self, PTuple instance, @SuppressWarnings("unused") Object owner,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             final int index = self.getIndex();
             if (index >= sizeNode.execute(frame, inliningTarget, instance)) {
-                throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
             }
-
             return getItemNode.execute(frame, instance, index);
         }
 
@@ -113,9 +115,10 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPTuple(instance)", "!isNone(instance)"})
-        Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner) {
+        static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner,
+                        @Cached PRaiseNode raiseNode) {
             final int index = self.getIndex();
-            throw raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
                             index, "tuple subclasses", instance);
         }
     }
@@ -125,8 +128,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     abstract static class TupleGetterSetNode extends PythonTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object set(PTupleGetter self, Object instance, Object value) {
-            throw raise(PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
+        static Object set(PTupleGetter self, Object instance, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
         }
     }
 

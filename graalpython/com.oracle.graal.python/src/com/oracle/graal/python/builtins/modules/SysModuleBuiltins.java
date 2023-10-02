@@ -787,19 +787,20 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         public abstract PTuple execute(VirtualFrame frame);
 
         @Specialization
-        public PTuple run(VirtualFrame frame,
+        static PTuple run(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
+                        @Cached PythonObjectFactory factory) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
-                return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
+                return factory.createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 Object exception = currentException.getEscapedException();
                 Object traceback = getTracebackNode.execute(inliningTarget, exception);
-                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
+                return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
             }
         }
 
@@ -854,13 +855,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached HashingStorageSetItem setHashingStorageItem) {
+                        @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Cached PythonObjectFactory factory) {
             auditNode.audit(inliningTarget, "sys._current_frames");
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
             }
             PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
-            PDict result = factory().createDict();
+            PDict result = factory.createDict();
             result.setDictStorage(setHashingStorageItem.execute(frame, inliningTarget, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
             return result;
         }
@@ -1146,11 +1148,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetAsyncgenHooks extends PythonBuiltinNode {
         @Specialization
-        Object setAsyncgenHooks() {
+        Object setAsyncgenHooks(
+                        @Cached PythonObjectFactory factory) {
             // TODO: use asyncgen_hooks object
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
             Object firstiter = threadState.getAsyncgenFirstIter();
-            return factory().createTuple(new Object[]{firstiter == null ? PNone.NONE : firstiter, PNone.NONE});
+            return factory.createTuple(new Object[]{firstiter == null ? PNone.NONE : firstiter, PNone.NONE});
         }
     }
 

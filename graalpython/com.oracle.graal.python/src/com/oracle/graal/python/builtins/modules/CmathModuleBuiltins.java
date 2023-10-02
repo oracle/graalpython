@@ -32,7 +32,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -154,30 +153,36 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         public abstract PComplex executeComplex(VirtualFrame frame, Object value);
 
         @SuppressWarnings("unused")
-        PComplex compute(VirtualFrame frame, double real, double imag) {
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("should not be reached");
         }
 
         @Specialization
-        PComplex doL(VirtualFrame frame, long value) {
-            return compute(frame, value, 0);
+        PComplex doL(VirtualFrame frame, long value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return compute(frame, value, 0, factory);
         }
 
         @Specialization
-        PComplex doD(VirtualFrame frame, double value) {
-            return compute(frame, value, 0);
+        PComplex doD(VirtualFrame frame, double value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return compute(frame, value, 0, factory);
         }
 
         @Specialization
-        PComplex doC(VirtualFrame frame, PComplex value) {
-            return compute(frame, value.getReal(), value.getImag());
+        PComplex doC(VirtualFrame frame, PComplex value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return compute(frame, value.getReal(), value.getImag(), factory);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PComplex doGeneral(VirtualFrame frame, Object value,
-                        @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(frame, coerceToComplex.execute(frame, value));
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceToComplexNode coerceToComplex,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doC(frame, coerceToComplex.execute(frame, inliningTarget, value), factory);
         }
     }
 
@@ -206,9 +211,11 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(coerceToComplex.execute(frame, value));
+            return doC(coerceToComplex.execute(frame, inliningTarget, value));
         }
     }
 
@@ -261,9 +268,11 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         double doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(coerceToComplex.execute(frame, value));
+            return doC(coerceToComplex.execute(frame, inliningTarget, value));
         }
     }
 
@@ -274,31 +283,37 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     abstract static class PolarNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PTuple doL(long value) {
-            return doD(value);
+        static PTuple doL(long value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doD(value, factory);
         }
 
         @Specialization
-        PTuple doD(double value) {
-            return factory().createTuple(new Object[]{Math.abs(value), value < 0 ? Math.PI : 0});
+        static PTuple doD(double value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{Math.abs(value), value < 0 ? Math.PI : 0});
         }
 
         @Specialization
         PTuple doC(PComplex value,
-                        @Shared @Cached ComplexBuiltins.AbsNode absNode) {
-            return toPolar(value, absNode);
+                        @Shared @Cached ComplexBuiltins.AbsNode absNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return toPolar(value, absNode, factory);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PTuple doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex,
-                        @Shared @Cached ComplexBuiltins.AbsNode absNode) {
-            return toPolar(coerceToComplex.execute(frame, value), absNode);
+                        @Shared @Cached ComplexBuiltins.AbsNode absNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return toPolar(coerceToComplex.execute(frame, inliningTarget, value), absNode, factory);
         }
 
-        private PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode) {
+        private static PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode, PythonObjectFactory factory) {
             double r = absNode.executeDouble(value);
-            return factory().createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
+            return factory.createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
         }
     }
 
@@ -352,6 +367,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private PComplex rect(double r, double phi) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             // deal with special values
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
                 // need to raise an exception if r is a nonzero number and phi is infinite
@@ -366,14 +382,14 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                     double real = Math.copySign(Double.POSITIVE_INFINITY, Math.cos(phi));
                     double imag = Math.copySign(Double.POSITIVE_INFINITY, Math.sin(phi));
                     if (r > 0) {
-                        return factory().createComplex(real, imag);
+                        return factory.createComplex(real, imag);
                     } else {
-                        return factory().createComplex(-real, -imag);
+                        return factory.createComplex(-real, -imag);
                     }
                 }
-                return specialValue(factory(), SPECIAL_VALUES, r, phi);
+                return specialValue(factory, SPECIAL_VALUES, r, phi);
             }
-            return factory().createComplex(r * Math.cos(phi), r * Math.sin(phi));
+            return factory.createComplex(r * Math.cos(phi), r * Math.sin(phi));
         }
     }
 
@@ -403,40 +419,48 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(y)")
-        PComplex doComplexNone(PComplex x, @SuppressWarnings("unused") PNone y) {
-            return log(x);
+        PComplex doComplexNone(PComplex x, @SuppressWarnings("unused") PNone y,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return log(x, factory);
         }
 
         @Specialization
         PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y,
-                        @Shared @Cached ComplexBuiltins.DivNode divNode) {
-            return divNode.executeComplex(frame, log(x), log(y));
+                        @Shared @Cached ComplexBuiltins.DivNode divNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return divNode.executeComplex(frame, log(x, factory), log(y, factory));
         }
 
         @Specialization(guards = "isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, @SuppressWarnings("unused") PNone yObj,
-                        @Shared @Cached CoerceToComplexNode coerceXToComplex) {
-            return log(coerceXToComplex.execute(frame, xObj));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CoerceToComplexNode coerceXToComplex,
+                        // unused node to avoid mixing shared and non-shared inlined nodes
+                        @SuppressWarnings("unsued") @Shared @Cached CoerceToComplexNode coerceYToComplex,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return log(coerceXToComplex.execute(frame, inliningTarget, xObj), factory);
         }
 
         @Specialization(guards = "!isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
-                        @Exclusive @Cached CoerceToComplexNode coerceYToComplex,
-                        @Shared @Cached ComplexBuiltins.DivNode divNode) {
-            PComplex x = log(coerceXToComplex.execute(frame, xObj));
-            PComplex y = log(coerceYToComplex.execute(frame, yObj));
+                        @Shared @Cached CoerceToComplexNode coerceYToComplex,
+                        @Shared @Cached ComplexBuiltins.DivNode divNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PComplex x = log(coerceXToComplex.execute(frame, inliningTarget, xObj), factory);
+            PComplex y = log(coerceYToComplex.execute(frame, inliningTarget, yObj), factory);
             return divNode.executeComplex(frame, x, y);
         }
 
-        private PComplex log(PComplex z) {
-            PComplex r = specialValue(factory(), SPECIAL_VALUES, z.getReal(), z.getImag());
+        private PComplex log(PComplex z, PythonObjectFactory factory) {
+            PComplex r = specialValue(factory, SPECIAL_VALUES, z.getReal(), z.getImag());
             if (r != null) {
                 return r;
             }
             double real = computeRealPart(z.getReal(), z.getImag());
             double imag = Math.atan2(z.getImag(), z.getReal());
-            return factory().createComplex(real, imag);
+            return factory.createComplex(real, imag);
         }
 
         @TruffleBoundary
@@ -472,15 +496,18 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child LogNode logNode = LogNode.create();
 
         @Specialization
-        PComplex doComplex(VirtualFrame frame, PComplex z) {
+        PComplex doComplex(VirtualFrame frame, PComplex z,
+                        @Shared @Cached PythonObjectFactory factory) {
             PComplex r = logNode.executeComplex(frame, z, PNone.NO_VALUE);
-            return factory().createComplex(r.getReal() / LN_10, r.getImag() / LN_10);
+            return factory.createComplex(r.getReal() / LN_10, r.getImag() / LN_10);
         }
 
         @Specialization
         PComplex doGeneral(VirtualFrame frame, Object zObj,
-                        @Cached CoerceToComplexNode coerceXToComplex) {
-            return doComplex(frame, coerceXToComplex.execute(frame, zObj));
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceToComplexNode coerceXToComplex,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doComplex(frame, coerceXToComplex.execute(frame, inliningTarget, zObj), factory);
         }
     }
 
@@ -502,13 +529,13 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex result = specialValue(factory, SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
             }
             if (real == 0.0 && imag == 0.0) {
-                return factory().createComplex(0.0, imag);
+                return factory.createComplex(0.0, imag);
             }
 
             double ax = Math.abs(real);
@@ -527,9 +554,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             double d = ay / (2.0 * s);
 
             if (real >= 0.0) {
-                return factory().createComplex(s, Math.copySign(d, imag));
+                return factory.createComplex(s, Math.copySign(d, imag));
             }
-            return factory().createComplex(d, Math.copySign(s, imag));
+            return factory.createComplex(d, Math.copySign(s, imag));
         }
 
         static SqrtNode create() {
@@ -558,8 +585,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex result = specialValue(factory, SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
             }
@@ -575,12 +602,12 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                     rimag = Math.copySign(s, -imag);
                 }
             } else {
-                PComplex s1 = sqrtNode.executeComplex(frame, factory().createComplex(1.0 - real, -imag));
-                PComplex s2 = sqrtNode.executeComplex(frame, factory().createComplex(1.0 + real, imag));
+                PComplex s1 = sqrtNode.executeComplex(frame, factory.createComplex(1.0 - real, -imag));
+                PComplex s2 = sqrtNode.executeComplex(frame, factory.createComplex(1.0 + real, imag));
                 rreal = 2.0 * Math.atan2(s1.getReal(), s2.getReal());
                 rimag = realAsinhNode.executeObject(frame, s2.getReal() * s1.getImag() - s2.getImag() * s1.getReal());
             }
-            return factory().createComplex(rreal, rimag);
+            return factory.createComplex(rreal, rimag);
         }
     }
 
@@ -605,8 +632,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex result = specialValue(factory, SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
             }
@@ -616,12 +643,12 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 rreal = Math.log(Math.hypot(real / 2.0, imag / 2.0)) + LN_2 * 2.0;
                 rimag = Math.atan2(imag, real);
             } else {
-                PComplex s1 = sqrtNode.executeComplex(frame, factory().createComplex(real - 1.0, imag));
-                PComplex s2 = sqrtNode.executeComplex(frame, factory().createComplex(real + 1.0, imag));
+                PComplex s1 = sqrtNode.executeComplex(frame, factory.createComplex(real - 1.0, imag));
+                PComplex s2 = sqrtNode.executeComplex(frame, factory.createComplex(real + 1.0, imag));
                 rreal = realAsinhNode.executeObject(frame, s1.getReal() * s2.getReal() + s1.getImag() * s2.getImag());
                 rimag = 2.0 * Math.atan2(s1.getImag(), s2.getReal());
             }
-            return factory().createComplex(rreal, rimag);
+            return factory.createComplex(rreal, rimag);
         }
     }
 
@@ -632,9 +659,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child private AsinhNode asinhNode = AsinhNode.create();
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex s = asinhNode.executeComplex(frame, factory().createComplex(-imag, real));
-            return factory().createComplex(s.getImag(), -s.getReal());
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex s = asinhNode.executeComplex(frame, factory.createComplex(-imag, real));
+            return factory.createComplex(s.getImag(), -s.getReal());
         }
     }
 
@@ -659,8 +686,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex result = specialValue(factory, SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
             }
@@ -675,12 +702,12 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 }
                 rimag = Math.atan2(imag, Math.abs(real));
             } else {
-                PComplex s1 = sqrtNode.executeComplex(frame, factory().createComplex(1.0 + imag, -real));
-                PComplex s2 = sqrtNode.executeComplex(frame, factory().createComplex(1.0 - imag, real));
+                PComplex s1 = sqrtNode.executeComplex(frame, factory.createComplex(1.0 + imag, -real));
+                PComplex s2 = sqrtNode.executeComplex(frame, factory.createComplex(1.0 - imag, real));
                 rreal = realAsinhNode.executeObject(frame, s1.getReal() * s2.getImag() - s2.getReal() * s1.getImag());
                 rimag = Math.atan2(imag, s1.getReal() * s2.getReal() - s1.getImag() * s2.getImag());
             }
-            return factory().createComplex(rreal, rimag);
+            return factory.createComplex(rreal, rimag);
         }
 
         static AsinhNode create() {
@@ -695,9 +722,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child private AtanhNode atanhNode = AtanhNode.create();
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex s = atanhNode.executeComplex(frame, factory().createComplex(-imag, real));
-            return factory().createComplex(s.getImag(), -s.getReal());
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex s = atanhNode.executeComplex(frame, factory.createComplex(-imag, real));
+            return factory.createComplex(s.getImag(), -s.getReal());
         }
     }
 
@@ -722,18 +749,18 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex result = specialValue(factory(), SPECIAL_VALUES, real, imag);
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex result = specialValue(factory, SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
             }
             if (real < 0.0) {
-                return computeWithRealPositive(-real, -imag, -1.0);
+                return computeWithRealPositive(-real, -imag, -1.0, factory);
             }
-            return computeWithRealPositive(real, imag, 1.0);
+            return computeWithRealPositive(real, imag, 1.0, factory);
         }
 
-        private PComplex computeWithRealPositive(double real, double imag, double resultScale) {
+        private PComplex computeWithRealPositive(double real, double imag, double resultScale, PythonObjectFactory factory) {
             double rreal;
             double rimag;
             double ay = Math.abs(imag);
@@ -751,7 +778,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 rreal = Math.log1p(((4.0 * real) / ((1 - real) * (1 - real) + ay * ay))) / 4.0;
                 rimag = -Math.atan2(-2.0 * imag, (1 - real) * (1 + real) - ay * ay) / 2.0;
             }
-            return factory().createComplex(resultScale * rreal, resultScale * rimag);
+            return factory.createComplex(resultScale * rreal, resultScale * rimag);
         }
 
         static AtanhNode create() {
@@ -777,17 +804,17 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 PComplex r;
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
                     if (real > 0) {
-                        r = factory().createComplex(Math.copySign(INF, Math.cos(imag)), Math.copySign(INF, Math.sin(imag)));
+                        r = factory.createComplex(Math.copySign(INF, Math.cos(imag)), Math.copySign(INF, Math.sin(imag)));
                     } else {
-                        r = factory().createComplex(Math.copySign(0.0, Math.cos(imag)), Math.copySign(0.0, Math.sin(imag)));
+                        r = factory.createComplex(Math.copySign(0.0, Math.cos(imag)), Math.copySign(0.0, Math.sin(imag)));
                     }
                 } else {
-                    r = specialValue(factory(), SPECIAL_VALUES, real, imag);
+                    r = specialValue(factory, SPECIAL_VALUES, real, imag);
                 }
                 if (Double.isInfinite(imag) && (Double.isFinite(real) || (Double.isInfinite(real) && real > 0))) {
                     throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
@@ -808,7 +835,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
                 throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
-            return factory().createComplex(rreal, rimag);
+            return factory.createComplex(rreal, rimag);
         }
     }
 
@@ -819,8 +846,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child private CoshNode coshNode = CoshNode.create();
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            return coshNode.executeComplex(frame, factory().createComplex(-imag, real));
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            return coshNode.executeComplex(frame, factory.createComplex(-imag, real));
         }
     }
 
@@ -842,16 +869,16 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 if (Double.isInfinite(imag) && !Double.isNaN(real)) {
                     throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
                     double r = Math.copySign(INF, Math.sin(imag));
-                    return factory().createComplex(Math.copySign(INF, Math.cos(imag)), real > 0 ? r : -r);
+                    return factory.createComplex(Math.copySign(INF, Math.cos(imag)), real > 0 ? r : -r);
                 } else {
-                    return specialValue(factory(), SPECIAL_VALUES, real, imag);
+                    return specialValue(factory, SPECIAL_VALUES, real, imag);
                 }
             }
 
@@ -867,7 +894,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
                 throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
-            return factory().createComplex(rreal, rimag);
+            return factory.createComplex(rreal, rimag);
         }
 
         static CoshNode create() {
@@ -882,9 +909,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child private SinhNode sinhNode = SinhNode.create();
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex s = sinhNode.executeComplex(frame, factory().createComplex(-imag, real));
-            return factory().createComplex(s.getImag(), -s.getReal());
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex s = sinhNode.executeComplex(frame, factory.createComplex(-imag, real));
+            return factory.createComplex(s.getImag(), -s.getReal());
         }
     }
 
@@ -906,16 +933,16 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 if (Double.isInfinite(imag) && !Double.isNaN(real)) {
                     throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
                     double r = Math.copySign(INF, Math.cos(imag));
-                    return factory().createComplex(real > 0 ? r : -r, Math.copySign(INF, Math.sin(imag)));
+                    return factory.createComplex(real > 0 ? r : -r, Math.copySign(INF, Math.sin(imag)));
                 } else {
-                    return specialValue(factory(), SPECIAL_VALUES, real, imag);
+                    return specialValue(factory, SPECIAL_VALUES, real, imag);
                 }
             }
 
@@ -931,7 +958,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
                 throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
-            return factory().createComplex(rreal, rimag);
+            return factory.createComplex(rreal, rimag);
         }
 
         static SinhNode create() {
@@ -946,9 +973,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child private TanhNode tanhNode = TanhNode.create();
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
-            PComplex s = tanhNode.executeComplex(frame, factory().createComplex(-imag, real));
-            return factory().createComplex(s.getImag(), -s.getReal());
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
+            PComplex s = tanhNode.executeComplex(frame, factory.createComplex(-imag, real));
+            return factory.createComplex(s.getImag(), -s.getReal());
         }
     }
 
@@ -970,19 +997,19 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         // @formatter:on
 
         @Override
-        PComplex compute(VirtualFrame frame, double real, double imag) {
+        PComplex compute(VirtualFrame frame, double real, double imag, PythonObjectFactory factory) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 if (Double.isInfinite(imag) && Double.isFinite(real)) {
                     throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
-                    return factory().createComplex(real > 0 ? 1.0 : -1.0, Math.copySign(0.0, 2.0 * Math.sin(imag) * Math.cos(imag)));
+                    return factory.createComplex(real > 0 ? 1.0 : -1.0, Math.copySign(0.0, 2.0 * Math.sin(imag) * Math.cos(imag)));
                 } else {
-                    return specialValue(factory(), SPECIAL_VALUES, real, imag);
+                    return specialValue(factory, SPECIAL_VALUES, real, imag);
                 }
             }
             if (Math.abs(real) > LOG_LARGE_DOUBLE) {
-                return factory().createComplex(Math.copySign(1.0, real),
+                return factory.createComplex(Math.copySign(1.0, real),
                                 4.0 * Math.sin(imag) * Math.cos(imag) * Math.exp(-20. * Math.abs(real)));
             }
             double tx = Math.tanh(real);
@@ -990,7 +1017,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             double cx = 1.0 / Math.cosh(real);
             double txty = tx * ty;
             double denom = 1.0 + txty * txty;
-            return factory().createComplex(tx * (1.0 + ty * ty) / denom, ((ty / denom) * cx) * cx);
+            return factory.createComplex(tx * (1.0 + ty * ty) / denom, ((ty / denom) * cx) * cx);
         }
 
         static TanhNode create() {
@@ -1010,14 +1037,16 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Child ComplexBuiltins.AbsNode abs = ComplexBuiltins.AbsNode.create();
 
         @Specialization
-        boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj) {
-            return isClose(a, b, relTolObj, absTolObj);
+        boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return isClose(a, b, relTolObj, absTolObj, factory);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj) {
-            return isClose(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL);
+        boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return isClose(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, factory);
         }
 
         @Specialization
@@ -1027,15 +1056,16 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Cached CoerceToComplexNode coerceAToComplex,
                         @Cached CoerceToComplexNode coerceBToComplex,
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,
-                        @Cached PyFloatAsDoubleNode absAsDoubleNode) {
-            PComplex a = coerceAToComplex.execute(frame, aObj);
-            PComplex b = coerceBToComplex.execute(frame, bObj);
+                        @Cached PyFloatAsDoubleNode absAsDoubleNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PComplex a = coerceAToComplex.execute(frame, inliningTarget, aObj);
+            PComplex b = coerceBToComplex.execute(frame, inliningTarget, bObj);
             double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, inliningTarget, relTolObj);
             double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, inliningTarget, absTolObj);
-            return isClose(a, b, relTol, absTol);
+            return isClose(a, b, relTol, absTol, factory);
         }
 
-        private boolean isClose(PComplex a, PComplex b, double relTol, double absTol) {
+        private boolean isClose(PComplex a, PComplex b, double relTol, double absTol, PythonObjectFactory factory) {
             if (relTol < 0.0 || absTol < 0.0) {
                 throw raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
             }
@@ -1046,7 +1076,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                             Double.isInfinite(b.getReal()) || Double.isInfinite(b.getImag())) {
                 return false;
             }
-            PComplex diff = factory().createComplex(a.getReal() - b.getReal(), a.getImag() - b.getImag());
+            PComplex diff = factory.createComplex(a.getReal() - b.getReal(), a.getImag() - b.getImag());
             double len = abs.executeDouble(diff);
             return len <= absTol || len <= relTol * abs.executeDouble(b) || len <= relTol * abs.executeDouble(a);
         }

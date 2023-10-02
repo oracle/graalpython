@@ -340,6 +340,8 @@ typedef struct {
     BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, const char*) \
     BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, const char*) \
     BUILTIN(PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
+    BUILTIN(PyTruffleUnicode_DecodeUTF16Stateful, PyObject*, void*, Py_ssize_t, const char*, int, int) \
+    BUILTIN(PyTruffleUnicode_DecodeUTF32Stateful, PyObject*, void*, Py_ssize_t, const char*, int, int) \
     BUILTIN(PyTruffleUnicode_DecodeUTF8Stateful, PyObject*, void*, Py_ssize_t, const char*, int) \
     BUILTIN(PyTruffleUnicode_FromUCS, PyObject*, void*, Py_ssize_t, int) \
     BUILTIN(PyTruffleUnicode_FromUTF, PyObject*, void*, Py_ssize_t, int) \
@@ -348,6 +350,8 @@ typedef struct {
     BUILTIN(PyTruffle_AddInheritedSlots, void, PyTypeObject*) \
     BUILTIN(PyTruffle_Arg_ParseArrayAndKeywords, int, void*, Py_ssize_t, PyObject*, const char*, void*, void*) \
     BUILTIN(PyTruffle_Arg_ParseTupleAndKeywords, int, PyObject*, PyObject*, const char*, void*, void*) \
+    BUILTIN(PyTruffle_Array_getbuffer, int, PyObject*, Py_buffer*, int) \
+    BUILTIN(PyTruffle_Array_releasebuffer, void, PyObject*, Py_buffer*) \
     BUILTIN(PyTruffle_ByteArray_EmptyWithCapacity, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffle_Bytes_CheckEmbeddedNull, int, PyObject*) \
     BUILTIN(PyTruffle_Bytes_EmptyWithCapacity, PyObject*, long) \
@@ -371,6 +375,7 @@ typedef struct {
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
     BUILTIN(PyTruffle_Object_Free, void, void*) \
     BUILTIN(PyTruffle_PyDateTime_GET_TZINFO, PyObject*, PyObject*) \
+    BUILTIN(PyTruffle_PyUnicode_Find, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
     BUILTIN(PyTruffle_SetTypeStore, void, const char*, void*) \
     BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
@@ -385,7 +390,6 @@ typedef struct {
     BUILTIN(PyTruffle_Unicode_AsUnicodeAndSize_CharPtr, Py_UNICODE*, PyObject*) \
     BUILTIN(PyTruffle_Unicode_AsUnicodeAndSize_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PyTruffle_Unicode_AsWideChar, PyObject*, PyObject*, int) \
-    BUILTIN(PyTruffle_Unicode_DecodeUTF32, PyObject*, void*, Py_ssize_t, const char*, int) \
     BUILTIN(PyTruffle_Unicode_FromFormat, PyObject*, const char*, va_list*) \
     BUILTIN(PyTruffle_tss_create, long) \
     BUILTIN(PyTruffle_tss_delete, void, long) \
@@ -403,6 +407,7 @@ typedef struct {
     BUILTIN(PyUnicode_Compare, int, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Concat, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_Count, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PyUnicode_DecodeFSDefault, PyObject*, const char*) \
     BUILTIN(PyUnicode_EncodeFSDefault, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_FindChar, Py_ssize_t, PyObject*, Py_UCS4, Py_ssize_t, Py_ssize_t, int) \
@@ -500,6 +505,7 @@ typedef struct {
     BUILTIN(Py_set_PyTypeObject_tp_traverse, void, PyTypeObject*, traverseproc) \
     BUILTIN(Py_set_PyTypeObject_tp_weaklistoffset, void, PyTypeObject*, Py_ssize_t) \
     BUILTIN(Py_set_PyVarObject_ob_size, void, PyVarObject*, Py_ssize_t) \
+    BUILTIN(_PyArray_Data, char*, PyObject*) \
     BUILTIN(_PyArray_Resize, int, PyObject*, Py_ssize_t) \
     BUILTIN(_PyBytes_Join, PyObject*, PyObject*, PyObject*) \
     BUILTIN(_PyDict_Pop, PyObject*, PyObject*, PyObject*, PyObject*) \

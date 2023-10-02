@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -142,10 +143,11 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     abstract static class CharArrayRawNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+        static PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PointerNodes.ReadBytesNode read) {
-            return factory().createBytes(read.execute(inliningTarget, self.b_ptr, self.b_size));
+                        @Cached PointerNodes.ReadBytesNode read,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(read.execute(inliningTarget, self.b_ptr, self.b_size));
         }
 
         @Specialization(limit = "3")
@@ -174,11 +176,12 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     abstract static class CharArrayValueNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+        static PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
                         @Cached PointerNodes.StrLenNode strLenNode,
-                        @Cached PointerNodes.ReadBytesNode read) {
-            return factory().createBytes(read.execute(inliningTarget, self.b_ptr, strLenNode.execute(inliningTarget, self.b_ptr)));
+                        @Cached PointerNodes.ReadBytesNode read,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(read.execute(inliningTarget, self.b_ptr, strLenNode.execute(inliningTarget, self.b_ptr)));
         }
 
         @Specialization

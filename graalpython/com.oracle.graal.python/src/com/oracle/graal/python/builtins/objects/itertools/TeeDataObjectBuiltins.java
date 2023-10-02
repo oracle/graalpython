@@ -63,12 +63,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -103,13 +105,13 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt);
 
         @Specialization(guards = "isNone(values)")
-        Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, @SuppressWarnings("unused") PNone nxt) {
+        static Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, @SuppressWarnings("unused") PNone nxt) {
             init(self, it, null);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNone(values)")
-        Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, PTeeDataObject nxt) {
+        static Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, PTeeDataObject nxt) {
             init(self, it, nxt);
             return PNone.NONE;
         }
@@ -123,21 +125,22 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isList(values)")
-        Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
+        static Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetSequenceStorageNode getStorageNode,
-                        @Cached InlinedBranchProfile numreadLCProfile) {
+                        @Cached InlinedBranchProfile numreadLCProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int numread = (int) lenNode.execute(frame, values);
             if (numread == LINKCELLS) {
                 numreadLCProfile.enter(inliningTarget);
                 if (!(nxt instanceof PTeeDataObject)) {
-                    throw raise(ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
+                    throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
                 }
             } else if (numread > LINKCELLS) {
-                throw raise(ValueError, TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS, LINKCELLS);
+                throw raiseNode.get(inliningTarget).raise(ValueError, TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS, LINKCELLS);
             } else if (!(nxt instanceof PNone)) {
-                throw raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
             }
             self.setIt(it);
             Object[] valuesArray = getStorageNode.execute(inliningTarget, values).getInternalArray();
@@ -152,8 +155,9 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isList(values)", "!isNone(values)"})
-        Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt) {
-            throw raise(TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
+        static Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
         }
 
         protected LookupAndCallUnaryNode createCopyNode() {
@@ -167,16 +171,17 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self);
 
         @Specialization
-        Object reduce(PTeeDataObject self,
+        static Object reduce(PTeeDataObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);
             Object type = getClass.execute(inliningTarget, self);
             Object nextlink = self.getNextlink();
-            PTuple tuple = factory().createTuple(new Object[]{self.getIt(), factory().createList(values), nextlink == null ? PNone.NONE : nextlink});
-            return factory().createTuple(new Object[]{type, tuple});
+            PTuple tuple = factory.createTuple(new Object[]{self.getIt(), factory.createList(values), nextlink == null ? PNone.NONE : nextlink});
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 }

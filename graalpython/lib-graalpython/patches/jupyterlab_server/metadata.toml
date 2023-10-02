@@ -1,0 +1,3 @@
+[[rules]]
+# Newer versions depend on rpds_py, which needs rust
+version = '< 2.25.0'

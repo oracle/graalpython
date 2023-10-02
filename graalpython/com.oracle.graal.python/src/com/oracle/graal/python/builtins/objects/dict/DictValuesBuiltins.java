@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -62,8 +63,9 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MappingNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object mapping(PDictView self) {
-            return factory().createMappingproxy(self.getWrappedDict());
+        static Object mapping(PDictView self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createMappingproxy(self.getWrappedDict());
         }
     }
 
@@ -82,12 +84,13 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doPDictValuesView(PDictValuesView self,
+        static Object doPDictValuesView(PDictValuesView self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageGetIterator getIterator) {
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictValueIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictValueIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -95,12 +98,13 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doPDictValuesView(PDictValuesView self,
+        static Object doPDictValuesView(PDictValuesView self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageGetReverseIterator getReverseIter) {
+                        @Cached HashingStorageGetReverseIterator getReverseIter,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictValueIterator(getReverseIter.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictValueIterator(getReverseIter.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 }

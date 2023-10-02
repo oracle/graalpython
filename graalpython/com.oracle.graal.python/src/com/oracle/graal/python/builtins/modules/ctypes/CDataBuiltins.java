@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -158,23 +159,24 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
                 throw raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
-            t1[1] = factory().createBytes(readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
+            t1[1] = factory.createBytes(readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
             Object clazz = getClassNode.execute(inliningTarget, self);
-            Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
+            Object[] t2 = new Object[]{clazz, factory.createTuple(t1)};
             PythonModule ctypes = getContext().lookupBuiltinModule(T__CTYPES);
             Object unpickle = dylib.getOrDefault(ctypes.getStorage(), T_UNPICKLE, null);
             if (unpickle == null) {
                 throw raise(NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
             }
-            Object[] t3 = new Object[]{unpickle, factory().createTuple(t2)};
-            return factory().createTuple(t3); // "O(O(NN))"
+            Object[] t3 = new Object[]{unpickle, factory.createTuple(t2)};
+            return factory.createTuple(t3); // "O(O(NN))"
         }
     }
 

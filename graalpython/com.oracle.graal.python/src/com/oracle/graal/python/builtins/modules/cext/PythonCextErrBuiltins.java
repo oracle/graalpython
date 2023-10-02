@@ -388,7 +388,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_NewExceptionWithDoc extends CApiQuaternaryBuiltinNode {
 
         @Specialization
-        Object raise(TruffleString name, TruffleString doc, Object base, Object dict,
+        Object raise(TruffleString name, Object doc, Object base, Object dict,
                         @Cached PyErr_NewException newExNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode) {
             if (base == PNone.NO_VALUE) {
@@ -398,7 +398,9 @@ public final class PythonCextErrBuiltins {
                 dict = factory().createDict();
             }
             Object ex = newExNode.execute(name, base, dict);
-            writeAtrrNode.execute(ex, T___DOC__, doc);
+            if (doc != PNone.NO_VALUE) {
+                writeAtrrNode.execute(ex, T___DOC__, doc);
+            }
             return ex;
         }
     }

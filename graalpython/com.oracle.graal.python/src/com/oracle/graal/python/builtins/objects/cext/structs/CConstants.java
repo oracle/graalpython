@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -98,7 +97,7 @@ public enum CConstants {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object constantsPointer = PCallCapiFunction.getUncached().call(PythonContext.get(null).getCApiContext(), NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
+        Object constantsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
         long[] constants = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(constantsPointer, VALUES.length);
         for (CConstants constant : VALUES) {
             constant.longValue = constants[constant.ordinal()];

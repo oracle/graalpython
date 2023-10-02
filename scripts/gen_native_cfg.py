@@ -40,11 +40,11 @@
 """
 Generates Java source files with the values of native (mainly posix) constants.
 
-To update the platform independent source file, execute:
+To update the platform independent source files, execute:
 
-python3 gen_native_cfg.py --common ../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstants.java
+python3 gen_native_cfg.py --common
 
-This will modify te file in-place, replacing anything between '// start generated' and '//end generated'.
+This will modify the files in-place, replacing anything between '// start generated' and '//end generated'.
 
 To generate platform-specific file, execute the script without arguments. This will generate a C source file, compile
 it, execute and write the generated Java file to stdout.
@@ -54,13 +54,19 @@ docker run -i ol6_python3 python3 -u - <gen_native_cfg.py >../graalpython/com.or
 ssh darwin 'cd /tmp && /usr/local/bin/python3 -u -' <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsDarwin.java
 """
 
+import argparse
 import datetime
 import os
 import subprocess
 import sys
 import platform as plat
 import re
+import textwrap
+import contextlib
 from collections import namedtuple
+from pathlib import Path
+
+DIR = Path(__file__).parent.parent
 
 includes = '''
 #ifndef _MSC_VER
@@ -418,6 +424,9 @@ u x S_IFCHR
 '''
 
 layout_defs = '''
+[struct sockaddr]
+  sa_family
+
 [struct sockaddr_storage]
 
 [struct sockaddr_in]
@@ -426,11 +435,20 @@ layout_defs = '''
   sin_addr
 
 [struct sockaddr_in6]
+  sin6_family
+  sin6_port
+  sin6_flowinfo
+  sin6_addr
+  sin6_scope_id
 
 [struct in_addr]
   s_addr
 
+[struct in6_addr]
+  s6_addr
+
 [struct sockaddr_un] u
+  sun_family
   sun_path
 '''
 
@@ -491,7 +509,7 @@ class PosixConstants{platform} {{
 }}'''
 
 Constant = namedtuple('Constant', ['name', 'optional', 'type', 'format'])
-Struct = namedtuple('Struct', ['name', 'members', 'skipped'])
+Struct = namedtuple('Struct', ['name', 'members', 'unix_only'])
 
 c_source_file = 'gen_native_cfg.c'
 c_executable_file = 'gen_native_cfg'
@@ -534,7 +552,7 @@ def parse_defs():
             raise ValueError(f'Invalid layout definition {line!r}')
         if m.group(1):
             current_struct = []
-            layouts.append(Struct(m.group(1), current_struct, sys.platform.capitalize() == 'Win32' and m.group(2)))
+            layouts.append(Struct(m.group(1), current_struct, m.group(2)))
         else:
             current_struct.append(m.group(3))
 
@@ -564,7 +582,7 @@ def offsetof_name(struct_name, member_name):
 
 
 def generate_platform():
-    constants, _, layouts = parse_defs()
+    constants = parse_defs()[0]
     platform = sys.platform.capitalize()
     if platform not in ('Linux', 'Darwin', 'Win32'):
         raise ValueError(f'Unsupported platform: {platform}')
@@ -594,19 +612,6 @@ def generate_platform():
                         raise ValueError(f"Unsupported fallback specifier for {c.name}: {c.optional}")
                 f.write(f'#endif\n')
 
-        for struct in layouts:
-            if struct.skipped:
-                f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name)}\\", 0);\\n");\n')
-            else:
-                f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name)}\\", %zu);\\n", sizeof({struct.name}));\n')
-            for member in struct.members:
-                if struct.skipped:
-                    f.write(f'    printf("        constants.put(\\"{offsetof_name(struct.name, member)}\\", 0);\\n");\n')
-                    f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name, member)}\\", 0);\\n");\n')
-                else:
-                    f.write(f'    printf("        constants.put(\\"{offsetof_name(struct.name, member)}\\", %zu);\\n", offsetof({struct.name}, {member}));\n')
-                    f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name, member)}\\", %zu);\\n", sizeof((({struct.name} *) 0)->{member}));\n')
-
         f.write('    return 0;\n}\n')
 
     flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
@@ -620,9 +625,46 @@ def generate_platform():
     print(platform_template.format(java_copyright=java_copyright, script_name=script_name, timestamp=datetime.datetime.now(), uname=uname, platform=platform, output=output))
 
 
-def generate_common(filename):
-    import textwrap
+def load_existing_parts(path):
+    with open(path, 'r') as f:
+        header = []
+        footer = []
+        dst = header
+        for line in f.readlines():
+            if '// end generated' in line:
+                dst = footer
+            dst.append(line)
+            if '// start generated' in line:
+                dst = []
+    return header, footer
+
+
+@contextlib.contextmanager
+def open_generated_segment(path):
+    with open(path, 'r') as f:
+        header = []
+        footer = []
+        dst = header
+        for line in f.readlines():
+            if '// end generated' in line:
+                dst = footer
+            dst.append(line)
+            if '// start generated' in line:
+                dst = []
+    with open(path, 'w') as f:
+        f.writelines(header)
+        yield f
+        f.writelines(footer)
+
+
+def generate_common():
     constants, groups, layouts = parse_defs()
+    generate_posix_constants(constants, groups)
+    generate_native_constants(layouts)
+
+
+def generate_posix_constants(constants, groups):
+    posix_constants = DIR / 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstants.java'
 
     decls = []
     defs = []
@@ -634,12 +676,6 @@ def generate_common(filename):
 
     for c in constants:
         add_constant(c.optional, c.type, c.name)
-
-    for struct in layouts:
-        add_constant(False, 'Int', sizeof_name(struct.name))
-        for member in struct.members:
-            add_constant(False, 'Int', offsetof_name(struct.name, member))
-            add_constant(False, 'Int', sizeof_name(struct.name, member))
 
     decls.append('\n')
     defs.append('\n')
@@ -653,31 +689,49 @@ def generate_common(filename):
         group_def = f'{group_name} = new {t}Constant[]{{{elements}}};\n'
         defs.extend(s + '\n' for s in textwrap.wrap(group_def, 200, initial_indent=' ' * 8, subsequent_indent=' ' * 24))
 
-    with open(filename, 'r') as f:
-        header = []
-        footer = []
-        dst = header
-        for line in f.readlines():
-            if '// end generated' in line:
-                dst = footer
-            dst.append(line)
-            if '// start generated' in line:
-                dst = []
-
-    with open(filename, 'w') as f:
-        f.writelines(header)
+    with open_generated_segment(posix_constants) as f:
         f.writelines(decls)
         f.write('\n')
         f.write('    static {\n')
         f.write('        Registry reg = Registry.create();\n')
         f.writelines(defs)
         f.write('    }\n')
-        f.writelines(footer)
+
+
+def generate_native_constants(layouts):
+    c_filename = DIR / 'graalpython/python-libposix/src/posix.c'
+    java_filename = DIR / 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/NFIPosixConstants.java'
+    constants = []
+    for struct in layouts:
+        if struct.unix_only:
+            wrap = lambda x: f'unix_or_0({x})'
+        else:
+            wrap = lambda x: x
+        constants.append((sizeof_name(struct.name), wrap(f'sizeof({struct.name})')))
+        for member in struct.members:
+            constants.append((sizeof_name(struct.name, member), wrap(f'sizeof((({struct.name}*)0)->{member})')))
+            constants.append((offsetof_name(struct.name, member), wrap(f'offsetof({struct.name}, {member})')))
+
+    with open_generated_segment(c_filename) as f:
+        f.write('int32_t init_constants(int64_t* out, int32_t len) {\n')
+        f.write(f'    if (len != {len(constants)})\n')
+        f.write('        return -1;\n')
+        for i, (_, expr) in enumerate(constants):
+            f.write(f'    out[{i}] = {expr};\n')
+        f.write('    return 0;\n')
+        f.write('}\n')
+
+    with open_generated_segment(java_filename) as f:
+        for i, (name, _) in enumerate(constants):
+            f.write(f'    {name}{"," if i < len(constants) - 1 else ""}\n')
 
 
 def main():
-    if len(sys.argv) == 3 and sys.argv[1] == '--common':
-        generate_common(sys.argv[2])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--common', action='store_true')
+    args = parser.parse_args()
+    if args.common:
+        generate_common()
         return
     try:
         generate_platform()

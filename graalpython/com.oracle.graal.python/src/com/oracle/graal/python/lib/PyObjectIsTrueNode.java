@@ -125,30 +125,26 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         return !object.isEmpty();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-    static boolean doList(Node inliningTarget, PList object,
-                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    static boolean doList(Node inliningTarget, PList object) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-    static boolean doTuple(Node inliningTarget, PTuple object,
-                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    static boolean doTuple(Node inliningTarget, PTuple object) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-    @InliningCutoff
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
     static boolean doDict(Node inliningTarget, PDict object,
-                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
     @InliningCutoff
     static boolean doSet(Node inliningTarget, PSet object,
-                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }

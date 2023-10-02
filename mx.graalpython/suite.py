@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
+                "version": "271e93cc56613e742b9aad9262c062776eefc23e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
+                "version": "271e93cc56613e742b9aad9262c062776eefc23e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
+                "version": "271e93cc56613e742b9aad9262c062776eefc23e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
+                "version": "271e93cc56613e742b9aad9262c062776eefc23e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -423,13 +423,14 @@ suite = {
             "spotbugsIgnoresGenerated": True,
         },
 
-        # GRAALPYTHON TEST
+        # GRAALPYTHON TESTS
         "com.oracle.graal.python.test": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
                 "com.oracle.graal.python.shell",
                 "com.oracle.graal.python",
+                "com.oracle.graal.python.test.integration",
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
@@ -449,8 +450,30 @@ suite = {
             "workingSets": "Truffle,Python",
             "testProject": True,
             "javaProperties": {
+                # This is used to discover some files needed for the tests that
+                # normally live in GraalPython source tree
                 "test.graalpython.home": "<suite:graalpython>/graalpython"
             },
+        },
+
+        # GRAALPYTHON_INTEGRATION_UNIT_TESTS
+        "com.oracle.graal.python.test.integration": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "mx:JUNIT",
+                "sdk:GRAAL_SDK",
+            ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+            ],
+            "jacoco": "exclude",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "17+",
+            "workingSets": "Truffle,Python",
+            "testProject": True,
         },
 
         "com.oracle.graal.python.hpy.test": {
@@ -503,6 +526,24 @@ suite = {
             "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
             "testProject": True,
+        },
+
+        "python-venvlauncher": {
+            "subDir": "graalpython",
+            "native":  "executable",
+            "deliverable": "venvlauncher",
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild": True,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild": False,
+                    },
+                },
+            },
         },
 
         "python-libbz2": {
@@ -843,7 +884,7 @@ suite = {
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },
-            # "useModulePath": True,
+            "useModulePath": True,
             "dependencies": [
                 "com.oracle.graal.python.shell",
             ],
@@ -908,7 +949,7 @@ suite = {
             "moduleInfo": {
                 "name": "org.graalvm.py.resources",
             },
-            # "useModulePath": True,
+            "useModulePath": True,
             "dependencies": [
                 "com.oracle.graal.python.resources",
                 "GRAALPYTHON_VERSIONS_RES",
@@ -946,12 +987,8 @@ suite = {
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
-                "opens": [
-                    # needed to find resources in it
-                    "com.oracle.graal.python.niresources"
-                ]
             },
-            # "useModulePath": True,
+            "useModulePath": True,
             "dependencies": [
                 "GRAALPYTHON_VERSIONS_MAIN",
                 "com.oracle.graal.python",
@@ -1028,7 +1065,7 @@ suite = {
         },
 
         "GRAALPYTHON_UNIT_TESTS": {
-            "description": "unit tests",
+            "description": "GraalPy unit tests that can access its internals. These tests require open access to GraalPy and Truffle modules.",
             "dependencies": [
                 "com.oracle.graal.python.test",
                 "com.oracle.graal.python.pegparser.test",
@@ -1036,9 +1073,27 @@ suite = {
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "GRAALPYTHON",
-                "GRAALPYTHON_RESOURCES",
                 "GRAALPYTHON-LAUNCHER",
+                "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "truffle:TRUFFLE_TCK",
+                "GRAALPYTHON_INTEGRATION_UNIT_TESTS",
+            ],
+            "testDistribution": True,
+            "maven": False,
+            "unittestConfig": "python-internal",
+        },
+
+        "GRAALPYTHON_INTEGRATION_UNIT_TESTS": {
+            "description": "Python integration tests. These tests access GraalPy only via the GraalVM SDK APIs",
+            "dependencies": [
+                "com.oracle.graal.python.test.integration",
+            ],
+            "exclude": ["mx:JUNIT"],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
+                "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
+                "sdk:GRAAL_SDK",
             ],
             "testDistribution": True,
             "maven": False,
@@ -1065,6 +1120,8 @@ suite = {
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
+                # We run the TCK with Python home served from resources
+                "GRAALPYTHON_RESOURCES",
             ],
             "testDistribution": True,
             "maven": False,
@@ -1173,6 +1230,8 @@ suite = {
                                     "exclude": ["python-native.lib"],
                                 },
                             ],
+                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
                         },
                     },
                 },

@@ -49,9 +49,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
@@ -59,6 +61,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -661,6 +664,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchownat", "%d, %s, %d, %d, %b", dirFd, path, owner, group, followSymlinks);
+        try {
+            lib.fchownat(delegate, dirFd, path, owner, group, followSymlinks);
+        } catch (PosixException e) {
+            throw logException("fchownat", e);
+        }
+    }
+
+    @ExportMessage
+    final void fchown(int fd, long owner, long group,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchown", "%d, %d, %d", fd, owner, group);
+        try {
+            lib.fchown(delegate, fd, owner, group);
+        } catch (PosixException e) {
+            throw logException("fchown", e);
+        }
+    }
+
+    @ExportMessage
     final Object readlinkat(int dirFd, Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("readlinkat", "%d, %s", dirFd, path);
@@ -875,6 +900,17 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("getsid", "%d", lib.setsid(delegate));
         } catch (PosixException e) {
             throw logException("setsid", e);
+        }
+    }
+
+    @ExportMessage
+    final long[] getgroups(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getgroups", "");
+        try {
+            return logExit("getgroups", "%s", lib.getgroups(delegate));
+        } catch (PosixException e) {
+            throw logException("getgroups", e);
         }
     }
 
@@ -1289,10 +1325,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src,
+    final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter("createUniversalSockAddr", "%s", src);
-        return logExit("createUniversalSockAddr", "%s", lib.createUniversalSockAddr(delegate, src));
+        logEnter("createUniversalSockAddrInet4", "%s", src);
+        return logExit("createUniversalSockAddrInet4", "%s", lib.createUniversalSockAddrInet4(delegate, src));
+    }
+
+    @ExportMessage
+    final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("createUniversalSockAddrInet6", "%s", src);
+        return logExit("createUniversalSockAddrInet6", "%s", lib.createUniversalSockAddrInet6(delegate, src));
+    }
+
+    @ExportMessage
+    final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws InvalidUnixSocketPathException {
+        logEnter("createUniversalSockAddrUnix", "%s", src);
+        try {
+            return logExit("createUniversalSockAddrUnix", "%s", lib.createUniversalSockAddrUnix(delegate, src));
+        } catch (InvalidUnixSocketPathException e) {
+            throw logException("createUniversalSockAddrUnix", e);
+        }
     }
 
     @ExportMessage
@@ -1373,6 +1427,14 @@ public class LoggingPosixSupport extends PosixSupport {
         throw e;
     }
 
+    @TruffleBoundary
+    private static InvalidUnixSocketPathException logException(Level level, String msg, InvalidUnixSocketPathException e) throws InvalidUnixSocketPathException {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, msg + " -> throw InvalidUnixSocketPathException");
+        }
+        throw e;
+    }
+
     private static PosixException logException(String msg, PosixException e) throws PosixException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
@@ -1382,6 +1444,10 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     private static InvalidAddressException logException(String msg, InvalidAddressException e) throws InvalidAddressException {
+        throw logException(DEFAULT_LEVEL, msg, e);
+    }
+
+    private static InvalidUnixSocketPathException logException(String msg, InvalidUnixSocketPathException e) throws InvalidUnixSocketPathException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 

@@ -29,6 +29,11 @@ typedef struct {
     PyObject_HEAD
     PyObject *start, *stop, *step;      /* not NULL */
 } PySliceObject;
+
+// functions introduced by GraalPy as replacements for direct access to the slice struct fields
+PyAPI_FUNC(PyObject*) PySlice_Start(PySliceObject *slice);
+PyAPI_FUNC(PyObject*) PySlice_Stop(PySliceObject *slice);
+PyAPI_FUNC(PyObject*) PySlice_Step(PySliceObject *slice);
 #endif
 
 PyAPI_DATA(PyTypeObject) PySlice_Type;
@@ -58,9 +63,6 @@ PyAPI_FUNC(int) PySlice_GetIndicesEx(PyObject *r, Py_ssize_t length,
     ((*(slicelen) = 0), -1) :                                               \
     ((*(slicelen) = PySlice_AdjustIndices((length), (start), (stop), *(step))), \
      0))
-PyAPI_FUNC(PyObject*) PySlice_Start(PySliceObject *slice);
-PyAPI_FUNC(PyObject*) PySlice_Stop(PySliceObject *slice);
-PyAPI_FUNC(PyObject*) PySlice_Step(PySliceObject *slice);
 PyAPI_FUNC(int) PySlice_Unpack(PyObject *slice,
                                Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step);
 PyAPI_FUNC(Py_ssize_t) PySlice_AdjustIndices(Py_ssize_t length,

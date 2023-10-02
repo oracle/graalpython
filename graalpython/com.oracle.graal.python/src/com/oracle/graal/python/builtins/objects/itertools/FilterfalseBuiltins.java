@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFilterfalse})
@@ -123,26 +125,19 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "hasFunc(self)")
+        @Specialization
         Object reduce(PFilterfalse self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Cached InlinedConditionProfile hasNoFuncProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            Object func = self.getFunc();
+            if (hasNoFuncProfile.profile(inliningTarget, func == null)) {
+                func = PNone.NONE;
+            }
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getFunc(), self.getSequence()});
-            return factory().createTuple(new Object[]{type, tuple});
-        }
-
-        @Specialization(guards = "!hasFunc(self)")
-        Object reduceNoFunc(PFilterfalse self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
-            Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{PNone.NONE, self.getSequence()});
-            return factory().createTuple(new Object[]{type, tuple});
-        }
-
-        protected boolean hasFunc(PFilterfalse self) {
-            return self.getFunc() != null;
+            PTuple tuple = factory.createTuple(new Object[]{func, self.getSequence()});
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 

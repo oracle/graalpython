@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -69,10 +70,11 @@ public final class CoroutineBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getCode(PGenerator self,
+        static Object getCode(PGenerator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory());
+                        @Cached InlinedConditionProfile hasCodeProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory);
         }
     }
 
@@ -109,8 +111,9 @@ public final class CoroutineBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AwaitNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object await(PGenerator self) {
-            return factory().createCoroutineWrapper(self);
+        static Object await(PGenerator self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createCoroutineWrapper(self);
         }
     }
 }

@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
@@ -134,7 +135,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         return CommonGeneratorBuiltinsFactory.getFactories();
     }
 
-    private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+    private static void checkResumable(PRaiseNode node, PGenerator self) {
         if (self.isFinished()) {
             if (self.isAsyncGen()) {
                 throw node.raise(StopAsyncIteration);
@@ -261,7 +262,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
             // generators by PAsyncGenSend
-            checkResumable(this, self);
+            checkResumable(getRaiseNode(), self);
             if (!self.isStarted() && value != PNone.NONE) {
                 throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
             }
@@ -275,7 +276,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
+        static Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasTbProfile,
                         @Cached InlinedConditionProfile startedProfile,
@@ -285,25 +286,27 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
-                        @Cached ExceptionNodes.SetContextNode setContextNode) {
+                        @Cached ExceptionNodes.SetContextNode setContextNode,
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
             if (hasTb && !(tb instanceof PTraceback)) {
                 invalidTbProfile.enter(inliningTarget);
-                throw raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
             }
             if (self.isRunning()) {
                 runningProfile.enter(inliningTarget);
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             Object instance = prepareExceptionNode.execute(frame, typ, val);
             if (hasTb) {
                 setTracebackNode.execute(inliningTarget, instance, tb);
             }
-            PythonLanguage language = getLanguage();
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             setContextNode.execute(inliningTarget, instance, PNone.NONE); // Will be filled when
                                                                           // caught
             if (self.isCoroutine() && self.isFinished()) {
-                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
@@ -317,11 +320,12 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory());
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory.get(inliningTarget));
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getRootNode().getFirstLineno());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);
-                PTraceback newTraceback = factory().createTraceback(pFrame, pFrame.getLine(), (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);
+                PTraceback newTraceback = factory.get(inliningTarget).createTraceback(pFrame, pFrame.getLine(),
+                                (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);
                 setTracebackNode.execute(inliningTarget, instance, newTraceback);
                 throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
@@ -337,12 +341,13 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isGeneratorExit,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
-                        @Cached InlinedConditionProfile isStartedPorfile) {
+                        @Cached InlinedConditionProfile isStartedPorfile,
+                        @Cached PythonObjectFactory factory) {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             if (isStartedPorfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
-                PBaseException pythonException = factory().createBaseException(GeneratorExit);
+                PBaseException pythonException = factory.createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(getLanguage());

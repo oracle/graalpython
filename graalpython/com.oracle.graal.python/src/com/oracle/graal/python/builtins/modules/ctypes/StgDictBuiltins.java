@@ -73,7 +73,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -160,7 +160,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StructUnionTypeBuiltins.class)
-    protected abstract static class MakeFieldsNode extends PNodeWithRaise {
+    protected abstract static class MakeFieldsNode extends PNodeWithContext {
 
         abstract void execute(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory);
 
@@ -170,7 +170,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          * into type.
          */
         @Specialization
-        void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory,
+        static void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttributeNode,
@@ -179,13 +179,14 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString) {
+                        @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
             if (!sequenceCheckNode.execute(inliningTarget, fields)) {
-                throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
             }
 
-            PythonContext context = PythonContext.get(this);
+            PythonContext context = PythonContext.get(inliningTarget);
             for (int i = 0; i < sizeNode.execute(frame, inliningTarget, fields); ++i) {
                 PTuple pair = (PTuple) getItemNode.execute(frame, inliningTarget, fields, i); /*
                                                                                                * borrowed
@@ -196,12 +197,12 @@ public final class StgDictBuiltins extends PythonBuiltins {
                 Object fname = array[0];
                 CFieldObject fdescr = (CFieldObject) getAttributeNode.executeObject(frame, descr.proto, fname);
                 if (getClassNode.execute(inliningTarget, fdescr) != context.lookupType(CField)) {
-                    throw raise(TypeError, UNEXPECTED_TYPE);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, UNEXPECTED_TYPE);
                 }
                 if (fdescr.anonymous != 0) {
                     MakeFields(frame, type, fdescr, index + fdescr.index, offset + fdescr.offset, factory,
                                     inliningTarget, getClassNode, getAttributeNode, setAttributeNode,
-                                    sequenceCheckNode, sizeNode, getItemNode, getArray, getAttrString);
+                                    sequenceCheckNode, sizeNode, getItemNode, getArray, getAttrString, raiseNode);
                     continue;
                 }
                 CFieldObject new_descr = factory.createCFieldObject(CField);
@@ -224,10 +225,19 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         abstract StgDictObject execute(Object type);
 
+        // TODO replace with the lazy version
         protected StgDictObject checkAbstractClass(Object type, PRaiseNode raiseNode) {
             StgDictObject dict = execute(type);
             if (dict == null) {
                 throw raiseNode.raise(TypeError, ABSTRACT_CLASS);
+            }
+            return dict;
+        }
+
+        protected StgDictObject checkAbstractClass(Node inliningTarget, Object type, PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = execute(type);
+            if (dict == null) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ABSTRACT_CLASS);
             }
             return dict;
         }
@@ -278,7 +288,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StgDictBuiltins.class)
-    protected abstract static class MakeAnonFieldsNode extends PNodeWithRaise {
+    protected abstract static class MakeAnonFieldsNode extends Node {
 
         abstract void execute(VirtualFrame frame, Object type, PythonObjectFactory factory);
 
@@ -286,7 +296,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          * Iterate over the names in the type's _anonymous_ attribute, if present,
          */
         @Specialization
-        void MakeAnonFields(VirtualFrame frame, Object type, PythonObjectFactory factory,
+        static void MakeAnonFields(VirtualFrame frame, Object type, PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
@@ -294,20 +304,21 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached MakeFieldsNode makeFieldsNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttr,
-                        @Cached PyObjectLookupAttr lookupAnon) {
+                        @Cached PyObjectLookupAttr lookupAnon,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object anon = lookupAnon.execute(frame, inliningTarget, type, T__ANONYMOUS_);
             if (PGuards.isPNone(anon)) {
                 return;
             }
             if (!sequenceCheckNode.execute(inliningTarget, anon)) {
-                throw raise(TypeError, ANONYMOUS_MUST_BE_A_SEQUENCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ANONYMOUS_MUST_BE_A_SEQUENCE);
             }
 
             for (int i = 0; i < sizeNode.execute(frame, inliningTarget, anon); ++i) {
                 Object fname = getItemNode.execute(frame, inliningTarget, anon, i); /* borrowed */
                 CFieldObject descr = (CFieldObject) getAttr.executeObject(frame, type, fname);
                 if (getClassNode.execute(inliningTarget, descr) != CField) {
-                    throw raise(AttributeError, S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS, fname);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS, fname);
                 }
                 descr.anonymous = 1;
 

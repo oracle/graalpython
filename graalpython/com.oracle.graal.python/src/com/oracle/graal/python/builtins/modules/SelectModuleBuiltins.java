@@ -72,6 +72,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.IntArrayBuilder;
@@ -129,7 +130,8 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectAsFileDescriptor asFileDescriptor,
                         @Cached InlinedBranchProfile notSelectableBranch,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             ObjAndFDList readFDs = seq2set(frame, inliningTarget, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
             ObjAndFDList writeFDs = seq2set(frame, inliningTarget, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
             ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
@@ -157,18 +159,18 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 // GraalPython hack: if one of the channels is not selectable (can happen only in
                 // the emulated mode), we just return everything.
                 notSelectableBranch.enter(inliningTarget);
-                return factory().createTuple(new Object[]{rlist, wlist, xlist});
+                return factory.createTuple(new Object[]{rlist, wlist, xlist});
             }
-            return factory().createTuple(new PList[]{
-                            toList(result.getReadFds(), readFDs),
-                            toList(result.getWriteFds(), writeFDs),
-                            toList(result.getErrorFds(), xFDs)});
+            return factory.createTuple(new PList[]{
+                            toList(result.getReadFds(), readFDs, factory),
+                            toList(result.getWriteFds(), writeFDs, factory),
+                            toList(result.getErrorFds(), xFDs, factory)});
         }
 
         /**
          * Also maps the returned FDs back to their original Python level objects.
          */
-        private PList toList(boolean[] result, ObjAndFDList fds) {
+        private static PList toList(boolean[] result, ObjAndFDList fds, PythonObjectFactory factory) {
             Object[] resultObjs = new Object[result.length];
             int resultObjsIdx = 0;
             for (int i = 0; i < fds.fds.length; i++) {
@@ -176,7 +178,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                     resultObjs[resultObjsIdx++] = fds.objects[i];
                 }
             }
-            return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
+            return factory.createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
         private ObjAndFDList seq2set(VirtualFrame frame, Node inliningTarget, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor, PyObjectGetItem callGetItemNode,

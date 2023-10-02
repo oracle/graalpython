@@ -424,12 +424,12 @@ public final class PTextIO extends PTextIOBase {
             return factory.createInt(v);
         }
 
-        public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode raise) {
+        public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode.Lazy raise) {
             byte[] buffer = IntBuiltins.ToBytesNode.fromLong(v, COOKIE_BUF_LEN, false, false, inliningTarget, overflow, raise);
             return parse(buffer);
         }
 
-        public static CookieType parse(PInt v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode raise) {
+        public static CookieType parse(PInt v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode.Lazy raise) {
             byte[] buffer = IntBuiltins.ToBytesNode.fromBigInteger(v, COOKIE_BUF_LEN, false, false, inliningTarget, overflow, raise);
             return parse(buffer);
         }

@@ -109,8 +109,10 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -342,15 +344,17 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doDI(double left, int right, @SuppressWarnings("unused") PNone none) {
-            return doOperation(left, right);
+        static double doDI(double left, int right, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doOperation(inliningTarget, left, right, raiseNode);
         }
 
         /**
          * The special cases we need to deal with always return 1, so 0 means no special case, not a
          * result.
          */
-        private double doSpecialCases(double left, double right) {
+        private static double doSpecialCases(Node inliningTarget, double left, double right, PRaiseNode.Lazy raiseNode) {
             // see cpython://Objects/floatobject.c#float_pow for special cases
             if (Double.isNaN(right) && left == 1) {
                 // 1**nan = 1, unlike on Java
@@ -362,53 +366,64 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             if (left == 0 && right < 0 && Double.isFinite(right)) {
                 // 0**w is an error if w is finite and negative, unlike Java
-                throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return 0;
         }
 
-        private double doOperation(double left, double right) {
-            if (doSpecialCases(left, right) == 1) {
+        private static double doOperation(Node inliningTarget, double left, double right, PRaiseNode.Lazy raiseNode) {
+            if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             return Math.pow(left, right);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) throws UnexpectedResultException {
-            if (doSpecialCases(left, right) == 1) {
+        @InliningCutoff
+        static double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
+            if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
-                throw new UnexpectedResultException(callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none));
+                PythonObjectFactory factory = PythonObjectFactory.getUncached();
+                throw new UnexpectedResultException(callPow.execute(frame, factory.createComplex(left, 0), factory.createComplex(right, 0), none));
             }
             return Math.pow(left, right);
         }
 
         @Specialization(replaces = "doDD")
-        Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
-            if (doSpecialCases(left, right) == 1) {
+        @InliningCutoff
+        static Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
-                return callPow.execute(frame, factory().createComplex(left, 0), factory().createComplex(right, 0), none);
+                PythonObjectFactory pof = factory.get(inliningTarget);
+                return callPow.execute(frame, pof.createComplex(left, 0), pof.createComplex(right, 0), none);
             }
             return Math.pow(left, right);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
+        @InliningCutoff
+        static Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!(mod instanceof PNone)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
             }
 
             double leftDouble, rightDouble;
@@ -418,7 +433,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, callPow);
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, callPow, factory, raiseNode);
         }
 
         public static PowNode create() {
@@ -441,10 +456,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DivModNode extends AbstractNumericBinaryBuiltin {
+        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+
         @Override
         protected PTuple op(double left, double right) {
             raiseDivisionByZero(right == 0);
-            return factory().createTuple(new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
+            return factory.createTuple(new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
         }
     }
 
@@ -675,7 +692,8 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
-                        @Cached InlinedConditionProfile isLongProfile) {
+                        @Cached InlinedConditionProfile isLongProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
             double x = castToDoubleChecked(inliningTarget, xObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
@@ -685,7 +703,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             double result = round(x, 0);
             if (isLongProfile.profile(inliningTarget, result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
-                return factory().createInt(toBigInteger(result));
+                return factory.get(inliningTarget).createInt(toBigInteger(result));
             } else {
                 return (long) result;
             }
@@ -918,7 +936,8 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
-                        @Cached InlinedConditionProfile infProfile) {
+                        @Cached InlinedConditionProfile infProfile,
+                        @Cached PythonObjectFactory factory) {
             double self = castToDoubleChecked(inliningTarget, selfObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(self))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
@@ -927,7 +946,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
             }
 
-            // At the first time find mantissa and exponent. This is functionanlity of
+            // At the first time find mantissa and exponent. This is functionality of
             // Math.frexp
             // node basically.
             int exponent = 0;
@@ -958,12 +977,12 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
 
             // count the ratio
-            return factory().createTuple(countIt(mantissa, exponent));
+            return factory.createTuple(countIt(mantissa, exponent));
         }
 
         @TruffleBoundary
-        private Object[] countIt(double manitssa, int exponent) {
-            double m = manitssa;
+        private static Object[] countIt(double mantissa, int exponent) {
+            double m = mantissa;
             int e = exponent;
             for (int i = 0; i < 300 && Double.compare(m, Math.floor(m)) != 0; i++) {
                 m *= 2.0;
@@ -981,7 +1000,8 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (numerator.bitLength() < Long.SIZE && denominator.bitLength() < Long.SIZE) {
                 return new Object[]{numerator.longValue(), denominator.longValue()};
             }
-            return new Object[]{factory().createInt(numerator), factory().createInt(denominator)};
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return new Object[]{factory.createInt(numerator), factory.createInt(denominator)};
         }
     }
 
@@ -1041,9 +1061,11 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetNewArgsNode extends AbstractNumericUnaryBuiltin {
+        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+
         @Override
         protected Object op(double self) {
-            return factory().createTuple(new Object[]{factory().createFloat(self)});
+            return factory.createTuple(new Object[]{factory.createFloat(self)});
         }
     }
 }

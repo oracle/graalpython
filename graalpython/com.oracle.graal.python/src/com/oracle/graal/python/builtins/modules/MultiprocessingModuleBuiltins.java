@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -128,7 +129,8 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castKindToIntNode,
                         @Cached CastToJavaIntExactNode castValueToIntNode,
                         @Cached CastToJavaIntExactNode castMaxvalueToIntNode,
-                        @Cached CastToJavaIntExactNode castUnlinkToIntNode) {
+                        @Cached CastToJavaIntExactNode castUnlinkToIntNode,
+                        @Cached PythonObjectFactory factory) {
             int kind = castKindToIntNode.execute(inliningTarget, kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
@@ -158,7 +160,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                     multiprocessing.putNamedSemaphore(name, semaphore);
                 }
             }
-            return factory().createSemLock(cls, name, kind, semaphore);
+            return factory.createSemLock(cls, name, kind, semaphore);
         }
 
         @TruffleBoundary
@@ -217,13 +219,14 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WaitTidNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PTuple waittid(long id, @SuppressWarnings("unused") int options) {
+        PTuple waittid(long id, @SuppressWarnings("unused") int options,
+                        @Cached PythonObjectFactory factory) {
             long tid = convertTid(id);
             // TODO implement for options - WNOHANG and 0
             final SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
             Thread thread = multiprocessing.getChildContextThread(tid);
             if (thread != null && thread.isAlive()) {
-                return factory().createTuple(new Object[]{0, 0, 0});
+                return factory.createTuple(new Object[]{0, 0, 0});
             }
 
             PythonContext.ChildContextData data = multiprocessing.getChildContextData(tid);
@@ -233,7 +236,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
              * clean it. See popen_truffleprocess that calls the _waittid builtin.
              */
             multiprocessing.removeChildContextData(tid);
-            return factory().createTuple(new Object[]{id, data.wasSignaled() ? data.getExitCode() : 0, data.getExitCode()});
+            return factory.createTuple(new Object[]{id, data.wasSignaled() ? data.getExitCode() : 0, data.getExitCode()});
         }
     }
 
@@ -272,7 +275,8 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class PipeNode extends PythonBuiltinNode {
 
         @Specialization
-        PTuple pipe(@Cached GilNode gil) {
+        PTuple pipe(@Cached GilNode gil,
+                        @Cached PythonObjectFactory factory) {
             int[] pipe;
             PythonContext ctx = getContext();
             SharedMultiprocessingData sharedData = ctx.getSharedMultiprocessingData();
@@ -284,7 +288,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
+            return factory.createTuple(new Object[]{pipe[0], pipe[1]});
         }
     }
 
@@ -324,8 +328,9 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReadNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doRead(int fd, @SuppressWarnings("unused") Object length,
-                        @Shared @Cached GilNode gil) {
+        Object doReadInt(int fd, @SuppressWarnings("unused") Object length,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PythonObjectFactory factory) {
             SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             gil.release(true);
             try {
@@ -333,18 +338,19 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 });
                 if (data == PNone.NONE) {
-                    return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY, 0, 0);
+                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY, 0, 0);
                 }
-                return factory().createBytes((byte[]) data);
+                return factory.createBytes((byte[]) data);
             } finally {
                 gil.acquire();
             }
         }
 
         @Specialization
-        Object doRead(long fd, Object length,
-                        @Shared @Cached GilNode gil) {
-            return doRead((int) fd, length, gil);
+        Object doReadLong(long fd, Object length,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doReadInt((int) fd, length, gil, factory);
         }
     }
 
@@ -398,7 +404,8 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached CastToJavaDoubleNode castToDouble,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             PythonContext context = getContext();
             SharedMultiprocessingData sharedData = context.getSharedMultiprocessingData();
 
@@ -438,7 +445,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                     }
                 }
 
-                return factory().createList(result.toArray(new Object[0]));
+                return factory.createList(result.toArray(new Object[0]));
             } catch (PosixSupportLibrary.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {

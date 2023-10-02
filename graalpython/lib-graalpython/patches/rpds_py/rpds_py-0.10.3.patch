@@ -1,0 +1,79 @@
+From 87fdcc0d34a2c0ac8d5652f74f3434a2c3e19f74 Mon Sep 17 00:00:00 2001
+From: Tim Felgentreff <tim.felgentreff@oracle.com>
+Date: Tue, 19 Sep 2023 05:27:52 +0200
+Subject: [PATCH] graalpy pyo3
+
+---
+ Cargo.lock | 15 +++++----------
+ Cargo.toml |  3 ++-
+ 2 files changed, 7 insertions(+), 11 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index b3f7f28..5bcbaf3 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -101,8 +101,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e681a6cfdc4adcc93b4d3cf993749a4552018ee0a9b65fc0ccfad74352c72a38"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+@@ -118,8 +117,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-build-config"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "076c73d0bc438f7a4ef6fdd0c3bb4732149136abd952b110ac93e4edb13a6ba5"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "once_cell",
+  "target-lexicon",
+@@ -128,8 +126,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-ffi"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e53cee42e77ebe256066ba8aa77eff722b3bb91f3419177cf4cd0f304d3284d9"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+@@ -138,8 +135,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-macros"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dfeb4c99597e136528c6dd7d5e3de5434d1ceaf487436a3f03b2d56b6fc9efd1"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-macros-backend",
+@@ -150,8 +146,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-macros-backend"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "947dc12175c254889edc0c02e399476c2f652b4b9ebd123aa655c224de259536"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff --git a/Cargo.toml b/Cargo.toml
+index eb2bf54..c757207 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -12,5 +12,6 @@ rpds = "1.0.1"
+ archery = "1.0.0"
+ 
+ [dependencies.pyo3]
+-version = "0.19.2"
++git = "https://github.com/timfel/pyo3.git"
++branch = "v0.19.2.graalpy"
+ features = ["extension-module"]
+-- 
+2.34.1
+

@@ -229,18 +229,19 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
     abstract static class PointerSetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
+        static Object Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
+                        @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (value == PNone.NO_VALUE) {
-                throw raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
+                throw raiseNode.get(inliningTarget).raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
 
             if (self.b_ptr.isNull()) {
-                throw raise(ValueError, NULL_POINTER_ACCESS);
+                throw raiseNode.get(inliningTarget).raise(ValueError, NULL_POINTER_ACCESS);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
@@ -299,7 +300,8 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PythonObjectFactory factory) {
             /*
              * Since pointers have no length, and we want to apply different semantics to negative
              * indices than normal slicing, we have to dissect the slice object ourselves.
@@ -345,16 +347,16 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (len <= 0) {
-                    return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
                 }
                 if (step == 1) {
-                    return factory().createBytes(ptr, start, len);
+                    return factory.createBytes(ptr, start, len);
                 }
                 byte[] dest = new byte[len];
                 for (int cur = start, i = 0; i < len; cur += step, i++) {
                     dest[i] = ptr[cur];
                 }
-                return factory().createBytes(dest);
+                return factory.createBytes(dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
@@ -377,7 +379,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             for (int cur = start, i = 0; i < len; cur += step, i++) {
                 np[i] = Pointer_item(self, cur, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode);
             }
-            return factory().createList(np);
+            return factory.createList(np);
         }
 
         @Specialization(guards = "!isPSlice(item)")

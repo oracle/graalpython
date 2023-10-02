@@ -87,7 +87,6 @@ import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -145,14 +144,16 @@ public final class CFieldBuiltins extends PythonBuiltins {
     @SuppressWarnings("unused")
     public abstract static class SetNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "!isNone(value)")
-        protected Object doit(VirtualFrame frame, CFieldObject self, Object inst, Object value,
+        static Object doit(VirtualFrame frame, CFieldObject self, Object inst, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyCDataSetNode cDataSetNode) {
+                        @Cached PyCDataSetNode cDataSetNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(inst)) {
-                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             if (value == PNone.NO_VALUE) {
-                throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
             }
             CDataObject dst = (CDataObject) inst;
             cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.withOffset(self.offset));
@@ -161,9 +162,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        protected Object doit(CFieldObject self, Object inst, PNone value,
-                        @Cached PyCDataSetNode cDataSetNode) {
-            throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
+        static Object doit(CFieldObject self, Object inst, PNone value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
     }
 
@@ -172,14 +173,16 @@ public final class CFieldBuiltins extends PythonBuiltins {
     abstract static class GetNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
+        static Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeCheck pyTypeCheck) {
+                        @Cached PyTypeCheck pyTypeCheck,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (inst instanceof PNone) {
                 return self;
             }
             if (!pyTypeCheck.isCDataObject(inst)) {
-                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
             return pyCDataGetNode.execute(self.proto, self.getfunc, src, self.index, self.size, src.b_ptr.withOffset(self.offset));
@@ -227,18 +230,20 @@ public final class CFieldBuiltins extends PythonBuiltins {
      * offset, this will be updated. prev_desc points to the type of the previous bitfield, if any.
      */
     @SuppressWarnings("fallthrough")
-    abstract static class PyCFieldFromDesc extends PNodeWithRaise {
+    abstract static class PyCFieldFromDesc extends Node {
 
         abstract CFieldObject execute(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory);
 
         @Specialization
-        CFieldObject PyCField_FromDesc(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
+        static CFieldObject PyCField_FromDesc(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             CFieldObject self = factory.createCFieldObject(PythonBuiltinClassType.CField);
             StgDictObject dict = pyTypeStgDictNode.execute(desc);
             if (dict == null) {
-                throw raise(TypeError, HAS_NO_STGINFO);
+                throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
             }
             int fieldtype;
             if (bitsize != 0 /* this is a bitfield request */
@@ -278,7 +283,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                 if (adict != null && adict.proto != null) {
                     StgDictObject idict = pyTypeStgDictNode.execute(adict.proto);
                     if (idict == null) {
-                        throw raise(TypeError, HAS_NO_STGINFO);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
                     }
                     if (idict.getfunc == FieldDesc.c.getfunc) {
                         FieldDesc fd = FieldDesc.s;

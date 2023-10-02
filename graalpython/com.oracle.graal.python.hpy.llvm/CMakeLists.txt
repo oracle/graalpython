@@ -57,7 +57,6 @@ set(HPY_INC "${SRC_DIR}/include")
 # using glob patterns is not recommended: https://cmake.org/cmake/help/latest/command/file.html#glob
 set(SRC_FILES ${HPY_SRC}/hpy.c
               ${HPY_SRC}/hpynative.h
-              ${HPY_SRC}/hpytypes.h
 )
 
 set(HPY_HEADERS ${HPY_INC}/hpy/autogen_hpyslot.h

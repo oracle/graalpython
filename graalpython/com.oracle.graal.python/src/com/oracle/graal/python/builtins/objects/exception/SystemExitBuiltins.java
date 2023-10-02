@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -83,10 +84,11 @@ public final class SystemExitBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        Object initNoArgs(PBaseException self, Object[] args,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
+        static Object initNoArgs(PBaseException self, Object[] args,
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
+                        @Cached PythonObjectFactory factory) {
             baseExceptionInitNode.execute(self, args);
-            self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args, factory()));
+            self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args, factory));
             return PNone.NONE;
         }
     }
@@ -95,7 +97,7 @@ public final class SystemExitBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
-        Object generic(PBaseException self, Object value,
+        static Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, 0, SYSTEM_EXIT_ATTR_FACTORY);
         }

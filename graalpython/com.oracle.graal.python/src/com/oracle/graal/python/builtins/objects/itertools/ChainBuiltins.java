@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -135,10 +136,11 @@ public final class ChainBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromIterNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
+        static Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetIter getIter) {
-            PChain instance = factory().createChain(PythonBuiltinClassType.PChain);
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PythonObjectFactory factory) {
+            PChain instance = factory.createChain(PythonBuiltinClassType.PChain);
             instance.setSource(getIter.execute(frame, inliningTarget, arg));
             instance.setActive(PNone.NONE);
             return instance;
@@ -149,23 +151,24 @@ public final class ChainBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reducePos(PChain self,
+        static Object reducePos(PChain self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile hasSourceProfile,
-                        @Cached InlinedConditionProfile hasActiveProfile) {
+                        @Cached InlinedConditionProfile hasActiveProfile,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple empty = factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            PTuple empty = factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             if (hasSourceProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (hasActiveProfile.profile(inliningTarget, self.getActive() != PNone.NONE)) {
-                    PTuple tuple = factory().createTuple(new Object[]{self.getSource(), self.getActive()});
-                    return factory().createTuple(new Object[]{type, empty, tuple});
+                    PTuple tuple = factory.createTuple(new Object[]{self.getSource(), self.getActive()});
+                    return factory.createTuple(new Object[]{type, empty, tuple});
                 } else {
-                    PTuple tuple = factory().createTuple(new Object[]{self.getSource()});
-                    return factory().createTuple(new Object[]{type, empty, tuple});
+                    PTuple tuple = factory.createTuple(new Object[]{self.getSource()});
+                    return factory.createTuple(new Object[]{type, empty, tuple});
                 }
             } else {
-                return factory().createTuple(new Object[]{type, empty});
+                return factory.createTuple(new Object[]{type, empty});
             }
         }
     }
@@ -210,8 +213,9 @@ public final class ChainBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

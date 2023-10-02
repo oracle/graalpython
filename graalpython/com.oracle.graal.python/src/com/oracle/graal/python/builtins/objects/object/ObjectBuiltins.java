@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -422,23 +423,25 @@ public final class ObjectBuiltins extends PythonBuiltins {
         // Shortcut, only useful for interpreter performance, but doesn't hurt peak
         @Specialization(guards = {"keyObj == cachedKey", "tsLen(cachedKey) < 32"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
-        protected Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
+        Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
+                        @Cached("create(cachedKey)") LookupAttributeInMRONode lookup,
+                        @Exclusive @Cached PythonObjectFactory.Lazy factory) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type);
-            return fullLookup(frame, object, cachedKey, type, descr);
+            return fullLookup(frame, inliningTarget, object, cachedKey, type, descr, factory);
         }
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
+        Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Exclusive @Cached PythonObjectFactory.Lazy factory) {
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
@@ -448,10 +451,10 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
-            return fullLookup(frame, object, key, type, descr);
+            return fullLookup(frame, inliningTarget, object, key, type, descr, factory);
         }
 
-        private Object fullLookup(VirtualFrame frame, Object object, TruffleString key, Object type, Object descr) {
+        private Object fullLookup(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, Object descr, PythonObjectFactory.Lazy factory) {
             Object dataDescClass = null;
             boolean hasDescr = descr != PNone.NO_VALUE;
             if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
@@ -497,7 +500,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         // Special case for None object. We cannot call function.__get__(None,
                         // type(None)),
                         // because that would return an unbound method
-                        return factory().createBuiltinMethod(PNone.NONE, (PBuiltinFunction) descr);
+                        return factory.get(inliningTarget).createBuiltinMethod(PNone.NONE, (PBuiltinFunction) descr);
                     }
                 }
                 Object get = lookupGet(dataDescClass);
@@ -878,8 +881,9 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object doit(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object ignored,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectNodes.CommonReduceNode commonReduceNode) {
-            return commonReduceNode.execute(frame, obj, 0);
+            return commonReduceNode.execute(frame, inliningTarget, obj, 0);
         }
     }
 
@@ -912,7 +916,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     return callNode.execute(frame, _reduce);
                 }
             }
-            return commonReduceNode.execute(frame, obj, proto);
+            return commonReduceNode.execute(frame, inliningTarget, obj, proto);
         }
     }
 
@@ -920,14 +924,15 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
-        Object dir(VirtualFrame frame, Object obj,
+        static Object dir(VirtualFrame frame, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode) {
-            PSet names = factory().createSet();
+                        @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode,
+                        @Cached PythonObjectFactory factory) {
+            PSet names = factory.createSet();
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
             if (isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {

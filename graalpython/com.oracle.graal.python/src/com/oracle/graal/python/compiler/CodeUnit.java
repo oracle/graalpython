@@ -364,7 +364,6 @@ public final class CodeUnit {
                     case LOAD_ATTR:
                     case STORE_ATTR:
                     case DELETE_ATTR:
-                    case CALL_METHOD_VARARGS:
                         line[5] = names[oparg].toJavaStringUncached();
                         break;
                     case FORMAT_VALUE: {

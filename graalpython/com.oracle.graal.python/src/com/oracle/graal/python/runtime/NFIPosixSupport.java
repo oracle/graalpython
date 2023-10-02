@@ -45,6 +45,21 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
@@ -55,14 +70,12 @@ import static com.oracle.graal.python.runtime.PosixConstants.INET_ADDRSTRLEN;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
-import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
-import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
-import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
-import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
-import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
@@ -85,6 +98,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
@@ -98,6 +112,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -143,6 +158,8 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final Object CRYPT_LOCK = new Object();
 
     private enum PosixNativeFunction {
+        init_constants("([sint64], sint32):sint32"),
+
         get_errno("():sint32"),
         set_errno("(sint32):void"),
         call_mmap("(sint64, sint32, sint32, sint32, sint64):sint64"),
@@ -190,6 +207,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
         call_fchmodat("(sint32, [sint8], sint32, sint32):sint32"),
         call_fchmod("(sint32, sint32):sint32"),
+        call_fchownat("(sint32, [sint8], sint64, sint64, sint32):sint32"),
+        call_fchown("(sint32, sint64, sint64):sint32"),
         call_readlinkat("(sint32, [sint8], [sint8], uint64):sint64"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
@@ -217,6 +236,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getpgrp("():sint64"),
         call_getsid("(sint64):sint64"),
         call_setsid("():sint64"),
+        call_getgroups("(sint64, [sint64]):sint32"),
         call_openpty("([sint32]):sint32"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
@@ -260,13 +280,6 @@ public final class NFIPosixSupport extends PosixSupport {
         call_freeaddrinfo("(sint64):void"),
         call_gai_strerror("(sint32, [sint8], sint32):void"),
         get_addrinfo_members("(sint64, [sint32], [sint64], [sint8]):sint32"),
-
-        get_sockaddr_in_members("([sint8], [sint32]):void"),
-        get_sockaddr_in6_members("([sint8], [sint32], [sint8]):void"),
-        get_sockaddr_un_members("([sint8], sint32, [sint8]):sint32"),
-        set_sockaddr_in_members("([sint8], sint32, sint32):sint32"),
-        set_sockaddr_in6_members("([sint8], sint32, [sint8], sint32, sint32):sint32"),
-        set_sockaddr_un_members("([sint8], [sint8], sint32):sint32"),
 
         call_crypt("([sint8], [sint8], [sint32]):sint64");
 
@@ -349,6 +362,10 @@ public final class NFIPosixSupport extends PosixSupport {
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
             String backend = posix.nfiBackend.toJavaStringUncached();
+            Env env = posix.context.getEnv();
+
+            posix.context.ensureNFILanguage(null, "PosixModuleBackend", "native");
+
             String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
@@ -357,9 +374,13 @@ public final class NFIPosixSupport extends PosixSupport {
                 LOGGER.fine(String.format("Loading native library: %s", src));
             }
             try {
-                posix.nfiLibrary = posix.context.getEnv().parseInternal(loadSrc).call();
+                posix.nfiLibrary = env.parseInternal(loadSrc).call();
             } catch (Throwable e) {
-                throw CompilerDirectives.shouldNotReachHere("Unable to load native posix support library", e);
+                throw new UnsupportedOperationException(String.format("""
+                                Could not load posix support library from path '%s'. Troubleshooting:\s
+                                Check permissions of the file.
+                                Missing runtime Maven dependency 'org.graalvm.truffle:truffle-nfi-libffi' (should be a dependency of `org.graalvm.polyglot:python{-community}`)?""",
+                                path));
             }
         }
 
@@ -394,6 +415,7 @@ public final class NFIPosixSupport extends PosixSupport {
     private final TruffleString nfiBackend;
     private volatile Object nfiLibrary;
     private final AtomicReferenceArray<Object> cachedFunctions;
+    @CompilationFinal(dimensions = 1) private long[] constantValues;
 
     public NFIPosixSupport(PythonContext context, TruffleString nfiBackend) {
         assert nfiBackend.equalsUncached(T_NATIVE, TS_ENCODING) || nfiBackend.equalsUncached(T_LLVM_LANGUAGE, TS_ENCODING);
@@ -401,6 +423,18 @@ public final class NFIPosixSupport extends PosixSupport {
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
         setEnv(context.getEnv());
+    }
+
+    long getConstant(NFIPosixConstants constant) {
+        if (constantValues == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            constantValues = new long[NFIPosixConstants.values().length];
+            int result = InvokeNativeFunction.getUncached().callInt(this, PosixNativeFunction.init_constants, wrap(constantValues), constantValues.length);
+            if (result != 0) {
+                throw CompilerDirectives.shouldNotReachHere("Mismatched build of posix native library");
+            }
+        }
+        return constantValues[constant.ordinal()];
     }
 
     @Override
@@ -1004,6 +1038,24 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_fchownat, dirFd, pathToCString(path), owner, group, followSymlinks ? 1 : 0);
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void fchown(int fd, long owner, long group,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_fchown, fd, owner, group);
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
     public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Buffer buffer = Buffer.allocate(PATH_MAX.value);
@@ -1167,6 +1219,25 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return res;
+    }
+
+    @ExportMessage
+    public long[] getgroups(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        // The first call gets us the number of groups, so we can allocate the output array
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getgroups, 0, 0);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        if (res == 0) {
+            return EMPTY_LONG_ARRAY;
+        }
+        long[] groups = new long[res];
+        res = invokeNode.callInt(this, PosixNativeFunction.call_getgroups, groups.length, wrap(groups));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return groups;
     }
 
     @ExportMessage
@@ -1506,11 +1577,10 @@ public final class NFIPosixSupport extends PosixSupport {
     public AcceptResult accept(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_accept, sockfd, wrap(addr.data), wrap(addr.lenAndFamily));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_accept, sockfd, wrap(addr.data), wrap(addr.len));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
         return new AcceptResult(result, addr);
     }
 
@@ -1547,11 +1617,10 @@ public final class NFIPosixSupport extends PosixSupport {
     public UniversalSockAddr getpeername(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_getpeername, sockfd, wrap(addr.data), wrap(addr.lenAndFamily));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_getpeername, sockfd, wrap(addr.data), wrap(addr.len));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
         return addr;
     }
 
@@ -1559,11 +1628,10 @@ public final class NFIPosixSupport extends PosixSupport {
     public UniversalSockAddr getsockname(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, wrap(addr.data), wrap(addr.lenAndFamily));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, wrap(addr.data), wrap(addr.len));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
         return addr;
     }
 
@@ -1606,11 +1674,10 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl srcAddr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), offset, len, flags, wrap(srcAddr.data), wrap(srcAddr.lenAndFamily));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), offset, len, flags, wrap(srcAddr.data), wrap(srcAddr.len));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        assert srcAddr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
         return new RecvfromResult(result, srcAddr);
     }
 
@@ -1820,9 +1887,10 @@ public final class NFIPosixSupport extends PosixSupport {
     private static class AddrInfo {
         private final int[] intData = new int[7];
         private final long[] longData = new long[2];
-        private final byte[] socketAddress = new byte[UniversalSockAddrImpl.MAX_SIZE];
+        private byte[] socketAddress;
 
         private void update(long ptr, NFIPosixSupport nfiPosixSupport, InvokeNativeFunction invokeNode) {
+            socketAddress = new byte[(int) nfiPosixSupport.getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
             int res = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_addrinfo_members, ptr, nfiPosixSupport.wrap(intData), nfiPosixSupport.wrap(longData),
                             nfiPosixSupport.wrap(socketAddress));
             if (res != 0) {
@@ -1941,7 +2009,8 @@ public final class NFIPosixSupport extends PosixSupport {
         UniversalSockAddr getSockAddr() {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nfiPosixSupport);
             PythonUtils.arraycopy(info.socketAddress, 0, addr.data, 0, info.getAddrLen());
-            addr.setLenAndFamily(info.getAddrLen(), info.getAddrFamily());
+            addr.setFamily(info.getAddrFamily());
+            addr.setLen(info.getAddrLen());
             return addr;
         }
 
@@ -1953,101 +2022,154 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    static class CreateUniversalSockAddr {
-        @Specialization
-        static UniversalSockAddr inet4(NFIPosixSupport receiver, Inet4SockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
-            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in_members, receiver.wrap(addr.data), src.getPort(), src.getAddress());
-            addr.setLenAndFamily(len, AF_INET.value);
-            return addr;
-        }
+    UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
+        UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
+        addr.setFamily(AF_INET.value);
+        ARRAY_ACCESSOR_BE.putShort(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT), (short) src.getPort());
+        ARRAY_ACCESSOR_BE.putInt(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR) + getConstant(OFFSETOF_STRUCT_IN_ADDR_S_ADDR), src.getAddress());
+        addr.setLen((int) getConstant(SIZEOF_STRUCT_SOCKADDR_IN));
+        return addr;
+    }
 
-        @Specialization
-        static UniversalSockAddr inet6(NFIPosixSupport receiver, Inet6SockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
-            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in6_members, receiver.wrap(addr.data), src.getPort(),
-                            receiver.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
-            addr.setLenAndFamily(len, AF_INET6.value);
-            return addr;
-        }
+    @ExportMessage
+    UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
+        UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
+        addr.setFamily(AF_INET6.value);
+        ARRAY_ACCESSOR_BE.putShort(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT), (short) src.getPort());
+        int addrOffset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR) + (int) getConstant(OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR);
+        PythonUtils.arraycopy(src.getAddress(), 0, addr.data, addrOffset, 16);
+        ARRAY_ACCESSOR_BE.putInt(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO), src.getFlowInfo());
+        ARRAY_ACCESSOR_BE.putInt(addr.data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID), src.getScopeId());
+        addr.setLen((int) getConstant(SIZEOF_STRUCT_SOCKADDR_IN6));
+        return addr;
+    }
 
-        @Specialization
-        static UniversalSockAddr unix(NFIPosixSupport receiver, UnixSockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
-            byte[] path = src.getPath();
-            assert path.length <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
-            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_un_members, receiver.wrap(addr.data), receiver.wrap(path), path.length);
-            addr.setLenAndFamily(len, AF_UNIX.value);
-            return addr;
+    @ExportMessage
+    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws InvalidUnixSocketPathException {
+        UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
+        addr.setFamily(AF_UNIX.value);
+        byte[] path = src.getPath();
+        if (path.length > getConstant(SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH)) {
+            throw InvalidUnixSocketPathException.INSTANCE;
         }
+        int len = path.length + (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH);
+        PythonUtils.arraycopy(path, 0, addr.data, (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH), path.length);
+        addr.setLen(len);
+        return addr;
     }
 
     @ExportLibrary(UniversalSockAddrLibrary.class)
     protected static class UniversalSockAddrImpl implements UniversalSockAddr {
 
-        static final int MAX_SIZE = SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
-
         private final NFIPosixSupport nfiPosixSupport;
-        private final byte[] data = new byte[MAX_SIZE];
-        private final int[] lenAndFamily = new int[]{0, AF_UNSPEC.value};
+        private final byte[] data;
+        private final int[] len = new int[]{0};
 
         UniversalSockAddrImpl(NFIPosixSupport nfiPosixSupport) {
             this.nfiPosixSupport = nfiPosixSupport;
+            this.data = new byte[(int) getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
         }
 
         @ExportMessage
         int getFamily() {
-            return lenAndFamily[1];
+            int offset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
+            int size = (int) getConstant(SIZEOF_STRUCT_SOCKADDR_SA_FAMILY);
+            if (getLen() >= offset + size) {
+                if (size == 1) {
+                    return Byte.toUnsignedInt(data[offset]);
+                } else if (size == 2) {
+                    return Short.toUnsignedInt(ARRAY_ACCESSOR.getShort(data, offset));
+                } else if (size == 4) {
+                    return ARRAY_ACCESSOR.getInt(data, offset);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("Unexpected sizeof(sa_family_t)");
+                }
+            } else {
+                return AF_UNSPEC.value;
+            }
+        }
+
+        void setFamily(int family) {
+            int offset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
+            int size = (int) getConstant(SIZEOF_STRUCT_SOCKADDR_SA_FAMILY);
+            if (size == 1) {
+                data[offset] = (byte) family;
+            } else if (size == 2) {
+                ARRAY_ACCESSOR.putShort(data, offset, (short) family);
+            } else if (size == 4) {
+                ARRAY_ACCESSOR.putInt(data, offset, family);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("Unexpected sizeof(sa_family_t)");
+            }
         }
 
         @ExportMessage
-        Inet4SockAddr asInet4SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        Inet4SockAddr asInet4SockAddr() {
             if (getFamily() != AF_INET.value) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
+                throw CompilerDirectives.shouldNotReachHere("Only AF_INET socket address can be converted to Inet4SockAddr");
             }
-            assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
-            int[] members = new int[2];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members));
-            return new Inet4SockAddr(members[0], members[1]);
+            if (getLen() != getConstant(SIZEOF_STRUCT_SOCKADDR_IN)) {
+                throw CompilerDirectives.shouldNotReachHere("Wrong size of socket addr struct in asInet4SockAddr");
+            }
+            int port = Short.toUnsignedInt(ARRAY_ACCESSOR_BE.getShort(data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT)));
+            int address = ARRAY_ACCESSOR_BE.getInt(data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR) + getConstant(OFFSETOF_STRUCT_IN_ADDR_S_ADDR));
+            return new Inet4SockAddr(port, address);
         }
 
         @ExportMessage
-        Inet6SockAddr asInet6SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        Inet6SockAddr asInet6SockAddr() {
             if (getFamily() != AF_INET6.value) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
+                throw CompilerDirectives.shouldNotReachHere("Only AF_INET6 socket address can be converted to Inet6SockAddr");
             }
-            assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN6.value;
-            int[] members = new int[3];
-            byte[] address = new byte[16];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in6_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members), nfiPosixSupport.wrap(address));
-            return new Inet6SockAddr(members[0], address, members[1], members[2]);
+            if (getLen() != getConstant(SIZEOF_STRUCT_SOCKADDR_IN6)) {
+                throw CompilerDirectives.shouldNotReachHere("Wrong size of socket addr struct in asInet6SockAddr");
+            }
+            int port = Short.toUnsignedInt(ARRAY_ACCESSOR_BE.getShort(data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT)));
+            int addrOffset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR) + (int) getConstant(OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR);
+            byte[] address = PythonUtils.arrayCopyOfRange(data, addrOffset, addrOffset + 16);
+            int flowInfo = ARRAY_ACCESSOR_BE.getInt(data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO));
+            int scopeId = ARRAY_ACCESSOR_BE.getInt(data, getConstant(OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID));
+            return new Inet6SockAddr(port, address, flowInfo, scopeId);
         }
 
         @ExportMessage
-        UnixSockAddr asUnixSockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        UnixSockAddr asUnixSockAddr() {
             if (getFamily() != AF_UNIX.value) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalArgumentException("Only AF_UNIX socket address can be converted to UnixSockAddr");
+                throw CompilerDirectives.shouldNotReachHere("Only AF_UNIX socket address can be converted to UnixSockAddr");
             }
-            assert getLen() <= OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH.value + SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
-            byte[] pathBuf = new byte[SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value];
-            int pathLen = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_sockaddr_un_members, nfiPosixSupport.wrap(data), getLen(), nfiPosixSupport.wrap(pathBuf));
-            return new UnixSockAddr(pathBuf, 0, pathLen);
+            int pathOffset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH);
+            byte[] pathBuf;
+            int linuxAddrLen = getLen() - pathOffset;
+            if (linuxAddrLen > 0 && data[pathOffset] == '\0') {
+                // Abstract Linux address
+                pathBuf = PythonUtils.arrayCopyOfRange(data, pathOffset, pathOffset + linuxAddrLen);
+            } else {
+                // Regular NULL-terminated string
+                int pathLen = -1;
+                for (int i = pathOffset; i < data.length; i++) {
+                    if (data[i] == '\0') {
+                        pathLen = i - pathOffset;
+                        break;
+                    }
+                }
+                assert pathLen >= 0;
+                pathBuf = PythonUtils.arrayCopyOfRange(data, pathOffset, pathOffset + pathLen);
+            }
+            return new UnixSockAddr(pathBuf);
+        }
+
+        long getConstant(NFIPosixConstants constant) {
+            return nfiPosixSupport.getConstant(constant);
         }
 
         int getLen() {
-            return lenAndFamily[0];
+            return len[0];
         }
 
-        void setLenAndFamily(int len, int family) {
-            lenAndFamily[0] = len;
-            lenAndFamily[1] = family;
+        void setLen(int len) {
+            this.len[0] = len;
         }
+
     }
 
     @ExportMessage

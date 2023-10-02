@@ -147,7 +147,7 @@ import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -532,7 +532,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetNameNode getNameNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached SimpleTruffleStringFormatNode formatNode) {
+                        @Cached SimpleTruffleStringFormatNode formatNode,
+                        @Cached PythonObjectFactory factory) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
             Object result = getItem.execute(frame, inliningTarget, ctypes.ptrtype_cache, cls);
             if (result != null) {
@@ -542,13 +543,13 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (PGuards.isString(cls)) {
                 TruffleString name = toTruffleStringNode.execute(inliningTarget, cls);
                 TruffleString buf = formatNode.format("LP_%s", name);
-                Object[] args = new Object[]{buf, PyCPointer, factory().createDict()};
+                Object[] args = new Object[]{buf, PyCPointer, factory.createDict()};
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
-                key = factory().createNativeVoidPtr(result);
+                key = factory.createNativeVoidPtr(result);
             } else if (isTypeNode.execute(inliningTarget, cls)) {
                 TruffleString buf = formatNode.format("LP_%s", getNameNode.execute(inliningTarget, cls));
-                PTuple bases = factory().createTuple(new Object[]{PyCPointer});
-                Object[] args = new Object[]{buf, bases, factory().createDict(new PKeyword[]{new PKeyword(T__TYPE_, cls)})};
+                PTuple bases = factory.createTuple(new Object[]{PyCPointer});
+                Object[] args = new Object[]{buf, bases, factory.createDict(new PKeyword[]{new PKeyword(T__TYPE_, cls)})};
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
                 key = cls;
             } else {
@@ -606,7 +607,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object buffer_info(Object arg,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PythonObjectFactory factory) {
             StgDictObject dict = pyTypeStgDictNode.execute(arg);
             if (dict == null) {
                 dict = pyObjectStgDictNode.execute(arg);
@@ -619,7 +621,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 shape[i] = dict.shape[i];
             }
 
-            return factory().createTuple(new Object[]{dict.format, dict.ndim, factory().createTuple(shape)});
+            return factory.createTuple(new Object[]{dict.format, dict.ndim, factory.createTuple(shape)});
         }
     }
 
@@ -703,7 +705,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        protected static Object loadLLVMLibrary(PythonContext context, TruffleString path) throws ImportException, ApiInitException, IOException {
+        protected static Object loadLLVMLibrary(PythonContext context, Node nodeForRaise, TruffleString path) throws ImportException, ApiInitException, IOException {
+            context.ensureLLVMLanguage(nodeForRaise);
             if (path.isEmpty()) {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
                 return cApiContext.getLLVMLibrary();
@@ -722,48 +725,50 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
+        static Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached AuditNode auditNode,
                         @Cached CodePointLengthNode codePointLengthNode,
                         @Cached EndsWithNode endsWithNode,
-                        @Cached EqualNode eqNode) {
+                        @Cached EqualNode eqNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             auditNode.audit(inliningTarget, "ctypes.dlopen", name);
             if (name.isEmpty()) {
-                return factory().createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
+                return factory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
             }
 
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
-            PythonContext context = getContext();
+            PythonContext context = PythonContext.get(inliningTarget);
             DLHandler handle;
             Exception exception = null;
             boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || //
-                            (!getContext().getOption(PythonOptions.UseSystemToolchain) &&
+                            (!context.getOption(PythonOptions.UseSystemToolchain) &&
                                             endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
                 if (loadWithLLVM) {
-                    Object handler = loadLLVMLibrary(context, name);
+                    Object handler = loadLLVMLibrary(context, inliningTarget, name);
                     long adr = hashNode.execute(frame, inliningTarget, handler);
                     handle = new DLHandler(handler, adr, name.toJavaStringUncached(), true);
                     registerAddress(context, handle.adr, handle);
-                    return factory().createNativeVoidPtr(handle);
+                    return factory.createNativeVoidPtr(handle);
                 } else {
-                    CtypesThreadState ctypes = CtypesThreadState.get(context, getLanguage());
+                    CtypesThreadState ctypes = CtypesThreadState.get(context, PythonLanguage.get(inliningTarget));
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */
                     if (!eqNode.execute(name, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
                         handle = loadNFILibrary(context, ctypes.backendType, name.toJavaStringUncached(), mode);
                         registerAddress(context, handle.adr, handle);
-                        return factory().createNativeVoidPtr(handle, handle.adr);
+                        return factory.createNativeVoidPtr(handle, handle.adr);
                     }
                 }
             } catch (Exception e) {
                 exception = e;
             }
-            throw raise(OSError, getErrMsg(exception));
+            throw raiseNode.get(inliningTarget).raise(OSError, getErrMsg(exception));
         }
     }
 
@@ -784,22 +789,23 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    protected abstract static class CtypesDlSymNode extends PNodeWithRaise {
+    protected abstract static class CtypesDlSymNode extends PNodeWithContext {
 
         protected abstract Object execute(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error);
 
         @Specialization
-        protected Object ctypes_dlsym(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error,
+        static Object ctypes_dlsym(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error,
                         @Bind("this") Node inliningTarget,
                         @Cached CtypesNodes.HandleFromPointerNode handleFromPointerNode,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaStringNode asString,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             DLHandler handle = handleFromPointerNode.getDLHandler(inliningTarget, handlePtr);
             String name = asString.execute(n);
             if (handle == null || handle.isClosed) {
-                throw raise(error, T_DL_ERROR);
+                throw raiseNode.get(inliningTarget).raise(error, T_DL_ERROR);
             }
             try {
                 Object sym = ilib.readMember(handle.library, name);
@@ -807,7 +813,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 long adr = isManaged ? hashNode.execute(frame, inliningTarget, sym) : ilib.asPointer(sym);
                 sym = isManaged ? CallLLVMFunction.create(sym, ilib) : sym;
                 NativeFunction func = new NativeFunction(sym, adr, name, isManaged);
-                registerAddress(getContext(), adr, func);
+                registerAddress(PythonContext.get(inliningTarget), adr, func);
                 // PyLong_FromVoidPtr(ptr);
                 if (!isManaged) {
                     return factory.createNativeVoidPtr(func, adr);
@@ -815,7 +821,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     return factory.createNativeVoidPtr(func);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                throw raise(error, e);
+                throw raiseNode.get(inliningTarget).raise(error, e);
             }
         }
     }
@@ -979,11 +985,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         Object doit(CDataObject obj, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Cached PyTypeCheck pyTypeCheck) {
+                        @Cached PyTypeCheck pyTypeCheck,
+                        @Cached PythonObjectFactory factory) {
             if (!pyTypeCheck.isCDataObject(obj)) {
                 return error(null, obj, offset, inliningTarget, getClassNode);
             }
-            PyCArgObject parg = factory().createCArgObject();
+            PyCArgObject parg = factory.createCArgObject();
             parg.tag = 'P';
             parg.pffi_type = FFIType.ffi_type_pointer;
             parg.obj = obj;
@@ -1041,12 +1048,13 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         Object doit(CDataObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached AuditNode auditNode) {
+                        @Cached AuditNode auditNode,
+                        @Cached PythonObjectFactory factory) {
             if (!pyTypeCheck.isCDataObject(obj)) {
                 return error(null, obj);
             }
             auditNode.audit(inliningTarget, "ctypes.addressof", obj);
-            return factory().createNativeVoidPtr(obj.b_ptr);
+            return factory.createNativeVoidPtr(obj.b_ptr);
         }
 
         @SuppressWarnings("unused")
@@ -1131,7 +1139,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
      * argtypes is amisleading name: This is a tuple of methods, not types: the .from_param class
      * methods of the types
      */
-    protected abstract static class CallProcNode extends PNodeWithRaise {
+    protected abstract static class CallProcNode extends PNodeWithContext {
 
         abstract Object execute(VirtualFrame frame, NativeFunction pProc, Object[] argtuple, int flags, Object[] argtypes, Object[] converters, Object restype, Object checker);
 
@@ -1152,10 +1160,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
                         @Cached GetResultNode getResultNode,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int argcount = argarray.length;
             if (argcount > CTYPES_MAX_ARGCOUNT) {
-                throw raise(ArgError, TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D, argcount, CTYPES_MAX_ARGCOUNT);
+                throw raiseNode.get(inliningTarget).raise(ArgError, TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D, argcount, CTYPES_MAX_ARGCOUNT);
             }
 
             argument[] args = new argument[argcount];
@@ -1184,7 +1193,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     try {
                         v = callNode.execute(frame, converters[i], arg);
                     } catch (PException e) {
-                        throw raise(ArgError, ARGUMENT_D, i + 1);
+                        throw raiseNode.get(inliningTarget).raise(ArgError, ARGUMENT_D, i + 1);
                     }
                 }
                 convParamNode.execute(frame, v, i + 1, args[i]);
@@ -1205,9 +1214,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             }
             Object result;
             if (mode == BackendMode.NFI) {
-                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib);
+                result = callNativeFunction(inliningTarget, pProc, avalues, atypes, rtype, ilib, raiseNode);
             } else {
-                result = callManagedFunction(pProc, avalues, ilib);
+                result = callManagedFunction(inliningTarget, pProc, avalues, ilib, raiseNode);
                 if (mode == BackendMode.INTRINSIC) {
                     /*
                      * We don't want result conversion for functions implemented in Java, they
@@ -1220,16 +1229,18 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             return getResultNode.execute(restype, rtype, result, checker);
         }
 
-        Object callManagedFunction(NativeFunction pProc, Object[] argarray, InteropLibrary ilib) {
+        static Object callManagedFunction(Node inliningTarget, NativeFunction pProc, Object[] argarray, InteropLibrary ilib, PRaiseNode.Lazy raiseNode) {
             try {
                 return ilib.execute(pProc.sym, argarray);
             } catch (PException e) {
                 throw e;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | AbstractTruffleException e) {
-                throw raise(RuntimeError, FFI_CALL_FAILED);
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseUncached(inliningTarget, RuntimeError, FFI_CALL_FAILED);
             } catch (UnsupportedSpecializationException ee) {
-                throw raise(NotImplementedError, toTruffleStringUncached("require backend support.")); // TODO:
-                                                                                                       // llvm/GR-???
+                // TODO: llvm/GR-???
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("require backend support."));
             }
         }
 
@@ -1243,8 +1254,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         /**
          * NFI compatible native function calls (temporary replacement)
          */
-        Object callNativeFunction(NativeFunction pProc, Object[] avalues, FFIType[] atypes, FFIType restype,
-                        InteropLibrary ilib) {
+        Object callNativeFunction(Node inliningTarget, NativeFunction pProc, Object[] avalues, FFIType[] atypes, FFIType restype,
+                        InteropLibrary ilib, PRaiseNode.Lazy raiseNode) {
             Object function;
             if (pProc.function != null && equals(atypes, pProc.atypes) && restype == pProc.rtype) {
                 function = pProc.function;
@@ -1253,7 +1264,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 try {
                     function = getFunction(pProc, signature.toJavaStringUncached());
                 } catch (Exception e) {
-                    throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
+                    throw raiseNode.get(inliningTarget).raise(RuntimeError, FFI_PREP_CIF_FAILED);
                 }
                 pProc.atypes = atypes;
                 pProc.rtype = restype;
@@ -1263,7 +1274,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             try {
                 return ilib.execute(function, avalues);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raise(RuntimeError, FFI_CALL_FAILED);
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseUncached(inliningTarget, RuntimeError, FFI_CALL_FAILED);
             }
         }
 
@@ -1445,7 +1457,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     /*
      * Convert a single Python object into a PyCArgObject and return it.
      */
-    protected abstract static class ConvParamNode extends PNodeWithRaise {
+    protected abstract static class ConvParamNode extends Node {
 
         final void execute(VirtualFrame frame, Object obj, int index, argument pa) {
             execute(frame, obj, index, pa, true);
@@ -1467,7 +1479,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
-                        @Cached ConvParamNode recursive) {
+                        @Cached ConvParamNode recursive,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (obj instanceof CDataObject cdata) {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
                 PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
@@ -1499,7 +1512,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     pa.valuePointer = Pointer.create(pa.ffi_type, pa.ffi_type.size, asInt.executeExact(frame, inliningTarget, obj), 0);
                 } catch (PException e) {
                     e.expectOverflowError(inliningTarget, profile);
-                    throw raise(OverflowError, INT_TOO_LONG_TO_CONVERT);
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, INT_TOO_LONG_TO_CONVERT);
                 }
                 return;
             }
@@ -1539,7 +1552,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 recursive.execute(frame, arg, index, pa, false);
                 return;
             }
-            throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
+            throw raiseNode.get(inliningTarget).raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
         }
     }
 

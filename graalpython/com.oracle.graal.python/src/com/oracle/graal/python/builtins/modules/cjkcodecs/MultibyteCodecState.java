@@ -52,8 +52,8 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class MultibyteCodecState {
@@ -112,7 +112,7 @@ public abstract class MultibyteCodecState {
         }
 
         @TruffleBoundary
-        protected int decode(MultibyteDecodeBuffer buf, PRaiseNode raiseNode) {
+        protected int decode(MultibyteDecodeBuffer buf, Node raisingNode) {
             while (true) {
                 coderResult = decoder.decode(buf.inputBuffer, buf.writer, true);
                 if (coderResult.isUnderflow()) {
@@ -122,7 +122,7 @@ public abstract class MultibyteCodecState {
                 }
 
                 if (coderResult.isOverflow()) {
-                    buf.grow(raiseNode);
+                    buf.grow(raisingNode);
                     return MBERR_TOOSMALL;
                 } else if (coderResult.isError()) {
                     return coderResult.length();

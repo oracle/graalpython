@@ -53,8 +53,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -88,15 +88,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         return UnicodeErrorBuiltinsFactory.getFactories();
     }
 
-    public static Object getArgAsObject(Object[] args, int index, PNodeWithRaise raiseNode) {
-        if (args.length < index + 1 || !PGuards.isString(args[index])) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
-        } else {
-            return args[index];
-        }
-    }
-
-    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PNodeWithRaise raiseNode, CastToTruffleStringNode castNode) {
+    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToTruffleStringNode castNode) {
         if (args.length < index + 1 || !PGuards.isString(args[index])) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
@@ -104,7 +96,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaIntExactNode castNode) {
+    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToJavaIntExactNode castNode) {
         if (args.length < index + 1 || !(PGuards.isInteger(args[index]) || PGuards.isPInt(args[index]))) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
@@ -144,7 +136,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static Object getArgAsBytes(VirtualFrame frame, Object[] args, int index, PNodeWithRaiseAndIndirectCall raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
+    public static Object getArgAsBytes(VirtualFrame frame, Object[] args, int index, PRaiseNode raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
         if (args.length < index + 1) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {

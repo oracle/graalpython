@@ -128,6 +128,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_MARSHAL_DATA_EOF = tsLiteral("marshal data too short");
     public static final TruffleString BAD_MARSHAL_DATA_NULL = tsLiteral("bad NULL object in marshal data");
     public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_P = tsLiteral("bad memberdescr type for %p");
+    public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_S = tsLiteral("bad memberdescr type for %s");
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");
     public static final TruffleString BAD_TYPECODE = tsLiteral("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
@@ -198,6 +199,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = tsLiteral("Cannot specify both ',' and '_'.");
     public static final TruffleString CANNOT_SPECIFY_C_WITH_C = tsLiteral("Cannot specify '%c' with '%c'.");
     public static final TruffleString CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = tsLiteral("%s: cannot use fd and follow_symlinks together");
+    public static final TruffleString CANT_SPECIFY_BOTH_DIR_FD_AND_FD = tsLiteral("%s: can't specify both dir_fd and fd");
     public static final TruffleString CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER = tsLiteral("cannot convert float infinity to integer");
     public static final TruffleString CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER = tsLiteral("cannot convert float NaN to integer");
     public static final TruffleString CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS = tsLiteral("can't capture name '_' in patterns");
@@ -859,8 +861,9 @@ public abstract class ErrorMessages {
     public static final TruffleString LINE_BUFFERING_ISNT_SUPPORTED = tsLiteral("line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used");
     public static final TruffleString UNCLOSED_FILE = tsLiteral("unclosed file %r");
     public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED = tsLiteral("maximum recursion depth exceeded");
-    public static final TruffleString UID_IS_LESS_THAN_MINIMUM = tsLiteral("uid is less than minimum");
-    public static final TruffleString UID_SHOULD_BE_INTEGER_NOT_P = tsLiteral("uid should be integer, not %p");
+    public static final TruffleString S_IS_LESS_THAN_MINIMUM = tsLiteral("%s is less than minimum");
+    public static final TruffleString S_IS_GREATER_THAN_MAXIUMUM = tsLiteral("%s is greater than maxiumum");
+    public static final TruffleString S_SHOULD_BE_INTEGER_NOT_P = tsLiteral("%s should be integer, not %p");
     public static final TruffleString RANGE_OBJ_IDX_OUT_OF_RANGE = tsLiteral("range object index out of range");
     public static final TruffleString NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE = tsLiteral("number of bits must be non-negative");
     public static final TruffleString TIMEOUT_MUST_BE_NON_NEG_NUM = tsLiteral("'timeout' must be a non-negative number");
@@ -1000,7 +1003,6 @@ public abstract class ErrorMessages {
     public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
-    public static final TruffleString ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED = tsLiteral("Array conversion to native memory not implemented");
     public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
 
     // SSL errors
@@ -1385,7 +1387,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
     public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString SIG_OF_S_IS_NOT_INT = tsLiteral("signature of %s is not an integer");
-    public static final TruffleString CANNOT_READ_FIELD_NAME_FROM_MEMBER_DEF = tsLiteral("Cannot read field 'name' from member definition");
     public static final TruffleString FIELD_SLOT_S_ISNT_INT = tsLiteral("field 'slot' of %s is not an integer");
     public static final TruffleString INVALID_SLOT_VALUE = tsLiteral("invalid slot value %d");
     public static final TruffleString ERR_WHEN_READING_LEGACY_MEYHOD_FOR_TYPE = tsLiteral("error when reading legacy method definition for type %s");
@@ -1485,6 +1486,16 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .builtin_shape=HPyType_BuiltinShape_Legacy");
     public static final TruffleString HPY_CANNOT_USE_CALL_WITH_LEGACY = tsLiteral("Cannot use HPy call protocol with legacy types that inherit the struct. " +
                     "Either set the basicsize to a non-zero value or use legacy slot 'Py_tp_call'.");
+    public static final TruffleString NFI_NOT_AVAILABLE = tsLiteral("GraalPy option '%s' is set to '%s, but the 'nfi' language, which is required for this feature, is not available. " +
+                    "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: " +
+                    "are you missing a runtime dependency 'org.graalvm.truffle:truffle-nfi-libffi', which should be a dependency of 'org.graalvm.polyglot:python{-community}'?");
+
+    public static final TruffleString LLVM_NOT_AVAILABLE = tsLiteral("GraalPy option 'NativeModules' is set to false, but the 'llvm' language, which is required for this feature, is not available. " +
+                    "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: are you missing a runtime dependency " +
+                    "'org.graalvm.polyglot:llvm{-community}'?");
+    public static final TruffleString HPY_CANNOT_USE_JNI_BACKEND = tsLiteral("Cannot use HPy JNI backend because JNI access is forbidden.");
+    public static final TruffleString HPY_NFI_NOT_YET_IMPLEMENTED = tsLiteral("HPy NFI backend is not yet implemented");
+    public static final TruffleString HPY_UNKNOWN_BACKEND = tsLiteral("unknown HPy backend: ");
     private static final String HPY_NON_DEFAULT_MESSAGE = "This is not allowed because custom HPy_mod_create slot cannot return a builtin module object and cannot make any use of any other " +
                     "data defined in the HPyModuleDef. Either do not define HPy_mod_create slot and let the runtime create a builtin module object from the provided HPyModuleDef, or do not " +
                     "define anything else but the HPy_mod_create slot.";

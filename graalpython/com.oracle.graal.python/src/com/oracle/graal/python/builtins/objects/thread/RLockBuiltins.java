@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -118,12 +119,13 @@ public final class RLockBuiltins extends PythonBuiltins {
         @Specialization
         Object releaseSave(PRLock self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile countProfile) {
+                        @Cached InlinedConditionProfile countProfile,
+                        @Cached PythonObjectFactory factory) {
             int count = self.getCount();
             if (countProfile.profile(inliningTarget, count == 0)) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);
             }
-            PTuple retVal = factory().createTuple(new Object[]{count, self.getOwnerId()});
+            PTuple retVal = factory.createTuple(new Object[]{count, self.getOwnerId()});
             self.releaseAll();
             return retVal;
         }

@@ -55,14 +55,11 @@ import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
-import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
-import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -70,6 +67,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -145,53 +143,48 @@ public class MemoryViewNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(BufferFormat.class)
-    public abstract static class UnpackValueNode extends PNodeWithRaise {
-        public abstract Object execute(BufferFormat format, TruffleString formatStr, byte[] bytes, int offset);
+    public abstract static class UnpackValueNode extends Node {
+        public abstract Object execute(Node inliningTarget, BufferFormat format, TruffleString formatStr, Object buffer, int offset);
 
         @Specialization(guards = "format != OTHER")
-        static Object unpack(BufferFormat format, @SuppressWarnings("unused") TruffleString formatStr, byte[] bytes, int offset,
-                        @Bind("this") Node inliningTarget,
+        static Object unpack(Node inliningTarget, BufferFormat format, @SuppressWarnings("unused") TruffleString formatStr, Object buffer, int offset,
                         @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
-            return unpackValueNode.execute(inliningTarget, format, bytes, offset);
+            return unpackValueNode.execute(inliningTarget, format, buffer, offset);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object notImplemented(BufferFormat format, TruffleString formatStr, byte[] bytes, int offset) {
-            throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+        static Object notImplemented(Node inliningTarget, BufferFormat format, TruffleString formatStr, Object buffer, int offset) {
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
     }
 
-    @ImportStatic({BufferFormat.class, PGuards.class})
-    public abstract static class PackValueNode extends PNodeWithRaise {
-        public abstract void execute(VirtualFrame frame, BufferFormat format, TruffleString formatStr, Object object, byte[] bytes, int offset);
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(BufferFormat.class)
+    public abstract static class PackValueNode extends Node {
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, BufferFormat format, TruffleString formatStr, Object object, Object buffer, int offset);
 
         @Specialization(guards = "format != OTHER")
-        void pack(VirtualFrame frame, BufferFormat format, TruffleString formatStr, Object value, byte[] bytes, int offset,
-                        @Bind("this") Node inliningTarget,
+        static void pack(VirtualFrame frame, Node inliningTarget, BufferFormat format, TruffleString formatStr, Object value, Object buffer, int offset,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+                        @Cached BufferStorageNodes.PackValueNode packValueNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                packValueNode.execute(frame, format, value, bytes, offset);
+                packValueNode.execute(frame, inliningTarget, format, value, buffer, offset);
             } catch (PException e) {
-                throw processException(e, formatStr, inliningTarget, errorProfile);
+                e.expect(inliningTarget, OverflowError, errorProfile);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        void notImplemented(BufferFormat format, TruffleString formatStr, Object object, byte[] bytes, int offset) {
-            throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
-        }
-
-        private PException valueError(TruffleString formatStr) {
-            throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
-        }
-
-        private PException processException(PException e, TruffleString formatStr, Node inliningTarget, IsBuiltinObjectProfile errorProfile) {
-            e.expect(inliningTarget, OverflowError, errorProfile);
-            throw valueError(formatStr);
+        static void notImplemented(Node inliningTarget, BufferFormat format, TruffleString formatStr, Object object, Object buffer, int offset) {
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
     }
 
@@ -273,65 +266,25 @@ public class MemoryViewNodes {
     abstract static class ReadItemAtNode extends Node {
         public abstract Object execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
-        @ExplodeLoop
-        static Object doNativeCached(PMemoryView self, Object ptr, int offset,
-                        @Cached("self.getItemSize()") int cachedItemSize,
-                        @Shared @Cached CStructAccess.ReadByteNode readNode,
-                        @Shared @Cached UnpackValueNode unpackValueNode) {
-
-            byte[] bytes = readNode.readByteArray(ptr, cachedItemSize, offset);
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
-        }
-
-        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
-        static Object doNativeGeneric(PMemoryView self, Object ptr, int offset,
-                        @Shared @Cached CStructAccess.ReadByteNode readNode,
-                        @Shared @Cached UnpackValueNode unpackValueNode) {
-
-            byte[] bytes = readNode.readByteArray(ptr, self.getItemSize(), offset);
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
-        }
-
-        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8", "!isPMMap(self.getOwner())"}, limit = "4")
-        @ExplodeLoop
-        Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Cached("self.getItemSize()") int cachedItemSize,
-                        @Shared @Cached UnpackValueNode unpackValueNode) {
-            byte[] bytes = new byte[cachedItemSize];
-            checkBufferBounds(this, self, bufferLib, offset, cachedItemSize);
-            bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
-        }
-
-        @Specialization(guards = {"ptr == null", "!isPMMap(self.getOwner())"}, replaces = "doManagedCached", limit = "3")
-        Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
+        @Specialization(guards = "ptr != null")
+        static Object doNative(PMemoryView self, Object ptr, int offset,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
             int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            checkBufferBounds(this, self, bufferLib, offset, itemSize);
-            bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
+            checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
+            NativeByteSequenceStorage buffer = NativeByteSequenceStorage.create(ptr, itemSize + offset, itemSize + offset, false);
+            return unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), buffer, offset);
         }
 
-        @Specialization(guards = {"ptr == null", "isPMMap(self.getOwner())"})
-        static Object doManagedPMMap(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached MMapBuiltins.GetItemNode getItem,
-                        @Cached("createCoerce()") CastToByteNode castToByteNode,
+        @Specialization(guards = "ptr == null")
+        static Object doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
             int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            for (int i = 0; i < itemSize; i++) {
-                bytes[i] = castToByteNode.execute(frame, getItem.execute(frame, self.getOwner(), offset + i));
-            }
-            Object ret = unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
-            return ret;
-        }
-
-        protected boolean isPMMap(Object owner) {
-            return owner instanceof PMMap;
+            checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
+            return unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), self.getBuffer(), offset);
         }
 
         @NeverDefault
@@ -344,63 +297,25 @@ public class MemoryViewNodes {
     abstract static class WriteItemAtNode extends Node {
         public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 
-        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
-        @ExplodeLoop
-        static void doNativeCached(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
-                        @Cached("self.getItemSize()") int cachedItemSize,
-                        @Shared @Cached CStructAccess.WriteByteNode writeNode,
-                        @Shared @Cached PackValueNode packValueNode) {
-            byte[] bytes = new byte[cachedItemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            writeNode.writeByteArray(ptr, bytes, bytes.length, 0, offset);
-        }
-
-        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
-        static void doNativeGeneric(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
-                        @Shared @Cached CStructAccess.WriteByteNode writeNode,
-                        @Shared @Cached PackValueNode packValueNode) {
-            byte[] bytes = new byte[self.getItemSize()];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            writeNode.writeByteArray(ptr, bytes, bytes.length, 0, offset);
-        }
-
-        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8", "!isPMMap(self.getOwner())"}, limit = "4")
-        @ExplodeLoop
-        void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Cached("self.getItemSize()") int cachedItemSize,
-                        @Shared @Cached PackValueNode packValueNode) {
-            byte[] bytes = new byte[cachedItemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            checkBufferBounds(this, self, bufferLib, offset, cachedItemSize);
-            bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
-        }
-
-        @Specialization(guards = {"ptr == null", "!isPMMap(self.getOwner())"}, replaces = "doManagedCached", limit = "3")
-        void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
+        @Specialization(guards = "ptr != null")
+        static void doNative(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            checkBufferBounds(this, self, bufferLib, offset, itemSize);
-            bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
+            checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
+            NativeByteSequenceStorage buffer = NativeByteSequenceStorage.create(ptr, itemSize + offset, itemSize + offset, false);
+            packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, buffer, offset);
         }
 
-        @Specialization(guards = {"ptr == null", "isPMMap(self.getOwner())"})
-        static void doPMMapGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @Shared @Cached PackValueNode packValueNode,
-                        @Cached MMapBuiltins.SetItemNode setItemNode) {
+        @Specialization(guards = "ptr == null")
+        static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            for (int i = 0; i < itemSize; i++) {
-                setItemNode.execute(frame, self.getOwner(), offset + i, bytes[i]);
-            }
-        }
-
-        protected boolean isPMMap(Object owner) {
-            return owner instanceof PMMap;
+            checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
+            packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, self.getBuffer(), offset);
         }
     }
 
@@ -416,7 +331,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PGuards.class)
-    abstract static class PointerLookupNode extends PNodeWithRaise {
+    abstract static class PointerLookupNode extends Node {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
         @Child private PyNumberAsSizeNode asSizeNode;
 
@@ -425,7 +340,7 @@ public class MemoryViewNodes {
 
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, int index);
 
-        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile) {
+        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile, PRaiseNode.Lazy raiseNode) {
             int index = initialIndex;
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
@@ -433,7 +348,7 @@ public class MemoryViewNodes {
                 index += nitems;
             }
             if (index < 0 || index >= nitems) {
-                throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
+                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
             }
 
             ptr.offset += self.getBufferStrides()[dim] * index;
@@ -447,22 +362,23 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = "self.getDimensions() == 1")
+        @Specialization
         MemoryPointer resolveInt(PMemoryView self, int index,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile) {
-            MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
-            lookupDimension(inliningTarget, self, ptr, 0, index, hasSuboffsetsProfile);
-            return ptr;
-        }
-
-        @Specialization(guards = "self.getDimensions() != 1")
-        MemoryPointer resolveIntError(PMemoryView self, @SuppressWarnings("unused") int index) {
-            if (self.getDimensions() == 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                        @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
+                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            if (hasOneDimensionProfile.profile(inliningTarget, self.getDimensions() == 1)) {
+                MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
+                lookupDimension(inliningTarget, self, ptr, 0, index, hasSuboffsetsProfile, raiseNode);
+                return ptr;
             }
-            // CPython doesn't implement this either, as of 3.8
-            throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            if (self.getDimensions() == 0) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            } else {
+                // CPython doesn't implement this either, as of 3.8
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            }
         }
 
         @Specialization(guards = {"cachedDimensions == self.getDimensions()", "cachedDimensions <= 8"}, limit = "3")
@@ -474,14 +390,15 @@ public class MemoryViewNodes {
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
-            checkTupleLength(indicesStorage, cachedDimensions);
+            checkTupleLength(inliningTarget, indicesStorage, cachedDimensions, raiseNode);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < cachedDimensions; dim++) {
                 Object indexObj = getItemNode.execute(inliningTarget, indicesStorage, dim);
-                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj);
-                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile);
+                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
+                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile, raiseNode);
             }
             return ptr;
         }
@@ -492,15 +409,16 @@ public class MemoryViewNodes {
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
             int ndim = self.getDimensions();
-            checkTupleLength(indicesStorage, ndim);
+            checkTupleLength(inliningTarget, indicesStorage, ndim, raiseNode);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < ndim; dim++) {
                 Object indexObj = getItemNode.execute(inliningTarget, indicesStorage, dim);
-                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj);
-                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile);
+                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
+                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile, raiseNode);
             }
             return ptr;
         }
@@ -508,35 +426,33 @@ public class MemoryViewNodes {
         @Specialization(guards = "!isPTuple(indexObj)")
         MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
-                        @Shared @Cached PyIndexCheckNode indexCheckNode) {
-            final int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj);
-            if (self.getDimensions() == 1) {
-                return resolveInt(self, index, inliningTarget, hasSuboffsetsProfile);
-            } else {
-                return resolveIntError(self, index);
-            }
+                        @Shared @Cached PyIndexCheckNode indexCheckNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            final int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
+            return resolveInt(self, index, inliningTarget, hasOneDimensionProfile, hasSuboffsetsProfile, raiseNode);
         }
 
-        private void checkTupleLength(SequenceStorage indicesStorage, int ndim) {
+        private static void checkTupleLength(Node inliningTarget, SequenceStorage indicesStorage, int ndim, PRaiseNode.Lazy raiseNode) {
             int length = indicesStorage.length();
             if (length == ndim) {
                 return;
             }
             // Error cases
             if (ndim == 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             } else if (length > ndim) {
-                throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
             } else {
                 // CPython doesn't implement this either, as of 3.8
-                throw raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
             }
         }
 
-        private int convertIndex(VirtualFrame frame, Node inliningTarget, PyIndexCheckNode indexCheckNode, Object indexObj) {
+        private int convertIndex(VirtualFrame frame, Node inliningTarget, PyIndexCheckNode indexCheckNode, Object indexObj, PRaiseNode.Lazy raiseNode) {
             if (!indexCheckNode.execute(inliningTarget, indexObj)) {
-                throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
             }
             return getAsSizeNode().executeExact(frame, inliningTarget, indexObj, IndexError);
         }

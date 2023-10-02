@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 4.0.1'
+patch = 'bcrypt-4.0.1.patch'

@@ -61,6 +61,7 @@ import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -108,7 +109,8 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
         PDirEntry next(VirtualFrame frame, PScandirIterator self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             if (self.ref.isReleased()) {
                 throw raiseStopIteration();
             }
@@ -118,7 +120,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                     self.ref.rewindAndClose(posixLib, getPosixSupport());
                     throw raiseStopIteration();
                 }
-                return factory().createDirEntry(dirEntryData, self.path);
+                return factory.createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
                 self.ref.rewindAndClose(posixLib, getPosixSupport());
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

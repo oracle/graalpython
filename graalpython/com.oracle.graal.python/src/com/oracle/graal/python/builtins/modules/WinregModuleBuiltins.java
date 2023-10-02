@@ -48,12 +48,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -72,6 +74,7 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
     private static final int HKEY_CURRENT_USER = 1;
     private static final int HKEY_LOCAL_MACHINE = 2;
     private static final int HKEY_CLASSES_ROOT = 3;
+    private static final int HKEY_USERS = 4;
 
     @Override
     public void initialize(Python3Core core) {
@@ -79,6 +82,11 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("HKEY_CURRENT_USER", HKEY_CURRENT_USER);
         addBuiltinConstant("HKEY_LOCAL_MACHINE", HKEY_LOCAL_MACHINE);
         addBuiltinConstant("HKEY_CLASSES_ROOT", HKEY_CLASSES_ROOT);
+        addBuiltinConstant("HKEY_USERS", HKEY_USERS);
+        // stubs to just have msvc9compiler import
+        addBuiltinConstant("error", PNone.NONE);
+        addBuiltinConstant("EnumValue", PNone.NONE);
+        addBuiltinConstant("OpenKeyEx", PNone.NONE);
     }
 
     @Builtin(name = "OpenKey", minNumOfPositionalArgs = 2, parameterNames = {"key", "sub_key", "reserved", "access"})
@@ -93,12 +101,13 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access,
+        static Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access,
                         @Bind("this") Node inliningTarget,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             if (key instanceof Integer intKey) {
                 if (intKey == HKEY_CLASSES_ROOT) {
-                    return factory().createLock();
+                    return factory.createLock();
                 }
             }
             throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);

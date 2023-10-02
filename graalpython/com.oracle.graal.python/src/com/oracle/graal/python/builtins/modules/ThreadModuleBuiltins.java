@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -72,10 +74,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -113,8 +117,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ThreadLocalNode extends PythonBuiltinNode {
         @Specialization
-        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs) {
-            return factory().createThreadLocal(cls, args, keywordArgs);
+        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createThreadLocal(cls, args, keywordArgs);
         }
     }
 
@@ -123,8 +128,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public abstract static class AllocateLockNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        PLock construct(Object self, Object unused) {
-            return factory().createLock(PythonBuiltinClassType.PLock);
+        PLock construct(Object self, Object unused,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createLock(PythonBuiltinClassType.PLock);
         }
     }
 
@@ -132,8 +138,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PLock construct(Object cls) {
-            return factory().createLock(cls);
+        PLock construct(Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createLock(cls);
         }
     }
 
@@ -141,8 +148,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PRLock construct(Object cls) {
-            return factory().createRLock(cls);
+        PRLock construct(Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createRLock(cls);
         }
     }
 
@@ -221,7 +229,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
-                        @Cached ExpandKeywordStarargsNode getKwArgsNode) {
+                        @Cached ExpandKeywordStarargsNode getKwArgsNode,
+                        @Cached PythonObjectFactory factory) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
             PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
@@ -250,9 +259,13 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         // connected as a caller which is incorrect. However, the thread-local
                         // 'topframeref' is initialized with EMPTY which will be picked up.
                         callNode.execute(null, callable, arguments, keywords);
+                    } catch (PythonThreadKillException e) {
+                        return;
+                    } catch (PException e) {
+                        if (!IsBuiltinObjectProfile.profileObjectUncached(e.getUnreifiedException(), PythonBuiltinClassType.SystemExit)) {
+                            WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
+                        }
                     } finally {
-                        // the catch blocks run ofter the gil is released, so we decrement the
-                        // threadcount here while still protected by the gil
                         try {
                             curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 1);
                         } catch (UnexpectedResultException ure) {
@@ -260,14 +273,10 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         }
                         lib.putInt(threadModule, THREAD_COUNT, curCount - 1);
                     }
-                } catch (PythonThreadKillException e) {
-                    return;
-                } catch (PException e) {
-                    WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
                 }
             }, env.getContext(), context.getThreadGroup());
 
-            PThread pThread = factory().createPythonThread(cls, thread);
+            PThread pThread = factory.createPythonThread(cls, thread);
             pThread.start();
             return pThread.getId();
         }
@@ -279,7 +288,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object setSentinel() {
-            PLock sentinelLock = factory().createLock();
+            PLock sentinelLock = PythonObjectFactory.getUncached().createLock();
             PythonContext.get(this).setSentinelLockWeakref(new WeakReference<>(sentinelLock));
             return sentinelLock;
         }
@@ -304,6 +313,17 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ThreadModuleBuiltinsClinicProviders.InterruptMainThreadNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = J_EXIT)
+    @Builtin(name = "exit_thread")
+    @GenerateNodeFactory
+    abstract static class ExitNode extends PythonBuiltinNode {
+        @Specialization
+        Object exit(
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseSystemExit(PNone.NONE);
         }
     }
 }

@@ -70,7 +70,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -131,21 +130,18 @@ public abstract class IteratorNodes {
             return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-        static int doList(Node inliningTarget, PList object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+        static int doList(PList object) {
             return object.getSequenceStorage().length();
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-        static int doTuple(Node inliningTarget, PTuple object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+        static int doTuple(PTuple object) {
             return object.getSequenceStorage().length();
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
         static int doDict(Node inliningTarget, PDict object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }
@@ -383,7 +379,9 @@ public abstract class IteratorNodes {
         }
     }
 
-    public abstract static class ToArrayNode extends PNodeWithRaise {
+    @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    public abstract static class ToArrayNode extends Node {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 
         @Specialization(guards = "isString(iterableObj)")

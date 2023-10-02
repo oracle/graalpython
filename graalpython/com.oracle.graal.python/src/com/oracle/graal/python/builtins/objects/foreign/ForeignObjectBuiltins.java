@@ -965,17 +965,19 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key, Object value,
+        static PNone doIt(Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 lib.writeMember(object, castToString.execute(key), value);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
                 gil.acquire();
             }
@@ -1034,8 +1036,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (lib.hasMembers(object)) {
                 gil.release(true);
                 try {
@@ -1047,7 +1051,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                return factory().createList();
+                return factory.get(inliningTarget).createList();
             }
         }
     }
@@ -1121,7 +1125,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isDouble,
                         @Cached InlinedBranchProfile isArray,
-                        @Cached InlinedBranchProfile defaultCase) {
+                        @Cached InlinedBranchProfile defaultCase,
+                        @Cached PythonObjectFactory.Lazy factory) {
             try {
                 if (lib.isNull(object)) {
                     isNull.enter(inliningTarget);
@@ -1176,7 +1181,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         gil.acquire();
                     }
                     if (size <= Integer.MAX_VALUE && size >= 0) {
-                        PForeignArrayIterator iterable = factory().createForeignArrayIterator(object);
+                        PForeignArrayIterator iterable = factory.get(inliningTarget).createForeignArrayIterator(object);
                         return getCallStrNode().executeObject(frame, getCastToListNode().execute(frame, iterable));
                     }
                 }
@@ -1259,9 +1264,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class BasesNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         Object getBases(Object self,
-                        @CachedLibrary("self") InteropLibrary lib) {
+                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached PythonObjectFactory factory) {
             if (lib.isMetaObject(self)) {
-                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+                return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             } else {
                 throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
             }

@@ -52,6 +52,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,9 +76,10 @@ public final class BZ2ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BZ2CompressorNode extends PythonBuiltinNode {
         @Specialization
-        public BZ2Object.BZ2Compressor doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static BZ2Object.BZ2Compressor doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BZ2CompressorBuiltins.InitNode
-            return factory().createBZ2Compressor(cls);
+            return factory.createBZ2Compressor(cls);
         }
     }
 
@@ -84,9 +87,10 @@ public final class BZ2ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BZ2DecompressorNode extends PythonBuiltinNode {
         @Specialization
-        public BZ2Object.BZ2Decompressor doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static BZ2Object.BZ2Decompressor doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BZ2DecompressorBuiltins.InitNode
-            return factory().createBZ2Decompressor(cls);
+            return factory.createBZ2Decompressor(cls);
         }
     }
 }

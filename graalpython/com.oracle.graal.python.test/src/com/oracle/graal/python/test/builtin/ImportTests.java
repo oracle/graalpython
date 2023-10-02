@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.test.builtin;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrintContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
 import java.nio.file.Path;
@@ -45,34 +44,5 @@ public class ImportTests {
                         "module B\n" + //
                         "module C\n" + //
                         "after importing moduleY\n", script);
-    }
-
-    @Test
-    public void importStandardLib() {
-        String source = "import bisect\n" + //
-                        "bisect.foo = 42\n" + //
-                        "print(bisect.foo)\n";
-        assertPrints("42\n", source);
-    }
-
-    @Test
-    public void module__file__() {
-        String source = "import bisect\n" + //
-                        "print(bisect.__file__)\n";
-        assertPrintContains("bisect.py\n", source);
-    }
-
-    @Test
-    public void module__file__1() {
-        String source = "import __future__\n" + //
-                        "print(__future__.__file__)\n";
-        assertPrintContains("__future__.py\n", source);
-    }
-
-    @Test
-    public void testFromImport() {
-        String souce = "from math import sqrt, sin as sine\n" +
-                        "print(sqrt.__name__, sine.__name__)\n";
-        assertPrints("sqrt sin\n", souce);
     }
 }

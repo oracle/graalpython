@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -184,8 +185,8 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
-        private Object getState(Node inliningTarget, PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem, HashingStorageCopy copyStorageNode,
-                        BaseExceptionAttrNode attrNode) {
+        private static Object getState(Node inliningTarget, PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem,
+                        HashingStorageCopy copyStorageNode, BaseExceptionAttrNode attrNode, PythonObjectFactory factory) {
             PDict dict = getDictIfExistsNode.execute(self);
             final Object name = attrNode.get(self, IDX_NAME, IMPORT_ERROR_ATTR_FACTORY);
             final Object path = attrNode.get(self, IDX_PATH, IMPORT_ERROR_ATTR_FACTORY);
@@ -197,7 +198,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                 if (path != null) {
                     storage = setHashingStorageItem.execute(inliningTarget, storage, T_PATH, path);
                 }
-                return factory().createDict(storage);
+                return factory.createDict(storage);
             } else if (dict != null) {
                 return dict;
             } else {
@@ -206,21 +207,22 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object reduce(PBaseException self,
+        static Object reduce(PBaseException self,
                         @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Cached HashingStorageCopy copyStorageNode) {
+                        @Cached HashingStorageCopy copyStorageNode,
+                        @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object args = getArgsNode.execute(inliningTarget, self);
-            Object state = getState(inliningTarget, self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode);
+            Object state = getState(inliningTarget, self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode, factory);
             if (state == PNone.NONE) {
-                return factory().createTuple(new Object[]{clazz, args});
+                return factory.createTuple(new Object[]{clazz, args});
             }
-            return factory().createTuple(new Object[]{clazz, args, state});
+            return factory.createTuple(new Object[]{clazz, args, state});
         }
     }
 

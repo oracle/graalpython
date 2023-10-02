@@ -31,12 +31,14 @@ import glob
 import itertools
 import json
 import os
+import pathlib
 import re
 import shlex
 import shutil
 import sys
 import time
 from functools import wraps
+from textwrap import dedent
 
 import mx_urlrewrites
 
@@ -48,6 +50,7 @@ if sys.version_info[0] < 3:
 import tempfile
 import urllib.request as urllib_request
 from argparse import ArgumentParser
+from dataclasses import dataclass
 
 import mx
 import mx_benchmark
@@ -180,6 +183,12 @@ def _extract_graalpython_internal_options(args):
     return non_internal, additional_dists
 
 
+def extend_os_env(**kwargs):
+    env = os.environ.copy()
+    env.update(**kwargs)
+    return env
+
+
 def delete_bad_env_keys(env):
     for k in ["SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"]:
         if k in env:
@@ -197,11 +206,7 @@ def check_vm(vm_warning=True, must_be_jvmci=False):
 
 
 def get_jdk():
-    if SUITE_COMPILER:
-        tag = 'jvmci'
-    else:
-        tag = None
-    return mx.get_jdk(tag=tag)
+    return mx.get_jdk()
 
 
 def full_python(args, **kwargs):
@@ -320,13 +325,9 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
 
 def node_footprint_analyzer(args, **kwargs):
-    main_class = 'com.oracle.graal.python.test.advance.NodeFootprintAnalyzer'
+    main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
     vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE'])
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
-
-
-def _pythonhome_context():
-    return set_env(GRAAL_PYTHONHOME=_pythonhome())
 
 
 def _pythonhome():
@@ -344,45 +345,66 @@ def _dev_pythonhome():
 
 def punittest(ars, report=False):
     """
-    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
-
-    Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
-    in the arguments array, then we append filter that includes all GraalPython junit tests.
+    Runs GraalPython junit tests, TCK, and memory leak tests, which can be skipped using --no-leak-tests.
+    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
+    with language home on filesystem and with language home served from the Truffle resources.
     """
-    args = []
-    args2 = []
+    args = [] if ars is None else ars
+    @dataclass
+    class TestConfig:
+        args: list
+        useResources: bool
+        reportConfig: bool = report
+        def __str__(self):
+            return f"args={self.args!r}, useResources={self.useResources}, report={self.reportConfig}"
+
+    configs = []
     skip_leak_tests = False
-    if "--regex" not in ars:
-        args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
-        args2 += ['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.advance\.AsyncActionThreadingTest']
-    if "--no-leak-tests" in ars:
+    if "--no-leak-tests" in args:
         skip_leak_tests = True
-        ars.remove("--no-leak-tests")
-    args += ars
-    args2 += ars
-    with _pythonhome_context():
-        mx_unittest.unittest(args, test_report_tags=({"task": "punittest"} if report else None))
-        if len(args2) > len(ars):
-            mx_unittest.unittest(args2)
+        args.remove("--no-leak-tests")
 
-        if skip_leak_tests:
-            return
+    # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
+    # but it is OK to apply --regex on top of the filters
+    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test']
+    configs += [
+        TestConfig(graalpy_tests + args, True),
+        TestConfig(graalpy_tests + args, False),
+        # TCK suite is not compatible with the PythonMxUnittestConfig,
+        # so it must have its own run and the useResources config is ignored
+        TestConfig(['com.oracle.truffle.tck.tests'] + args, False),
+    ]
+    if '--regex' not in args:
+        async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
+        configs.append(TestConfig(['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
 
-        common_args = ["--lang", "python",
-                       "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-                       "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+    # Workaround until imports update pulls in GR-48113
+    sulong_native = mx.distribution('SULONG_NATIVE', fatalIfMissing=True)
+    sulong_native._use_module_path = True
 
-        if not all([
-            # test leaks with Python code only
-            run_leak_launcher(common_args + ["--code", "pass", ]),
-            # test leaks when some C module code is involved
-            run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
-            # test leaks with shared engine Python code only
-            run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-            # test leaks with shared engine when some C module code is involved
-            run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
-        ]):
-            mx.abort(1)
+    for c in configs:
+        mx.log(f"Python JUnit tests configuration: {c}")
+        PythonMxUnittestConfig.useResources = c.useResources
+        mx_unittest.unittest(c.args, test_report_tags=({"task": "punittest"} if c.reportConfig else None))
+
+    if skip_leak_tests:
+        return
+
+    common_args = ["--lang", "python",
+                   "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+                   "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+
+    if not all([
+        # test leaks with Python code only
+        run_leak_launcher(common_args + ["--code", "pass", ]),
+        # test leaks when some C module code is involved
+        run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
+        # test leaks with shared engine Python code only
+        run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+        # test leaks with shared engine when some C module code is involved
+        run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+    ]):
+        mx.abort(1)
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -446,9 +468,9 @@ def run_cpython_test(raw_args):
     if args.vm:
         env = os.environ.copy()
         delete_bad_env_keys(env)
+        env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
         vm = python_gvm() if args.vm == 'gvm' else python_svm()
-        with _dev_pythonhome_context():
-            mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
+        mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
     else:
         do_run_python(python_args)
 
@@ -476,8 +498,7 @@ def retag_unittests(args):
     parser.add_argument('--jvm', action='store_true')
     parser.add_argument('--timeout')
     parsed_args, remaining_args = parser.parse_known_args(args)
-    env = os.environ.copy()
-    env.update(
+    env = extend_os_env(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
     )
@@ -559,231 +580,107 @@ def update_unittest_tags(args):
     linux_tags = _fetch_tags_for_platform(parsed_args, 'linux')
     darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
 
-    tag_exclusions = {
+    tag_exclusions = [
         # This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
-        ('test_cprofile.txt', '*graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module'),
+        'graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module',
         # The following two try to read bytecode and fail randomly as our co_code is changing
-        ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_bytecode'),
-        ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4'),
+        'graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_bytecode',
+        'graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4',
         # Temporarily disabled due to object identity or race condition (GR-24863)
-        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_deepcopy'),
+        'graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_deepcopy',
         # Temporarily disabled due to transient failures (GR-30641)
-        ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
+        'graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency',
         # Disabled since this fails on Darwin when run in parallel with many other tests
-        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes'),
-        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text'),
-        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_valid_authentication_plain_text'),
-        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_bytes'),
-        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_plain_text'),
-        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_noop'),
-        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_pass_'),
-        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_apop_normal'),
-        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_capa'),
-        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_dele'),
+        'graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes',
+        'graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text',
+        'graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_valid_authentication_plain_text',
+        'graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_bytes',
+        'graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_plain_text',
+        'graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_noop',
+        'graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_pass_',
+        'graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_apop_normal',
+        'graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_capa',
+        'graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_dele',
         # Disabled because these tests hang on Darwin
-        ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_1_ok'),
-        ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_10_ok'),
-        ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_verify'),
+        'graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_1_ok',
+        'graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_10_ok',
+        'graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_verify',
         # GC-related transients
-        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles'),
-        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead'),
-        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_object_dead'),
-        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_all_freed'),
-        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_equality'),
-        ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakkeydict'),
-        ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict'),
-        ('test_deque.txt', '*graalpython.lib-python.3.test.test_deque.TestBasic.test_container_iterator'),
-        ('test_mmap.txt', '*graalpython.lib-python.3.test.test_mmap.MmapTests.test_weakref'),
+        'graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles',
+        'graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead',
+        'graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_object_dead',
+        'graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_all_freed',
+        'graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_equality',
+        'graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakkeydict',
+        'graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict',
+        'graalpython.lib-python.3.test.test_deque.TestBasic.test_container_iterator',
+        'graalpython.lib-python.3.test.test_mmap.MmapTests.test_weakref',
         # Disabled since code object comparison is not stable for us
-        ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
-        ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),
+        'graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule',
+        'graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code',
         # Disabled since signaling isn't stable during parallel tests
-        ('test_faulthandler.txt', '*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigbus'),
-        ('test_faulthandler.txt', '*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill'),
+        'graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigbus',
+        'graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill',
         # Disabled due to transient failure
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_basic_script'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_basic_script_no_suffix'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_directory'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_directory_compiled'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_ipython_workaround'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_package'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_package_in_zipfile'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_package'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_package_compiled'),
-        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_zipfile'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_error_on_stdio_flush_1'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_parent_process'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout'),
-        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_timeout'),
-        ('test_pty.txt', '*graalpython.lib-python.3.test.test_pty.PtyTest.test_openpty'),
+        'graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.*',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_error_on_stdio_flush_1',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_parent_process',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_timeout',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLogging.*',
+        'graalpython.lib-python.3.test.test_pty.PtyTest.test_openpty',
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
-        ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance'),
-        ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion'),
-        ('test_list.txt', '*graalpython.lib-python.3.test.test_list.ListTest.test_repr_deep'),
-        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_pickle'),
-        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
-        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
-        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
-        ('test_plistlib.txt', '*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_deep_nesting'),
+        'graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance',
+        'graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion',
+        'graalpython.lib-python.3.test.test_list.ListTest.test_repr_deep',
+        'graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_pickle',
+        'graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle',
+        'graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle',
+        'graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle',
+        'graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_deep_nesting',
         # Transient, GR-41056
-        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed'),
+        'graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed',
         # Transient, at least on M1
-        ('test_ctypes.txt', '*ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf'),
+        'ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf',
         # Transient hash mismatch
-        ('test_lib2to3.txt', '*lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess'),
+        'lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess',
         # Connects to internet, sometimes can't reach
-        ('test_ssl.txt', '*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex'),
+        'graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex',
         # Transiently fails because it's dependent on timings
-        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
-        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        'graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str',
+        'graalpython.lib-python.3.test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str',
         # The whole suite transiently times out (GR-47822)
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods'),
-        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response'),
+        'graalpython.lib-python.3.test.test_docxmlrpc.*',
         # The whole suite transiently times out (GR-47822)
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.BinaryTestCase.test_decode'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.BinaryTestCase.test_default'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.BinaryTestCase.test_string'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.CGIHandlerTestCase.test_cgi_get'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.CGIHandlerTestCase.test_cgi_xmlrpc_response'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_comparison'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_datetime_datetime'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_decode'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_default'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_repr'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_struct'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_tuple'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_basic'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_fail_no_info'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_fail_with_info'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_dotted_attribute'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_dump_fault'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_repr'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipServerTestCase.test_bad_gzip_request'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipServerTestCase.test_gzip_request'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipServerTestCase.test_gzip_response'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipUtilTestCase.test_gzip_decode_limit'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_empty'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_items'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_many'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_tuple'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HelperTestCase.test_escape'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase1.test_two'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase2.test_close'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase2.test_transport'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path_fragment'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path_query'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_invalid_path'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path1'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path2'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path3'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_fragment'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_query'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_query_fragment'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_root_path'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.ServerProxyTestCase.test_close'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.ServerProxyTestCase.test_transport'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerEncodingTestCase.test_server_encoding'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_404'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_allow_dotted_names_true'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_client_encoding'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_context_manager'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_context_manager_method_error'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_dotted_attribute'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection1'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection2'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection3'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection4'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_multicall'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_non_existing_multicall'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_nonascii'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_nonascii_methodname'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_partial_post'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_unicode_host'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_dispatch_func'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_instance_func'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_registered_func'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_cannot_locate_func'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_instance_has_no_func'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_registered_func_is_none'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.TestMain.test_main'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.UseBuiltinTypesTestCase.test_cgihandler_has_use_builtin_types_flag'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.UseBuiltinTypesTestCase.test_use_builtin_types'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.UseBuiltinTypesTestCase.test_xmlrpcserver_has_use_builtin_types_flag'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_bug_1164912'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_datetime_before_1900'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_bad_dict'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_bare_datetime'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_big_int'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_big_long'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_bytes'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_double'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_encoding'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_load'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_none'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_recursive_dict'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_recursive_seq'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_get_host_info'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_keepalive_disconnect'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_limit_int'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_load_extension_types'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_load_standard_types'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_loads_unsupported'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_newstyle_class'),
-        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_ssl_presence'),
+        'graalpython.lib-python.3.test.test_xmlrpc.*',
         # The whole suite transiently times out (GR-47822)
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_command'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_error_content_length'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_handler'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_head_via_send_error'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_header_close'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_header_keep_alive'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_internal_key_error'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_latin1_header'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_request_line_trimming'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_custom_status'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_explain_error'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_header_keep_alive'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_send_blank'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_send_error'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_bogus'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_digits'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_invalid'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none_get'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_authorization'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_headers_and_content'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_invaliduri'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_issue19435'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_nested_cgi_path_issue21323'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_no_leading_slash'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_os_environ_is_not_altered'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_post'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_query_with_continuous_slashes'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_query_with_multiple_question_mark'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_url_collapse_path'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_urlquote_decoding_in_cgi_check'),
-        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.RequestHandlerLoggingTestCase.test_err'),
+        'graalpython.lib-python.3.test.test_httpservers.*',
         # Disabled because of fatal error in Sulong (GR-47592)
-        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores'),
-        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers'),
-        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores')
+        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers*',
+        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers*',
+        # TODO try to reenable when GR-48530 is fixed
+        'graalpython.lib-python.3.test.test_decimal.*',
+        # GR-48555 race condition when exitting right after join
+        'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
+        # GC-related transients
+        'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
+        # Transiently ends up with 2 processes
+        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
+        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_all_completed',
+        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_first_completed',
+    ]
+
+    result_tags = linux_tags & darwin_tags
+    result_tags = {
+        (file, tag) for file, tag in result_tags
+        if not any(fnmatch.fnmatch(tag.lstrip('*'), exclusion) for exclusion in tag_exclusions)
     }
 
-    result_tags = linux_tags & darwin_tags - tag_exclusions
     if not parsed_args.untag:
         result_tags |= current_tags
     _write_tags(result_tags)
@@ -814,6 +711,7 @@ GINSTALL_GATE_PACKAGES = {
 
 class GraalPythonTags(object):
     junit = 'python-junit'
+    junit_maven = 'python-junit-maven'
     unittest = 'python-unittest'
     unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
@@ -924,10 +822,131 @@ def _join_bin(home, name):
         return os.path.join(home, "bin", name)
 
 
+def _graalpy_launcher(managed=False):
+    name = 'graalpy-managed' if managed else 'graalpy'
+    return f"{name}.exe" if WIN32 else name
+
+
+def graalpy_standalone_home(standalone_type, enterprise=False):
+    assert standalone_type in ['native', 'jvm']
+    jdk_version = mx.get_jdk().version
+    python_home = os.environ.get("GRAALPY_HOME", None)
+    if python_home and "*" in python_home:
+        python_home = os.path.abspath(glob.glob(python_home)[0])
+        mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
+        # Try to verify that we're getting what we expect:
+        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', 'java'))
+        if has_java != (standalone_type == 'jvm'):
+            mx.abort(f"GRAALPY_HOME is not compatible with the requested distribution type.\n"
+                     f"jvm/bin/java exists?: {has_java}, requested type={standalone_type}.")
+
+        line = ''
+        with open(os.path.join(python_home, 'release'), 'r') as f:
+            while 'JAVA_VERSION=' not in line:
+                line = f.readline()
+        if 'JAVA_VERSION=' not in line:
+            mx.abort(f"GRAALPY_HOME does not contain 'release' file. Cannot check Java version.")
+        actual_jdk_version = mx.VersionSpec(line.strip('JAVA_VERSION=').strip(' "\n\r'))
+        if actual_jdk_version != jdk_version:
+            mx.abort(f"GRAALPY_HOME is not compatible with the requested JDK version.\n"
+                     f"actual version: '{actual_jdk_version}', version string: {line}, requested version: {jdk_version}.")
+
+        launcher = os.path.join(python_home, 'bin', _graalpy_launcher(enterprise))
+        out = mx.OutputCapture()
+        import_managed_status = mx.run([launcher, "-c", "import __graalpython_enterprise__"], nonZeroIsFatal=False, out=out, err=out)
+        if enterprise != (import_managed_status == 0):
+            mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
+    else:
+        env_file = 'ce-python'
+        vm_suite_path = os.path.join(mx.suite('truffle').dir, '..', 'vm')
+        svm_distr = ''
+        if enterprise:
+            env_file = 'ee-python'
+            vm_suite_path = os.path.join(mx.suite('graal-enterprise').dir, '..', 'vm-enterprise')
+            svm_distr = '_SVMEE'
+        mx_args = ['-p', vm_suite_path, '--env', env_file]
+        if not DISABLE_REBUILD:
+            dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
+            mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE_SVM{svm_distr}_JAVA{jdk_version.parts[0]}"])
+        out = mx.OutputCapture()
+        mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out)
+        python_home = out.data.splitlines()[-1].strip()
+    return python_home
+
+
+def graalpy_standalone(standalone_type, managed=False):
+    assert standalone_type in ['native', 'jvm']
+    if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
+        return graalpy_standalone('jvm')
+
+    launcher = os.path.join(graalpy_standalone_home(standalone_type, managed), 'bin', _graalpy_launcher(managed))
+    return make_coverage_launcher_if_needed(launcher)
+
+def graalpy_standalone_jvm():
+    return graalpy_standalone('jvm')
+
+
+def graalpy_standalone_native():
+    return graalpy_standalone('native')
+
+
+def graalpy_standalone_jvm_managed():
+    return graalpy_standalone('jvm', managed=True)
+
+
+def graalpy_standalone_jvm_enterprise():
+    return os.path.join(graalpy_standalone_home('jvm', enterprise=True), 'bin', _graalpy_launcher(managed=False))
+
+
+def graalpy_standalone_native_managed():
+    return graalpy_standalone('native', managed=True)
+
+
+def graalvm_jdk():
+    jdk_major_version = mx.get_jdk().version.parts[0]
+    mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+    if not DISABLE_REBUILD:
+        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"])
+    out = mx.OutputCapture()
+    mx.run_mx(mx_args + ["graalvm-home"], out=out)
+    return out.data.splitlines()[-1].strip()
+
+
+def deploy_local_maven_repo():
+    if not DISABLE_REBUILD:
+        # build GraalPy and all the necessary dependencies, so that we can deploy them
+        mx.run_mx(["build"])
+    # deploy maven artifacts
+    import mx_sdk_vm_impl
+    version = mx_sdk_vm_impl.graalvm_version('graalvm')
+    path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
+    licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
+    deploy_args = [
+        '--tags=public',
+        '--all-suites',
+        '--all-distribution-types',
+        f'--version-string={version}',
+        '--validate=none',
+        '--licenses', ','.join(licenses),
+        '--suppress-javadoc',
+        'local',
+        pathlib.Path(path).as_uri(),
+    ]
+    if not DISABLE_REBUILD:
+        mx.rmtree(path, ignore_errors=True)
+        os.mkdir(path)
+        mx.maven_deploy(deploy_args)
+    return path
+
+
 def python_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-bash-launcher")
-    launcher = _join_bin(home, "graalpy")
+    launcher = make_coverage_launcher_if_needed(_join_bin(home, "graalpy"))
+    mx.log(launcher)
+    return launcher
 
+
+def make_coverage_launcher_if_needed(launcher):
     if mx_gate.get_jacoco_agent_args():
         # patch our launchers created under jacoco to also run with jacoco.
         # do not use is_collecting_coverage() here, we only want to patch when
@@ -938,6 +957,7 @@ def python_gvm(_=None):
                     java_arg = f.read()
             assert java_arg[0] == "-", java_arg
             return shlex.quote(f'--vm.{java_arg[1:]}')
+
         agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
@@ -950,23 +970,7 @@ def python_gvm(_=None):
             f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
         os.chmod(bash_launcher, 0o775)
         mx.log(f"Replaced {launcher} with {bash_launcher} to collect coverage")
-        return bash_launcher
-
-    mx.log(launcher)
-    return launcher
-
-
-def python_managed_gvm(_=None):
-    home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
-    launcher = _join_bin(home, "graalpy-managed")
-    mx.log(launcher)
-    return launcher
-
-
-def python_enterprise_gvm(_=None):
-    home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
-    launcher = _join_bin(home, "graalpy")
-    mx.log(launcher)
+        launcher = bash_launcher
     return launcher
 
 
@@ -975,13 +979,6 @@ def python_svm(_=None):
         return python_gvm()
     home = _graalvm_home(envfile="graalpython-launcher")
     launcher = _join_bin(home, "graalpy")
-    mx.log(launcher)
-    return launcher
-
-
-def python_managed_svm():
-    home = _graalvm_home(envfile="graalpython-managed-launcher")
-    launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
 
@@ -1000,14 +997,6 @@ def native_image(args):
         "native-image",
         *args
     ])
-
-
-def python_so():
-    return _graalvm_home(envfile="graalpython-libpolyglot")
-
-
-def python_managed_so():
-    return _graalvm_home(envfile="graalpython-managed-libpolyglot")
 
 
 def _graalpytest_driver():
@@ -1049,8 +1038,7 @@ def graalpytest(args):
     cmd_args += testfiles
     if args.filter:
         cmd_args += ["-k", args.filter]
-    env = os.environ.copy()
-    env['PYTHONHASHSEED'] = '0'
+    env = extend_os_env(PYTHONHASHSEED='0')
     delete_bad_env_keys(env)
     if args.python:
         return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
@@ -1414,7 +1402,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|advance\.ResourcesTest|basic|builtin|decorator|generator|interop|util))'
+                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
                     ],
                     report=True
                 )
@@ -1425,9 +1413,30 @@ def graalpython_gate_runner(args, tasks):
                 prev = jdk.java_args_pfx
                 try:
                     jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
-                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advance.ExclusionsTest'])
+                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
+
+    # JUnit tests with Maven
+    with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
+        if task:
+            mvn_repo_path = pathlib.Path(deploy_local_maven_repo()).as_uri()
+            central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
+            pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
+            mvn_cmd_base = ['-f', pom_path, f'-Dpolyglot_repo={mvn_repo_path}', f'-Dcentral_repo={central_override}', '--batch-mode']
+
+            mx.logv("Purging the local repository before the test")
+            mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
+
+            mx.log("Running integration JUnit tests on GraalVM SDK")
+            env = extend_os_env(JAVA_HOME=graalvm_jdk())
+            mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
+
+            mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
+            mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'])
+
+            mx.logv("Purging the local repository after the test")
+            mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
@@ -1435,7 +1444,7 @@ def graalpython_gate_runner(args, tasks):
             if not WIN32:
                 mx.run(["env"])
             run_python_unittests(
-                python_gvm(),
+                graalpy_standalone_jvm(),
                 javaAsserts=True,
                 exclude=excluded_tests,
                 nonZeroIsFatal=nonZeroIsFatal,
@@ -1449,66 +1458,73 @@ def graalpython_gate_runner(args, tasks):
                 exe = os.path.join(exe, "python")
             else:
                 exe = "python3"
-            env = os.environ.copy()
-            env['PYTHONHASHSEED'] = '0'
+            env = extend_os_env(PYTHONHASHSEED='0')
             test_args = [exe, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_gvm(), javaAsserts=True, exclude=excluded_tests, report=report())
+            run_python_unittests(graalpy_standalone_native_managed(), javaAsserts=True, exclude=excluded_tests, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], javaAsserts=True, exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True, report=report(), nonZeroIsFatal=nonZeroIsFatal)
-
-    with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall], report=True) as task:
-        if task:
-            run_ginstall(python_gvm(), args=["--quiet"])
+            run_python_unittests(graalpy_standalone_jvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True, report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_svm(), nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_hpy_unittests(graalpy_standalone_native(), nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(python_managed_svm(), include_native=False, report=report())
+            run_hpy_unittests(graalpy_standalone_native_managed(), include_native=False, report=report())
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
-            os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            os.environ['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
-            try:
-                run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
-            finally:
-                del os.environ['ENABLE_STANDALONE_UNITTESTS']
+            env = {
+                'ENABLE_STANDALONE_UNITTESTS': 'true',
+                'JAVA_HOME': graalvm_jdk(),
+                'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')
+            }
+            mvn_repo_path = deploy_local_maven_repo()
+            # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+            ])
+            import mx_sdk_vm_impl
+            env["org.graalvm.maven.downloader.version"] = mx_sdk_vm_impl.graalvm_version('graalvm')
+            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
+            full_env = extend_os_env(**env)
+            mx.run([sys.executable, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests/test_standalone.py"], env=full_env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
-            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
+            run_tagged_unittests(graalpy_standalone_native(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
 
     with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
         if task:
-            run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
+            run_tagged_unittests(graalpy_standalone_native_managed(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
         if task:
-            run_python_unittests(python_svm(), exclude=excluded_tests, aot_compatible=True, report=report())
+            run_python_unittests(graalpy_standalone_native(), exclude=excluded_tests, aot_compatible=True, report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_svm(), aot_compatible=True, report=report())
+            run_python_unittests(graalpy_standalone_native_managed(), aot_compatible=True, report=report())
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -1642,7 +1658,7 @@ def graalpython_gate_runner(args, tasks):
                     """.split()
                 ),
                 "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),
-                "com.oracle.graal.python.test.advance.ExclusionsTest"
+                "com.oracle.graal.python.test.advanced.ExclusionsTest"
             ])
 
 
@@ -2023,6 +2039,16 @@ def _python_checkpatchfiles():
             # pandas puts the whole license text in the field. Its BSD-3-Clause
             'pandas-1.4.3.patch',
             'pandas-1.5.2.patch',
+            # numpy started putting the whole license text in the field. Its BSD-3-Clause
+            'numpy-1.16.4.patch',
+            'numpy-1.19.5.patch',
+            'numpy-1.21.6.patch',
+            'numpy-1.22.4.patch',
+            'numpy-1.23.1.patch',
+            'numpy-1.23.4.patch',
+            'numpy-1.23.5.patch',
+            # libcst is MIT
+            'libcst-1.0.1.patch',
             # Empty license field, skip it. It's MIT
             'setuptools-60.patch',
             'setuptools-60.9.patch',
@@ -2160,8 +2186,10 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     }},
     standalone_dependencies_enterprise={**standalone_dependencies_common, **{
         **({} if mx.is_windows() else {
+            'LLVM Runtime Managed': ('lib/sulong', []),
             'LLVM Runtime Enterprise': ('lib/sulong', []),
             'LLVM Runtime Native Enterprise': ('lib/sulong', []),
+            'GraalVM Python EE managed libraries': ('', []),
         }),
         'GraalVM Python EE': ('', []),
         'GraalVM Python license files EE': ('', []),
@@ -2185,7 +2213,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
-                '-H:+TruffleCheckBlackListedMethods',
                 '-H:+DetectUserDirectoriesInImageHeap',
                 '-H:-CopyLanguageResources',
                 '-Dpolyglot.python.PosixModuleBackend=native',
@@ -2194,7 +2221,18 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             default_vm_args=[
                 '--vm.Xss16777216', # request 16M of stack
             ],
-        )
+        ),
+    ],
+    launcher_configs=[
+        mx_sdk.LauncherConfig(
+            destination='libexec/<exe:graalpy-polyglot-get>',
+            jar_distributions=['sdk:MAVEN_DOWNLOADER'],
+            main_class='org.graalvm.maven.downloader.Main',
+            build_args=[
+                '-Dorg.graalvm.maven.downloader.relative_output_dir=../modules',
+                f'-Dorg.graalvm.maven.downloader.default_version={GRAAL_VERSION}',
+            ],
+        ),
     ],
     priority=5,
     stability="experimental",
@@ -2306,9 +2344,10 @@ def python_coverage(args):
 
     # do not endlessly rebuild tests
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
-    env = os.environ.copy()
-    env["GRAALPYTHON_MX_DISABLE_REBUILD"] = "True"
-    env["GRAALPYTEST_FAIL_FAST"] = "False"
+    env = extend_os_env(
+        GRAALPYTHON_MX_DISABLE_REBUILD="True",
+        GRAALPYTEST_FAIL_FAST="False",
+    )
 
     global _COLLECTING_COVERAGE
     _COLLECTING_COVERAGE = True
@@ -2352,7 +2391,7 @@ def python_coverage(args):
             '--exclude-src-gen',
         ], env=env)
     if args.truffle:
-        executable = python_gvm()
+        executable = graalpy_standalone_jvm()
         file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
         if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
             variants = [
@@ -2366,18 +2405,22 @@ def python_coverage(args):
                 # {"args": ["--llvm.managed"]},
             ]
 
+        common_coverage_args = [
+            "--experimental-options",
+            "--llvm.lazyParsing=false",
+            "--python.DisableFrozenModules",  # To have proper source information about lib-graalpython
+            "--coverage",
+            "--coverage.TrackInternal",
+            f"--coverage.FilterFile={file_filter}",
+            "--coverage.Output=lcov",
+        ]
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
             if os.path.exists(outfile):
                 os.unlink(outfile)
             extra_args = [
-                "--experimental-options",
-                "--llvm.lazyParsing=false",
-                "--coverage",
-                "--coverage.TrackInternal",
-                f"--coverage.FilterFile={file_filter}",
-                "--coverage.Output=lcov",
+                *common_coverage_args,
                 f"--coverage.OutputFile={outfile}",
             ]
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
@@ -2395,23 +2438,23 @@ def python_coverage(args):
         # coverage. this is to ensure all sources actuall show up - otherwise,
         # only loaded sources will be part of the coverage
         with tempfile.NamedTemporaryFile(mode="w", suffix='.py') as f:
-            f.write("""
-import os
+            f.write(dedent(f"""
+                import os
 
-for dirpath, dirnames, filenames in os.walk('{0}'):
-    if "test" in dirnames:
-        dirnames.remove("test")
-    if "tests" in dirnames:
-        dirnames.remove("tests")
-    for filename in filenames:
-        if filename.endswith(".py"):
-            fullname = os.path.join(dirpath, filename)
-            with open(fullname, 'rb') as f:
-                try:
-                    compile(f.read(), fullname, 'exec')
-                except BaseException as e:
-                    print('Could not compile', fullname, e)
-            """.format(os.path.join(SUITE.dir, "graalpython", "lib-python")))
+                for dirpath, dirnames, filenames in os.walk({os.path.join(SUITE.dir, "graalpython", "lib-graalpython")!r}):
+                    if "test" in dirnames:
+                        dirnames.remove("test")
+                    if "tests" in dirnames:
+                        dirnames.remove("tests")
+                    for filename in filenames:
+                        if filename.endswith(".py"):
+                            fullname = os.path.join(dirpath, filename)
+                            with open(fullname, 'rb') as f:
+                                try:
+                                    compile(f.read(), fullname, 'exec')
+                                except BaseException as e:
+                                    print('Could not compile', fullname, e)
+            """))
             f.flush()
             lcov_file = 'zero.lcov'
             try:
@@ -2424,18 +2467,13 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                 mx.run([
                     executable,
                     "-S",
-                    "--experimental-options",
-                    "--llvm.lazyParsing=false",
+                    *common_coverage_args,
                     "--python.PosixModuleBackend=java",
-                    "--coverage",
-                    "--coverage.TrackInternal",
-                    f"--coverage.FilterFile={file_filter}",
-                    "--coverage.Output=lcov",
-                    "--coverage.OutputFile=" + lcov_file,
+                    f"--coverage.OutputFile={lcov_file}",
                     f.name
                 ], env=None)
 
-        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
+        home_launcher = os.path.dirname(os.path.dirname(executable))
         suite_dir = SUITE.dir
         if suite_dir.endswith("/"):
             suite_dir = suite_dir[:-1]
@@ -2877,24 +2915,22 @@ def run_leak_launcher(input_args):
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
     args = input_args
-    capi_home = _get_capi_home()
     args = [
         "--keep-dump",
         "--experimental-options",
-        f"--python.CAPI={capi_home}",
         *args,
     ]
 
     env = os.environ.copy()
-    env.setdefault("GRAAL_PYTHONHOME", _pythonhome())
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
+    vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
-    vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
+    vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
     dump_path = out.data.strip().partition("Dump file:")[2].strip()
@@ -2937,11 +2973,70 @@ def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_d
     if extra_vm_args:
         vm_args += extra_vm_args
 
-    vm_args.append("com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen")
+    vm_args += ["--module", "org.graalvm.py/com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen"]
 
     print("\nGraalPython needs to be built before executing this command. If you encounter build errors because of changed builtin definitions, manually remove the contents of com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry.createBuiltinNode before building.\n")
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, cwd=SUITE.dir, **kwargs)
 
+
+def host_inlining_log_extract_method(args_in):
+    parser = ArgumentParser(description="Extracts single method from host inlining log file. "
+                                 "Result, when saved to file, can be visualized with: java scripts/HostInliningVisualizer.java filename")
+    parser.add_argument("filename", help="file with host inlining log")
+    parser.add_argument("method", help="name of a method to extract")
+    parser.add_argument("-f", "--fields",
+                        help="fields to select from the list with details, use Python subscript syntax, "
+                             "default: '-1:' (i.e., the last field: reason for the [non-]inlining decision)", default="-1:")
+    args = parser.parse_args(args_in)
+
+    start = 'Context: HostedMethod<' + args.method + ' '
+    result = []
+    inside = False
+    remove = [
+        'com.oracle.truffle.api.impl.',
+        'com.oracle.graal.python.nodes.bytecode.',
+        'com.oracle.graal.python.nodes.',
+        'com.oracle.graal.python.']
+    with open(args.filename) as file:
+        while line := file.readline():
+            if inside:
+                if line.strip() == '':
+                    print('\n'.join(result))
+                    return 0
+                match = re.search(r'\[inlined.*\]', line)
+                if match:
+                    details = match.group().split(',')
+                    details = ', '.join(eval(f"details[{args.fields}]"))  #pylint: disable=eval-used
+                    line = line[:match.start()].rstrip() + f' [{details}]'
+                for x in remove:
+                    line = line.replace(x, '')
+                result.append(line)
+            elif start in line:
+                inside = True
+    print("Method not found in the log")
+    return 1
+
+
+class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
+    # We use global state, which influences what this unit-test config is going to do
+    # The global state can be adjusted before a test run to achieve a different tests configuration
+    useResources = True # Whether to use resources, or language home of filesystem
+    # Possible future extensions: useSulong = True
+
+    def apply(self, config):
+        (vmArgs, mainClass, mainClassArgs) = config
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.api.impl=ALL-UNNAMED'])  # for TruffleRunner/TCK
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
+        if not PythonMxUnittestConfig.useResources:
+            vmArgs.append('-Dorg.graalvm.language.python.home=' + _pythonhome())
+        return (vmArgs, mainClass, mainClassArgs)
+
+    def processDeps(self, deps):
+        if PythonMxUnittestConfig.useResources:
+            deps.add(mx.distribution('GRAALPYTHON_RESOURCES', fatalIfMissing=True))
+
+
+mx_unittest.register_unittest_config(PythonMxUnittestConfig('python-internal'))
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -2958,7 +3053,6 @@ mx.update_commands(SUITE, {
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [no_return(python_svm), ''],
     'python-gvm': [no_return(python_gvm), ''],
-    'python-managed-gvm': [no_return(python_managed_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
@@ -2977,4 +3071,5 @@ mx.update_commands(SUITE, {
     'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'python-capi-forwards': [generate_capi_forwards, ''],
+    'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
 })

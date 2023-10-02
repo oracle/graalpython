@@ -7,9 +7,9 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Foreign big integers are now supported and work with all `Numeric` operators.
 
 ## Version 23.1.0
-* Oracle GraalPy distributions (also known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
+* Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
 * Add support for the sqlite3 module. This allows many packages like `coverage` or `Flask-SQLAlchemy` to work on top of this embedded database.
-* Provide Windows distributions of GraalPy. This is the first preview of Windows support for this feature, and there are limitations, but pure Python packages like Pygal can be installed with `python -m pip --no-cache install pygal`.
+* Provide Windows distributions of GraalPy. This is the first preview of Windows support for GraalPy, and there are limitations, but pure Python packages like Pygal can be installed with `python -m pip --no-cache install pygal`.
 * The GraalPy standalone tool was updated. You can now build single-file executable Python binaries for Linux, Windows, and macOS. The tool can also generate a skeleton Maven project that sets up a polyglot embedding of Python packages into Java.
 
 ## Version 23.0.0

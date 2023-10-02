@@ -25,14 +25,16 @@ Disassembly of HandlerTask.__init__:
   5:14  -   5:24        4 LOAD_GLOBAL                       0    (ValueError)
   5:8   -   5:24        6 RAISE_VARARGS                     1
   6:8   -   6:12        8 LOAD_GLOBAL                       1    (Task)
-  6:22  -   6:26       10 LOAD_FAST                         0    (self)
-  6:27  -   6:28       12 LOAD_FAST                         1    (i)
-  6:29  -   6:30       14 LOAD_FAST                         2    (p)
-  6:31  -   6:32       16 LOAD_FAST                         3    (w)
-  6:33  -   6:34       18 LOAD_FAST                         4    (s)
-  6:35  -   6:36       20 LOAD_FAST                         5    (r)
-  6:8   -   6:37       22 COLLECTION_FROM_STACK             7    (Object[])
-  6:8   -   6:37       24 CALL_METHOD_VARARGS               2    (__init__)
-  6:8   -   6:37       26 POP_TOP
-  6:8   -   6:37       27 LOAD_NONE
-  6:8   -   6:37       28 RETURN_VALUE
+  6:8   -   6:37       10 LOAD_METHOD                       2    (__init__)
+  6:8   -   6:37       12 ROT_TWO
+  6:22  -   6:26       13 LOAD_FAST                         0    (self)
+  6:27  -   6:28       15 LOAD_FAST                         1    (i)
+  6:29  -   6:30       17 LOAD_FAST                         2    (p)
+  6:31  -   6:32       19 LOAD_FAST                         3    (w)
+  6:33  -   6:34       21 LOAD_FAST                         4    (s)
+  6:35  -   6:36       23 LOAD_FAST                         5    (r)
+  6:8   -   6:37       25 COLLECTION_FROM_STACK             7    (Object[])
+  6:8   -   6:37       27 CALL_METHOD_VARARGS
+  6:8   -   6:37       28 POP_TOP
+  6:8   -   6:37       29 LOAD_NONE
+  6:8   -   6:37       30 RETURN_VALUE

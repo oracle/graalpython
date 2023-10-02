@@ -65,9 +65,11 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -150,24 +152,26 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
-        Object reduceNoIterable(VirtualFrame frame, PIslice self,
+        static Object reduceNoIterable(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Exclusive GetClassNode getClassNode,
-                        @Cached PyObjectGetIter getIter) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Shared @Cached PythonObjectFactory factory) {
             // return type(self), (iter([]), 0), 0
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{getIter.execute(frame, inliningTarget, factory().createList()), 0});
-            return factory().createTuple(new Object[]{type, tuple, 0});
+            PTuple tuple = factory.createTuple(new Object[]{getIter.execute(frame, inliningTarget, factory.createList()), 0});
+            return factory.createTuple(new Object[]{type, tuple, 0});
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
-        Object reduce(PIslice self,
+        static Object reduce(PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Exclusive GetClassNode getClassNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
             Object stop = (self.getStop() == -1) ? PNone.NONE : self.getStop();
-            PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
-            return factory().createTuple(new Object[]{type, tuple, self.getCnt()});
+            PTuple tuple = factory.createTuple(new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
+            return factory.createTuple(new Object[]{type, tuple, self.getCnt()});
         }
     }
 

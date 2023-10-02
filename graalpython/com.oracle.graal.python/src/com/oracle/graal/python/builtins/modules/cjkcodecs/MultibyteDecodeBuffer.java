@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MultibyteDecodeBuffer {
@@ -125,10 +126,10 @@ public class MultibyteDecodeBuffer {
     }
 
     @TruffleBoundary
-    protected void grow(PRaiseNode raiseNode) {
+    protected void grow(Node raisingNode) {
         int newCapacity = 2 * writer.capacity() + 1;
         if (newCapacity < 0) {
-            throw raiseNode.raise(MemoryError);
+            throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
         }
         CharBuffer newBuffer = CharBuffer.allocate(newCapacity);
         writer.flip();

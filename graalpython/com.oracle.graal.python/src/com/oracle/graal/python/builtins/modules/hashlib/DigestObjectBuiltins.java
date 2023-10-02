@@ -57,14 +57,17 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type,
@@ -82,9 +85,10 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        DigestObject copy(DigestObject self) {
+        DigestObject copy(DigestObject self,
+                        @Cached PythonObjectFactory factory) {
             try {
-                return self.copy(factory());
+                return self.copy(factory);
             } catch (CloneNotSupportedException e) {
                 throw raise(PythonBuiltinClassType.ValueError);
             }
@@ -95,8 +99,9 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DigestNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PBytes digest(DigestObject self) {
-            return factory().createBytes(self.digest());
+        static PBytes digest(DigestObject self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(self.digest());
         }
     }
 
@@ -104,10 +109,11 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HexdigestNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString hexdigest(DigestObject self,
+        static TruffleString hexdigest(DigestObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ByteToHexNode toHexNode) {
             byte[] digest = self.digest();
-            return toHexNode.execute(digest, digest.length, (byte) 0, 0);
+            return toHexNode.execute(inliningTarget, digest, digest.length, (byte) 0, 0);
         }
     }
 
@@ -124,7 +130,7 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
         PNone update(VirtualFrame frame, DigestObject self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             if (self.wasReset()) {
-                raise(PythonBuiltinClassType.ValueError, ErrorMessages.UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED);
             }
             try {
                 self.update(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));

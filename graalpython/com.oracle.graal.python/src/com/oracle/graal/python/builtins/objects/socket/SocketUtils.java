@@ -61,7 +61,11 @@ import com.oracle.truffle.api.nodes.Node;
 public class SocketUtils {
     @FunctionalInterface
     public interface SocketFunction<T> {
-        T run() throws PosixException;
+        /*
+         * NB: The library and support need to be passed as arguments and shouldn't be taken from
+         * the closure. Otherwise, Truffle has trouble inlining the library call.
+         */
+        T run(PosixSupportLibrary posixLib, Object posixSupport) throws PosixException;
     }
 
     /**
@@ -121,7 +125,7 @@ public class SocketUtils {
                 try {
                     gil.release(true);
                     try {
-                        return function.run();
+                        return function.run(posixLib, posixSupport);
                     } finally {
                         gil.acquire();
                     }

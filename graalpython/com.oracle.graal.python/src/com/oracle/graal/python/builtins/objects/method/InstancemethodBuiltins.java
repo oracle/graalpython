@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -172,11 +173,12 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doGeneric(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object cls) {
+        static Object doGeneric(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object cls,
+                        @Cached PythonObjectFactory factory) {
             if (obj == null || obj == PNone.NONE) {
                 return self.getCallable();
             }
-            return factory().createMethod(obj, self.getCallable());
+            return factory.createMethod(obj, self.getCallable());
         }
     }
 

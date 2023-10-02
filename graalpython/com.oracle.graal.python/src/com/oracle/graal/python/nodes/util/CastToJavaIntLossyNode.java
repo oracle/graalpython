@@ -61,10 +61,14 @@ public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
         return CastToJavaIntLossyNodeGen.getUncached().execute(null, x);
     }
 
-    @Specialization
-    protected static int toInt(long x) {
+    public static int castLong(long x) {
         int i = (int) x;
         return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    }
+
+    @Specialization
+    protected static int toInt(long x) {
+        return castLong(x);
     }
 
     @Specialization(rewriteOn = OverflowException.class)

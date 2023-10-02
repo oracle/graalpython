@@ -94,6 +94,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -326,7 +328,7 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected Object doInt(PList self, int index, Object value,
+        static Object doInt(PList self, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile generalizedProfile,
                         @Shared("setItem") @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
@@ -336,7 +338,7 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)")
-        public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
+        static Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile generalizedProfile,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
@@ -348,9 +350,10 @@ public final class ListBuiltins extends PythonBuiltins {
         @InliningCutoff
         @SuppressWarnings("unused")
         @Specialization(guards = "!isIndexOrSlice(this, indexCheckNode, key)")
-        protected Object doError(Object self, Object key, Object value,
-                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
+        static Object doError(Object self, Object key, Object value,
+                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         private static void updateStorage(Node inliningTarget, PList primary, SequenceStorage newStorage, InlinedConditionProfile generalizedProfile) {
@@ -418,11 +421,12 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListCopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PList copySequence(PList self,
+        static PList copySequence(PList self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.CopyNode copy,
-                        @Cached GetClassNode getClassNode) {
-            return factory().createList(getClassNode.execute(inliningTarget, self), copy.execute(inliningTarget, self.getSequenceStorage()));
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createList(getClassNode.execute(inliningTarget, self), copy.execute(inliningTarget, self.getSequenceStorage()));
         }
 
     }
@@ -851,12 +855,13 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PList doPList(PList left, PList other,
+        static PList doPList(PList left, PList other,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached PythonObjectFactory factory) {
             SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory().createList(getClassNode.execute(inliningTarget, left), newStore);
+            return factory.createList(getClassNode.execute(inliningTarget, left), newStore);
         }
 
         @Specialization(guards = "!isList(right)")
@@ -902,10 +907,11 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PList doPListInt(VirtualFrame frame, PList left, Object right,
-                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 SequenceStorage repeated = repeatNode.execute(frame, left.getSequenceStorage(), right);
-                return factory().createList(repeated);
+                return factory.createList(repeated);
             } catch (ArithmeticException | OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
@@ -1089,23 +1095,27 @@ public final class ListBuiltins extends PythonBuiltins {
          * iterator.
          */
         @Specialization(guards = {"isIntStorage(primary)"})
-        PIntegerSequenceIterator doPListInt(PList primary) {
-            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+        static PIntegerSequenceIterator doPListInt(PList primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
-        PLongSequenceIterator doPListLong(PList primary) {
-            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+        static PLongSequenceIterator doPListLong(PList primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
-        PDoubleSequenceIterator doPListDouble(PList primary) {
-            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+        static PDoubleSequenceIterator doPListDouble(PList primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        PSequenceIterator doPList(PList primary) {
-            return factory().createSequenceIterator(primary);
+        static PSequenceIterator doPList(PList primary,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSequenceIterator(primary);
         }
 
         @Fallback
@@ -1118,11 +1128,12 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReverseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reverse(PList self,
+        static Object reverse(PList self,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached PythonObjectFactory factory) {
             int len = getSequenceStorageNode.execute(inliningTarget, self).length();
-            return factory().createSequenceReverseIterator(PythonBuiltinClassType.PReverseIterator, self, len);
+            return factory.createSequenceReverseIterator(PythonBuiltinClassType.PReverseIterator, self, len);
         }
     }
 
@@ -1130,8 +1141,9 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

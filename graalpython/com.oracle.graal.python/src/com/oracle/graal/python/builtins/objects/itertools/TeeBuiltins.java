@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -98,17 +99,18 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object newTee(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
+        static Object newTee(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached("createCopyNode()") LookupAndCallUnaryNode copyNode,
-                        @Cached InlinedConditionProfile isTeeInstanceProfile) {
+                        @Cached InlinedConditionProfile isTeeInstanceProfile,
+                        @Cached PythonObjectFactory factory) {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             if (isTeeInstanceProfile.profile(inliningTarget, it instanceof PTee)) {
                 return copyNode.executeObject(frame, it);
             } else {
-                PTeeDataObject dataObj = factory().createTeeDataObject(it);
-                return factory().createTee(dataObj, 0);
+                PTeeDataObject dataObj = factory.createTeeDataObject(it);
+                return factory.createTee(dataObj, 0);
             }
         }
 
@@ -122,8 +124,9 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object copy(PTee self) {
-            return factory().createTee(self.getDataobj(), self.getIndex());
+        static Object copy(PTee self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTee(self.getDataobj(), self.getIndex());
         }
     }
 
@@ -143,16 +146,17 @@ public final class TeeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
         Object next(VirtualFrame frame, PTee self,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode) {
-            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, this);
+            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, getRaiseNode());
             self.setIndex(self.getIndex() + 1);
             return value;
         }
 
         @Specialization(guards = "self.getIndex() >= LINKCELLS")
         Object nextNext(VirtualFrame frame, PTee self,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode) {
-            self.setDataObj(self.getDataobj().jumplink(factory()));
-            Object value = self.getDataobj().getItem(frame, 0, nextNode, this);
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached PythonObjectFactory factory) {
+            self.setDataObj(self.getDataobj().jumplink(factory));
+            Object value = self.getDataobj().getItem(frame, 0, nextNode, getRaiseNode());
             self.setIndex(1);
             return value;
         }
@@ -164,14 +168,15 @@ public final class TeeBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self);
 
         @Specialization
-        Object reduce(PTee self,
+        static Object reduce(PTee self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             // return type(self), ((),), (self.dataobj, self.index)
             Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple1 = factory().createTuple(new Object[]{factory().createEmptyTuple()});
-            PTuple tuple2 = factory().createTuple(new Object[]{self.getDataobj(), self.getIndex()});
-            return factory().createTuple(new Object[]{type, tuple1, tuple2});
+            PTuple tuple1 = factory.createTuple(new Object[]{factory.createEmptyTuple()});
+            PTuple tuple2 = factory.createTuple(new Object[]{self.getDataobj(), self.getIndex()});
+            return factory.createTuple(new Object[]{type, tuple1, tuple2});
         }
     }
 

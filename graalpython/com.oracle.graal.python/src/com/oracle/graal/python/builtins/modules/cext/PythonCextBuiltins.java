@@ -76,8 +76,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -112,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
@@ -135,7 +134,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
@@ -359,7 +357,7 @@ public final class PythonCextBuiltins {
 
         protected final PException badInternalCall(String argName) {
             CompilerDirectives.transferToInterpreter();
-            throw raise(SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
+            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
         }
 
         private String getName() {
@@ -374,25 +372,25 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         protected PException raiseFallback(Object obj, PythonBuiltinClassType type) {
             if (obj == PNone.NO_VALUE) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
             if (IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(obj), type)) {
-                throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
             } else {
-                throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
             }
         }
 
         @TruffleBoundary
         protected PException raiseFallback(Object obj, PythonBuiltinClassType type1, PythonBuiltinClassType type2) {
             if (obj == PNone.NO_VALUE) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
             Object objType = GetClassNode.executeUncached(obj);
             if (IsSubtypeNode.getUncached().execute(objType, type1) || IsSubtypeNode.getUncached().execute(objType, type2)) {
-                throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
             } else {
-                throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);
             }
         }
 
@@ -418,6 +416,36 @@ public final class PythonCextBuiltins {
             if (obj1 == PNone.NO_VALUE || obj2 == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
             }
+        }
+
+        @Child private PRaiseNode raiseNode;
+
+        protected final PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                if (isAdoptable()) {
+                    raiseNode = insert(PRaiseNode.create());
+                } else {
+                    raiseNode = PRaiseNode.getUncached();
+                }
+            }
+            return raiseNode;
+        }
+
+        public PException raise(PythonBuiltinClassType type, TruffleString string) {
+            return getRaiseNode().raise(type, string);
+        }
+
+        public PException raise(PythonBuiltinClassType exceptionType) {
+            return getRaiseNode().raise(exceptionType);
+        }
+
+        public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+            return getRaiseNode().raise(type, format, arguments);
+        }
+
+        public final PException raiseBadInternalCall() {
+            return getRaiseNode().raiseBadInternalCall();
         }
     }
 
@@ -933,93 +961,6 @@ public final class PythonCextBuiltins {
                 }
             }
             throw raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    abstract static class CreateFunctionNode extends PNodeWithContext {
-
-        abstract Object execute(TruffleString name, Object callable, Object wrapper, Object type, Object flags, PythonObjectFactory factory);
-
-        @Specialization(guards = {"!isNoValue(type)", "isNoValue(wrapper)"})
-        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PythonNativeWrapper callable,
-                        @SuppressWarnings("unused") PNone wrapper,
-                        @SuppressWarnings("unused") Object type,
-                        @SuppressWarnings("unused") Object flags,
-                        @SuppressWarnings("unused") PythonObjectFactory factory) {
-            // This can happen if a native type inherits slots from a managed type. Therefore,
-            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
-            // case, we assume that the object is already callable.
-            return callable.getDelegate();
-        }
-
-        @Specialization(guards = "!isNoValue(type)")
-        @TruffleBoundary
-        Object doPythonCallable(TruffleString name, PythonNativeWrapper callable, int signature, Object type, int flags, PythonObjectFactory factory) {
-            // This can happen if a native type inherits slots from a managed type. Therefore,
-            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
-            // case, we assume that the object is already callable.
-            Object managedCallable = callable.getDelegate();
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, getLanguage(), factory, false);
-            return function != null ? function : managedCallable;
-        }
-
-        @Specialization(guards = {"!isNativeWrapper(callable)"})
-        @TruffleBoundary
-        Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-            /*
-             * This can happen if a native type inherits slots from a managed type. For example, if
-             * a native type inherits 'base->tp_richcompare' and this is '__truffle_richcompare__'
-             * and we are going to install it as '__eq__', we still need to have a wrapper around
-             * the managed callable since we need to bind the 3rd argument.
-             */
-            Object resolvedCallable = resolveClosurePointer(getContext(), callable, lib);
-            boolean doArgAndResultConversion;
-            if (resolvedCallable != null) {
-                doArgAndResultConversion = false;
-            } else {
-                doArgAndResultConversion = true;
-                resolvedCallable = callable;
-            }
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, getLanguage(), factory, doArgAndResultConversion);
-            return function != null ? function : resolvedCallable;
-        }
-
-        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapper(TruffleString name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper, @SuppressWarnings("unused") Object flags,
-                        PythonObjectFactory factory,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-            /*
-             * This can happen if a native type inherits slots from a managed type. Therefore,
-             * something like 'base->tp_new' will be a wrapper of the managed '__new__'. In this
-             * case, we can just return the managed callable since we do also not have a wrapper
-             * that could shuffle or bind arguments.
-             */
-            PBuiltinFunction managedCallable = resolveClosurePointer(getContext(), callable, lib);
-            if (managedCallable != null) {
-                return managedCallable;
-            }
-            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0, PExternalFunctionWrapper.DIRECT, getLanguage(), factory, true);
-        }
-
-        private static PBuiltinFunction resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
-            if (lib.isPointer(callable)) {
-                long pointer;
-                try {
-                    pointer = lib.asPointer(callable);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-                Object delegate = context.getCApiContext().getClosureDelegate(pointer);
-                if (delegate instanceof PBuiltinFunction function) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
-                    return function;
-                }
-            }
-            return null;
         }
     }
 

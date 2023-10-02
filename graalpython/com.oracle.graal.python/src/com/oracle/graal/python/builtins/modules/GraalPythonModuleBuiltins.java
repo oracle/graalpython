@@ -75,12 +75,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 
+import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -92,6 +94,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -241,8 +244,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
-        Env env = context.getEnv();
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
         mod.setAttribute(tsLiteral("jython_emulation_enabled"), language.getEngineOption(PythonOptions.EmulateJython));
         mod.setAttribute(tsLiteral("host_import_enabled"), context.getEnv().isHostLookupAllowed());
         mod.setAttribute(tsLiteral("core_home"), coreHome);
@@ -252,6 +253,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
+        mod.setAttribute(tsLiteral("venvlauncher_command"), context.getOption(PythonOptions.VenvlauncherCommand));
         mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
         mod.setAttribute(tsLiteral("use_system_toolchain"), context.getOption(PythonOptions.UseSystemToolchain));
         mod.setAttribute(tsLiteral("ext_mode"), context.getOption(PythonOptions.NativeModules) ? T_NATIVE : T_LLVM_LANGUAGE);
@@ -401,12 +403,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 TruffleString filename = castToTruffleStringNode.execute(inliningTarget, filenameObj);
                 TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
-                return factory().createBytes(bytes);
+                return factory.createBytes(bytes);
             } catch (Exception ex) {
                 ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex, eqNode);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
@@ -490,7 +493,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doIt(VirtualFrame frame, PFunction func,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetItem getItem) {
+                        @Cached PyObjectGetItem getItem,
+                        @Cached PythonObjectFactory factory) {
             PFunction builtinFunc = convertToBuiltin(func);
             PythonObject globals = func.getGlobals();
             PythonModule builtinModule;
@@ -501,7 +505,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinModule = getContext().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
-            return factory().createBuiltinMethod(builtinModule, builtinFunc);
+            return factory.createBuiltinMethod(builtinModule, builtinFunc);
         }
 
         @TruffleBoundary
@@ -579,7 +583,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        protected Object getToolPath() {
+        Object getToolPath() {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             Env env = getContext().getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
@@ -603,12 +608,12 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     }
                 }
                 if (path != null) {
-                    storage.putUncached(toTruffleStringUncached(path), factory().createTuple(tool.targets));
+                    storage.putUncached(toTruffleStringUncached(path), factory.createTuple(tool.targets));
                 } else {
                     LOGGER.fine("Could not locate tool " + tool.name);
                 }
             }
-            return factory().createDict(storage);
+            return factory.createDict(storage);
         }
     }
 
@@ -698,8 +703,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         };
 
         @Specialization
-        PDict doGeneric(@SuppressWarnings("unused") Object unused) {
-            return factory().createDict(fromToolchain());
+        static PDict doGeneric(@SuppressWarnings("unused") Object unused,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDict(fromToolchain());
         }
 
         @TruffleBoundary
@@ -807,6 +813,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(bytes.getSequenceStorage(), true);
             bytes.setSequenceStorage(newStorage);
             return bytes;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object toNative(PArray array) {
+            ensureCapi();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(array.getSequenceStorage(), true);
+            array.setSequenceStorage(newStorage);
+            return array;
         }
 
         @Specialization
@@ -1020,15 +1035,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
 
             try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
-                getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
-                List<String> ret = list(dir);
-                String parentPathString = dir.getParent().getAbsoluteFile().getPath();
-                for (String f : ret) {
-                    String tt = f.substring(parentPathString.length());
-                    if (tt.charAt(0) == '\\') {
-                        tt = tt.replace("\\", "/");
+                TruffleFile p = getContext().getPublicTruffleFileRelaxed(filesListPath).getParent();
+                if (!p.exists()) {
+                    getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
+                }
+                Set<String> ret = list(dir, null);
+                String[] a = ret.toArray(new String[ret.size()]);
+                Arrays.sort(a);
+                for (String f : a) {
+                    if (f.charAt(0) == '\\') {
+                        f = f.replace("\\", "/");
                     }
-                    bw.write(tt);
+
+                    bw.write(f);
                     bw.write("\n");
                 }
             } catch (IOException e) {
@@ -1038,24 +1057,44 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private static List<String> list(TruffleFile dir) throws IOException {
-            List<String> ret = new ArrayList<>();
+        private static Set<String> list(TruffleFile dir, TruffleFile rd) throws IOException {
+            HashSet<String> ret = new HashSet<>();
             Collection<TruffleFile> files = dir.list();
-            String dirPath = dir.getAbsoluteFile().getPath();
-            if (!dirPath.endsWith("/")) {
-                dirPath = dirPath + "/";
+            String dirPath = makeDirPath(dir.getAbsoluteFile().getPath());
+
+            // add dir
+            TruffleFile rootDir = rd == null ? dir : rd;
+            String rootPath = makeDirPath(rootDir.getAbsoluteFile().getPath());
+            int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
+            ret.add(dirPath.substring(rootEndIdx));
+
+            // add parents up to root
+            TruffleFile parent = dir;
+            while (!parent.equals(rootDir)) {
+                String p = makeDirPath(parent.getAbsoluteFile().getPath());
+                p = p.substring(rootEndIdx);
+                ret.add(p);
+                parent = parent.getParent();
             }
-            ret.add(dirPath);
+
+            // add children
             if (files != null) {
                 for (TruffleFile f : files) {
                     if (f.isRegularFile()) {
-                        ret.add(f.getAbsoluteFile().getPath());
+                        ret.add(f.getAbsoluteFile().getPath().substring(rootEndIdx));
                     } else {
-                        ret.addAll(list(f));
+                        ret.addAll(list(f, rootDir));
                     }
                 }
             }
             return ret;
+        }
+
+        private static String makeDirPath(String p) {
+            if (!p.endsWith(File.separator)) {
+                p = p + File.separator;
+            }
+            return p;
         }
 
         private void print(OutputStream out, String msg) {
@@ -1064,6 +1103,27 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             } catch (IOException ioException) {
                 // Ignore
             }
+        }
+    }
+
+    @Builtin(name = "get_graalvm_version", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetGraalVmVersion extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        TruffleString get() {
+            Version current = Version.getCurrent();
+            return TruffleString.fromJavaStringUncached(current.toString(), TS_ENCODING);
+        }
+    }
+
+    @Builtin(name = "get_jdk_version", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetJdkVersion extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        TruffleString get() {
+            return TruffleString.fromJavaStringUncached(System.getProperty("java.version"), TS_ENCODING);
         }
     }
 }

@@ -60,3 +60,6 @@ Some packages may require the following, but most do not, so you can also remove
 rm -rf lib/python3.*/site-packages/setuptools*
 rm -rf lib/python3.*/site-packages/pkg_resources*
 ```
+
+The GraalPy `standalone` module can be used to generate a Maven project skeleton that includes all necessary setup for a venv embedding into  Java application.
+Run `graalpy -m standalone polyglot_app --help` for more information.

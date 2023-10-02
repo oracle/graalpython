@@ -61,9 +61,11 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -103,8 +105,9 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent) {
-            return factory().createTuple(new Object[]{jsonEncode(self, obj)});
+        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{jsonEncode(self, obj)});
         }
 
         @TruffleBoundary
@@ -128,7 +131,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void appendFloat(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, double obj) {
             if (!Double.isFinite(obj)) {
                 if (!encoder.allowNan) {
-                    throw raise(ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
                 }
                 if (obj > 0) {
                     builder.appendStringUncached(T_POSITIVE_INFINITY);
@@ -159,7 +162,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 case None:
                     Object result = CallUnaryMethodNode.getUncached().executeObject(encoder.encoder, obj);
                     if (!isString(result)) {
-                        throw raise(TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
+                        throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
                     }
                     builder.appendStringUncached(CastToTruffleStringNode.executeUncached(result));
                     break;
@@ -224,7 +227,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void startRecursion(PJSONEncoder encoder, Object obj) {
             if (encoder.markers != PNone.NONE) {
                 if (!encoder.tryAddCircular(obj)) {
-                    throw raise(ValueError, ErrorMessages.CIRCULAR_REFERENCE_DETECTED);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.CIRCULAR_REFERENCE_DETECTED);
                 }
             }
         }
@@ -271,7 +274,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
-                    throw raise(ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
                 }
                 SequenceStorage sequenceStorage = ((PTuple) item).getSequenceStorage();
                 Object key = sequenceStorage.getItemNormalized(0);
@@ -291,7 +294,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     if (encoder.skipKeys) {
                         return true;
                     }
-                    throw raise(TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
+                    throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
                 }
                 builder.appendCodePointUncached('"');
                 appendSimpleObj(encoder, builder, key);

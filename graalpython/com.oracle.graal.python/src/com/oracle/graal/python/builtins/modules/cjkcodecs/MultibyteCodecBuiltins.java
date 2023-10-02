@@ -59,12 +59,15 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -111,42 +114,44 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteCodec_encode_impl
         @Specialization
-        Object ts(VirtualFrame frame, MultibyteCodecObject self, TruffleString ucvt, TruffleString errors,
-                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared("q") TruffleString.EqualNode isEqual) {
+        static Object ts(VirtualFrame frame, MultibyteCodecObject self, TruffleString ucvt, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.EqualNode isEqual,
+                        @Shared @Cached PythonObjectFactory factory) {
             TruffleString errorcb = internalErrorCallback(errors, isEqual);
             MultibyteCodecState state = self.codec.encinit(errorcb);
             int datalen = codePointLengthNode.execute(ucvt, TS_ENCODING);
-            PBytes r = encodeEmptyInput(datalen, MBENC_FLUSH | MBENC_RESET, factory());
+            PBytes r = encodeEmptyInput(datalen, MBENC_FLUSH | MBENC_RESET, factory);
             if (r == null) {
                 MultibyteEncodeBuffer buf = new MultibyteEncodeBuffer(ucvt);
-                r = encodeNode.execute(frame, self.codec, state, buf, errorcb, MBENC_FLUSH | MBENC_RESET,
-                                factory());
+                r = encodeNode.execute(frame, inliningTarget, self.codec, state, buf, errorcb, MBENC_FLUSH | MBENC_RESET, factory);
             }
-            return factory().createTuple(new Object[]{r, datalen});
+            return factory.createTuple(new Object[]{r, datalen});
         }
 
         @Specialization(guards = "!isTruffleString(input)")
-        @SuppressWarnings("truffle-static-method")
-        Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
+        static Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheck,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared("q") TruffleString.EqualNode isEqual) {
+                        @Exclusive @Cached MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.EqualNode isEqual,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object ucvt = input;
             if (!unicodeCheck.execute(inliningTarget, input)) {
                 ucvt = strNode.execute(frame, inliningTarget, input);
                 if (!unicodeCheck.execute(inliningTarget, ucvt)) {
-                    throw raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
                 }
             }
 
             TruffleString str = toTruffleStringNode.execute(inliningTarget, ucvt);
-            return ts(frame, self, str, errors, encodeNode, codePointLengthNode, isEqual);
+            return ts(frame, self, str, errors, inliningTarget, encodeNode, codePointLengthNode, isEqual, factory);
         }
 
     }
@@ -180,18 +185,19 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
         @Specialization
         Object decode(VirtualFrame frame, MultibyteCodecObject self, byte[] input, TruffleString errors,
                         @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
-                        @Cached TruffleString.EqualNode isEqual) {
+                        @Cached TruffleString.EqualNode isEqual,
+                        @Cached PythonObjectFactory factory) {
             int datalen = input.length;
 
             TruffleString errorcb = internalErrorCallback(errors, isEqual);
 
             if (datalen == 0) {
-                return factory().createTuple(new Object[]{T_EMPTY_STRING, 0});
+                return factory.createTuple(new Object[]{T_EMPTY_STRING, 0});
             }
             MultibyteDecodeBuffer buf = new MultibyteDecodeBuffer(input);
             MultibyteCodecState state = self.codec.decinit(errorcb);
             while (!buf.isFull()) {
-                int r = self.codec.decode(state, buf, getRaiseNode());
+                int r = self.codec.decode(state, buf, this);
                 if (r == 0) {
                     break;
                 } else {
@@ -199,7 +205,7 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory().createTuple(new Object[]{buf.toTString(), datalen});
+            return factory.createTuple(new Object[]{buf.toTString(), datalen});
         }
     }
 

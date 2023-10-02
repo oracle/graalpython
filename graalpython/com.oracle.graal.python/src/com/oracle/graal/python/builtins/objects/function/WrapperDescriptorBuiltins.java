@@ -58,7 +58,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,22 +79,24 @@ public final class WrapperDescriptorBuiltins extends PythonBuiltins {
     @SuppressWarnings("unused")
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = {"!isPNone(instance)"})
-        protected PMethod doMethod(PFunction self, Object instance, Object klass) {
-            return factory().createMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
+        static PMethod doMethod(PFunction self, Object instance, Object klass,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
         }
 
         @Specialization
-        protected static Object doFunction(PFunction self, PNone instance, Object klass) {
+        static Object doFunction(PFunction self, PNone instance, Object klass) {
             return self;
         }
 
         @Specialization(guards = {"!isPNone(instance)"})
-        protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
-            return factory().createBuiltinMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
+        static PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBuiltinMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
         }
 
         @Specialization
-        protected static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
+        static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
             return self;
         }
     }

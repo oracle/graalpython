@@ -1810,6 +1810,16 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) {
+        throw new UnsupportedPosixFeatureException("Emulated fchownat not supported");
+    }
+
+    @ExportMessage
+    public void fchown(int fd, long owner, long group) {
+        throw new UnsupportedPosixFeatureException("Emulated fchown not supported");
+    }
+
+    @ExportMessage
     public Object readlinkat(int dirFd, Object path,
                     @Bind("$node") Node inliningTarget,
                     @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
@@ -2043,6 +2053,20 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public long setsid() {
         throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public long[] getgroups() {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            switch (PythonOS.getPythonOS()) {
+                case PLATFORM_LINUX, PLATFORM_DARWIN -> {
+                    return new UnixSystem().getGroups();
+                }
+                default -> throw new UnsupportedPosixFeatureException("emulated getgroups is not available on this platform");
+            }
+        }
+        throw new UnsupportedPosixFeatureException("getgroups was excluded");
     }
 
     @ExportMessage
@@ -3408,21 +3432,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    static class CreateUniversalSockAddr {
-        @Specialization
-        static UniversalSockAddr inet4(EmulatedPosixSupport receiver, Inet4SockAddr src) {
-            return EmulatedUniversalSockAddrImpl.inet4(src.getAddressAsBytes(), src.getPort());
-        }
+    UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src) {
+        return EmulatedUniversalSockAddrImpl.inet4(src.getAddressAsBytes(), src.getPort());
+    }
 
-        @Specialization
-        static UniversalSockAddr inet6(EmulatedPosixSupport receiver, Inet6SockAddr src) {
-            return EmulatedUniversalSockAddrImpl.inet6(src.getAddress(), src.getScopeId(), src.getPort());
-        }
+    @ExportMessage
+    UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src) {
+        return EmulatedUniversalSockAddrImpl.inet6(src.getAddress(), src.getScopeId(), src.getPort());
+    }
 
-        @Specialization
-        static UniversalSockAddr unix(EmulatedPosixSupport receiver, UnixSockAddr src) {
-            throw new UnsupportedPosixFeatureException("AF_UNIX cannot be emulated");
-        }
+    @ExportMessage
+    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) {
+        throw new UnsupportedPosixFeatureException("AF_UNIX cannot be emulated");
     }
 
     @ExportLibrary(UniversalSockAddrLibrary.class)

@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -166,20 +167,23 @@ public final class LockBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "!blocking"})
-        boolean err1(AbstractPythonLock self, boolean blocking, double timeout) {
-            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
+        static boolean err1(AbstractPythonLock self, boolean blocking, double timeout,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "isNeg(timeout)"})
-        boolean err2(AbstractPythonLock self, boolean blocking, double timeout) {
-            throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
+        static boolean err2(AbstractPythonLock self, boolean blocking, double timeout,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "timeout > TIMEOUT_MAX"})
-        boolean err3(AbstractPythonLock self, boolean blocking, double timeout) {
-            throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
+        static boolean err3(AbstractPythonLock self, boolean blocking, double timeout,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
         }
 
         protected static boolean invalidArgs(boolean blocking, double timeout) {

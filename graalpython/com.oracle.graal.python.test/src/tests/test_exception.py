@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -641,4 +641,10 @@ class ExceptionTests(unittest.TestCase):
         assert 'e' not in g
         exec("try:1/0\nexcept Exception as e: pass", g)
         assert 'e' not in g
+
+    def test_del(self):
+        try:
+            del notexisting
+        except NameError:
+            pass
 

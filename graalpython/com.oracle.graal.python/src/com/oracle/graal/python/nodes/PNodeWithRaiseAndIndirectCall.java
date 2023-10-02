@@ -45,7 +45,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 
-public class PNodeWithRaiseAndIndirectCall extends PNodeWithRaise implements IndirectCallNode {
+public class PNodeWithRaiseAndIndirectCall extends PNodeWithContext implements IndirectCallNode {
 
     @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
     @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;

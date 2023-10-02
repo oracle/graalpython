@@ -90,7 +90,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -109,7 +108,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -126,6 +124,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -314,6 +313,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
+            if (entry.getKey().equals("GRAAL_PYTHON_ARGS") && entry.getValue().endsWith("\013")) {
+                // was already processed at startup in GraalPythonMain and
+                // we don't want subprocesses to pick it up
+                continue;
+            }
             Object key, val;
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 key = toTruffleStringUncached(entry.getKey());
@@ -344,6 +348,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             environ.setItem(key, val);
+        }
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            // XXX: Until we fix pip
+            environ.setItem(toTruffleStringUncached("PIP_NO_CACHE_DIR"), toTruffleStringUncached("0"));
         }
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
@@ -711,6 +719,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "getgroups")
+    @GenerateNodeFactory
+    abstract static class GetGroupsNode extends PythonBuiltinNode {
+        @Specialization
+        Object getgroups(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            try {
+                long[] groups = posixLib.getgroups(getPosixSupport());
+                return factory.createList(new LongSequenceStorage(groups));
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
     @Builtin(name = "openpty")
     @GenerateNodeFactory
     public abstract static class OpenPtyNode extends PythonBuiltinNode {
@@ -719,12 +745,13 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         Object openpty(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 OpenPtyResult result = posixLib.openpty(getPosixSupport());
                 posixLib.setInheritable(getPosixSupport(), result.masterFd(), false);
                 posixLib.setInheritable(getPosixSupport(), result.slaveFd(), false);
-                return factory().createTuple(new int[]{result.masterFd(), result.slaveFd()});
+                return factory.createTuple(new int[]{result.masterFd(), result.slaveFd()});
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -830,13 +857,14 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile errorProfile1,
                         @Cached InlinedBranchProfile errorProfile2,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
             }
             try {
-                return read(fd, length, inliningTarget, posixLib, errorProfile1, gil);
+                return read(fd, length, inliningTarget, posixLib, errorProfile1, gil, factory);
             } catch (PosixException e) {
                 errorProfile2.enter(inliningTarget);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -846,7 +874,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         public PBytes read(int fd, int length,
                         Node inliningTarget,
                         PosixSupportLibrary posixLib,
-                        InlinedBranchProfile errorProfile, GilNode gil) throws PosixException {
+                        InlinedBranchProfile errorProfile, GilNode gil, PythonObjectFactory factory) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
@@ -857,7 +885,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                             // removed once we support large arrays
                             throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
                         }
-                        return factory().createBytes(result.data, 0, (int) result.length);
+                        return factory.createBytes(result.data, 0, (int) result.length);
                     } catch (PosixException e) {
                         errorProfile.enter(inliningTarget);
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
@@ -1038,7 +1066,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GilNode gil,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             int[] pipe;
             gil.release(true);
             try {
@@ -1049,7 +1078,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
+            return factory.createTuple(new Object[]{pipe[0], pipe[1]});
         }
     }
 
@@ -1227,11 +1256,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PTuple getTerminalSize(VirtualFrame frame, int fd,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             // TODO default value should be fileno(stdout)
             try {
                 int[] result = posixLib.getTerminalSize(getPosixSupport(), fd);
-                return factory().createStructSeq(TERMINAL_SIZE_DESC, result[0], result[1]);
+                return factory.createStructSeq(TERMINAL_SIZE_DESC, result[0], result[1]);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1255,10 +1285,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared("positive") @Cached InlinedConditionProfile positiveLongProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 long[] out = posixLib.fstatat(getPosixSupport(), dirFd, path.value, followSymlinks);
-                return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
+                return createStatResult(inliningTarget, factory, positiveLongProfile, out);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1281,10 +1312,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared("positive") @Cached InlinedConditionProfile positiveLongProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd.fd);
-                return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
+                return createStatResult(inliningTarget, factory, positiveLongProfile, out);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -1311,11 +1343,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile positiveLongProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 // TODO we used to return all zeros when the filename was equal to sys.executable
                 long[] out = posixLib.fstatat(getPosixSupport(), dirFd, path.value, false);
-                return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
+                return createStatResult(inliningTarget, factory, positiveLongProfile, out);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1338,11 +1371,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile positiveLongProfile,
                         @Cached InlinedBranchProfile errorProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             while (true) {
                 try {
                     long[] out = posixLib.fstat(getPosixSupport(), fd);
-                    return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
+                    return createStatResult(inliningTarget, factory, positiveLongProfile, out);
                 } catch (PosixException e) {
                     errorProfile.enter(inliningTarget);
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
@@ -1366,40 +1400,30 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple doStatvfsPath(VirtualFrame frame, PosixPath path,
+        PTuple doStatvfs(VirtualFrame frame, PosixFileHandle posixFileHandle,
                         @Bind("this") Node inliningTarget,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached InlinedConditionProfile positiveLongProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached InlinedConditionProfile posixPathProfile,
+                        @Cached InlinedConditionProfile positiveLongProfile,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            long[] out;
             try {
-                long[] out = posixLib.statvfs(getPosixSupport(), path.value);
-                return createStatvfsResult(inliningTarget, factory(), positiveLongProfile, out);
+                if (posixPathProfile.profile(inliningTarget, posixFileHandle instanceof PosixPath)) {
+                    out = posixLib.statvfs(getPosixSupport(), ((PosixPath) posixFileHandle).value);
+                } else {
+                    out = posixLib.fstatvfs(getPosixSupport(), ((PosixFd) posixFileHandle).fd);
+                }
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, posixFileHandle.originalObject);
             }
-        }
-
-        @Specialization()
-        PTuple doStatvfsFd(VirtualFrame frame, PosixFd fd,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached InlinedConditionProfile positiveLongProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            try {
-                long[] out = posixLib.fstatvfs(getPosixSupport(), fd.fd);
-                return createStatvfsResult(inliningTarget, factory(), positiveLongProfile, out);
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
-            }
-        }
-
-        private static PTuple createStatvfsResult(Node inliningTarget, PythonObjectFactory factory, InlinedConditionProfile positiveLongProfile, long[] out) {
             Object[] res = new Object[out.length];
             for (int i = 0; i < out.length; i++) {
                 res[i] = PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, positiveLongProfile, out[i]);
             }
             return factory.createStructSeq(STATVFS_RESULT_DESC, res);
         }
+
     }
 
     @Builtin(name = "uname", minNumOfPositionalArgs = 0)
@@ -1410,9 +1434,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PTuple uname(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
-                return factory().createStructSeq(UNAME_RESULT_DESC, posixLib.uname(getPosixSupport()));
+                return factory.createStructSeq(UNAME_RESULT_DESC, posixLib.uname(getPosixSupport()));
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1594,9 +1619,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PBytes getcwdb(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
-                return opaquePathToBytes(posixLib.getcwd(getPosixSupport()), posixLib, getPosixSupport(), factory());
+                return opaquePathToBytes(posixLib.getcwd(getPosixSupport()), posixLib, getPosixSupport(), factory);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -1730,10 +1756,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             auditNode.audit(inliningTarget, "os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return factory().createScandirIterator(getContext(), posixLib.opendir(getPosixSupport(), path.value), path, false);
+                return factory.createScandirIterator(getContext(), posixLib.opendir(getPosixSupport(), path.value), path, false);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1744,10 +1771,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             auditNode.audit(inliningTarget, "os.scandir", fd.originalObject);
             Object dirStream = dupAndFdopendir(frame, inliningTarget, posixLib, getPosixSupport(), fd, constructAndRaiseNode);
-            return factory().createScandirIterator(getContext(), dirStream, fd, true);
+            return factory.createScandirIterator(getContext(), dirStream, fd, true);
         }
     }
 
@@ -1766,10 +1794,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             auditNode.audit(inliningTarget, "os.listdir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return listdir(frame, inliningTarget, posixLib.opendir(getPosixSupport(), path.value), path.wasBufferLike, false, posixLib, constructAndRaiseNode);
+                return listdir(frame, inliningTarget, posixLib.opendir(getPosixSupport(), path.value), path.wasBufferLike, false, posixLib, constructAndRaiseNode, factory);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1780,24 +1809,25 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             auditNode.audit(inliningTarget, "os.listdir", fd.originalObject);
             Object dirStream = dupAndFdopendir(frame, inliningTarget, posixLib, getPosixSupport(), fd, constructAndRaiseNode);
-            return listdir(frame, inliningTarget, dirStream, false, true, posixLib, constructAndRaiseNode);
+            return listdir(frame, inliningTarget, dirStream, false, true, posixLib, constructAndRaiseNode, factory);
         }
 
         private PList listdir(VirtualFrame frame, Node inliningTarget, Object dirStream, boolean produceBytes, boolean needsRewind, PosixSupportLibrary posixLib,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode, PythonObjectFactory factory) {
             List<Object> list = new ArrayList<>();
             try {
                 while (true) {
                     Object dirEntry = posixLib.readdir(getPosixSupport(), dirStream);
                     if (dirEntry == null) {
-                        return factory().createList(listToArray(list));
+                        return factory.createList(listToArray(list));
                     }
                     Object name = posixLib.dirEntryGetName(getPosixSupport(), dirEntry);
                     if (produceBytes) {
-                        addToList(list, opaquePathToBytes(name, posixLib, getPosixSupport(), factory()));
+                        addToList(list, opaquePathToBytes(name, posixLib, getPosixSupport(), factory));
                     } else {
                         addToList(list, posixLib.getPathAsString(getPosixSupport(), name));
                     }
@@ -1811,7 +1841,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 try {
                     posixLib.closedir(getPosixSupport(), dirStream);
                 } catch (PosixException e) {
-                    // ignored (CPython does not chek the return value of closedir)
+                    // ignored (CPython does not check the return value of closedir)
                 }
             }
         }
@@ -1845,11 +1875,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-static-method")
-    abstract static class UtimeArgsToTimespecNode extends PNodeWithRaise {
+    @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    abstract static class UtimeArgsToTimespecNode extends Node {
         abstract long[] execute(VirtualFrame frame, Object times, Object ns);
 
-        Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
+        final Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
             long[] timespec = execute(frame, times, ns);
             return timespec == null ? null : new Timeval[]{new Timeval(timespec[0], timespec[1] / 1000), new Timeval(timespec[2], timespec[3] / 1000)};
         }
@@ -1861,51 +1892,57 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(ns)"})
-        long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
+        static long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached LenNode lenNode,
                         @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached ObjectToTimespecNode objectToTimespecNode) {
-            return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode);
+                        @Cached ObjectToTimespecNode objectToTimespecNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode, raiseNode);
         }
 
         @Specialization
-        long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
+        static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached LenNode lenNode,
                         @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode) {
-            return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode);
+                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode, raiseNode);
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
         @SuppressWarnings("unused")
-        long[] bothSpecified(VirtualFrame frame, Object times, Object ns) {
-            throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
+        static long[] bothSpecified(VirtualFrame frame, Object times, Object ns,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isPTuple(times)", "isNoValue(ns)"})
         @SuppressWarnings("unused")
-        long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns) {
-            throw timesTupleError();
+        static long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw timesTupleError(raiseNode);
         }
 
         @Specialization(guards = {"!isNoValue(ns)", "!isPTuple(ns)"})
         @SuppressWarnings("unused")
-        long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns) {
+        static long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns,
+                        @Shared @Cached PRaiseNode raiseNode) {
             // ns can actually also contain objects implementing __divmod__, but CPython produces
             // this error message
-            throw raise(TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
         }
 
-        private PException timesTupleError() {
+        private static PException timesTupleError(PRaiseNode raiseNode) {
             // times can actually also contain floats, but CPython produces this error message
-            throw raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
         }
 
-        private long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode) {
+        private static long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode,
+                        PRaiseNode.Lazy raiseNode) {
             if (lenNode.execute(inliningTarget, times) != 2) {
-                throw timesTupleError();
+                throw timesTupleError(raiseNode.get(inliningTarget));
             }
             long[] timespec = new long[4];
             convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);
@@ -2199,6 +2236,134 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "fchown", parameterNames = {"fd", "uid", "gid"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "uid", conversionClass = UidConversionNode.class)
+    @ArgumentClinic(name = "gid", conversionClass = GidConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class FChownNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        Object chown(VirtualFrame frame, int fd, long uid, long gid,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.chown", fd, uid, gid, -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchown(getPosixSupport(), fd, uid, gid);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FChownNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "lchown", parameterNames = {"path", "uid", "gid"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "uid", conversionClass = UidConversionNode.class)
+    @ArgumentClinic(name = "gid", conversionClass = GidConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class LChownNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        Object chown(VirtualFrame frame, PosixPath path, long uid, long gid,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchownat(getPosixSupport(), AT_FDCWD.value, path.value, uid, gid, false);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.LChownNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "chown", minNumOfPositionalArgs = 3, parameterNames = {"path", "uid", "gid"}, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "uid", conversionClass = UidConversionNode.class)
+    @ArgumentClinic(name = "gid", conversionClass = GidConversionNode.class)
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class ChownNode extends PythonClinicBuiltinNode {
+        @Specialization
+        Object chown(VirtualFrame frame, PosixPath path, long uid, long gid, int dirFd, boolean followSymlinks,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, dirFd != AT_FDCWD.value ? dirFd : -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchownat(getPosixSupport(), dirFd, path.value, uid, gid, followSymlinks);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object chown(VirtualFrame frame, PosixFd fd, long uid, long gid, int dirFd, boolean followSymlinks,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            if (dirFd != AT_FDCWD.value) {
+                throw raise(ValueError, ErrorMessages.CANT_SPECIFY_BOTH_DIR_FD_AND_FD);
+            }
+            if (followSymlinks) {
+                throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chown");
+            }
+            auditNode.audit(inliningTarget, "os.chown", fd.originalObject, uid, gid, -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchown(getPosixSupport(), fd.fd, uid, gid);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ChownNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
@@ -2216,11 +2381,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile wasBufferLikeProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 Object link = posixLib.readlinkat(getPosixSupport(), dirFd, path.value);
                 if (wasBufferLikeProfile.profile(inliningTarget, path.wasBufferLike)) {
-                    return opaquePathToBytes(link, posixLib, getPosixSupport(), factory());
+                    return opaquePathToBytes(link, posixLib, getPosixSupport(), factory);
                 } else {
                     return posixLib.getPathAsString(getPosixSupport(), link);
                 }
@@ -2275,13 +2441,14 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             gil.release(true);
             try {
                 while (true) {
                     try {
                         long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
-                        return factory().createTuple(new Object[]{result[0], result[1]});
+                        return factory.createTuple(new Object[]{result[0], result[1]});
                     } catch (PosixException e) {
                         errorProfile.enter(inliningTarget);
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
@@ -2494,10 +2661,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
         @Specialization(guards = "size >= 0")
-        PBytes urandom(int size) {
+        PBytes urandom(int size,
+                        @Cached PythonObjectFactory factory) {
             byte[] bytes = new byte[size];
             nextBytes(getContext().getSecureRandom(), bytes);
-            return factory().createBytes(bytes);
+            return factory.createBytes(bytes);
         }
 
         @Specialization(guards = "size < 0")
@@ -3224,10 +3392,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    /**
-     * Emulates CPython's {@code _Py_Uid_Converter()}. Always returns an {@code long}.
-     */
-    public abstract static class UidConversionNode extends ArgumentCastNodeWithRaise {
+    @GenerateCached(false)
+    public abstract static class AbstractIdConversionNode extends ArgumentCastNodeWithRaise {
+
+        private static final long MAX_UINT32 = (1L << 32) - 1;
+
         public abstract long executeLong(VirtualFrame frame, Object value);
 
         @Specialization
@@ -3245,36 +3414,66 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         long doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode pyNumberIndexNode,
-                        @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
-                        @Cached CastToJavaUnsignedLongNode asUnsignedLong) {
+                        @Cached PyLongAsLongNode asLongNode) {
             Object index;
             try {
                 index = pyNumberIndexNode.execute(frame, inliningTarget, value);
             } catch (PException ex) {
-                throw raise(TypeError, ErrorMessages.UID_SHOULD_BE_INTEGER_NOT_P, value);
+                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_INTEGER_NOT_P, getIdName(), value);
             }
-            try {
-                return checkValue(asLongAndOverflowNode.execute(frame, inliningTarget, index));
-            } catch (OverflowException e) {
-                // fall through
-            }
-            return asUnsignedLong.execute(inliningTarget, index);
-            // We have no means to distinguish overflow/underflow so we just let any OverflowError
-            // from asUnsignedLong fall through. It will not have the same message as CPython, but
-            // still correct type.
+            /*
+             * We have no means to distinguish overflow/underflow, so we just let any OverflowError
+             * from asLongNode fall through. It will not have the same message as CPython, but still
+             * correct type.
+             */
+            return checkValue(asLongNode.execute(frame, inliningTarget, index));
         }
 
         private long checkValue(long value) {
+            // Note that -1 is intentionally allowed
             if (value < -1) {
-                throw raise(OverflowError, ErrorMessages.UID_IS_LESS_THAN_MINIMUM);
+                throw raise(OverflowError, ErrorMessages.S_IS_LESS_THAN_MINIMUM, getIdName());
+            } else if (value > MAX_UINT32) {
+                /* uid_t is uint32_t on Linux */
+                throw raise(OverflowError, ErrorMessages.S_IS_GREATER_THAN_MAXIUMUM, getIdName());
             }
             return value;
+        }
+
+        protected abstract String getIdName();
+    }
+
+    /**
+     * Emulates CPython's {@code _Py_Uid_Converter()}. Always returns a {@code long}.
+     */
+    public abstract static class UidConversionNode extends AbstractIdConversionNode {
+
+        @Override
+        protected String getIdName() {
+            return "uid";
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
         @NeverDefault
         public static UidConversionNode create() {
             return PosixModuleBuiltinsFactory.UidConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Emulates CPython's {@code _Py_Gid_Converter()}. Always returns a {@code long}.
+     */
+    public abstract static class GidConversionNode extends AbstractIdConversionNode {
+
+        @Override
+        protected String getIdName() {
+            return "gid";
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        @NeverDefault
+        public static GidConversionNode create() {
+            return PosixModuleBuiltinsFactory.GidConversionNodeGen.create();
         }
     }
 

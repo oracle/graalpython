@@ -270,36 +270,5 @@ Using this SDK, no APIs particular to Python are exposed, everything is done thr
 
 The other option to embed Jython in Java is via [JSR 223](https://www.jcp.org/en/jsr/detail?id=223) by using the classes of the the `javax.script` package, and, in particular, via the `ScriptEngine` class.
 We do not recommend this approach, since the `ScriptEngine` APIs are not a clean fit for the options and capabilities of GraalPy.
-However, to migrate existing code, the NetBeans project provides packages on Maven Central to help here.
-Remove Jython and add the following dependencies instead (using a Maven _pom.xml_  file as an example):
-
-```xml
-<dependency>
-  <groupId>org.netbeans.api</groupId>
-  <artifactId>org-netbeans-libs-graalsdk</artifactId>
-  <version>RELEASE150</version> <!-- or any later release -->
-</dependency>
-<dependency>
-  <groupId>org.netbeans.api</groupId>
-  <artifactId>org-netbeans-api-scripting</artifactId>
-  <version>RELEASE150</version> <!-- or any later release -->
-</dependency>
-```
-
-Afterwards, basic usage of GraalPy can be achieved by replacing
-
-```java
-ScriptEngine python = new ScriptEngineManager().getEngineByName("python");
-```
-
-with
-
-```java
-import org.netbeans.api.scripting.Scripting;
-// ...
-ScriptEngineManager manager = Scripting.newBuilder().allowAllAccess(true).build();
-ScriptEngine python = manager.getEngineByName("GraalVM:python");
-```
-
-It is important to note that either of those options will only work if your application is executed on GraalVM with the Python language installed.
-For more details, refer to the [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) guide.
+However, to migrate existing code, we provide an example ScriptEngine implementation that you can inline into your project.
+Refer to [the reference manual for embedding](https://www.graalvm.org/dev/reference-manual/embed-languages/#compatibility-with-jsr-223-scriptengine) for details.

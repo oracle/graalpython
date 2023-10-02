@@ -88,6 +88,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -184,20 +185,21 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ArgsNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(none)")
-        public Object args(Object self, @SuppressWarnings("unused") PNone none,
+        static Object args(Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode) {
             return getArgsNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        public Object args(VirtualFrame frame, Object self, Object value,
+        static Object args(VirtualFrame frame, Object self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToListNode castToList,
                         @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
-                        @Cached ExceptionNodes.SetArgsNode setArgsNode) {
+                        @Cached ExceptionNodes.SetArgsNode setArgsNode,
+                        @Cached PythonObjectFactory factory) {
             PList list = castToList.execute(frame, value);
-            setArgsNode.execute(inliningTarget, self, factory().createTuple(copy.execute(inliningTarget, list.getSequenceStorage())));
+            setArgsNode.execute(inliningTarget, self, factory.createTuple(copy.execute(inliningTarget, list.getSequenceStorage())));
             return PNone.NONE;
         }
     }
@@ -383,15 +385,16 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(VirtualFrame frame, Object self,
+        static Object reduce(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetArgsNode argsNode,
-                        @Cached DictNode dictNode) {
+                        @Cached DictNode dictNode,
+                        @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             PTuple args = argsNode.execute(inliningTarget, self);
             Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
-            return factory().createTuple(new Object[]{clazz, args, dict});
+            return factory.createTuple(new Object[]{clazz, args, dict});
         }
     }
 

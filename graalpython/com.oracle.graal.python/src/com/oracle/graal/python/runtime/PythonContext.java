@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -99,6 +100,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -114,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFac
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -137,6 +140,8 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1151,6 +1156,7 @@ public final class PythonContext extends Python3Core {
                         forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
                         inheritAllAccess(true).//
                         initializeCreatorContext(true).//
+                        option("python.NativeModules", "false").//
                         // TODO always force java posix in spawned: test_multiprocessing_spawn fails
                         // with that. Gives "OSError: [Errno 9] Bad file number"
                         // option("python.PosixModuleBackend", "java").//
@@ -2452,7 +2458,7 @@ public final class PythonContext extends Python3Core {
         return hPyContext != null;
     }
 
-    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws Exception {
+    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws ApiInitException {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
         GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
         this.hPyContext = hpyContext;
@@ -2512,9 +2518,22 @@ public final class PythonContext extends Python3Core {
         return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
     }
 
+    public void ensureLLVMLanguage(Node nodeForRaise) {
+        if (!env.getInternalLanguages().containsKey(J_LLVM_LANGUAGE)) {
+            throw PRaiseNode.raiseUncached(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
+        }
+    }
+
+    public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
+        if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
+            throw PRaiseNode.raiseUncached(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
+        }
+    }
+
     @TruffleBoundary
     public String getLLVMSupportExt(String libName) {
         if (!getOption(PythonOptions.NativeModules)) {
+            ensureLLVMLanguage(null);
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             String toolchainIdentifier = toolchain.getIdentifier();
@@ -2557,6 +2576,7 @@ public final class PythonContext extends Python3Core {
 
     public TruffleString getPlatformId() {
         if (!getOption(PythonOptions.NativeModules)) {
+            ensureLLVMLanguage(null);
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             return toTruffleStringUncached(toolchain.getIdentifier());

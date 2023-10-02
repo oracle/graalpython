@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -79,8 +80,9 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MemoryBIONode extends PythonUnaryBuiltinNode {
         @Specialization
-        PMemoryBIO create(Object type) {
-            return factory().createMemoryBIO(type);
+        static PMemoryBIO create(Object type,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createMemoryBIO(type);
         }
     }
 
@@ -107,9 +109,10 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        PBytes read(PMemoryBIO self, int size) {
+        static PBytes read(PMemoryBIO self, int size,
+                        @Cached PythonObjectFactory factory) {
             int len = size >= 0 ? size : Integer.MAX_VALUE;
-            return factory().createBytes(self.read(len));
+            return factory.createBytes(self.read(len));
         }
 
         @Override

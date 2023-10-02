@@ -239,20 +239,5 @@ class PosixConstantsDarwin {
         constants.put("IPV6_RECVTCLASS", 35);
         constants.put("IPV6_RTHDR_TYPE_0", 0);
         constants.put("IPV6_TCLASS", 36);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_STORAGE", 128);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN", 16);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY", 1);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY", 1);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6", 28);
-        constants.put("SIZEOF_STRUCT_IN_ADDR", 4);
-        constants.put("OFFSETOF_STRUCT_IN_ADDR_S_ADDR", 0);
-        constants.put("SIZEOF_STRUCT_IN_ADDR_S_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN", 106);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH", 104);
     }
 }

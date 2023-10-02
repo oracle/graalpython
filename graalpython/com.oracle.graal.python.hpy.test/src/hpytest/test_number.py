@@ -65,65 +65,77 @@ class TestNumber(HPyTest):
     def test_unary(self):
         import pytest
         import operator
-        for c_name, op in [
-                ('Negative', operator.neg),
-                ('Positive', operator.pos),
-                ('Absolute', abs),
-                ('Invert', operator.invert),
-                ('Index', operator.index),
-                ('Long', int),
-                ('Float', float),
-                ]:
-            mod = self.make_module("""
-                HPyDef_METH(f, "f", HPyFunc_O)
-                static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
-                {
-                    return HPy_%s(ctx, arg);
-                }
-                @EXPORT(f)
-                @INIT
-            """ % (c_name,), name='number_'+c_name)
-            assert mod.f(-5) == op(-5)
-            assert mod.f(6) == op(6)
+        ops = (
+            ('Negative', operator.neg),
+            ('Positive', operator.pos),
+            ('Absolute', abs),
+            ('Invert', operator.invert),
+            ('Index', operator.index),
+            ('Long', int),
+            ('Float', float),
+        )
+        template = """
+            HPyDef_METH(f_{c_name}, "f_{c_name}", HPyFunc_O)
+            static HPy f_{c_name}_impl(HPyContext *ctx, HPy self, HPy arg)
+            {{
+                return HPy_{c_name}(ctx, arg);
+            }}
+            @EXPORT(f_{c_name})
+        """
+        code = []
+        for c_name, _ in ops:
+            code.append(template.format(c_name=c_name))
+        code.append('@INIT')
+        mod = self.make_module('\n'.join(code), name='unary_ops')
+        for c_name, op in ops:
+            c_op = getattr(mod, 'f_%s' % c_name)
+            assert c_op(-5) == op(-5)
+            assert c_op(6) == op(6)
             try:
                 res = op(4.75)
             except Exception as e:
                 with pytest.raises(e.__class__):
-                    mod.f(4.75)
+                    c_op(4.75)
             else:
-                assert mod.f(4.75) == res
+                assert c_op(4.75) == res
 
     def test_binary(self):
         import operator
-        for c_name, op in [
-                ('Add', operator.add),
-                ('Subtract', operator.sub),
-                ('Multiply', operator.mul),
-                ('FloorDivide', operator.floordiv),
-                ('TrueDivide', operator.truediv),
-                ('Remainder', operator.mod),
-                ('Divmod', divmod),
-                ('Lshift', operator.lshift),
-                ('Rshift', operator.rshift),
-                ('And', operator.and_),
-                ('Xor', operator.xor),
-                ('Or', operator.or_),
-                ]:
-            mod = self.make_module("""
-                HPyDef_METH(f, "f", HPyFunc_VARARGS)
-                static HPy f_impl(HPyContext *ctx, HPy self,
-                                  const HPy *args, size_t nargs)
-                {
-                    HPy a, b;
-                    if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
-                        return HPy_NULL;
-                    return HPy_%s(ctx, a, b);
-                }
-                @EXPORT(f)
-                @INIT
-            """ % (c_name,), name='number_'+c_name)
-            assert mod.f(5, 4) == op(5, 4)
-            assert mod.f(6, 3) == op(6, 3)
+        ops = (
+            ('Add', operator.add),
+            ('Subtract', operator.sub),
+            ('Multiply', operator.mul),
+            ('FloorDivide', operator.floordiv),
+            ('TrueDivide', operator.truediv),
+            ('Remainder', operator.mod),
+            ('Divmod', divmod),
+            ('Lshift', operator.lshift),
+            ('Rshift', operator.rshift),
+            ('And', operator.and_),
+            ('Xor', operator.xor),
+            ('Or', operator.or_),
+        )
+        template = """
+            HPyDef_METH(f_{c_name}, "f_{c_name}", HPyFunc_VARARGS)
+            static HPy f_{c_name}_impl(HPyContext *ctx, HPy self,
+                              const HPy *args, size_t nargs)
+            {{
+                HPy a, b;
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
+                    return HPy_NULL;
+                return HPy_{c_name}(ctx, a, b);
+            }}
+            @EXPORT(f_{c_name})
+            """
+        code = []
+        for c_name, _ in ops:
+            code.append(template.format(c_name=c_name))
+        code.append('@INIT')
+        mod = self.make_module('\n'.join(code), name='binary_ops')
+        for c_name, op in ops:
+            c_op = getattr(mod, 'f_%s' % c_name)
+            assert c_op(5, 4) == op(5, 4)
+            assert c_op(6, 3) == op(6, 3)
 
     def test_power(self):
         mod = self.make_module("""

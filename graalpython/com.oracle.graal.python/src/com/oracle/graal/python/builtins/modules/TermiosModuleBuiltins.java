@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -358,45 +359,45 @@ public final class TermiosModuleBuiltins extends PythonBuiltins {
     abstract static class TCGetAttrNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PList flow(Object fd) {
+        static PList flow(Object fd,
+                        @Cached PythonObjectFactory factory) {
             // Values taken from CPython 3.6.5 for the standard streams on Linux
-            PythonObjectFactory f = factory();
 
-            PList l = f.createList(new Object[]{
-                            factory().createBytes(new byte[]{0x03}),
-                            factory().createBytes(new byte[]{0x1c}),
-                            factory().createBytes(new byte[]{0x7f}),
-                            factory().createBytes(new byte[]{0x15}),
-                            factory().createBytes(new byte[]{0x04}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x01}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x11}),
-                            factory().createBytes(new byte[]{0x13}),
-                            factory().createBytes(new byte[]{0x1a}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x12}),
-                            factory().createBytes(new byte[]{0x0f}),
-                            factory().createBytes(new byte[]{0x17}),
-                            factory().createBytes(new byte[]{0x16}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00}),
-                            factory().createBytes(new byte[]{0x00})
+            PList l = factory.createList(new Object[]{
+                            factory.createBytes(new byte[]{0x03}),
+                            factory.createBytes(new byte[]{0x1c}),
+                            factory.createBytes(new byte[]{0x7f}),
+                            factory.createBytes(new byte[]{0x15}),
+                            factory.createBytes(new byte[]{0x04}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x01}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x11}),
+                            factory.createBytes(new byte[]{0x13}),
+                            factory.createBytes(new byte[]{0x1a}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x12}),
+                            factory.createBytes(new byte[]{0x0f}),
+                            factory.createBytes(new byte[]{0x17}),
+                            factory.createBytes(new byte[]{0x16}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00}),
+                            factory.createBytes(new byte[]{0x00})
             });
-            return f.createList(new Object[]{17664, 5, 191, 35387, 15, 15, l});
+            return factory.createList(new Object[]{17664, 5, 191, 35387, 15, 15, l});
         }
     }
 

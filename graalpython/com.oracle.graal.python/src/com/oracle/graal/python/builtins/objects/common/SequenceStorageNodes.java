@@ -2768,6 +2768,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        @InliningCutoff
         static NativeSequenceStorage doNativeByte(Node inliningTarget, NativeSequenceStorage s, int cap,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached(inline = false) CStructAccess.AllocateNode alloc,
@@ -3043,7 +3044,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateInline
     @GenerateCached(false)
-    abstract static class DeleteSliceNode extends SequenceStorageBaseNode {
+    public abstract static class DeleteSliceNode extends SequenceStorageBaseNode {
 
         public abstract void execute(Node inliningTarget, SequenceStorage s, SliceInfo info);
 

@@ -103,6 +103,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -173,7 +174,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PNone init(PBytesIO self, PNone initvalue) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             self.setPos(0);
             return PNone.NONE;
         }
@@ -184,7 +185,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
             /* In case, __init__ is called multiple times. */
             self.setStringSize(0);
             self.setPos(0);
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             writeNode.execute(frame, self, initvalue);
             self.setPos(0);
             return PNone.NONE;
@@ -222,8 +223,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasBuf()")
-        Object read(PBytesIO self, int len,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        static Object read(PBytesIO self, int len,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             int size = len;
             /* adjust invalid sizes */
             int n = self.getStringSize() - self.getPos();
@@ -233,7 +235,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                     size = 0;
                 }
             }
-            return readBytes(self, size, bufferLib, factory());
+            return readBytes(self, size, bufferLib, factory);
         }
     }
 
@@ -299,9 +301,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object readline(PBytesIO self, int size,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             int n = scanEOL(self, size, bufferLib);
-            return readBytes(self, n, bufferLib, factory());
+            return readBytes(self, n, bufferLib, factory);
         }
     }
 
@@ -316,8 +319,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasBuf()")
-        Object readlines(PBytesIO self, int maxsize,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        static Object readlines(PBytesIO self, int maxsize,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             ArrayBuilder<Object> result = new ArrayBuilder<>();
 
             int n;
@@ -327,7 +331,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
             int size = 0;
             while ((n = scanEOL(self, -1, buf)) != 0) {
                 self.incPos(n);
-                PBytes line = factory().createBytes(PythonUtils.arrayCopyOfRange(buf, cur, cur + n));
+                PBytes line = factory.createBytes(PythonUtils.arrayCopyOfRange(buf, cur, cur + n));
                 result.add(line);
                 size += n;
                 if (maxsize > 0 && size >= maxsize) {
@@ -335,7 +339,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 }
                 cur += n;
             }
-            return factory().createList(result.toArray(new Object[0]));
+            return factory.createList(result.toArray(new Object[0]));
         }
     }
 
@@ -381,13 +385,14 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object truncate(PBytesIO self, int size,
-                        @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            self.checkExports(this);
+                        @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PythonObjectFactory factory) {
+            self.checkExports(getRaiseNode());
             if (size < 0) {
                 throw raise(ValueError, NEGATIVE_SIZE_VALUE_D, size);
             }
             if (size < self.getStringSize()) {
-                self.unshareAndResize(bufferLib, factory(), size, true);
+                self.unshareAndResize(bufferLib, factory, size, true);
                 self.setStringSize(size);
             }
             return size;
@@ -395,8 +400,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object truncate(PBytesIO self, @SuppressWarnings("unused") PNone size,
-                        @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            return truncate(self, self.getPos(), bufferLib);
+                        @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return truncate(self, self.getPos(), bufferLib, factory);
         }
 
         @Specialization(guards = {"self.hasBuf()", "!isPNone(size)"})
@@ -404,8 +410,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         Object truncate(VirtualFrame frame, PBytesIO self, Object size,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            return truncate(self, asSizeNode.executeExact(frame, inliningTarget, size), bufferLib);
+                        @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return truncate(self, asSizeNode.executeExact(frame, inliningTarget, size), bufferLib, factory);
         }
     }
 
@@ -416,8 +423,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.hasBuf()", limit = "3")
         Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            self.checkExports(this);
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
+            self.checkExports(getRaiseNode());
             Object buffer = acquireLib.acquireReadonly(b, frame, this);
             try {
                 int len = bufferLib.getBufferLength(buffer);
@@ -426,7 +434,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 }
                 int pos = self.getPos();
                 int endpos = pos + len;
-                self.unshareAndResize(bufferLib, factory(), endpos, false);
+                self.unshareAndResize(bufferLib, factory, endpos, false);
                 bufferLib.readIntoBuffer(buffer, 0, self.getBuf(), pos, len, bufferLib);
                 self.setPos(endpos);
                 if (endpos > self.getStringSize()) {
@@ -450,7 +458,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached WriteNode writeNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
                 Object line;
@@ -533,31 +541,36 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.hasBuf()", "!isSupportedWhence(whence)"})
-        Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence) {
-            throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
+        static Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getPos())", "whence == 1"})
-        Object largePos1(PBytesIO self, int pos, int whence) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
+        static Object largePos1(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getStringSize())", "whence == 2"})
-        Object largePos2(PBytesIO self, int pos, int whence) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
+        static Object largePos2(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @Specialization(guards = {"self.hasBuf()", "pos < 0", "whence == 0"})
-        Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
+        static Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.hasBuf()")
-        Object closedError(PBytesIO self, int pos, int whence) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -565,14 +578,15 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetBufferNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization
-        Object doit(VirtualFrame frame, PBytesIO self,
+        static Object doit(VirtualFrame frame, PBytesIO self,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind("this") Node inliningTarget,
                         @Cached PyMemoryViewFromObject memoryViewNode,
-                        @Cached SequenceStorageNodes.SetLenNode setLenNode) {
-            self.unshareIfNecessary(bufferLib, factory());
+                        @Cached SequenceStorageNodes.SetLenNode setLenNode,
+                        @Cached PythonObjectFactory factory) {
+            self.unshareIfNecessary(bufferLib, factory);
             setLenNode.execute(inliningTarget, self.getBuf().getSequenceStorage(), self.getStringSize());
-            PBytesIOBuffer buf = factory().createBytesIOBuf(PBytesIOBuf, self);
+            PBytesIOBuffer buf = factory.createBytesIOBuf(PBytesIOBuf, self);
             return memoryViewNode.execute(frame, buf);
         }
     }
@@ -581,12 +595,13 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetValueNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
-        Object doCopy(PBytesIO self,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        static Object doCopy(PBytesIO self,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             if (bufferLib.hasInternalByteArray(self.getBuf()) && self.getExports() == 0) {
                 self.markEscaped();
             }
-            return factory().createBytes(bufferLib.getInternalOrCopiedByteArray(self.getBuf()), self.getStringSize());
+            return factory.createBytes(bufferLib.getInternalOrCopiedByteArray(self.getBuf()), self.getStringSize());
         }
     }
 
@@ -594,14 +609,14 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
-        @SuppressWarnings("truffle-static-method")
-        Object doit(VirtualFrame frame, PBytesIO self,
+        static Object doit(VirtualFrame frame, PBytesIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetValueNode getValueNode,
-                        @Cached GetOrCreateDictNode getDict) {
+                        @Cached GetOrCreateDictNode getDict,
+                        @Cached PythonObjectFactory factory) {
             Object initValue = getValueNode.execute(frame, self);
             Object[] state = new Object[]{initValue, self.getPos(), getDict.execute(inliningTarget, self)};
-            return factory().createTuple(state);
+            return factory.createTuple(state);
         }
     }
 
@@ -618,7 +633,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             if (array.length < 3) {
                 return notTuple(self, state);
@@ -725,7 +740,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization
         Object close(PBytesIO self) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             self.setBuf(null);
             return PNone.NONE;
         }
@@ -737,12 +752,13 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object doit(PBytesIO self,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
                 throw raiseStopIteration();
             }
-            return readBytes(self, n, bufferLib, factory());
+            return readBytes(self, n, bufferLib, factory);
         }
     }
 }

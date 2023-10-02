@@ -61,7 +61,9 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -194,7 +196,7 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
             long ru_nsignals = -1; // signals received
             long ru_nvcsw = -1; // voluntary context switches
             long ru_nivcsw = -1; // nvoluntary context switches
-            return factory().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
+            return PythonObjectFactory.getUncached().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
                             ru_minflt, ru_majflt, ru_nswap, ru_inblock, ru_oublock, ru_msgsnd, ru_msgrcv, ru_nsignals,
                             ru_nvcsw, ru_nivcsw);
         }
@@ -252,7 +254,7 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
             long ru_nsignals = -1; // signals received
             long ru_nvcsw = -1; // voluntary context switches
             long ru_nivcsw = -1; // nvoluntary context switches
-            return factory().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
+            return PythonObjectFactory.getUncached().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
                             ru_minflt, ru_majflt, ru_nswap, ru_inblock, ru_oublock, ru_msgsnd, ru_msgrcv, ru_nsignals,
                             ru_nvcsw, ru_nivcsw);
         }
@@ -276,9 +278,10 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetRLimitNode extends PythonBuiltinNode {
         @Specialization
-        PTuple getPageSize(@SuppressWarnings("unused") int which) {
+        static PTuple getPageSize(@SuppressWarnings("unused") int which,
+                        @Cached PythonObjectFactory factory) {
             // dummy implementation - report "unrestricted" for everything
-            return factory().createTuple(new Object[]{RLIM_INFINITY, RLIM_INFINITY});
+            return factory.createTuple(new Object[]{RLIM_INFINITY, RLIM_INFINITY});
         }
     }
 }

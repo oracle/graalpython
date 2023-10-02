@@ -1,0 +1,210 @@
+From b980fb68c36c14438d216fe63e5643aab19cbea0 Mon Sep 17 00:00:00 2001
+From: Tim Felgentreff <tim.felgentreff@oracle.com>
+Date: Tue, 19 Sep 2023 03:50:15 +0200
+Subject: [PATCH] graalpy support
+
+---
+ setup.py               |  2 +-
+ src/_bcrypt/Cargo.lock | 96 +++++++++++++++++-------------------------
+ src/_bcrypt/Cargo.toml |  2 +-
+ 3 files changed, 40 insertions(+), 60 deletions(-)
+
+diff --git a/setup.py b/setup.py
+index dab1d7d..ddc5f77 100644
+--- a/setup.py
++++ b/setup.py
+@@ -41,7 +41,7 @@ try:
+                 # Enable abi3 mode if we're not using PyPy.
+                 features=(
+                     []
+-                    if platform.python_implementation() == "PyPy"
++                    if platform.python_implementation() in ["PyPy", "GraalVM"]
+                     else ["pyo3/abi3-py36"]
+                 ),
+                 rust_version=">=1.56.0",
+diff --git a/src/_bcrypt/Cargo.lock b/src/_bcrypt/Cargo.lock
+index 404be82..dfd7ecc 100644
+--- a/src/_bcrypt/Cargo.lock
++++ b/src/_bcrypt/Cargo.lock
+@@ -147,26 +147,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "indoc"
+-version = "0.3.6"
++version = "1.0.9"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "47741a8bc60fb26eb8d6e0238bbb26d8575ff623fdc97b1a2c00c050b9684ed8"
+-dependencies = [
+- "indoc-impl",
+- "proc-macro-hack",
+-]
+-
+-[[package]]
+-name = "indoc-impl"
+-version = "0.3.6"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ce046d161f000fffde5f432a0d034d0341dc152643b2598ed5bfce44c4f3a8f0"
+-dependencies = [
+- "proc-macro-hack",
+- "proc-macro2",
+- "quote",
+- "syn",
+- "unindent",
+-]
++checksum = "bfa799dd5ed20a7e349f3b4639aa80d74549c81716d9ec4f994c9b5815598306"
+ 
+ [[package]]
+ name = "inout"
+@@ -202,6 +185,15 @@ dependencies = [
+  "scopeguard",
+ ]
+ 
++[[package]]
++name = "memoffset"
++version = "0.6.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
++dependencies = [
++ "autocfg",
++]
++
+ [[package]]
+ name = "once_cell"
+ version = "1.15.0"
+@@ -233,25 +225,6 @@ dependencies = [
+  "winapi",
+ ]
+ 
+-[[package]]
+-name = "paste"
+-version = "0.1.18"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "45ca20c77d80be666aef2b45486da86238fabe33e38306bd3118fe4af33fa880"
+-dependencies = [
+- "paste-impl",
+- "proc-macro-hack",
+-]
+-
+-[[package]]
+-name = "paste-impl"
+-version = "0.1.18"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d95a7db200b97ef370c8e6de0088252f7e0dfff7d047a28528e47456c0fc98b6"
+-dependencies = [
+- "proc-macro-hack",
+-]
+-
+ [[package]]
+ name = "pbkdf2"
+ version = "0.10.1"
+@@ -261,12 +234,6 @@ dependencies = [
+  "digest",
+ ]
+ 
+-[[package]]
+-name = "proc-macro-hack"
+-version = "0.5.19"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dbf0c48bc1d91375ae5c3cd81e3722dff1abcf81a30960240640d223f59fe0e5"
+-
+ [[package]]
+ name = "proc-macro2"
+ version = "1.0.46"
+@@ -278,35 +245,44 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3"
+-version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d41d50a7271e08c7c8a54cd24af5d62f73ee3a6f6a314215281ebdec421d5752"
++version = "0.17.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.17.3.graalpy#33c0f0dbd9a736dd2f8b896445239478d9da219c"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+  "libc",
++ "memoffset",
+  "parking_lot",
+- "paste",
+  "pyo3-build-config",
++ "pyo3-ffi",
+  "pyo3-macros",
+  "unindent",
+ ]
+ 
+ [[package]]
+ name = "pyo3-build-config"
+-version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "779239fc40b8e18bc8416d3a37d280ca9b9fb04bda54b98037bb6748595c2410"
++version = "0.17.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.17.3.graalpy#33c0f0dbd9a736dd2f8b896445239478d9da219c"
+ dependencies = [
+  "once_cell",
++ "target-lexicon",
++]
++
++[[package]]
++name = "pyo3-ffi"
++version = "0.17.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.17.3.graalpy#33c0f0dbd9a736dd2f8b896445239478d9da219c"
++dependencies = [
++ "libc",
++ "pyo3-build-config",
+ ]
+ 
+ [[package]]
+ name = "pyo3-macros"
+-version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "00b247e8c664be87998d8628e86f282c25066165f1f8dda66100c48202fdb93a"
++version = "0.17.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.17.3.graalpy#33c0f0dbd9a736dd2f8b896445239478d9da219c"
+ dependencies = [
++ "proc-macro2",
+  "pyo3-macros-backend",
+  "quote",
+  "syn",
+@@ -314,12 +290,10 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-macros-backend"
+-version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5a8c2812c412e00e641d99eeb79dd478317d981d938aa60325dfa7157b607095"
++version = "0.17.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.17.3.graalpy#33c0f0dbd9a736dd2f8b896445239478d9da219c"
+ dependencies = [
+  "proc-macro2",
+- "pyo3-build-config",
+  "quote",
+  "syn",
+ ]
+@@ -382,6 +356,12 @@ dependencies = [
+  "unicode-ident",
+ ]
+ 
++[[package]]
++name = "target-lexicon"
++version = "0.12.11"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "9d0e916b1148c8e263850e1ebcbd046f333e0683c724876bb0da63ea4373dc8a"
++
+ [[package]]
+ name = "typenum"
+ version = "1.15.0"
+diff --git a/src/_bcrypt/Cargo.toml b/src/_bcrypt/Cargo.toml
+index 6c75126..d7970fd 100644
+--- a/src/_bcrypt/Cargo.toml
++++ b/src/_bcrypt/Cargo.toml
+@@ -6,7 +6,7 @@ edition = "2018"
+ publish = false
+ 
+ [dependencies]
+-pyo3 = { version = "0.15.2" }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.17.3.graalpy", optional = true }
+ bcrypt = "0.13"
+ bcrypt-pbkdf = "0.8.1"
+ base64 = "0.13.0"
+-- 
+2.34.1

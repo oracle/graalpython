@@ -89,10 +89,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFreeVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getFreeVars(), internStringNode, factory());
+                        @Cached InternStringNode internStringNode,
+                        @Cached PythonObjectFactory factory) {
+            return internStrings(inliningTarget, self.getFreeVars(), internStringNode, factory);
         }
     }
 
@@ -100,10 +101,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCellVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getCellVars(), internStringNode, factory());
+                        @Cached InternStringNode internStringNode,
+                        @Cached PythonObjectFactory factory) {
+            return internStrings(inliningTarget, self.getCellVars(), internStringNode, factory);
         }
     }
 
@@ -111,7 +113,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFilenameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             TruffleString filename = self.getFilename();
@@ -126,7 +128,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.getFirstLineNo();
         }
     }
@@ -136,7 +138,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected static Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStringNode.execute(inliningTarget, self.co_name());
@@ -147,7 +149,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.co_argcount();
         }
     }
@@ -156,7 +158,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetPosOnlyArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.co_posonlyargcount();
         }
     }
@@ -165,7 +167,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetKnownlyArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.co_kwonlyargcount();
         }
     }
@@ -174,7 +176,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.co_nlocals();
         }
     }
@@ -183,7 +185,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetStackSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.getStacksize();
         }
     }
@@ -192,7 +194,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFlagsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
+        static Object get(PCode self) {
             return self.co_flags();
         }
     }
@@ -201,8 +203,9 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
-            return self.co_code(factory());
+        static Object get(PCode self,
+                        @Cached PythonObjectFactory factory) {
+            return self.co_code(factory);
         }
     }
 
@@ -210,10 +213,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetConstsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getConstants(), internStringNode, factory());
+                        @Cached InternStringNode internStringNode,
+                        @Cached PythonObjectFactory factory) {
+            return internStrings(inliningTarget, self.getConstants(), internStringNode, factory);
         }
     }
 
@@ -221,10 +225,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getNames(), internStringNode, factory());
+                        @Cached InternStringNode internStringNode,
+                        @Cached PythonObjectFactory factory) {
+            return internStrings(inliningTarget, self.getNames(), internStringNode, factory);
         }
     }
 
@@ -232,10 +237,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetVarNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self,
+        static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getVarnames(), internStringNode, factory());
+                        @Cached InternStringNode internStringNode,
+                        @Cached PythonObjectFactory factory) {
+            return internStrings(inliningTarget, self.getVarnames(), internStringNode, factory);
         }
     }
 
@@ -245,13 +251,14 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLineTableNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        static Object get(PCode self,
+                        @Cached PythonObjectFactory factory) {
             byte[] linetable = self.getLinetable();
             if (linetable == null) {
                 // TODO: this is for the moment undefined (see co_code)
                 linetable = PythonUtils.EMPTY_BYTE_ARRAY;
             }
-            return factory().createBytes(linetable);
+            return factory.createBytes(linetable);
         }
     }
 
@@ -266,6 +273,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object lines(PCode self) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PTuple tuple;
             if (self.getRootNode() instanceof PBytecodeRootNode) {
                 CodeUnit co = ((PBytecodeRootNode) self.getRootNode()).getCodeUnit();
@@ -277,15 +285,15 @@ public final class CodeBuiltins extends PythonBuiltins {
                     co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
                         int nextStart = bci + op.length();
                         if (map.startLineMap[bci] != data.line || nextStart == co.code.length) {
-                            lines.add(factory().createTuple(new int[]{data.start, nextStart, data.line}));
+                            lines.add(factory.createTuple(new int[]{data.start, nextStart, data.line}));
                             data.line = map.startLineMap[bci];
                             data.start = nextStart;
                         }
                     });
                 }
-                tuple = factory().createTuple(lines.toArray());
+                tuple = factory.createTuple(lines.toArray());
             } else {
-                tuple = factory().createEmptyTuple();
+                tuple = factory.createEmptyTuple();
             }
             return PyObjectGetIter.executeUncached(tuple);
         }
@@ -344,11 +352,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeHashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(VirtualFrame frame, PCode self,
+        static long hash(VirtualFrame frame, PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode) {
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached PythonObjectFactory factory) {
             long h, h0, h1, h2, h3, h4, h5, h6;
-            PythonObjectFactory factory = factory();
 
             h0 = hashNode.execute(frame, inliningTarget, self.co_name());
             h1 = hashNode.execute(frame, inliningTarget, self.co_code(factory));

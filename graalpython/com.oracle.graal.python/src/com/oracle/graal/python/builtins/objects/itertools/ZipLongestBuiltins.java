@@ -61,9 +61,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -107,13 +107,14 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noItProfile,
                         @Cached InlinedConditionProfile noActiveProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached InlinedConditionProfile isNullFillProfile) {
+                        @Cached InlinedConditionProfile isNullFillProfile,
+                        @Cached PythonObjectFactory factory) {
             Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
-            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
+            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, factory);
         }
 
         private Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile) {
+                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PythonObjectFactory factory) {
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, result.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
@@ -141,7 +142,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                 }
                 result[i] = item;
             }
-            return factory().createTuple(result);
+            return factory.createTuple(result);
         }
 
         protected boolean isNullFillValue(PZipLongest self) {
@@ -156,42 +157,31 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "isNullFillValue(self)")
-        Object reduceNoFillValue(PZipLongest self,
+        @Specialization
+        static Object reduce(PZipLongest self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClass,
-                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
-                        @Cached @Shared InlinedConditionProfile noItProfile) {
-            return reduce(inliningTarget, getClass, self, PNone.NONE, loopProfile, noItProfile);
-        }
-
-        @Specialization(guards = "!isNullFillValue(self)")
-        Object reducePos(PZipLongest self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClass,
-                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
-                        @Cached @Shared InlinedConditionProfile noItProfile) {
-            return reduce(inliningTarget, getClass, self, self.getFillValue(), loopProfile, noItProfile);
-        }
-
-        private Object reduce(Node inliningTarget, GetClassNode getClass, PZipLongest self, Object fillValue, InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile) {
+                        @Cached GetClassNode getClass,
+                        @Cached InlinedConditionProfile noFillValueProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedConditionProfile noItProfile,
+                        @Cached PythonObjectFactory factory) {
+            Object fillValue = self.getFillValue();
+            if (noFillValueProfile.profile(inliningTarget, fillValue == null)) {
+                fillValue = PNone.NONE;
+            }
             Object type = getClass.execute(inliningTarget, self);
             Object[] its = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, its.length);
             for (int i = 0; loopProfile.profile(inliningTarget, i < its.length); i++) {
                 Object it = self.getItTuple()[i];
                 if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
-                    its[i] = factory().createEmptyTuple();
+                    its[i] = factory.createEmptyTuple();
                 } else {
                     its[i] = it;
                 }
             }
-            PTuple tuple = factory().createTuple(its);
-            return factory().createTuple(new Object[]{type, tuple, fillValue});
-        }
-
-        protected boolean isNullFillValue(PZipLongest self) {
-            return self.getFillValue() == null;
+            PTuple tuple = factory.createTuple(its);
+            return factory.createTuple(new Object[]{type, tuple, fillValue});
         }
     }
 
