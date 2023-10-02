@@ -1,3 +1,16 @@
+diff --git a/keras/src/datasets/cifar.py b/keras/src/datasets/cifar.py
+index 40040f8..65ca7e4 100644
+--- a/keras/src/datasets/cifar.py
++++ b/keras/src/datasets/cifar.py
+@@ -14,7 +14,7 @@
+ # ==============================================================================
+ """Utilities common to CIFAR10 and CIFAR100 datasets."""
+ 
+-import _pickle as cPickle
++import pickle as cPickle
+ 
+ 
+ def load_batch(fpath, label_key="labels"):
 diff --git a/keras/src/engine/training.py b/keras/src/engine/training.py
 index bcd02a8..d2db9af 100644
 --- a/keras/src/engine/training.py
