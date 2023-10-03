@@ -184,6 +184,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public static final int GRAALVM_MAJOR = 24;
     public static final int GRAALVM_MINOR = 0;
+    public static final String CAPI_REV;
 
     static {
         switch (RELEASE_LEVEL) {
@@ -218,6 +219,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
+            // see mx.graalpython/mx_graalpython.py:capi_rev
+            byte[] rev = new byte[1 /* ' ' */ + 5 /* capi rev */ + 5 /* patches rev */];
+            is.read(rev);
+            CAPI_REV = new String(rev).strip();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

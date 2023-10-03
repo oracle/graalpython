@@ -456,8 +456,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     protected static PSimpleNamespace makeImplementation(PythonObjectFactory factory, PTuple versionInfo, TruffleString gmultiarch) {
         final PSimpleNamespace ns = factory.createSimpleNamespace();
         ns.setAttribute(tsLiteral("name"), T_GRAALPYTHON_ID);
-        ns.setAttribute(T_CACHE_TAG,
-                        toTruffleStringUncached(J_GRAALPYTHON_ID + PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR + "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
+        /*- 'cache_tag' must match the format of mx.graalpython/mx_graalpython.py:graalpy_ext */
+        ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID +
+                        PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR +
+                        "-" + PythonLanguage.CAPI_REV +
+                        "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
         ns.setAttribute(T_VERSION, versionInfo);
         ns.setAttribute(T__MULTIARCH, gmultiarch);
         ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.VERSION_HEX);
