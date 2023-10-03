@@ -384,8 +384,9 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        long error(Object data, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, EXPECTED_BYTESLIKE_GOT_P, data);
+        static long error(Object data, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, EXPECTED_BYTESLIKE_GOT_P, data);
         }
 
         long nativeCrc32(byte[] bytes, int len, int value,
@@ -528,13 +529,14 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!useNative()"})
-        PBytes doJava(VirtualFrame frame, Object data, int level,
+        static PBytes doJava(VirtualFrame frame, Object data, int level,
                         @Bind("this") Node inliningTarget,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Cached InlinedConditionProfile wrongLevelProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (wrongLevelProfile.profile(inliningTarget, level < -1 || 9 < level)) {
-                throw raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
+                throw raiseNode.get(inliningTarget).raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
             byte[] array = toBytesNode.execute(frame, data);
             return factory.createBytes(javaCompress(array, level));
@@ -542,12 +544,13 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, Object data, Object level) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
+        static Object error(VirtualFrame frame, Object data, Object level,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
         }
 
-        @CompilerDirectives.TruffleBoundary
-        byte[] javaCompress(byte[] array, int level) {
+        @TruffleBoundary
+        static byte[] javaCompress(byte[] array, int level) {
             Deflater compresser = new Deflater(level);
             compresser.setInput(array);
             compresser.finish();

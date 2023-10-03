@@ -311,9 +311,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CycleNode extends PythonBinaryBuiltinNode {
 
-        @SuppressWarnings({"unused", "truffle-static-method"})
+        @SuppressWarnings("unused")
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected static PCycle construct(VirtualFrame frame, Object cls, Object iterable,
+        static PCycle construct(VirtualFrame frame, Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached IsTypeNode isTypeNode,
@@ -327,11 +327,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        protected Object notype(Object cls, Object iterable,
+        @SuppressWarnings("unused")
+        static Object notype(Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -477,19 +478,20 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n < 0")
-        protected Object negativeN(Object iterable, int n) {
-            throw raise(ValueError, S_MUST_BE_S, "n", ">=0");
+        static Object negativeN(Object iterable, int n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, S_MUST_BE_S, "n", ">=0");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
-        protected static Object zeroN(Object iterable, int n,
+        static Object zeroN(Object iterable, int n,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
         @Specialization(guards = "n > 0")
-        protected static Object tee(VirtualFrame frame, Object iterable, int n,
+        static Object tee(VirtualFrame frame, Object iterable, int n,
                         @Bind("this") Node inliningTarget,
                         @Cached IterNode iterNode,
                         @Cached PyObjectLookupAttr getAttrNode,
@@ -1047,16 +1049,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PairwaiseNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PPairwise construct(VirtualFrame frame, Object cls, Object iterable,
+        static PPairwise construct(VirtualFrame frame, Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached InlinedBranchProfile errorProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 // Note: @Fallback or other @Specialization generate data-class
-                errorProfile.enter(inliningTarget);
-                throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
 
             PPairwise self = factory.createPairwise(cls);

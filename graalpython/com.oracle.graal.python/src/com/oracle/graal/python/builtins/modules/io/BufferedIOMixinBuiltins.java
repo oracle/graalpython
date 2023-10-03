@@ -343,8 +343,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isWritable()"})
-        Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos) {
-            throw raise(IOUnsupportedOperation, T_TRUNCATE);
+        static Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_TRUNCATE);
         }
     }
 

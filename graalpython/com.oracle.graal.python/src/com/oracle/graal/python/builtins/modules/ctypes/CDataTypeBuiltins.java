@@ -359,10 +359,10 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.CreateCDataObjectNode createCDataObjectNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // auditNode.audit("ctypes.cdata", buf);
             // assert(PyType_Check(type));
-            StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
+            StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             stgdict.flags |= DICTFLAG_FINAL;
 
             CDataObject pd = createCDataObjectNode.execute(inliningTarget, type, pointer, stgdict.size, false);

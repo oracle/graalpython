@@ -168,6 +168,9 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateCached(false)
     abstract static class AbstractNumericBinaryBuiltin extends PythonBinaryBuiltinNode {
+
+        @Child private PRaiseNode raiseNode;
+
         protected abstract Object op(double a, double b);
 
         @Specialization
@@ -196,9 +199,17 @@ public final class FloatBuiltins extends PythonBuiltins {
             return op(aDouble, bDouble);
         }
 
-        protected void raiseDivisionByZero(boolean cond) {
+        void raiseDivisionByZero(boolean cond) {
             if (cond) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    if (isAdoptable()) {
+                        raiseNode = insert(PRaiseNode.create());
+                    } else {
+                        raiseNode = PRaiseNode.getUncached();
+                    }
+                }
+                throw raiseNode.raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
         }
     }
@@ -238,14 +249,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization(guards = "!formatString.isEmpty()")
         TruffleString formatPF(Object self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaDoubleNode cast) {
-            return doFormat(castToDoubleChecked(inliningTarget, self, cast), formatString);
+                        @Cached CastToJavaDoubleNode cast,
+                        @Cached PRaiseNode raiseNode) {
+            return doFormat(castToDoubleChecked(inliningTarget, self, cast), formatString, raiseNode);
         }
 
         @TruffleBoundary
-        private TruffleString doFormat(double self, TruffleString formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, InternalFormat.Spec.NONE, '>');
-            FloatFormatter formatter = new FloatFormatter(getRaiseNode(), validateForFloat(getRaiseNode(), spec, "float"));
+        private TruffleString doFormat(double self, TruffleString formatString, PRaiseNode raiseNode) {
+            InternalFormat.Spec spec = InternalFormat.fromText(formatString, InternalFormat.Spec.NONE, '>', this);
+            FloatFormatter formatter = new FloatFormatter(raiseNode, validateForFloat(raiseNode, spec, "float"));
             formatter.format(self);
             return formatter.pad().getResult();
         }
@@ -664,44 +676,46 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double round(double x, int n) {
+        static double round(double x, int n,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (Double.isNaN(x) || Double.isInfinite(x) || x == 0.0) {
                 // nans, infinities and zeros round to themselves
                 return x;
             }
             double d = op(x, n);
             if (Double.isInfinite(d)) {
-                throw raise(OverflowError, ErrorMessages.ROUNDED_VALUE_TOO_LARGE);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.ROUNDED_VALUE_TOO_LARGE);
             }
             return d;
         }
 
         @Specialization(guards = "!isPNone(n)")
-        @SuppressWarnings("truffle-static-method")
-        Object round(VirtualFrame frame, Object x, Object n,
+        static Object round(VirtualFrame frame, Object x, Object n,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            return round(castToDoubleChecked(inliningTarget, x, cast), asSizeNode.executeLossy(frame, inliningTarget, n));
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return round(castToDoubleChecked(inliningTarget, x, cast), asSizeNode.executeLossy(frame, inliningTarget, n), inliningTarget, raiseNode);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object round(Object xObj, @SuppressWarnings("unused") PNone none,
+        static Object round(Object xObj, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile isLongProfile,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             double x = castToDoubleChecked(inliningTarget, xObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
             if (infProfile.profile(inliningTarget, Double.isInfinite(x))) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
-            double result = round(x, 0);
+            double result = round(x, 0, inliningTarget, raiseNode);
             if (isLongProfile.profile(inliningTarget, result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
                 return factory.get(inliningTarget).createInt(toBigInteger(result));
             } else {
@@ -1044,8 +1058,9 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        TruffleString getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object typeStr) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_D_MUST_BE_S_OR_S, "__getformat__()", 1, "double", "float");
+        static TruffleString getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object typeStr,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.ValueError, ErrorMessages.ARG_D_MUST_BE_S_OR_S, "__getformat__()", 1, "double", "float");
         }
     }
 

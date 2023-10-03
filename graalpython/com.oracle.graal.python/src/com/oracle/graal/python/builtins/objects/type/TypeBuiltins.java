@@ -309,13 +309,15 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "isKindOfBuiltinClass(self)"})
-        Object doc(Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___DOC__, self);
+        static Object doc(Object self, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___DOC__, self);
         }
 
         @Specialization
-        Object doc(Object self, @SuppressWarnings("unused") DescriptorDeleteMarker marker) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_DELETE_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___DOC__, self);
+        static Object doc(Object self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_DELETE_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___DOC__, self);
         }
     }
 
@@ -679,12 +681,13 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile hasDescProfile,
                         @Cached InlinedBranchProfile isDescProfile,
                         @Cached InlinedBranchProfile hasValueProfile,
-                        @Cached InlinedBranchProfile errorProfile) {
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString key;
             try {
                 key = castToString.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             Object type = getClassNode.execute(inliningTarget, object);
@@ -738,7 +741,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter(inliningTarget);
-            throw raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
         }
 
         private Object readAttribute(Object object, Object key) {
@@ -836,8 +839,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
+        static Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getName,
                         @Cached GetObjectArrayNode getArray,
@@ -846,26 +848,27 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached GetMroNode getMroNode) {
+                        @Cached GetMroNode getMroNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             Object[] a = getArray.execute(inliningTarget, value);
             if (a.length == 0) {
-                throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P, cls);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P, cls);
             }
             PythonAbstractClass[] baseClasses = new PythonAbstractClass[a.length];
             for (int i = 0; i < a.length; i++) {
                 if (PGuards.isPythonClass(a[i])) {
                     if (isSubtypeNode.execute(frame, a[i], cls) ||
                                     hasMRO(inliningTarget, getMroNode, a[i]) && typeIsSubtypeBaseChain(inliningTarget, a[i], cls, getBase, isSameTypeNode)) {
-                        throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
                     if (a[i] instanceof PythonBuiltinClassType) {
-                        baseClasses[i] = getContext().lookupType((PythonBuiltinClassType) a[i]);
+                        baseClasses[i] = PythonContext.get(inliningTarget).lookupType((PythonBuiltinClassType) a[i]);
                     } else {
                         baseClasses[i] = (PythonAbstractClass) a[i];
                     }
                 } else {
-                    throw raise(TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, getName.execute(inliningTarget, cls), "__bases__", a[i]);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, getName.execute(inliningTarget, cls), "__bases__", a[i]);
                 }
             }
 
@@ -878,7 +881,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setBases(newBestBase, baseClasses);
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, getLanguage());
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, PythonLanguage.get(inliningTarget));
 
             return PNone.NONE;
         }
@@ -901,13 +904,15 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPTuple(value)")
-        Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", GetNameNode.executeUncached(cls), "__bases__", value);
+        static Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", GetNameNode.executeUncached(cls), "__bases__", value);
         }
 
         @Specialization
-        Object setBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___BASES__, cls);
+        static Object setBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___BASES__, cls);
         }
 
     }
@@ -997,9 +1002,10 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile typeErrorProfile,
                         @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
-                        @Cached AbstractObjectGetBasesNode getBasesNode) {
+                        @Cached AbstractObjectGetBasesNode getBasesNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (typeErrorProfile.profile(inliningTarget, getBasesNode.execute(frame, cls) == null)) {
-                throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
             }
 
             PythonObject instanceClass = getInstanceClassAttr(frame, instance);
@@ -1028,7 +1034,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsSameTypeNode isSameTypeNode,
                         @Cached IsBuiltinObjectProfile isAttrErrorProfile,
                         @Cached TypeNodes.IsTypeNode isClsTypeNode,
-                        @Cached TypeNodes.IsTypeNode isDerivedTypeNode) {
+                        @Cached TypeNodes.IsTypeNode isDerivedTypeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isSameType(inliningTarget, cls, derived, isSameTypeNode)) {
                 return true;
             }
@@ -1038,10 +1045,10 @@ public final class TypeBuiltins extends PythonBuiltins {
                 return isSubtypeNode.execute(frame, derived, cls);
             }
             if (!checkClass(frame, inliningTarget, derived, isAttrErrorProfile)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
             }
             if (!checkClass(frame, inliningTarget, cls, isAttrErrorProfile)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
             }
             return false;
         }
@@ -1114,28 +1121,30 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        static Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        static Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        @SuppressWarnings("truffle-static-method")
-        Object setName(VirtualFrame frame, PythonClass cls, Object value,
+        static Object setName(VirtualFrame frame, PythonClass cls, Object value,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+                        @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 TruffleString string = castToTruffleStringNode.execute(inliningTarget, value);
                 if (indexOfCodePointNode.execute(string, 0, 0, codePointLengthNode.execute(string, TS_ENCODING), TS_ENCODING) >= 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
                 }
                 if (!isValidNode.execute(string, TS_ENCODING)) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
@@ -1143,7 +1152,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 cls.setName(string);
                 return PNone.NONE;
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P, "string", cls, T___NAME__, value);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P, "string", cls, T___NAME__, value);
             }
         }
 
@@ -1165,8 +1174,9 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        static Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
     }
 
@@ -1185,11 +1195,13 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached ReadAttributeFromObjectNode readAttrNode) {
+        static Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode readAttrNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object module = readAttrNode.execute(cls, T___MODULE__);
             if (module == PNone.NO_VALUE) {
-                throw raise(AttributeError);
+                throw raiseNode.get(inliningTarget).raise(AttributeError);
             }
             return module;
         }
@@ -1202,20 +1214,20 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        @SuppressWarnings("truffle-static-method")
-        Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+        static Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
                         @Shared @Cached GetTypeFlagsNode getFlags,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             // see function 'typeobject.c: type_module'
             if ((getFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
                 Object module = readAttr.execute(cls, T___MODULE__);
                 if (module == PNone.NO_VALUE) {
-                    throw raise(AttributeError);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError);
                 }
                 return module;
             } else {
@@ -1231,25 +1243,29 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setNative(PythonNativeClass cls, Object value,
+        static Object setNative(PythonNativeClass cls, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached GetTypeFlagsNode getFlags,
-                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttr) {
+                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttr,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             long flags = getFlags.execute(cls);
             if ((flags & TypeFlags.HEAPTYPE) == 0) {
-                throw raise(TypeError, ErrorMessages.CANT_SET_N_S, cls, T___MODULE__);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_N_S, cls, T___MODULE__);
             }
             writeAttr.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setModuleType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        static Object setModuleType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setModuleBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        static Object setModuleBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
     }
 
@@ -1266,20 +1282,21 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        static Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        @SuppressWarnings("truffle-static-method")
-        Object setName(PythonClass cls, Object value,
+        static Object setName(PythonClass cls, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode) {
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 cls.setQualName(castToStringNode.execute(inliningTarget, value));
                 return PNone.NONE;
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_STR_TO_QUALNAME, cls, value);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_STR_TO_QUALNAME, cls, value);
             }
         }
 
@@ -1300,8 +1317,9 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        static Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
     }
 
@@ -1358,10 +1376,11 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AbstractMethodsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object get(Object self, @SuppressWarnings("unused") PNone none,
+        static Object get(Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached IsSameTypeNode isSameTypeNode,
-                        @Exclusive @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+                        @Exclusive @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // Avoid returning this descriptor
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 Object result = readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__);
@@ -1369,31 +1388,31 @@ public final class TypeBuiltins extends PythonBuiltins {
                     return result;
                 }
             }
-            throw raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, self, T___ABSTRACTMETHODS__);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, self, T___ABSTRACTMETHODS__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        @SuppressWarnings("truffle-static-method")
-        Object set(VirtualFrame frame, PythonClass self, Object value,
+        static Object set(VirtualFrame frame, PythonClass self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached IsSameTypeNode isSameTypeNode,
-                        @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+                        @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, value);
                 self.setAbstractClass(isTrueNode.execute(frame, inliningTarget, value));
                 return PNone.NONE;
             }
-            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        @SuppressWarnings("truffle-static-method")
-        Object delete(PythonClass self, @SuppressWarnings("unused") DescriptorDeleteMarker value,
+        static Object delete(PythonClass self, @SuppressWarnings("unused") DescriptorDeleteMarker value,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached IsSameTypeNode isSameTypeNode,
                         @Exclusive @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                        @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+                        @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 if (readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__) != PNone.NO_VALUE) {
                     writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, PNone.NO_VALUE);
@@ -1401,13 +1420,14 @@ public final class TypeBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object set(Object self, Object value) {
-            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
+        static Object set(Object self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
         }
     }
 
@@ -1468,46 +1488,51 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AnnotationsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        Object get(Object self, @SuppressWarnings("unused") Object value,
+        static Object get(Object self, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
                         @Shared("write") @Cached WriteAttributeToObjectNode write,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
                 annotations = factory.get(inliningTarget).createDict();
                 try {
                     write.execute(self, T___ANNOTATIONS__, annotations);
                 } catch (PException e) {
-                    throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, T___ANNOTATIONS__);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, T___ANNOTATIONS__);
                 }
             }
             return annotations;
         }
 
         @Specialization(guards = "isDeleteMarker(value)")
-        Object delete(Object self, @SuppressWarnings("unused") Object value,
+        static Object delete(Object self, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
-                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToObjectNode write,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             try {
                 write.execute(self, T___ANNOTATIONS__, PNone.NO_VALUE);
             } catch (PException e) {
-                throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
             }
             if (annotations == PNone.NO_VALUE) {
-                throw raise(AttributeError, new Object[]{T___ANNOTATIONS__});
+                throw raiseNode.get(inliningTarget).raise(AttributeError, new Object[]{T___ANNOTATIONS__});
             }
             return PNone.NONE;
         }
 
         @Fallback
-        Object set(Object self, Object value,
-                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+        static Object set(Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 write.execute(self, T___ANNOTATIONS__, value);
             } catch (PException e) {
-                throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
             }
             return PNone.NONE;
         }

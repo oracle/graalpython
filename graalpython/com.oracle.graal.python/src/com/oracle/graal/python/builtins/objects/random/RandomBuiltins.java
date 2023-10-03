@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -231,31 +232,32 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "k < 0")
         @SuppressWarnings("unused")
-        int negative(PRandom random, int k) {
-            throw raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
+        static int negative(PRandom random, int k,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
         }
 
         @Specialization(guards = "k == 0")
         @SuppressWarnings("unused")
-        int zero(PRandom random, int k) {
+        static int zero(PRandom random, int k) {
             return 0;
         }
 
         @Specialization(guards = {"k >= 1", "k <= 31"})
         @TruffleBoundary
-        int genInt(PRandom random, int k) {
+        static int genInt(PRandom random, int k) {
             return random.nextInt() >>> (32 - k);
         }
 
         @Specialization(guards = "k == 32")
         @TruffleBoundary
-        long gen32Bits(PRandom random, @SuppressWarnings("unused") int k) {
+        static long gen32Bits(PRandom random, @SuppressWarnings("unused") int k) {
             return random.nextInt() & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = {"k >= 33", "k <= 63"})
         @TruffleBoundary
-        long genLong(PRandom random, int k) {
+        static long genLong(PRandom random, int k) {
             long x = random.nextInt() & 0xFFFFFFFFL;
             long y = random.nextInt() >>> (64 - k);
             return (y << 32) | x;

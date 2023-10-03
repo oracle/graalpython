@@ -74,6 +74,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -404,7 +405,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "canBeIndex(this, idx, indexCheckNode)")
-        Object doPRange(PBigRange self, Object idx,
+        static Object doPRange(PBigRange self, Object idx,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaBigIntegerNode toBigInt,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
@@ -413,9 +414,8 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)")
-        @SuppressWarnings("truffle-static-method")
         @InliningCutoff
-        Object doPRangeSliceSlowPath(VirtualFrame frame, PIntRange self, PSlice slice,
+        static Object doPRangeSliceSlowPath(VirtualFrame frame, PIntRange self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ComputeIndices compute,
                         @Shared @Cached IsBuiltinObjectProfile profileError,
@@ -445,8 +445,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)")
-        @SuppressWarnings("truffle-static-method")
-        Object doPRangeSliceSlowPath(VirtualFrame frame, PBigRange self, PSlice slice,
+        static Object doPRangeSliceSlowPath(VirtualFrame frame, PBigRange self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         // Note the dummy profiles: it is better to have everything @Shared
                         @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile isNumIndexProfile,
@@ -459,7 +458,9 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @Shared @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        // unused node to avoid mixing shared and non-shared inlined nodes
+                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int rStart = asSizeNode.executeExact(frame, inliningTarget, self.getStart());
                 int rStep = asSizeNode.executeExact(frame, inliningTarget, self.getStep());
@@ -480,9 +481,8 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
         @InliningCutoff
-        Object doGeneric(VirtualFrame frame, PRange self, Object idx,
+        static Object doGeneric(VirtualFrame frame, PRange self, Object idx,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile isNumIndexProfile,
                         @Shared @Cached InlinedConditionProfile isSliceIndexProfile,
@@ -496,7 +496,8 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared @Cached("forRange()") NormalizeIndexNode normalize,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (isNumIndexProfile.profile(inliningTarget, canBeIndex(inliningTarget, idx, indexCheckNode))) {
                 if (self instanceof PIntRange) {
                     return doPRange(frame, (PIntRange) self, idx, inliningTarget, indexCheckNode, asSizeNode, normalize);
@@ -510,13 +511,13 @@ public final class RangeBuiltins extends PythonBuiltins {
                                     indexCheckNode, factory);
                 }
                 return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, inliningTarget, isNumIndexProfile, isSliceIndexProfile, compute, profileError, toBigIntRange, toBigIntSlice,
-                                lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode, asSizeNode, factory);
+                                lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode, asSizeNode, factory, raiseNode);
             }
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
         }
 
         @TruffleBoundary
-        private BigInteger computeBigRangeItem(Node inliningTarget, PBigRange range, Object idx, CastToJavaBigIntegerNode toBigInt) {
+        private static BigInteger computeBigRangeItem(Node inliningTarget, PBigRange range, Object idx, CastToJavaBigIntegerNode toBigInt) {
             BigInteger index = toBigInt.execute(inliningTarget, idx);
             BigInteger length = range.getBigIntegerLength();
             BigInteger i;
@@ -527,7 +528,7 @@ public final class RangeBuiltins extends PythonBuiltins {
             }
 
             if (i.compareTo(BigInteger.ZERO) < 0 || i.compareTo(length) >= 0) {
-                throw raise(IndexError, ErrorMessages.RANGE_OBJ_IDX_OUT_OF_RANGE);
+                throw PRaiseNode.raiseUncached(inliningTarget, IndexError, ErrorMessages.RANGE_OBJ_IDX_OUT_OF_RANGE);
             }
             return i;
         }
@@ -764,23 +765,25 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doFastRange(VirtualFrame frame, PIntRange self, int elem,
-                        @Shared @Cached ContainsNode containsNode) {
+        static int doFastRange(VirtualFrame frame, PIntRange self, int elem,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ContainsNode containsNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (containsNode.execute(frame, self, elem)) {
                 int index = fastIntIndex(self, elem);
                 if (index != -1) {
                     return index;
                 }
             }
-            throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
 
         @Specialization(guards = "canBeInteger(elem)")
-        @SuppressWarnings("truffle-static-method")
-        Object doFastRangeGeneric(VirtualFrame frame, PIntRange self, Object elem,
+        static Object doFastRangeGeneric(VirtualFrame frame, PIntRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ContainsNode containsNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (containsNode.execute(frame, self, elem)) {
                 int value = asSizeNode.executeExact(frame, inliningTarget, elem);
                 int index = fastIntIndex(self, value);
@@ -788,23 +791,23 @@ public final class RangeBuiltins extends PythonBuiltins {
                     return index;
                 }
             }
-            throw raise(ValueError, ErrorMessages.IS_NOT_IN_RANGE, elem);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IS_NOT_IN_RANGE, elem);
         }
 
         @Specialization(guards = "canBeInteger(elem)")
-        @SuppressWarnings("truffle-static-method")
-        Object doLongRange(VirtualFrame frame, PBigRange self, Object elem,
+        static Object doLongRange(VirtualFrame frame, PBigRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ContainsNode containsNode,
                         @Cached CastToJavaBigIntegerNode castToBigInt,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (containsNode.execute(frame, self, elem)) {
                 BigInteger index = slowIntIndex(inliningTarget, self, elem, castToBigInt);
                 if (index != null) {
                     return factory.createInt(index);
                 }
             }
-            throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
 
         /**
@@ -812,13 +815,13 @@ public final class RangeBuiltins extends PythonBuiltins {
          * {@link Integer#MAX_VALUE}.
          */
         @Specialization(guards = "!canBeInteger(elem)")
-        @SuppressWarnings("truffle-static-method")
-        Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
+        static Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             int idx = 0;
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
@@ -832,11 +835,11 @@ public final class RangeBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (idx == SysModuleBuiltins.MAXSIZE) {
-                    throw raiseOverflow();
+                    throw raiseNode.get(inliningTarget).raiseOverflow();
                 }
                 idx++;
             }
-            throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
     }
 
@@ -910,28 +913,24 @@ public final class RangeBuiltins extends PythonBuiltins {
             return !isInteger(value);
         }
 
-        private int incCount(int count) {
-            if (count == SysModuleBuiltins.MAXSIZE) {
-                throw raiseOverflow();
-            }
-            return count + 1;
-        }
-
         @Specialization(guards = "isFallback(elem)")
-        @SuppressWarnings("truffle-static-method")
-        int doGeneric(VirtualFrame frame, PRange self, Object elem,
+        static int doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int count = 0;
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);
                     if (eqNode.compare(frame, inliningTarget, elem, item)) {
-                        count = incCount(count);
+                        if (count == SysModuleBuiltins.MAXSIZE) {
+                            throw raiseNode.get(inliningTarget).raiseOverflow();
+                        }
+                        count = count + 1;
                     }
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, errorProfile);

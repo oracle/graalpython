@@ -280,13 +280,15 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
     public abstract static class SimpleQueuePutNoWaitNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PNone doGeneric(PSimpleQueue self, Object item) {
+        static PNone doGeneric(PSimpleQueue self, Object item,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!self.put(item)) {
                 /*
                  * CPython uses a Python list as backing storage. This will throw an OverflowError
                  * if no more elements can be added to the list.
                  */
-                throw raise(OverflowError);
+                throw raiseNode.get(inliningTarget).raise(OverflowError);
             }
             return PNone.NONE;
         }

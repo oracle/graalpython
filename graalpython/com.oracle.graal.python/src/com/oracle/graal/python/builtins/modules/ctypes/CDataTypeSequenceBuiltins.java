@@ -57,6 +57,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -71,11 +72,13 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -113,7 +116,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
 
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
-        Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
+        static Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageGetItem getItem,
@@ -121,16 +124,17 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleFormatNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object key = factory.createTuple(new Object[]{itemtype, length});
-            CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
+            CtypesThreadState ctypes = CtypesThreadState.get(PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget));
             Object result = getItem.execute(frame, inliningTarget, ctypes.cache, key);
             if (result != null) {
                 return result;
             }
 
             if (!isTypeNode.execute(inliningTarget, itemtype)) {
-                throw raise(TypeError, EXPECTED_A_TYPE_OBJECT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_A_TYPE_OBJECT);
             }
             TruffleString name = simpleFormatNode.format("%s_Array_%d", getNameNode.execute(inliningTarget, itemtype), length);
             PDict dict = factory.createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
@@ -142,8 +146,9 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "length < 0")
-        Object error(@SuppressWarnings("unused") Object self, int length) {
-            throw raise(ValueError, ARRAY_LENGTH_MUST_BE_0_NOT_D, length);
+        static Object error(@SuppressWarnings("unused") Object self, int length,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ARRAY_LENGTH_MUST_BE_0_NOT_D, length);
         }
     }
 }

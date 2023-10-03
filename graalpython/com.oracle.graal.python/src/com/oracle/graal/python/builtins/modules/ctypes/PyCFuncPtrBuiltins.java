@@ -330,11 +330,12 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
+        static Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyCallableCheckNode callableCheck) {
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (value != PNone.NONE && !callableCheck.execute(inliningTarget, value)) {
-                throw raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
             }
             self.errcheck = value;
             return PNone.NONE;
@@ -362,18 +363,19 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
+        static Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyCallableCheckNode callableCheck) {
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (value == PNone.NONE) {
                 self.checker = null;
                 self.restype = null;
                 return PNone.NONE;
             }
             if (pyTypeStgDictNode.execute(value) == null && !callableCheck.execute(inliningTarget, value)) {
-                throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
             if (!PGuards.isPFunction(value)) {
                 Object checker = lookupAttr.execute(frame, inliningTarget, value, T__CHECK_RETVAL_);
@@ -415,30 +417,33 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
+        static Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
-                        @Shared @Cached GetInternalObjectArrayNode getArray) {
+                        @Shared @Cached GetInternalObjectArrayNode getArray,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, inliningTarget, ob, getRaiseNode(), lookupAttr);
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, raiseNode, lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
+        static Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
-                        @Shared @Cached GetInternalObjectArrayNode getArray) {
+                        @Shared @Cached GetInternalObjectArrayNode getArray,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, inliningTarget, ob, getRaiseNode(), lookupAttr);
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, raiseNode, lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
+        static Object error(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
         }
 
     }
@@ -807,7 +812,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object address = dlSymNode.execute(frame, handlePtr, name, AttributeError);
             _validate_paramflags(inliningTarget, type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode, raiseNode);
 
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode.get(inliningTarget));
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             PyCFuncPtrObject self = (PyCFuncPtrObject) pyCDataNewNode.execute(inliningTarget, type, dict);
             self.paramflags = paramflags;
 
@@ -826,7 +831,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         PyTypeStgDictNode pyTypeStgDictNode,
                         TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         PRaiseNode.Lazy raiseNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode.get(inliningTarget));
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             Object[] argtypes = dict.argtypes;
 
             if (paramflags == null || dict.argtypes == null) {

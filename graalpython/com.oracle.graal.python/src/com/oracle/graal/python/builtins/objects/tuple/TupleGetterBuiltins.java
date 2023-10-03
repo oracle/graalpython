@@ -139,8 +139,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     abstract static class TupleGetterDeleteNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object delete(PTupleGetter self, Object instance) {
-            throw raise(PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
+        static Object delete(PTupleGetter self, Object instance,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
         }
     }
 

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PBytesIO extends PythonBuiltinObject {
@@ -99,9 +100,16 @@ public final class PBytesIO extends PythonBuiltinObject {
         return exports.getExports().get();
     }
 
+    // TODO replace with the lazy version below
     public void checkExports(PRaiseNode raise) {
         if (getExports() != 0) {
             throw raise.raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
+        }
+    }
+
+    public void checkExports(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+        if (getExports() != 0) {
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
         }
     }
 

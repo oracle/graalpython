@@ -201,18 +201,19 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(a)", "isString(b)"})
-        Object cmpStrings(Object a, Object b,
+        static Object cmpStrings(Object a, Object b,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CopyToByteArrayNode getByteArrayNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached CastToTruffleStringNode castA,
-                        @Cached CastToTruffleStringNode castB) {
+                        @Cached CastToTruffleStringNode castB,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString tsA = castA.execute(inliningTarget, a);
             TruffleString tsB = castB.execute(inliningTarget, b);
             CodeRange crA = getCodeRangeNode.execute(tsA, TS_ENCODING);
             CodeRange crB = getCodeRangeNode.execute(tsB, TS_ENCODING);
             if (!(crA.isSubsetOf(CodeRange.ASCII) && crB.isSubsetOf(CodeRange.ASCII))) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
             }
             byte[] bytesA = getByteArrayNode.execute(tsA, TS_ENCODING);
             byte[] bytesB = getByteArrayNode.execute(castB.execute(inliningTarget, b), TS_ENCODING);
@@ -221,8 +222,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(a) || !isString(b)"})
         boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (acquireLib.hasBuffer(a) && acquireLib.hasBuffer(b)) {
                 Object bufferA = acquireLib.acquireReadonly(a, frame, this);
                 try {
@@ -238,12 +241,12 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     accessLib.release(bufferA);
                 }
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
             }
         }
 
         @TruffleBoundary
-        boolean cmp(byte[] a, byte[] b) {
+        static boolean cmp(byte[] a, byte[] b) {
             return MessageDigest.isEqual(a, b);
         }
     }

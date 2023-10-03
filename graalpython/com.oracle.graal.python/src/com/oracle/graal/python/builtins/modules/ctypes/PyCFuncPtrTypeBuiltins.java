@@ -126,7 +126,8 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
 
             stgdict.paramfunc = CArgObjectBuiltins.PyCFuncPtrTypeParamFunc;
@@ -168,7 +169,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
                 Object[] obtuple = getArray.execute(inliningTarget, ((PTuple) ob).getSequenceStorage());
-                Object[] converters = converters_from_argtypes(frame, inliningTarget, obtuple, getRaiseNode(), lookupAttr);
+                Object[] converters = converters_from_argtypes(frame, inliningTarget, obtuple, raiseNode, lookupAttr);
                 stgdict.argtypes = obtuple;
                 stgdict.converters = converters;
             }
@@ -188,7 +189,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
         }
 
         static Object[] converters_from_argtypes(VirtualFrame frame, Node inliningTarget, Object[] args,
-                        PRaiseNode raiseNode,
+                        PRaiseNode.Lazy raiseNode,
                         PyObjectLookupAttr lookupAttr) {
             int nArgs = args.length;
             Object[] converters = new Object[nArgs];
@@ -199,7 +200,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
                 cnv = lookupAttr.execute(frame, inliningTarget, tp, T_FROM_PARAM);
                 if (cnv == PNone.NO_VALUE) {
-                    throw raiseNode.raise(TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
                 }
                 converters[i] = cnv;
             }

@@ -90,6 +90,7 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -280,14 +281,14 @@ public final class PartialBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class PartialDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(mapping)")
-        protected Object getDict(PPartial self, @SuppressWarnings("unused") PNone mapping,
+        static Object getDict(PPartial self, @SuppressWarnings("unused") PNone mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
-        protected Object setDict(PPartial self, PDict mapping,
+        static Object setDict(PPartial self, PDict mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
             setDict.execute(inliningTarget, self, mapping);
@@ -295,8 +296,9 @@ public final class PartialBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        protected Object setDict(@SuppressWarnings("unused") PPartial self, Object mapping) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        static Object setDict(@SuppressWarnings("unused") PPartial self, Object mapping,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 
@@ -339,7 +341,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        public Object setState(VirtualFrame frame, PPartial self, PTuple state,
+        static Object setState(VirtualFrame frame, PPartial self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDictNode,
                         @Cached DeleteDictNode deleteDictNode,
@@ -352,9 +354,10 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Cached HashingStorageCopy copyStorageNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (state.getSequenceStorage().length() != 4) {
-                throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
             final Object function = getItemNode.execute(frame, state, 0);
@@ -365,7 +368,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             if (!callableCheckNode.execute(inliningTarget, function) ||
                             !PGuards.isPTuple(fnArgs) ||
                             (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
-                throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
             self.setFn(function);
@@ -400,8 +403,9 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public Object fallback(Object self, Object state) {
-            throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+        static Object fallback(Object self, Object state,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
         }
     }
 

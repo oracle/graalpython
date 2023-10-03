@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -111,7 +112,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other,
+        boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             final Object cmpResult = ensureCallNode().execute(frame, self.getCmp(), self.getObject(), other.getObject());
@@ -120,8 +121,9 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public boolean fallback(Object self, Object other) {
-            throw raise(PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
+        static boolean fallback(Object self, Object other,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
         }
     }
 

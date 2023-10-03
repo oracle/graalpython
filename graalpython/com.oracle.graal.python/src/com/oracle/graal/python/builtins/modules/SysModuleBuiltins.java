@@ -207,6 +207,7 @@ import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -965,29 +966,31 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(dflt)")
-        protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
+        static Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            return checkResult(frame, inliningTarget, asSizeNode, callSizeofNode.executeObject(frame, object));
+                        @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return checkResult(frame, inliningTarget, asSizeNode, callSizeofNode.executeObject(frame, object), raiseNode);
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
-        protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
+        static Object doGeneric(VirtualFrame frame, Object object, Object dflt,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
+                        @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object result = callSizeofNode.executeObject(frame, object);
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }
-            return checkResult(frame, inliningTarget, asSizeNode, result);
+            return checkResult(frame, inliningTarget, asSizeNode, result, raiseNode);
         }
 
-        private Object checkResult(VirtualFrame frame, Node inliningTarget, PyNumberAsSizeNode asSizeNode, Object result) {
+        private static Object checkResult(VirtualFrame frame, Node inliningTarget, PyNumberAsSizeNode asSizeNode, Object result, PRaiseNode.Lazy raiseNode) {
             int value = asSizeNode.executeExact(frame, inliningTarget, result);
             if (value < 0) {
-                throw raise(ValueError, ErrorMessages.SHOULD_RETURN, "__sizeof__()", ">= 0");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SHOULD_RETURN, "__sizeof__()", ">= 0");
             }
             return value;
         }
@@ -995,9 +998,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @NeverDefault
         protected LookupAndCallUnaryNode createWithError() {
             return LookupAndCallUnaryNode.create(T___SIZEOF__, () -> new NoAttributeHandler() {
+                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
                 @Override
                 public Object execute(Object receiver) {
-                    throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, receiver, T___SIZEOF__);
+                    throw raiseNode.raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, receiver, T___SIZEOF__);
                 }
             });
         }
@@ -1908,20 +1913,22 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class ExitNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object exitNoCode(PythonModule sys, PNone status) {
-            throw raiseSystemExit(PNone.NONE);
+        static Object exitNoCode(PythonModule sys, PNone status,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseSystemExit(PNone.NONE);
         }
 
         @Specialization(guards = "!isPNone(status)")
-        Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
-                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+        static Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
+                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
             Object code = status;
             if (status instanceof PTuple) {
                 if (((PTuple) status).getSequenceStorage().length() == 1) {
                     code = getItemNode.execute(frame, status, 0);
                 }
             }
-            throw raiseSystemExit(code);
+            throw raiseNode.raiseSystemExit(code);
         }
     }
 

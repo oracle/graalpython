@@ -349,11 +349,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right,
+        static PComplex doComplex(PComplex left, PComplex right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile topConditionProfile,
                         @Cached InlinedConditionProfile zeroDivisionProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
             double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
             double real;
@@ -361,7 +362,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             if (topConditionProfile.profile(inliningTarget, absRightReal >= absRightImag)) {
                 /* divide tops and bottom by right.real */
                 if (zeroDivisionProfile.profile(inliningTarget, absRightReal == 0.0)) {
-                    throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
                 } else {
                     double ratio = right.getImag() / right.getReal();
                     double denom = right.getReal() + right.getImag() * ratio;
@@ -755,10 +756,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString format(PComplex self, TruffleString formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, Spec.NONE, '>');
-            validateSpec(spec);
-            return doFormat(getRaiseNode(), self, spec);
+        TruffleString format(PComplex self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            InternalFormat.Spec spec = InternalFormat.fromText(formatString, Spec.NONE, '>', this);
+            validateSpec(inliningTarget, spec, raiseNode);
+            return doFormat(raiseNode.get(inliningTarget), self, spec);
         }
 
         @TruffleBoundary
@@ -768,14 +771,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return formatter.pad().getResult();
         }
 
-        private void validateSpec(Spec spec) {
+        private void validateSpec(Node inliningTarget, Spec spec, PRaiseNode.Lazy raiseNode) {
             if (spec.getFill(' ') == '0') {
-                throw raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
             }
 
             char align = spec.getAlign('>');
             if (align == '=') {
-                throw raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
             }
         }
     }

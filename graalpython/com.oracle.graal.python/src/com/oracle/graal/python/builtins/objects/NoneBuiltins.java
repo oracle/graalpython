@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -114,21 +115,22 @@ public final class NoneBuiltins extends PythonBuiltins {
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
+        static Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached CallUnaryMethodNode callGet,
-                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             Object descr = lookup.execute(PythonBuiltinClassType.PNone, key);
             if (descr == PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             }
             if (descr instanceof GetSetDescriptor getSetDescriptor) {
                 // Bypass getset_descriptor.__get__

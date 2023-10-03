@@ -376,8 +376,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        PNone dict(@SuppressWarnings("unused") Object self, Object mapping) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        static PNone dict(@SuppressWarnings("unused") Object self, Object mapping,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 
@@ -509,9 +510,11 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isDict(state)")
-        Object generic(@SuppressWarnings("unused") Object self, Object state) {
+        static Object generic(@SuppressWarnings("unused") Object self, Object state,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (state != PNone.NONE) {
-                throw raise(TypeError, STATE_IS_NOT_A_DICT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_IS_NOT_A_DICT);
             }
             return PNone.NONE;
         }

@@ -305,12 +305,12 @@ public class CtypesNodes {
 
         @Specialization
         static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CreateCDataObjectNode createCDataObjectNode,
                         @Cached PyCDataMallocBufferNode mallocBufferNode,
                         @Cached PointerNodes.MemcpyNode memcpyNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             dict.flags |= DICTFLAG_FINAL;
             CDataObject cmem;
 

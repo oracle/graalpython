@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -182,8 +183,9 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // assuming !pySequenceCheck.execute(lines)
         @Fallback
-        Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines) {
-            throw raise(TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
+        static Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
         }
     }
 

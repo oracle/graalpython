@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -186,17 +187,18 @@ public final class CDataBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
+        static Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] array = getArray.execute(inliningTarget, args.getSequenceStorage());
             if (array.length < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
-                throw raise(TypeError);
+                throw raiseNode.get(inliningTarget).raise(TypeError);
             }
             PDict dict = (PDict) array[0];
             Object data = array[1];
@@ -206,10 +208,10 @@ public final class CDataBuiltins extends PythonBuiltins {
             if (len > self.b_size) {
                 len = self.b_size;
             }
-            memmove(self.b_ptr, data, len);
+            memmove(self.b_ptr, data, len, raiseNode.get(inliningTarget));
             Object mydict = getAttributeNode.executeObject(frame, self);
             if (!PGuards.isDict(mydict)) {
-                throw raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)),
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, mydict)));
             }
@@ -219,8 +221,8 @@ public final class CDataBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        private void memmove(Object dest, Object src, int len) {
-            throw raise(NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
+        private static void memmove(Object dest, Object src, int len, PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
         }
     }
 }

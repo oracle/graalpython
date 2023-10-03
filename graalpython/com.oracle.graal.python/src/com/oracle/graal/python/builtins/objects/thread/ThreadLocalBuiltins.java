@@ -125,20 +125,21 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private GetClassNode getDescClassNode;
 
         @Specialization
-        protected Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
+        Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached HashingStorageGetItem getDictStorageItem) {
+                        @Cached HashingStorageGetItem getDictStorageItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             Object type = getClassNode.execute(inliningTarget, object);
@@ -172,7 +173,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, get);
                 }
             }
-            throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, Object get) {
@@ -307,7 +308,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private GetClassNode getDescClassNode;
 
         @Specialization
-        protected PNone doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
+        PNone doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic getExisting,
@@ -315,14 +316,15 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached("create(T___DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached CallBinaryMethodNode callDelete,
                         @Cached HashingStorageDelItem delHashingStorageItem,
-                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
@@ -339,9 +341,9 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             }
         }
 

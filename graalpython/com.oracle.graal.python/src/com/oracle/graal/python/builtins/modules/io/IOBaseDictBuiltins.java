@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -92,8 +93,9 @@ public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization
-        Object setDict(PythonObject self, @SuppressWarnings("unused") Object d) {
-            throw raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTR_DICT_IS_NOT_WRITABLE, self);
+        static Object setDict(PythonObject self, @SuppressWarnings("unused") Object d,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTR_DICT_IS_NOT_WRITABLE, self);
         }
     }
 }

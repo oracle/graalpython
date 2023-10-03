@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -164,8 +165,9 @@ public final class AstBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(d)", "!isDict(d)"})
         @SuppressWarnings("unused")
-        Object setDict(PythonObject self, Object d) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, d);
+        static Object setDict(PythonObject self, Object d,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, d);
         }
     }
 

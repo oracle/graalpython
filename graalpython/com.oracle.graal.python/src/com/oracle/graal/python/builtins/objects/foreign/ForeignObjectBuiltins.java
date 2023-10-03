@@ -718,14 +718,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object contains(VirtualFrame frame, Object self, Object arg,
+        static Object contains(VirtualFrame frame, Object self, Object arg,
                         // accesses both self and iterator
                         @CachedLibrary(limit = "3") InteropLibrary library,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached StringBuiltins.ContainsNode containsNode,
-                        @Cached PForeignToPTypeNode convertNode) {
+                        @Cached PForeignToPTypeNode convertNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (library.isString(self)) {
                     TruffleString selfStr = switchEncodingNode.execute(library.asTruffleString(self), TS_ENCODING);
@@ -763,7 +764,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     return false;
                 }
-                throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -937,13 +938,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetattrNode extends PythonBinaryBuiltinNode {
-        @Child private PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
 
         @Specialization
-        protected Object doIt(Object object, Object memberObj,
+        static Object doIt(Object object, Object memberObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read,
                         @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PForeignToPTypeNode toPythonNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 String member = castToString.execute(memberObj);
@@ -951,12 +954,12 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     return toPythonNode.executeConvert(read.readMember(object, member));
                 }
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
             } finally {
                 gil.acquire();
             }
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
     }
 
@@ -1001,17 +1004,19 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key,
+        static PNone doIt(Object object, Object key,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 lib.removeMember(object, castToString.execute(key));
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
                 gil.acquire();
             }
@@ -1279,9 +1284,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        Object check(Object self, Object instance,
+        static Object check(Object self, Object instance,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (lib.isMetaObject(self)) {
                 gil.release(true);
                 try {
@@ -1292,7 +1299,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___INSTANCECHECK__);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___INSTANCECHECK__);
             }
         }
     }

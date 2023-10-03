@@ -543,13 +543,15 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "!self.isReadable()"})
-        Object notReadable(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size) {
-            throw raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "reading");
+        static Object notReadable(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "reading");
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -689,14 +691,16 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!self.isClosed()", "!self.isReadable()"})
-        Object notReadable(PFileIO self, Object buffer) {
-            throw raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "reading");
+        static Object notReadable(PFileIO self, Object buffer,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "reading");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isClosed()")
-        Object closedError(PFileIO self, Object buffer) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PFileIO self, Object buffer,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
 
         @Override
@@ -710,7 +714,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
     public abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
-        Object write(VirtualFrame frame, PFileIO self, Object data,
+        static Object write(VirtualFrame frame, PFileIO self, Object data,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesToWriteNode getBytesToWriteNode,
                         @Cached PosixModuleBuiltins.WriteNode posixWrite,
@@ -731,13 +735,15 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "!self.isWritable()"})
-        Object notWritable(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf) {
-            throw raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
+        static Object notWritable(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -863,14 +869,16 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!self.isClosed()", "!self.isWritable()"})
-        Object notWritable(PFileIO self, Object posobj) {
-            throw raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
+        static Object notWritable(PFileIO self, Object posobj,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isClosed()")
-        Object closedError(PFileIO self, Object posobj) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PFileIO self, Object posobj,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 

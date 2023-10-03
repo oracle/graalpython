@@ -734,9 +734,11 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doDeque")
-        PDeque doGeneric(PDeque self, Object other) {
+        static PDeque doGeneric(PDeque self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!(other instanceof PDeque)) {
-                throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE, other);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE, other);
             }
             return doDeque(self, (PDeque) other);
         }

@@ -473,7 +473,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:_io__IOBase_readline_impl
          */
         @Specialization
-        PBytes readline(VirtualFrame frame, Object self, int limit,
+        static PBytes readline(VirtualFrame frame, Object self, int limit,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupPeek,
                         @Cached CallNode callPeek,
@@ -481,7 +481,8 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasPeek,
                         @Cached InlinedConditionProfile isBytes,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lookupPeek.execute(frame, inliningTarget, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
@@ -491,7 +492,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     Object readahead = callPeek.execute(frame, peek, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
                     if (isBytes.profile(inliningTarget, !(readahead instanceof PBytes))) {
-                        throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
+                        throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
                     }
                     byte[] buf = bufferLib.getInternalOrCopiedByteArray(readahead);
                     int bufLen = bufferLib.getBufferLength(readahead);
@@ -508,7 +509,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
                 Object b = callRead.execute(frame, inliningTarget, self, T_READ, nreadahead);
                 if (isBytes.profile(inliningTarget, !(b instanceof PBytes))) {
-                    throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
+                    throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(b);
                 int bytesLen = bufferLib.getBufferLength(b);

@@ -48,6 +48,7 @@ import java.util.List;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -55,15 +56,18 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "unicodedata")
@@ -198,14 +202,16 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"stringEquals(form, cachedForm, equalNode)"}, limit = "4")
-        TruffleString normalize(@SuppressWarnings("unused") TruffleString form, TruffleString unistr,
+        static TruffleString normalize(@SuppressWarnings("unused") TruffleString form, TruffleString unistr,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("form") TruffleString cachedForm,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (cachedNormForm == null) {
-                throw raise(ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
             }
             return fromJavaStringNode.execute(normalize(toJavaStringNode.execute(unistr), cachedNormForm), TS_ENCODING);
         }
@@ -238,12 +244,12 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"stringEquals(form, cachedForm, equalNode)"}, limit = "4")
         @TruffleBoundary
-        public boolean isNormalized(@SuppressWarnings("unused") TruffleString form, TruffleString unistr,
+        boolean isNormalized(@SuppressWarnings("unused") TruffleString form, TruffleString unistr,
                         @SuppressWarnings("unused") @Cached("form") TruffleString cachedForm,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode) {
             if (cachedNormForm == null) {
-                throw raise(ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
             }
             return Normalizer.isNormalized(unistr.toJavaStringUncached(), cachedNormForm);
         }
@@ -261,12 +267,14 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     public abstract static class NameNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization
-        public Object name(int cp, Object defaultValue,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        static Object name(int cp, Object defaultValue,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             String result = getUnicodeName(cp);
             if (result == null) {
                 if (defaultValue == PNone.NO_VALUE) {
-                    throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NO_SUCH_NAME);
                 }
                 return defaultValue;
             }

@@ -183,14 +183,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, Object value, int version,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object savedState = IndirectCallContext.enter(frame, this);
             try {
                 return factory.createBytes(Marshal.dump(value, version, getContext()));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             } finally {
                 IndirectCallContext.exit(frame, this, savedState);
             }

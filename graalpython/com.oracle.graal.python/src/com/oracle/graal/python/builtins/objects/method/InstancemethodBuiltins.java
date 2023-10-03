@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -100,16 +101,17 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "checkCallableNode.execute(this, callable)")
-        protected static PNone init(PDecoratedMethod self, Object callable,
+        static PNone init(PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode) {
             self.setCallable(callable);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!checkCallableNode.execute(this, callable)")
-        protected PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
-                        @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode) {
-            throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
+        static PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
+                        @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
         }
     }
 

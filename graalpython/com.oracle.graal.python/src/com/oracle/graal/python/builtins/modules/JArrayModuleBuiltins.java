@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -165,18 +166,20 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(int length, Object type);
 
         @Specialization(guards = "isString(typeCodeObj)")
-        Object fromTypeCode(int length, Object typeCodeObj,
+        static Object fromTypeCode(int length, Object typeCodeObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode cast,
                         @Cached ArrayFromTypeCode fromTypeCodeNode) {
             String typeCode = cast.execute(typeCodeObj);
             Object array = fromTypeCodeNode.execute(inliningTarget, length, typeCode);
-            return getContext().getEnv().asGuestValue(array);
+            return PythonContext.get(inliningTarget).getEnv().asGuestValue(array);
         }
 
         @Specialization(guards = "!isString(classObj)")
-        Object fromClass(int length, Object classObj) {
-            TruffleLanguage.Env env = getContext().getEnv();
+        static Object fromClass(int length, Object classObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleLanguage.Env env = PythonContext.get(inliningTarget).getEnv();
             if (env.isHostObject(classObj)) {
                 Object clazz = env.asHostObject(classObj);
                 if (clazz instanceof Class) {
@@ -184,7 +187,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
                     return env.asGuestValue(array);
                 }
             }
-            throw raise(TypeError, ErrorMessages.SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS, classObj);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS, classObj);
         }
 
         @Override
@@ -197,12 +200,13 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ArrayNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object fromSequence(PSequence sequence, Object type,
+        static Object fromSequence(PSequence sequence, Object type,
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Shared @Cached ZerosNode zerosNode) {
+                        @Shared @Cached ZerosNode zerosNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int length = storage.length();
             Object array = zerosNode.execute(length, type);
@@ -211,7 +215,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     lib.writeArrayElement(array, i, value);
                 } catch (UnsupportedTypeException e) {
-                    throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                 } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                     throw CompilerDirectives.shouldNotReachHere("failed to set array item");
                 }
@@ -220,15 +224,16 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPSequence(sequence)")
-        Object fromIterable(VirtualFrame frame, Object sequence, Object type,
+        static Object fromIterable(VirtualFrame frame, Object sequence, Object type,
                         @Bind("this") Node inliningTarget,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Shared @Cached ZerosNode zerosNode) {
+                        @Shared @Cached ZerosNode zerosNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PList list = constructListNode.execute(frame, sequence);
-            return fromSequence(list, type, inliningTarget, lib, getSequenceStorageNode, getItemScalarNode, zerosNode);
+            return fromSequence(list, type, inliningTarget, lib, getSequenceStorageNode, getItemScalarNode, zerosNode, raiseNode);
         }
     }
 }

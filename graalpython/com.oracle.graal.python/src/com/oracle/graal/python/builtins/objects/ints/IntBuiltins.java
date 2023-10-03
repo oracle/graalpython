@@ -184,16 +184,16 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     private abstract static class IntBinaryBuiltinNode extends PythonBinaryBuiltinNode {
-        protected void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile) {
+        protected static void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile, PRaiseNode.Lazy raiseNode) {
             if (cond) {
-                raiseDivByZero(inliningTarget, divisionByZeroProfile);
+                raiseDivByZero(inliningTarget, divisionByZeroProfile, raiseNode.get(inliningTarget));
             }
         }
 
         @InliningCutoff
-        private void raiseDivByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile) {
+        private static void raiseDivByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile, PRaiseNode raiseNode) {
             divisionByZeroProfile.enter(inliningTarget);
-            throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+            throw raiseNode.raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
         }
     }
 
@@ -306,8 +306,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInteger(n)"})
         @SuppressWarnings("unused")
-        Object roundPIntPInt(Object arg, Object n) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
+        static Object roundPIntPInt(Object arg, Object n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
         }
 
         private static Object makeInt(Node inliningTarget, BigDecimal d, InlinedBranchProfile intOverflow, PythonObjectFactory.Lazy factory) {
@@ -551,52 +552,66 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization
-        double divII(int x, int y) {
-            return divDD(x, y);
+        static double divII(int x, int y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return divDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = {"fitsIntoDouble(x)", "fitsIntoDouble(y)"})
-        double divLL(long x, long y) {
-            return divDD(x, y);
+        static double divLL(long x, long y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return divDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = {"!fitsIntoDouble(x) || !fitsIntoDouble(y)"})
-        double divLLLarge(long x, long y) {
+        static double divLLLarge(long x, long y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (y == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(this, PInt.longToBigInteger(x), PInt.longToBigInteger(y));
+            return op(inliningTarget, PInt.longToBigInteger(x), PInt.longToBigInteger(y));
         }
 
-        double divDD(double x, double y) {
+        static double divDD(double x, double y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (y == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             return x / y;
         }
 
         @Specialization
-        double doPI(long left, PInt right) {
+        static double doPI(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(this, PInt.longToBigInteger(left), right.getValue());
+            return op(inliningTarget, PInt.longToBigInteger(left), right.getValue());
         }
 
         @Specialization
-        double doPL(PInt left, long right) {
+        static double doPL(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (right == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(this, left.getValue(), PInt.longToBigInteger(right));
+            return op(inliningTarget, left.getValue(), PInt.longToBigInteger(right));
         }
 
         @Specialization
-        double doPP(PInt left, PInt right) {
+        static double doPP(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (right.isZero()) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
-            return op(this, left.getValue(), right.getValue());
+            return op(inliningTarget, left.getValue(), right.getValue());
         }
 
         /*
@@ -649,45 +664,50 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization
-        int doII(int left, int right,
+        static int doII(int left, int right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return Math.floorDiv(left, right);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doLL(long left, long right,
+        static long doLL(long left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             if (left == Long.MIN_VALUE && right == -1) {
                 throw OverflowException.INSTANCE;
             }
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return Math.floorDiv(left, right);
         }
 
         @Specialization(replaces = "doLL")
-        PInt doLLOverflow(long left, long right,
+        static PInt doLLOverflow(long left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doPiPi(factory.createInt(left), factory.createInt(right), inliningTarget, divisionByZeroProfile, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doPiPi(factory.createInt(left), factory.createInt(right), inliningTarget, divisionByZeroProfile, factory, raiseNode);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        int doIPi(int left, PInt right,
+        static int doIPi(int left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return Math.floorDiv(left, right.intValueExact());
         }
 
         @Specialization(replaces = "doIPi")
-        int doIPiOvf(int left, PInt right,
+        static int doIPiOvf(int left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             try {
                 return Math.floorDiv(left, right.intValueExact());
             } catch (OverflowException e) {
@@ -696,18 +716,20 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doLPi(long left, PInt right,
+        static long doLPi(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return Math.floorDiv(left, right.longValueExact());
         }
 
         @Specialization(replaces = "doLPi")
-        long doLPiOvf(long left, PInt right,
+        static long doLPiOvf(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             try {
                 return Math.floorDiv(left, right.longValueExact());
             } catch (OverflowException e) {
@@ -716,53 +738,59 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPiIAndNarrow(PInt left, int right,
+        static long doPiIAndNarrow(PInt left, int right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(replaces = "doPiIAndNarrow")
-        PInt doPiI(PInt left, int right,
+        static PInt doPiI(PInt left, int right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return factory.createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPiLAndNarrow(PInt left, long right,
+        static long doPiLAndNarrow(PInt left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(replaces = "doPiLAndNarrow")
-        PInt doPiL(PInt left, long right,
+        static PInt doPiL(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return factory.createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPiPiAndNarrow(PInt left, PInt right,
+        static long doPiPiAndNarrow(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
         @Specialization(replaces = "doPiPiAndNarrow")
-        PInt doPiPi(PInt left, PInt right,
+        static PInt doPiPi(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return factory.createInt(op(left.getValue(), right.getValue()));
         }
 
@@ -795,20 +823,22 @@ public final class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DivModNode extends IntBinaryBuiltinNode {
         @Specialization
-        PTuple doLL(int left, int right,
+        static PTuple doLL(int left, int right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
         @Specialization
-        PTuple doLL(long left, long right,
+        static PTuple doLL(long left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
@@ -840,103 +870,115 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization
-        int doII(int left, int right,
+        static int doII(int left, int right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization
-        long doLL(long left, long right,
+        static long doLL(long left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doLPiAndNarrow(long left, PInt right,
+        static long doLPiAndNarrow(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", replaces = "doLPiAndNarrow")
-        PInt doLPi(long left, PInt right,
+        static PInt doLPi(long left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return factory.createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doLPiNegativeAndNarrow(long left, PInt right,
+        static long doLPiNegativeAndNarrow(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()", replaces = "doLPiNegativeAndNarrow")
-        PInt doLPiNegative(long left, PInt right,
+        static PInt doLPiNegative(long left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return factory.createInt(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
-        long doPiLAndNarrow(PInt left, long right,
+        static long doPiLAndNarrow(PInt left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right >= 0", replaces = "doPiLAndNarrow")
-        PInt doPiL(PInt left, long right,
+        static PInt doPiL(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return factory.createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right < 0", rewriteOn = OverflowException.class)
-        long doPiLNegAndNarrow(PInt left, long right,
+        static long doPiLNegAndNarrow(PInt left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right < 0", replaces = "doPiLNegAndNarrow")
-        PInt doPiLNeg(PInt left, long right,
+        static PInt doPiLNeg(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return factory.createInt(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doPiPiAndNarrow(PInt left, PInt right,
+        static long doPiPiAndNarrow(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", replaces = "doPiPiAndNarrow")
-        PInt doPiPi(PInt left, PInt right,
+        static PInt doPiPi(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             return factory.createInt(op(left.getValue(), right.getValue()));
         }
 
@@ -1613,9 +1655,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         public abstract Object execute(int left, int right);
 
-        private long leftShiftExact(long left, long right) throws OverflowException {
+        private static long leftShiftExact(Node inliningTarget, long left, long right, PRaiseNode.Lazy raiseNode) throws OverflowException {
             if (right >= Long.SIZE || right < 0) {
-                shiftError(right);
+                shiftError(inliningTarget, right, raiseNode);
             }
 
             long result = left << right;
@@ -1627,9 +1669,9 @@ public final class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private int leftShiftExact(int left, int right) throws OverflowException {
+        private static int leftShiftExact(Node inliningTarget, int left, int right, PRaiseNode.Lazy raiseNode) throws OverflowException {
             if (right >= Integer.SIZE || right < 0) {
-                shiftError(right);
+                shiftError(inliningTarget, right, raiseNode);
             }
 
             int result = left << right;
@@ -1641,55 +1683,67 @@ public final class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private void shiftError(long shiftCount) throws OverflowException {
+        private static void shiftError(Node inliningTarget, long shiftCount, PRaiseNode.Lazy raiseNode) throws OverflowException {
             if (shiftCount >= Integer.SIZE) {
                 throw OverflowException.INSTANCE;
             } else if (shiftCount < 0) {
-                throw raise(ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        int doII(int left, int right) throws OverflowException {
-            raiseNegativeShiftCount(right < 0);
-            return leftShiftExact(left, right);
+        static int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
+            return leftShiftExact(inliningTarget, left, right, raiseNode);
         }
 
         @Specialization
-        Object doIIOvf(int left, int right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(right < 0);
+        static Object doIIOvf(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             try {
-                return leftShiftExact(left, right);
+                return leftShiftExact(inliningTarget, left, right, raiseNode);
             } catch (OverflowException e) {
-                return doGuardedBiI(PInt.longToBigInteger(left), right, factory);
+                return doGuardedBiI(inliningTarget, PInt.longToBigInteger(left), right, factory, raiseNode);
             }
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doLL(long left, long right) throws OverflowException {
-            raiseNegativeShiftCount(right < 0);
-            return leftShiftExact(left, right);
+        static long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
+            return leftShiftExact(inliningTarget, left, right, raiseNode);
         }
 
         @Specialization
-        Object doILOvf(int left, long right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doLLOvf(left, right, factory);
+        static Object doILOvf(int left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doLLOvf(left, right, inliningTarget, factory, raiseNode);
         }
 
         @Specialization
-        Object doLIOvf(long left, int right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doLLOvf(left, right, factory);
+        static Object doLIOvf(long left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doLLOvf(left, right, inliningTarget, factory, raiseNode);
         }
 
         @Specialization
-        Object doLLOvf(long left, long right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(right < 0);
+        static Object doLLOvf(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             try {
-                return leftShiftExact(left, right);
+                return leftShiftExact(inliningTarget, left, right, raiseNode);
             } catch (OverflowException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
@@ -1699,7 +1753,7 @@ public final class IntBuiltins extends PythonBuiltins {
                         // fallback to the raise of overflow error
                     }
                 }
-                throw raise(PythonErrorType.OverflowError);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError);
             }
         }
 
@@ -1709,9 +1763,11 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doIPiZero")
-        PInt doIPi(int left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
+        static PInt doIPi(int left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, !right.isZeroOrPositive(), raiseNode);
             if (left == 0) {
                 return factory.createInt(BigInteger.ZERO);
             }
@@ -1719,7 +1775,7 @@ public final class IntBuiltins extends PythonBuiltins {
                 int iright = right.intValueExact();
                 return factory.createInt(op(PInt.longToBigInteger(left), iright));
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError);
             }
         }
 
@@ -1731,9 +1787,11 @@ public final class IntBuiltins extends PythonBuiltins {
         // there is some duplication in here because of GR-44123
 
         @Specialization(replaces = "doLPiZero")
-        PInt doLPi(long left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
+        static PInt doLPi(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, !right.isZeroOrPositive(), raiseNode);
             if (left == 0) {
                 return factory.createInt(BigInteger.ZERO);
             }
@@ -1741,33 +1799,37 @@ public final class IntBuiltins extends PythonBuiltins {
                 int iright = right.intValueExact();
                 return factory.createInt(op(PInt.longToBigInteger(left), iright));
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError);
             }
         }
 
         @Specialization
-        PInt doPiI(PInt left, int right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(right < 0);
-            return doGuardedBiI(left.getValue(), right, factory);
+        static PInt doPiI(PInt left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
+            return doGuardedBiI(inliningTarget, left.getValue(), right, factory, raiseNode);
         }
 
-        protected PInt doGuardedBiI(BigInteger left, int right, @Cached PythonObjectFactory factory) {
+        static PInt doGuardedBiI(Node inliningTarget, BigInteger left, int right, PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
             try {
                 return factory.createInt(op(left, right));
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError);
             }
         }
 
         @Specialization
-        PInt doPiL(PInt left, long right,
-                        @Shared @Cached PythonObjectFactory factory) {
+        static PInt doPiL(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             int rightI = (int) right;
             if (rightI == right) {
-                return doPiI(left, rightI, factory);
+                return doPiI(left, rightI, inliningTarget, factory, raiseNode);
             } else {
-                throw raise(PythonErrorType.OverflowError);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError);
             }
         }
 
@@ -1777,16 +1839,18 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doPiPiZero")
-        PInt doPiPi(PInt left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
+        static PInt doPiPi(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, !right.isZeroOrPositive(), raiseNode);
             if (left.isZero()) {
                 return factory.createInt(BigInteger.ZERO);
             }
             try {
                 return factory.createInt(op(left.getValue(), right.intValueExact()));
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError);
             }
         }
 
@@ -1797,7 +1861,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public static BigInteger op(BigInteger left, int right) throws OverflowException {
+        static BigInteger op(BigInteger left, int right) throws OverflowException {
             try {
                 return left.shiftLeft(right);
             } catch (ArithmeticException ex) {
@@ -1805,9 +1869,9 @@ public final class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        private void raiseNegativeShiftCount(boolean cond) {
+        private static void raiseNegativeShiftCount(Node inliningTarget, boolean cond, PRaiseNode.Lazy raiseNode) {
             if (cond) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
@@ -1827,55 +1891,71 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization(guards = "right < 32")
-        int doIISmall(int left, int right) {
-            raiseNegativeShiftCount(right < 0);
+        static int doIISmall(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             return left >> right;
         }
 
         @Specialization(replaces = "doIISmall")
-        int doII(int left, int right) {
-            raiseNegativeShiftCount(right < 0);
+        static int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             // Note: according to JLS, if 'left' is an int, then only the 5 LSBs of 'right' are
             // considered. However, Python would consider more bits, so do the max possible shift.
             return left >> (right >= 32 ? 31 : right);
         }
 
         @Specialization(guards = "right < 64")
-        long doLLSmall(long left, long right) {
-            raiseNegativeShiftCount(right < 0);
+        static long doLLSmall(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             return left >> right;
         }
 
         @Specialization(replaces = "doLLSmall")
-        long doLL(long left, long right) {
-            raiseNegativeShiftCount(right < 0);
+        static long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             // for explanation, see 'doII'
             return left >> (right >= 64 ? 63 : right);
         }
 
         @Specialization
-        Object doIPi(int left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doHugeShift(PInt.longToBigInteger(left), right, factory);
+        static Object doIPi(int left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doHugeShift(inliningTarget, PInt.longToBigInteger(left), right, factory, raiseNode);
         }
 
         @Specialization
-        Object doLPi(long left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doHugeShift(PInt.longToBigInteger(left), right, factory);
+        static Object doLPi(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doHugeShift(inliningTarget, PInt.longToBigInteger(left), right, factory, raiseNode);
         }
 
         @Specialization
-        PInt doPiI(PInt left, int right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(right < 0);
+        static PInt doPiI(PInt left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             return factory.createInt(op(left.getValue(), right));
         }
 
         @Specialization
-        Object doPiL(PInt left, long right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(right < 0);
+        static Object doPiL(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             int rightI = (int) right;
             if (rightI == right) {
                 return factory.createInt(op(left.getValue(), rightI));
@@ -1886,14 +1966,16 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPInt(PInt left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doHugeShift(left.getValue(), right, factory);
+        static Object doPInt(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doHugeShift(inliningTarget, left.getValue(), right, factory, raiseNode);
         }
 
-        private void raiseNegativeShiftCount(boolean cond) {
+        private static void raiseNegativeShiftCount(Node inliningTarget, boolean cond, PRaiseNode.Lazy raiseNode) {
             if (cond) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.NEGATIVE_SHIFT_COUNT);
             }
         }
 
@@ -1903,9 +1985,8 @@ public final class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private Object doHugeShift(BigInteger left, PInt right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            raiseNegativeShiftCount(!right.isZeroOrPositive());
+        private static Object doHugeShift(Node inliningTarget, BigInteger left, PInt right, PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, !right.isZeroOrPositive(), raiseNode);
             try {
                 return factory.createInt(op(left, right.intValueExact()));
             } catch (OverflowException e) {
@@ -2894,14 +2975,15 @@ public final class IntBuiltins extends PythonBuiltins {
         // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
         // boolean's __str__ and not int's __str__ (that specialization is inherited)
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatB(boolean self, TruffleString formatString) {
-            return formatI(self ? 1 : 0, formatString);
+        TruffleString formatB(boolean self, TruffleString formatString,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return formatI(self ? 1 : 0, formatString, raiseNode);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatI(int self, TruffleString formatString) {
-            PRaiseNode raiseNode = getRaiseNode();
-            Spec spec = getSpec(formatString, raiseNode);
+        TruffleString formatI(int self, TruffleString formatString,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            Spec spec = getSpec(formatString);
             if (isDoubleSpec(spec)) {
                 return formatDouble(raiseNode, spec, self);
             }
@@ -2913,16 +2995,17 @@ public final class IntBuiltins extends PythonBuiltins {
         TruffleString formatL(VirtualFrame frame, long self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberFloatNode floatNode,
-                        @Cached PythonObjectFactory factory) {
-            return formatPI(frame, factory.createInt(self), formatString, inliningTarget, floatNode);
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return formatPI(frame, factory.createInt(self), formatString, inliningTarget, floatNode, raiseNode);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
         TruffleString formatPI(VirtualFrame frame, PInt self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyNumberFloatNode floatNode) {
-            PRaiseNode raiseNode = getRaiseNode();
-            Spec spec = getSpec(formatString, raiseNode);
+                        @Shared @Cached PyNumberFloatNode floatNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            Spec spec = getSpec(formatString);
             if (isDoubleSpec(spec)) {
                 // lazy init of floatNode serves as branch profile
                 double doubleVal = asDouble(frame, inliningTarget, floatNode, self);
@@ -2937,8 +3020,8 @@ public final class IntBuiltins extends PythonBuiltins {
             return floatNode.execute(frame, inliningTarget, self);
         }
 
-        private static Spec getSpec(TruffleString formatString, PRaiseNode raiseNode) {
-            return InternalFormat.fromText(raiseNode, formatString, 'd', '>');
+        private Spec getSpec(TruffleString formatString) {
+            return InternalFormat.fromText(formatString, 'd', '>', this);
         }
 
         private static boolean isDoubleSpec(Spec spec) {

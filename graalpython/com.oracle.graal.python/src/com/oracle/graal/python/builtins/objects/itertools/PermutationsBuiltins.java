@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -196,20 +197,21 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
 
         @Specialization
-        Object setState(VirtualFrame frame, PPermutations self, Object state,
+        static Object setState(VirtualFrame frame, PPermutations self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedLoopConditionProfile indicesProfile,
-                        @Cached InlinedLoopConditionProfile cyclesProfile) {
+                        @Cached InlinedLoopConditionProfile cyclesProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (sizeNode.execute(frame, inliningTarget, state) != 3) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             Object indices = getItemNode.execute(frame, state, 0);
             Object cycles = getItemNode.execute(frame, state, 1);
             int poolLen = self.getPool().length;
             if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
 
             self.setStarted((boolean) getItemNode.execute(frame, state, 2));

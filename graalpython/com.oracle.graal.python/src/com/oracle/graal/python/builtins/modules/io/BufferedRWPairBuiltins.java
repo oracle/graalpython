@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
@@ -172,8 +173,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isInit(self)")
-        Object error(VirtualFrame frame, PRWPair self, Object arg) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object error(VirtualFrame frame, PRWPair self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
     }
 
@@ -185,8 +187,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isInit(self)")
-        Object error(VirtualFrame frame, PRWPair self, Object arg) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object error(VirtualFrame frame, PRWPair self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
     }
 

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -91,18 +92,18 @@ public final class CodecCtxBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        @SuppressWarnings("truffle-static-method")
-        Object codecctxErrorsSet(MultibyteStatefulCodecContext self, Object value,
+        static Object codecctxErrorsSet(MultibyteStatefulCodecContext self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PyUnicodeCheckNode unicodeCheckNode) {
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             if (value == PNone.NONE) {
-                throw raise(AttributeError, CANNOT_DELETE);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, CANNOT_DELETE);
             }
             if (!unicodeCheckNode.execute(inliningTarget, value)) {
-                throw raise(TypeError, ERRORS_MUST_BE_A_STRING);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ERRORS_MUST_BE_A_STRING);
             }
 
             TruffleString str = castToStringNode.execute(inliningTarget, value);

@@ -763,7 +763,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
                 i++;
                 if (i >= bytesLen) {
-                    throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
                 }
 
                 chr = (char) bytes[i];
@@ -838,14 +838,14 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         }
                         // invalid hexadecimal digits
                         if (T_STRICT.equalsUncached(errors, TS_ENCODING)) {
-                            throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
+                            throw PRaiseNode.raiseUncached(this, ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
                         }
                         if (T_REPLACE.equalsUncached(errors, TS_ENCODING)) {
                             buffer.append('?');
                         } else if (T_IGNORE.equalsUncached(errors, TS_ENCODING)) {
                             // do nothing
                         } else {
-                            throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
+                            throw PRaiseNode.raiseUncached(this, ValueError, ENCODING_ERROR_WITH_CODE, errors);
                         }
 
                         // skip \x
@@ -920,8 +920,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object encode(Object data, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
+        static Object encode(Object data, @SuppressWarnings("unused") Object errors,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
         }
     }
 
@@ -1380,9 +1381,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UTF32EXDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        static Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
+        @TruffleBoundary
+        Object encode(Object obj, Object errors, Object byteorder, Object ffinal) {
+            throw PRaiseNode.raiseUncached(this, NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
         }
     }
 
@@ -1391,8 +1392,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UnicodeInternalEncodeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors) {
-            throw raise(NotImplementedError, toTruffleStringUncached("unicode_internal_encode"));
+        @TruffleBoundary
+        Object encode(Object obj, Object errors) {
+            throw PRaiseNode.raiseUncached(this, NotImplementedError, toTruffleStringUncached("unicode_internal_encode"));
         }
     }
 
@@ -1401,8 +1403,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UnicodeInternalDecodeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors) {
-            throw raise(NotImplementedError, toTruffleStringUncached("unicode_internal_decode"));
+        @TruffleBoundary
+        Object encode(Object obj, Object errors) {
+            throw PRaiseNode.raiseUncached(this, NotImplementedError, toTruffleStringUncached("unicode_internal_decode"));
         }
     }
 
@@ -1542,8 +1545,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class ReadbufferEncodeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
+        @TruffleBoundary
         Object encode(Object obj, Object errors) {
-            throw raise(NotImplementedError, toTruffleStringUncached("readbuffer_encode"));
+            throw PRaiseNode.raiseUncached(this, NotImplementedError, toTruffleStringUncached("readbuffer_encode"));
         }
     }
 
@@ -1577,8 +1581,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class OEMEncodeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
+        @TruffleBoundary
         Object encode(Object obj, Object errors) {
-            throw raise(NotImplementedError, toTruffleStringUncached("oem_encode"));
+            throw PRaiseNode.raiseUncached(this, NotImplementedError, toTruffleStringUncached("oem_encode"));
         }
     }
 

@@ -101,6 +101,7 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongAsLongNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -385,8 +386,9 @@ public class GraalHPyMemberAccessNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object value) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
+        Object doGeneric(Object self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
         @TruffleBoundary
@@ -403,12 +405,13 @@ public class GraalHPyMemberAccessNodes {
         private static final Builtin builtin = HPyBadMemberDescrNode.class.getAnnotation(Builtin.class);
 
         @Specialization
-        Object doGeneric(Object self, @SuppressWarnings("unused") Object value) {
+        static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
             if (value == DescriptorDeleteMarker.INSTANCE) {
                 // This node is actually only used for T_NONE, so this error message is right.
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
             }
-            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
         }
 
         @TruffleBoundary
@@ -447,14 +450,16 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object self, Object value) {
+        Object doGeneric(VirtualFrame frame, Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PythonContext context = getContext();
             GraalHPyContext hPyContext = context.getHPyContext();
 
             Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_WRITE_OFFSET_D, offset, self);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_WRITE_OFFSET_D, offset, self);
             }
 
             /*
@@ -467,13 +472,13 @@ public class GraalHPyMemberAccessNodes {
                     if (self instanceof PythonObject pythonObject) {
                         Object oldValue = ensureReadHPyFieldNode(hPyContext).read(hPyContext, pythonObject, nativeSpacePtr, offset);
                         if (oldValue == PNone.NO_VALUE) {
-                            throw raise(PythonBuiltinClassType.AttributeError);
+                            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError);
                         }
                     } else {
                         throw CompilerDirectives.shouldNotReachHere("Cannot have HPyField on non-Python object");
                     }
                 } else if (type != HPY_MEMBER_OBJECT) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
                 }
                 // NO_VALUE will be converted to the NULL handle
                 newValue = PNone.NO_VALUE;
@@ -564,7 +569,7 @@ public class GraalHPyMemberAccessNodes {
                 case HPY_MEMBER_BOOL:
                     // note: exact type check is sufficient; bool cannot be subclassed
                     if (!ensureIsBuiltinObjectProfile().profileObject(this, newValue, PythonBuiltinClassType.Boolean)) {
-                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
                     }
                     val = ensureIsNode().isTrue(newValue) ? 1 : 0;
                     ensureWriteGenericNode(hPyContext).execute(hPyContext, nativeSpacePtr, offset, Bool, val);
@@ -584,7 +589,7 @@ public class GraalHPyMemberAccessNodes {
                     ensureWriteGenericNode(hPyContext).execute(hPyContext, nativeSpacePtr, offset, HPyContextSignatureType.HPy_ssize_t, val);
                     break;
                 default:
-                    throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_S, "");
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_S, "");
             }
             return PNone.NONE;
         }

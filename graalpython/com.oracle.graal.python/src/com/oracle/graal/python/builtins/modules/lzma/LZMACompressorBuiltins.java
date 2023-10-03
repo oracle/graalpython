@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -183,8 +184,9 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(LZMACompressor self, Object data) {
-            throw raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
+        static PNone error(LZMACompressor self, Object data,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
 
         @ValueType
