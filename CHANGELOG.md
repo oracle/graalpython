@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 24.0.0
+* Foreign big integers are now supported and work with all `Numeric` operators.
+
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
 * Add support for the sqlite3 module. This allows many packages like `coverage` or `Flask-SQLAlchemy` to work on top of this embedded database.

@@ -147,6 +147,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
@@ -171,6 +172,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 if (lib.fitsInLong(receiver)) {
                     return lib.asLong(receiver) != 0;
                 }
+                if (lib.fitsInBigInteger(receiver)) {
+                    return !isBigIntegerZero(lib.asBigInteger(receiver));
+                }
                 if (lib.fitsInDouble(receiver)) {
                     return lib.asDouble(receiver) != 0.0;
                 }
@@ -189,6 +193,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
+        }
+
+        @TruffleBoundary
+        static boolean isBigIntegerZero(BigInteger number) {
+            return number.compareTo(BigInteger.ZERO) == 0;
         }
     }
 
@@ -291,7 +300,32 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInBigInteger(left)"})
+        Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil,
+                        @Cached.Exclusive @Cached PythonObjectFactory factory) {
+            assert !lib.isBoolean(left);
+            BigInteger leftBigInteger;
+            PInt leftInt;
+            gil.release(true);
+            try {
+                leftBigInteger = lib.asBigInteger(left);
+                leftInt = factory.createInt(leftBigInteger);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            if (!reverse) {
+                return op.executeObject(frame, leftInt, right);
+            } else {
+                return op.executeObject(frame, right, leftInt);
+            }
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInBigInteger(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached GilNode gil) {
@@ -313,7 +347,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInBigInteger(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -566,6 +600,26 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 gil.acquire();
             }
             return comparisonNode.executeObject(frame, leftLong, right);
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInBigInteger(left)"})
+        Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil,
+                        @Cached PythonObjectFactory factory) {
+            BigInteger leftBigInteger;
+            PInt leftInt;
+            gil.release(true);
+            try {
+                leftBigInteger = lib.asBigInteger(left);
+                leftInt = factory.createInt(leftBigInteger);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            return comparisonNode.executeObject(frame, leftInt, right);
         }
 
         @Specialization(guards = {"lib.fitsInDouble(left)"})
@@ -1006,10 +1060,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        protected static long doIt(Object object,
+        protected static Object doIt(Object object,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PythonObjectFactory factory) {
             gil.release(true);
             try {
                 if (lib.isBoolean(object)) {
@@ -1034,6 +1089,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
+                    }
+                }
+                if (lib.fitsInBigInteger(object)) {
+                    try {
+                        var big = lib.asBigInteger(object);
+                        return factory.createInt(big);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("foreign value claims to be a big integer but isn't");
                     }
                 }
                 throw raiseNode.raiseIntegerInterpretationError(object);
