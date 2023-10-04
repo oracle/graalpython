@@ -8,3 +8,4 @@ subdir = 'src'
 install-priority = 10
 version = '== 0.29.32'
 patch = 'Cython-0.29.32.patch'
+subdir = 'src'
