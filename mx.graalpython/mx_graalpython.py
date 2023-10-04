@@ -210,7 +210,7 @@ def get_jdk():
 
 
 def full_python(args, **kwargs):
-    """run python from graalvm (unless kwargs are given)"""
+    """Run python from standalone build (unless kwargs are given). Does not build GraalPython sources automatically."""
     if kwargs:
         return python(args, **kwargs)
 
@@ -237,9 +237,14 @@ def full_python(args, **kwargs):
         else:
             mx.warn(f"Dropping {arg}, cannot pass it to launcher")
 
-    import mx_sdk_vm_impl
-    home = mx_sdk_vm_impl.graalvm_home()
-    mx.run([os.path.join(home, "bin", f"graalpy{'.cmd' if mx.is_windows() else ''}")] + args)
+    standalone_home = graalpy_standalone_home('jvm', dev=True, build=False)
+    graalpy_path = os.path.join(standalone_home, 'bin', _graalpy_launcher())
+    if not os.path.exists(graalpy_path):
+        mx.abort("GraalPy standalone doesn't seem to be built.\n" +
+                 "To build it: mx --dy /vm build --dep PYTHON_JAVA_STANDALONE_JAVA21\n" +
+                 "Alternatively use: mx python --hosted")
+
+    mx.run([graalpy_path] + args)
 
 
 def python(args, **kwargs):
@@ -330,10 +335,6 @@ def node_footprint_analyzer(args, **kwargs):
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
 
-def _pythonhome():
-    return mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output()
-
-
 def _dev_pythonhome_context():
     home = os.environ.get("GRAAL_PYTHONHOME", _dev_pythonhome())
     return set_env(GRAAL_PYTHONHOME=home)
@@ -377,10 +378,6 @@ def punittest(ars, report=False):
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
         configs.append(TestConfig(['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
-
-    # Workaround until imports update pulls in GR-48113
-    sulong_native = mx.distribution('SULONG_NATIVE', fatalIfMissing=True)
-    sulong_native._use_module_path = True
 
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")
@@ -442,10 +439,15 @@ def run_cpython_test(raw_args):
     parser = ArgumentParser()
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--gvm', dest='vm', action='store_const', const='gvm')
+    parser.add_argument('--standalone', dest='vm', action='store_const', const='standalone')
     parser.add_argument('--svm', dest='vm', action='store_const', const='svm')
     parser.add_argument('-k', dest='tags', action='append')
     parser.add_argument('globs', nargs='+')
     args, rest_args = parser.parse_known_args(raw_args)
+    if args.vm == 'gvm':
+        mx.warn("--gvm is deprecated, use --standalone")
+        args.vm = 'standalone'
+
     testfiles = []
     for g in args.globs:
         testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", f"{g}.py"))
@@ -469,7 +471,7 @@ def run_cpython_test(raw_args):
         env = os.environ.copy()
         delete_bad_env_keys(env)
         env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
-        vm = python_gvm() if args.vm == 'gvm' else python_svm()
+        vm = python_jvm() if args.vm == 'standalone' else python_svm()
         mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
     else:
         do_run_python(python_args)
@@ -517,9 +519,9 @@ def retag_unittests(args):
     ]
     if parsed_args.timeout:
         args += [f'--timeout={parsed_args.timeout}']
-    vm = python_svm() if not parsed_args.jvm else python_gvm()
+    vm = python_svm() if not parsed_args.jvm else python_jvm()
     if parsed_args.jvm:
-        args += ['-ea']
+        args += ['--vm.ea']
     mx.run([vm] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
@@ -788,48 +790,17 @@ def set_env(**environ):
         os.environ.update(old_environ)
 
 
-def _graalvm_home(*, envfile, extra_dy=""):
-    if not os.path.isabs(envfile):
-        envfile = _sibling(envfile)
-    home = os.environ.get("GRAALVM_HOME", None)
-    if not home:
-        dy = ",".join(["%s%s" % ("/" if dy[1] else "", dy[0]) for dy in mx.get_dynamic_imports()])
-        dy += extra_dy
-        mx_args = ["--env", envfile]
-        if dy:
-            mx_args = ["--dy", dy] + mx_args
-        if mx._opts.verbose:
-            mx.run_mx(mx_args + ["graalvm-show"])
-        if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
-            mx_args.append("--extra-image-builder-argument=-ea")
-            mx_args.append("--extra-image-builder-argument=--verbose")
-        mx.run_mx(mx_args + ["build"])
-        out = mx.OutputCapture()
-        mx.run_mx(mx_args + ["graalvm-home"], out=out)
-        home = out.data.splitlines()[-1].strip()
-    elif "*" in home:
-        home = os.path.abspath(glob.glob(home)[0])
-    mx.log("choosing GRAALVM_HOME=%s" % home)
-    return home
-
-
-def _join_bin(home, name):
-    if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
-        return os.path.join(home, "Contents", "Home", "bin", name)
-    elif WIN32:
-        return os.path.join(home, "bin", f"{name}.cmd")
-    else:
-        return os.path.join(home, "bin", name)
-
-
 def _graalpy_launcher(managed=False):
     name = 'graalpy-managed' if managed else 'graalpy'
     return f"{name}.exe" if WIN32 else name
 
 
-def graalpy_standalone_home(standalone_type, enterprise=False):
+def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
+    assert not (enterprise and dev), "EE dev standalones are not implemented yet"
     jdk_version = mx.get_jdk().version
+
+    # Check if GRAALPY_HOME points to some compatible pre-built GraalPy standalone
     python_home = os.environ.get("GRAALPY_HOME", None)
     if python_home and "*" in python_home:
         python_home = os.path.abspath(glob.glob(python_home)[0])
@@ -856,30 +827,44 @@ def graalpy_standalone_home(standalone_type, enterprise=False):
         import_managed_status = mx.run([launcher, "-c", "import __graalpython_enterprise__"], nonZeroIsFatal=False, out=out, err=out)
         if enterprise != (import_managed_status == 0):
             mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
+        return python_home
+
+    env_file = 'ce-python'
+    vm_suite_path = os.path.join(mx.suite('truffle').dir, '..', 'vm')
+    svm_component = '_SVM'
+    if enterprise:
+        env_file = 'ee-python'
+        vm_suite_path = os.path.join(mx.suite('graal-enterprise').dir, '..', 'vm-enterprise')
+        svm_component = '_SVM_SVMEE'
+    if dev:
+        if standalone_type == 'jvm':
+            svm_component = ''
+            mx_args = ['--dy', '/vm']
+        else:
+            dev_env_file = os.path.join(os.path.abspath(SUITE.dir), 'mx.graalpython/graalpython-svm-standalone')
+            mx_args = ['-p', vm_suite_path, '--env', dev_env_file]
     else:
-        env_file = 'ce-python'
-        vm_suite_path = os.path.join(mx.suite('truffle').dir, '..', 'vm')
-        svm_distr = ''
-        if enterprise:
-            env_file = 'ee-python'
-            vm_suite_path = os.path.join(mx.suite('graal-enterprise').dir, '..', 'vm-enterprise')
-            svm_distr = '_SVMEE'
         mx_args = ['-p', vm_suite_path, '--env', env_file]
-        if not DISABLE_REBUILD:
-            dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
-            mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE_SVM{svm_distr}_JAVA{jdk_version.parts[0]}"])
-        out = mx.OutputCapture()
-        mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out)
-        python_home = out.data.splitlines()[-1].strip()
+
+    if build and not DISABLE_REBUILD:
+        dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
+        # Example of a string we're building here: PYTHON_JAVA_STANDALONE_SVM_SVMEE_JAVA21
+        mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
+
+    out = mx.OutputCapture()
+    mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out)
+    python_home = out.data.splitlines()[-1].strip()
     return python_home
 
 
-def graalpy_standalone(standalone_type, managed=False):
+def graalpy_standalone(standalone_type, managed=False, enterprise=None, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
+    ee = managed if not enterprise else enterprise
     if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
-        return graalpy_standalone('jvm')
+        return graalpy_standalone('jvm', managed, enterprise, dev, build)
 
-    launcher = os.path.join(graalpy_standalone_home(standalone_type, managed), 'bin', _graalpy_launcher(managed))
+    home = graalpy_standalone_home(standalone_type, enterprise=ee, dev=dev, build=build)
+    launcher = os.path.join(home, 'bin', _graalpy_launcher(managed))
     return make_coverage_launcher_if_needed(launcher)
 
 def graalpy_standalone_jvm():
@@ -939,11 +924,17 @@ def deploy_local_maven_repo():
     return path
 
 
-def python_gvm(_=None):
-    home = _graalvm_home(envfile="graalpython-bash-launcher")
-    launcher = make_coverage_launcher_if_needed(_join_bin(home, "graalpy"))
+def python_jvm(_=None):
+    """Returns the path to GraalPy from 'jvm' standalone dev build. Also builds the standalone."""
+    launcher = graalpy_standalone('jvm', dev=True)
     mx.log(launcher)
     return launcher
+
+
+def python_gvm(_=None):
+    """Deprecated, use python-jvm"""
+    mx.warn("mx python-gvm and the helper function python_gvm are deprecated, use python-jvm/python_jvm")
+    return python_jvm()
 
 
 def make_coverage_launcher_if_needed(launcher):
@@ -975,10 +966,11 @@ def make_coverage_launcher_if_needed(launcher):
 
 
 def python_svm(_=None):
+    """Returns the path to GraalPy native image from 'native' standalone dev build.
+    Also builds the standalone if not built already."""
     if mx_gate.get_jacoco_agent_args():
-        return python_gvm()
-    home = _graalvm_home(envfile="graalpython-launcher")
-    launcher = _join_bin(home, "graalpy")
+        return python_jvm()
+    launcher = graalpy_standalone('native', dev=True)
     mx.log(launcher)
     return launcher
 
@@ -1164,63 +1156,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         if lock:
             lock.release()
     return result
-
-
-def get_venv_env(env_dir):
-    env = os.environ.copy()
-    path = os.environ.get("PATH", '')
-    env.update(**{
-        'VIRTUAL_ENV': env_dir,
-        'PATH': ":".join([os.path.join(env_dir, 'bin'), path]),
-    })
-    if 'PYTHONHOME' in env:
-        del env['PYTHONHOME']
-    return env
-
-
-def prepare_graalpy_venv(python_binary, packages=None, env_path=None, args=None):
-    if args is None:
-        args = []
-    if packages is None:
-        packages = []
-    if isinstance(packages, dict):
-        packages = list(packages.keys())
-    assert isinstance(packages, (tuple, set, list)), "packages arg must be a tuple, set or list"
-    env_dir = os.path.realpath(env_path if env_path else tempfile.mkdtemp())
-    mx.log("using graalpython venv: {}".format(env_dir))
-    mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
-    mx.log("installing the following packages: {}".format(", ".join(packages)))
-    for p in packages:
-        mx.run(["graalpy", "-m", "ginstall"] + args + ["install", p], nonZeroIsFatal=True, env=get_venv_env(env_dir))
-    return env_dir
-
-
-def run_with_venv(cmd, env_dir, **kwargs):
-    assert isinstance(cmd, list), "cmd argument must be a list"
-    kwargs['env'] = get_venv_env(env_dir)
-    mx.run(cmd, **kwargs)
-
-
-def run_ginstall(python_binary, args=None):
-    if args is None:
-        args = []
-    env_dir = prepare_graalpy_venv(python_binary, packages=GINSTALL_GATE_PACKAGES, args=args)
-    import_packages = '"{}"'.format(';'.join(["import {}".format(n) for p, n in GINSTALL_GATE_PACKAGES.items()]))
-    run_with_venv(["graalpy", "-c", import_packages], env_dir, nonZeroIsFatal=True)
-
-
-def is_bash_launcher(launcher_path):
-    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-        return re.match(r'^#!.*bash', launcher.readline())
-
-
-def patch_batch_launcher(launcher_path, jvm_args):
-    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-        lines = launcher.readlines()
-    assert re.match(r'^#!.*bash', lines[0]), "expected a bash launcher"
-    lines.insert(-1, 'jvm_args+=(%s)\n' % jvm_args)
-    with open(launcher_path, 'w') as launcher:
-        launcher.writelines(lines)
 
 
 def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None, report=False):
@@ -1423,7 +1358,12 @@ def graalpython_gate_runner(args, tasks):
             mvn_repo_path = pathlib.Path(deploy_local_maven_repo()).as_uri()
             central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
-            mvn_cmd_base = ['-f', pom_path, f'-Dpolyglot_repo={mvn_repo_path}', f'-Dcentral_repo={central_override}', '--batch-mode']
+            artifacts_version = GRAAL_VERSION + '-dev'
+            mvn_cmd_base = ['-f', pom_path,
+                            f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
+                            f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
+                            f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
+                            '--batch-mode']
 
             mx.logv("Purging the local repository before the test")
             mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
@@ -1786,14 +1726,6 @@ mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
 
 
-def delete_self_if_testdownstream(args):
-    """
-    A helper for downstream testing with binary dependencies
-    """
-    if str(SUITE.dir).endswith("testdownstream/graalpython"):
-        shutil.rmtree(SUITE.dir, ignore_errors=True)
-
-
 def update_import(name, suite_py, args):
     parent = os.path.join(SUITE.dir, "..")
     dep_dir = None
@@ -2119,20 +2051,6 @@ def _python_checkpatchfiles():
                         response.close()
     finally:
         os.unlink(listfilename)
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# add ci verification util
-#
-# ----------------------------------------------------------------------------------------------------------------------
-def verify_ci(dest_suite, common_ci_dir="ci_common", args=None, ext=('.jsonnet', '.libsonnet')):
-    """Verify CI configuration"""
-    base_suite = SUITE
-    assert isinstance(base_suite, mx.SourceSuite)
-
-    ci_files = mx.suite_ci_files(SUITE, common_ci_dir, extension=ext)
-    mx.log("CI setup checking common file(s): \n\t{0}".format('\n\t'.join(map(str, ci_files))))
-    mx.verify_ci(args, base_suite, dest_suite, common_file=ci_files)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2578,7 +2496,7 @@ def python_build_watch(args):
             if args.full:
                 mx.command_function("build")()
             elif args.graalvm:
-                mx.log(python_gvm())
+                mx.log(python_jvm())
             else:
                 nativebuild([])
             mx.log("Build done.")
@@ -3028,7 +2946,7 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.api.impl=ALL-UNNAMED'])  # for TruffleRunner/TCK
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
         if not PythonMxUnittestConfig.useResources:
-            vmArgs.append('-Dorg.graalvm.language.python.home=' + _pythonhome())
+            vmArgs.append('-Dorg.graalvm.language.python.home=' + mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
         return (vmArgs, mainClass, mainClassArgs)
 
     def processDeps(self, deps):
@@ -3043,20 +2961,22 @@ mx_unittest.register_unittest_config(PythonMxUnittestConfig('python-internal'))
 # register the suite commands (if any)
 #
 # ----------------------------------------------------------------------------------------------------------------------
+full_python_cmd = [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM] [Python args|@VM options]']
 mx.update_commands(SUITE, {
     'python-build-watch': [python_build_watch, ''],
-    'python': [full_python, '[Python args|@VM options]'],
-    'python3': [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM] [Python args|@VM options]'],
+    'python': full_python_cmd,
+    'python3': full_python_cmd,
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [no_return(python_svm), ''],
+    'python-jvm': [no_return(python_jvm), ''],
     'python-gvm': [no_return(python_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
-    'python-run-cpython-unittest': [run_cpython_test, '[-k TEST_PATTERN] [--gvm] [--svm] [--all] TESTS'],
+    'python-run-cpython-unittest': [run_cpython_test, '[-k TEST_PATTERN] [--standalone] [--svm] [--all] TESTS'],
     'python-update-unittest-tags': [update_unittest_tags, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],

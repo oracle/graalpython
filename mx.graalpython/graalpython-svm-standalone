@@ -1,0 +1,8 @@
+# The lightest configuration that allows building PYTHON_NATIVE_STANDALONE_SVM_JAVA21.
+# For example: mx --dy /vm build --dep PYTHON_NATIVE_STANDALONE_SVM_JAVA21
+DYNAMIC_IMPORTS=/compiler,/regex,/sdk,/substratevm,/sulong,/tools,/truffle,graalpython
+COMPONENTS=antlr4,cmp,cov,dap,dis,gu,gvm,icu4j,xz,ins,insight,insightheap,lg,llp,llrc,llrl,llrn,lsp,nfi-libffi,pbm,pmh,poly,polynative,pro,pyn,pynl,rgx,sdk,sdkl,tfl,tfla,tflc,tflm,truffle-json
+# Note: this has to include graalpy-polyglot-get native launcher otherwise
+# SDK thinks this config is no fit for a native standalone distribution
+NATIVE_IMAGES=lib:pythonvm,graalpy-polyglot-get
+DISABLE_INSTALLABLES=False
