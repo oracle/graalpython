@@ -2065,6 +2065,8 @@ def _python_checkpatchfiles():
             'wheel-pre-0.35.patch',
             # Empty license field. It's ASL 2.0 or BSD 2-Clause
             'packaging.patch',
+            # Empty license field. It's ASL 2.0
+            'tokenizers-0.13.3.patch',
         }
         allowed_licenses = [
             "MIT",
