@@ -1,0 +1,13 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 03d45a3..05fc6e3 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -9,7 +9,7 @@ name = "safetensors_rust"
+ crate-type = ["cdylib"]
+ 
+ [dependencies]
+-pyo3 = { version = "0.18.1", features = ["extension-module"] }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.18.1.graalpy", features = ["extension-module"] }
+ memmap2 = "0.5"
+ serde_json = "1.0"
+ 

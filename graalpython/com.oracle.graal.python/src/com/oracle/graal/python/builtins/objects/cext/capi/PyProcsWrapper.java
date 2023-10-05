@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -51,7 +52,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -60,7 +63,9 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -710,7 +715,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        long execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached CallUnaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -729,14 +734,13 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 }
                 try {
                     Object result = executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]));
-                    int len = PyObjectSizeNode.convertAndCheckLen(null, inliningTarget, result, indexNode, castLossy, asSizeNode, raiseNode);
-                    return (long) len;
+                    return PyObjectSizeNode.convertAndCheckLen(null, inliningTarget, result, indexNode, castLossy, asSizeNode, raiseNode);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "LenfuncWrapper", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
-                return PythonContext.get(toJavaNode).getNativeNull().getPtr();
+                return -1;
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -757,11 +761,14 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        long execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached CallUnaryMethodNode executeNode,
+                        @Cached CastUnsignedToJavaLongHashNode cast,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Exclusive @Cached GilNode gil,
+                        @Cached PRaiseNode raiseNode) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
             try {
@@ -774,13 +781,16 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     throw ArityException.create(1, 2, arguments.length);
                 }
                 try {
-                    return executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]));
+                    Object result = executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]));
+                    return PyObjectHashNode.avoidNegative1(cast.execute(inliningTarget, result));
+                } catch (CannotCastException e) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "HashfuncWrapper", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return -1;
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
