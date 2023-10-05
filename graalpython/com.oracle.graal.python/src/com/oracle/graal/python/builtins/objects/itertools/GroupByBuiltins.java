@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -162,11 +163,13 @@ public final class GroupByBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object setState(VirtualFrame frame, PGroupBy self, Object state,
+        static Object setState(VirtualFrame frame, PGroupBy self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached TupleBuiltins.LenNode lenNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
-                throw raise(TypeError, IS_NOT_A, "state", "3-tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "3-tuple");
             }
 
             Object currValue = getItemNode.execute(frame, state, 0);

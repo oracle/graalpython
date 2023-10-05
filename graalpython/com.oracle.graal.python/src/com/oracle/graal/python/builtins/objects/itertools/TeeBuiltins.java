@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -186,18 +187,19 @@ public final class TeeBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
 
         @Specialization
-        Object setState(VirtualFrame frame, PTee self, Object state,
+        static Object setState(VirtualFrame frame, PTee self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached CastToJavaIntLossyNode castToIntNode) {
+                        @Cached CastToJavaIntLossyNode castToIntNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
-                throw raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object dataObject = getItemNode.execute(frame, state, 0);
             if (!(dataObject instanceof PTeeDataObject)) {
-                throw raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
             }
             self.setDataObj((PTeeDataObject) dataObject);
             Object secondElement = getItemNode.execute(frame, state, 1);
@@ -205,10 +207,10 @@ public final class TeeBuiltins extends PythonBuiltins {
             try {
                 index = castToIntNode.execute(inliningTarget, secondElement);
             } catch (CannotCastException e) {
-                throw raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
+                throw raiseNode.get(inliningTarget).raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
             if (index < 0 || index > LINKCELLS) {
-                throw raise(ValueError, INDEX_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INDEX_OUT_OF_RANGE);
             }
             self.setIndex(index);
             return PNone.NONE;

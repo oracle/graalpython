@@ -984,14 +984,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @ExplodeLoop
-        double mktime(VirtualFrame frame, PythonModule module, PTuple tuple,
+        static double mktime(VirtualFrame frame, PythonModule module, PTuple tuple,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Cached ReadAttributeFromDynamicObjectNode readZoneId) {
+                        @Cached ReadAttributeFromDynamicObjectNode readZoneId,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] items = getObjectArrayNode.execute(inliningTarget, tuple);
             if (items.length != ELEMENT_COUNT) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, ELEMENT_COUNT, items.length);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, ELEMENT_COUNT, items.length);
             }
             int[] integers = new int[ELEMENT_COUNT];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
@@ -1062,8 +1063,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public Object localtime(Object module, Object time) {
-            throw raise(TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
+        static Object localtime(Object module, Object time,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
 
         protected static TruffleString format(int[] tm, TruffleString.FromJavaStringNode fromJavaStringNode) {

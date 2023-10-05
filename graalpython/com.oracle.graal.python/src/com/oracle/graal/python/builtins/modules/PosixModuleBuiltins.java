@@ -411,40 +411,42 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone putenv(VirtualFrame frame, PBytes nameBytes, PBytes valueBytes,
+        static PNone putenv(VirtualFrame frame, PBytes nameBytes, PBytes valueBytes,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
             byte[] name = toBytesNode.execute(nameBytes);
             byte[] value = toBytesNode.execute(valueBytes);
-            Object nameOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), name));
-            Object valueOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), value));
-            checkEqualSign(name);
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+            Object nameOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(posixSupport, name), raiseNode);
+            Object valueOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(posixSupport, value), raiseNode);
+            checkEqualSign(inliningTarget, name, raiseNode);
             auditNode.audit(inliningTarget, "os.putenv", nameBytes, valueBytes);
             try {
-                posixLib.setenv(getPosixSupport(), nameOpaque, valueOpaque, true);
+                posixLib.setenv(posixSupport, nameOpaque, valueOpaque, true);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
 
-        private Object checkNull(Object value) {
+        private static Object checkNull(Node inliningTarget, Object value, PRaiseNode.Lazy raiseNode) {
             if (value == null) {
-                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
             return value;
         }
 
-        private void checkEqualSign(byte[] bytes) {
+        private static void checkEqualSign(Node inliningTarget, byte[] bytes, PRaiseNode.Lazy raiseNode) {
             for (byte b : bytes) {
                 if (b == '=') {
-                    throw raise(ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
                 }
             }
         }
@@ -498,48 +500,52 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object execvArgsList(VirtualFrame frame, PosixPath path, PList argv,
+        static Object execvArgsList(VirtualFrame frame, PosixPath path, PList argv,
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared @Cached ToArrayNode toArrayNode,
                         @Shared @Cached ObjectToOpaquePathNode toOpaquePathNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, toArrayNode, toOpaquePathNode, auditNode, gil, constructAndRaiseNode);
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, toArrayNode, toOpaquePathNode, auditNode, gil, constructAndRaiseNode, raiseNode);
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
         @Specialization
-        Object execvArgsTuple(VirtualFrame frame, PosixPath path, PTuple argv,
+        static Object execvArgsTuple(VirtualFrame frame, PosixPath path, PTuple argv,
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared @Cached ToArrayNode toArrayNode,
                         @Shared @Cached ObjectToOpaquePathNode toOpaquePathNode,
                         @Shared @Cached AuditNode auditNode,
                         @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, toArrayNode, toOpaquePathNode, auditNode, gil, constructAndRaiseNode);
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, toArrayNode, toOpaquePathNode, auditNode, gil, constructAndRaiseNode, raiseNode);
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
         @Specialization(guards = {"!isList(argv)", "!isPTuple(argv)"})
         @SuppressWarnings("unused")
-        Object execvInvalidArgs(VirtualFrame frame, PosixPath path, Object argv) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
+        static Object execvInvalidArgs(VirtualFrame frame, PosixPath path, Object argv,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
         }
 
-        private void execv(VirtualFrame frame, PosixPath path, Object argv, SequenceStorage argvStorage,
+        private static void execv(VirtualFrame frame, PosixPath path, Object argv, SequenceStorage argvStorage,
                         Node inliningTarget,
                         PosixSupportLibrary posixLib,
                         SequenceStorageNodes.ToArrayNode toArrayNode,
                         ObjectToOpaquePathNode toOpaquePathNode,
                         SysModuleBuiltins.AuditNode auditNode,
                         GilNode gil,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        PRaiseNode.Lazy raiseNode) {
             Object[] args = toArrayNode.execute(inliningTarget, argvStorage);
             if (args.length < 1) {
-                throw raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
             }
             Object[] opaqueArgs = new Object[args.length];
             for (int i = 0; i < args.length; ++i) {
@@ -551,7 +557,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
             gil.release(true);
             try {
-                posixLib.execv(getPosixSupport(), path.value, opaqueArgs);
+                posixLib.execv(PosixSupport.get(inliningTarget), path.value, opaqueArgs);
             } catch (PosixException e) {
                 gil.acquire();
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

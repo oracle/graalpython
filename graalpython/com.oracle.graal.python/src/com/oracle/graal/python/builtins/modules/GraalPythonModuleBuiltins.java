@@ -128,6 +128,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -769,6 +770,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object doSet(PSet set, TruffleString strategyName) {
             validate(set.getDictStorage());
             set.setDictStorage(getStrategy(strategyName, getLanguage()));
@@ -776,6 +778,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         Object doDict(PDict dict, TruffleString strategyName) {
             validate(dict.getDictStorage());
             dict.setDictStorage(getStrategy(strategyName, getLanguage()));
@@ -792,13 +795,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 case "economicmap":
                     return EconomicMapStorage.create();
                 default:
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
             }
         }
 
         private void validate(HashingStorage dictStorage) {
             if (HashingStorageLen.executeUncached(dictStorage) != 0) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
             }
         }
     }

@@ -161,11 +161,12 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
-        Object initError(PBuffered self, Object o) {
+        static Object initError(PBuffered self, Object o,
+                        @Cached PRaiseNode raiseNode) {
             if (self.isDetached()) {
-                throw raise(ValueError, IO_STREAM_DETACHED);
+                throw raiseNode.raise(ValueError, IO_STREAM_DETACHED);
             } else {
-                throw raise(ValueError, IO_UNINIT);
+                throw raiseNode.raise(ValueError, IO_UNINIT);
             }
         }
     }
@@ -174,11 +175,12 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
-        Object initError(PBuffered self, Object buffer) {
+        static Object initError(PBuffered self, Object buffer,
+                        @Cached PRaiseNode raiseNode) {
             if (self.isDetached()) {
-                throw raise(ValueError, IO_STREAM_DETACHED);
+                throw raiseNode.raise(ValueError, IO_STREAM_DETACHED);
             } else {
-                throw raise(ValueError, IO_UNINIT);
+                throw raiseNode.raise(ValueError, IO_UNINIT);
             }
         }
     }

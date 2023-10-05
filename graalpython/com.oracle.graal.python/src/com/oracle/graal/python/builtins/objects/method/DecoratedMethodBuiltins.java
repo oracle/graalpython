@@ -66,6 +66,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -138,14 +139,14 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
+        static Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
-        protected Object setDict(PDecoratedMethod self, PDict mapping,
+        static Object setDict(PDecoratedMethod self, PDict mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
             setDict.execute(inliningTarget, self, mapping);
@@ -153,8 +154,9 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        protected Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        static Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 

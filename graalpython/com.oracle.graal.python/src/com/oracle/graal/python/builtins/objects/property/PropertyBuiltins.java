@@ -148,7 +148,8 @@ public final class PropertyBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         @SuppressWarnings("unused")
-        Object doSet(PProperty self, Object value) {
+        static Object doSet(PProperty self, Object value,
+                        @Cached PRaiseNode raiseNode) {
             /*
              * That's a bit unfortunate: if we define 'isGetter = true' and 'isSetter = false' then
              * this will use a GetSetDescriptor which has a slightly different error message for
@@ -156,7 +157,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
              * with expected message. This should be fixed by distinguishing between getset and
              * member descriptors.
              */
-            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
     }
 
@@ -364,13 +365,15 @@ public final class PropertyBuiltins extends PythonBuiltins {
         @Child private CallUnaryMethodNode callDeleteNode;
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, PProperty self, Object obj) {
+        Object doGeneric(VirtualFrame frame, PProperty self, Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object func = self.getFdel();
             if (func == null) {
                 if (self.getPropertyName() != null) {
-                    throw raise(AttributeError, CANT_DELETE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_DELETE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
                 } else {
-                    throw raise(AttributeError, CANT_DELETE_ATTRIBUTE);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_DELETE_ATTRIBUTE);
                 }
             }
             ensureCallDeleteNode().executeObject(frame, func, obj);

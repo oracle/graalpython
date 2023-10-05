@@ -636,17 +636,19 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object resize(CDataObject obj, int size,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+        static Object resize(CDataObject obj, int size,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(obj);
             if (dict == null) {
-                throw raise(TypeError, EXCEPTED_CTYPES_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, EXCEPTED_CTYPES_INSTANCE);
             }
             if (size < dict.size) {
-                throw raise(ValueError, MINIMUM_SIZE_IS_D, dict.size);
+                throw raiseNode.get(inliningTarget).raise(ValueError, MINIMUM_SIZE_IS_D, dict.size);
             }
             if (obj.b_needsfree) {
-                throw raise(ValueError, MEMORY_CANNOT_BE_RESIZED_BECAUSE_THIS_OBJECT_DOESN_T_OWN_IT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, MEMORY_CANNOT_BE_RESIZED_BECAUSE_THIS_OBJECT_DOESN_T_OWN_IT);
             }
             obj.b_size = size;
             return PNone.NONE;
@@ -879,18 +881,20 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doBytes(PythonModule self, PBytes path,
+        static Object doBytes(PythonModule self, PBytes path,
+                        @Bind("this") Node inliningTarget,
                         @Cached ToBytesNode toBytesNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @CachedLibrary(limit = "1") InteropLibrary resultLib) {
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!hasDynamicLoaderCache()) {
-                throw raise(NotImplementedError, S_SYMBOL_IS_MISSING, DYLD_SHARED_CACHE_CONTAINS_PATH);
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError, S_SYMBOL_IS_MISSING, DYLD_SHARED_CACHE_CONTAINS_PATH);
             }
 
             CtypesModuleBuiltins builtins = (CtypesModuleBuiltins) self.getBuiltins();
             Object cachedFunction = builtins.dyldSharedCacheContainsPathFunction;
             if (cachedFunction == null) {
-                cachedFunction = initializeDyldSharedCacheContainsPathFunction(getContext(), builtins);
+                cachedFunction = initializeDyldSharedCacheContainsPathFunction(PythonContext.get(inliningTarget), builtins);
                 builtins.dyldSharedCacheContainsPathFunction = cachedFunction;
             }
             if (!ilib.isNull(cachedFunction)) {
@@ -986,9 +990,10 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(obj)) {
-                return error(null, obj, offset, inliningTarget, getClassNode);
+                return error(null, obj, offset, inliningTarget, getClassNode, raiseNode);
             }
             PyCArgObject parg = factory.createCArgObject();
             parg.tag = 'P';
@@ -1001,12 +1006,13 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, Object obj, Object off,
+        static Object error(VirtualFrame frame, Object obj, Object off,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode) {
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             TruffleString name = GetNameNode.executeUncached(clazz);
-            throw raise(TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S, name);
+            throw raiseNode.get(inliningTarget).raise(TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S, name);
         }
     }
 

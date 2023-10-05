@@ -21,6 +21,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -372,7 +373,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
                 // need to raise an exception if r is a nonzero number and phi is infinite
                 if (r != 0.0 && !Double.isNaN(r) && Double.isInfinite(phi)) {
-                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
 
                 // if r is +/-infinity and phi is finite but nonzero then
@@ -476,7 +477,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                     final double scaleUp = 0x1.0p53;
                     return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * LN_2;
                 }
-                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
             double h = Math.hypot(ax, ay);
             if (0.71 <= h && h <= 1.73) {

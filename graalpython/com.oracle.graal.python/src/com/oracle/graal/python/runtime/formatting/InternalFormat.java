@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -22,6 +22,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 //Copyright (c) Jython Developers
@@ -35,9 +36,9 @@ public class InternalFormat {
      * @return parsed equivalent to text
      */
     @TruffleBoundary
-    public static Spec fromText(PRaiseNode raiseNode, TruffleString text, char defaultType, char defaultAlignment) {
+    public static Spec fromText(TruffleString text, char defaultType, char defaultAlignment, Node raisingNode) {
         Parser parser = new Parser(text.toJavaStringUncached());
-        return parser.parse(raiseNode, defaultType, defaultAlignment);
+        return parser.parse(defaultType, defaultAlignment, raisingNode);
     }
 
     /**
@@ -717,8 +718,8 @@ public class InternalFormat {
 
     /**
      * Parser for PEP-3101 field format specifications. This class provides a
-     * {@link #parse(PRaiseNode, char, char)} method that translates the format specification into
-     * an <code>Spec</code> object.
+     * {@link #parse(char, char, Node)} method that translates the format specification into an
+     * <code>Spec</code> object.
      */
     private static class Parser {
 
@@ -727,7 +728,7 @@ public class InternalFormat {
 
         /**
          * Constructor simply holds the specification string ahead of the
-         * {@link #parse(PRaiseNode, char, char)} operation.
+         * {@link #parse(char, char, Node)} operation.
          *
          * @param spec format specifier to parse (e.g. "&lt;+12.3f")
          */
@@ -749,7 +750,7 @@ public class InternalFormat {
          * This method is the equivalent of CPython's parse_internal_render_format_spec() in
          * ~/Objects/stringlib/formatter.h.
          */
-        Spec parse(PRaiseNode raiseNode, char defaultType, char defaultAlignment) {
+        Spec parse(char defaultType, char defaultAlignment, Node raisingNode) {
             char type = defaultType;
             char align = NONE;
             char fill = NONE;
@@ -805,7 +806,7 @@ public class InternalFormat {
                     width = scanInteger();
                 } catch (NumberFormatException ex) {
                     // CPython seems to happily parse big ints and then it chokes on the allocation
-                    throw raiseNode.raise(ValueError, ErrorMessages.WIDTH_TOO_BIG);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.WIDTH_TOO_BIG);
                 }
             }
 
@@ -815,11 +816,11 @@ public class InternalFormat {
             }
             if (scanPast('_')) {
                 if (specified(grouping)) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
                 }
                 grouping = '_';
                 if (scanPast(',')) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
                 }
             }
 
@@ -829,10 +830,10 @@ public class InternalFormat {
                     try {
                         precision = scanInteger();
                     } catch (NumberFormatException ex) {
-                        throw raiseNode.raise(ValueError, ErrorMessages.PRECISION_TOO_BIG);
+                        throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.PRECISION_TOO_BIG);
                     }
                 } else {
-                    throw raiseNode.raise(ValueError, ErrorMessages.FMT_SPECIFIER_MISSING_PRECISION);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.FMT_SPECIFIER_MISSING_PRECISION);
                 }
             }
 
@@ -843,7 +844,7 @@ public class InternalFormat {
 
             // If we haven't reached the end, something is wrong
             if (ptr != spec.length()) {
-                throw raiseNode.raise(ValueError, ErrorMessages.INVALID_CONVERSION_SPECIFICATION);
+                throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INVALID_CONVERSION_SPECIFICATION);
             }
 
             // Some basic validation
@@ -874,7 +875,7 @@ public class InternalFormat {
                         valid = false;
                 }
                 if (!valid) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
                 }
             }
 

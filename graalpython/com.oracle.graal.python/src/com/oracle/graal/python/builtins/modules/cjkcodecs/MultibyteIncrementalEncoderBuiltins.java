@@ -121,12 +121,13 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
-        protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
+        static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory) { // "|s:IncrementalEncoder"
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) { // "|s:IncrementalEncoder"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
@@ -137,7 +138,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -304,16 +305,17 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         @Specialization
         // _multibytecodec_MultibyteIncrementalEncoder_setstate_impl
-        Object setstate(MultibyteIncrementalEncoderObject self, PInt statelong,
+        static Object setstate(MultibyteIncrementalEncoderObject self, PInt statelong,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
-                        @Cached IntNodes.PyLongAsByteArray asByteArray) {
+                        @Cached IntNodes.PyLongAsByteArray asByteArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int sizeOfStateBytes = 1 + MAXENCPENDING * 4 + MULTIBYTECODECSTATE;
 
             byte[] statebytes = asByteArray.execute(inliningTarget, statelong, sizeOfStateBytes, false);
 
             if (statebytes[0] > MAXENCPENDING * 4) {
-                throw raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
+                throw raiseNode.get(inliningTarget).raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
             }
 
             self.pending = decodeUTF8(statebytes, 1, statebytes[0]);
@@ -331,7 +333,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private TruffleString decodeUTF8(byte[] buf, int off, int len) { // T_STRICT
+        private static TruffleString decodeUTF8(byte[] buf, int off, int len) { // T_STRICT
             ByteBuffer in = ByteBuffer.wrap(buf, off, len);
             CharBuffer out = CharBuffer.allocate(len * 4);
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();

@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -231,28 +233,30 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
-        boolean check(Object object, Object klass,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static boolean check(Object object, Object klass,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
-                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
-            Env env = getContext().getEnv();
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
                 if (hostKlass instanceof Class<?>) {
                     return ((Class<?>) hostKlass).isInstance(object);
                 }
             } catch (ClassCastException cce) {
-                throw raise(ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
             }
             return false;
         }
 
         @Specialization(guards = {"isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
-        boolean checkForeign(Object object, Object klass,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static boolean checkForeign(Object object, Object klass,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
-                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
-            Env env = getContext().getEnv();
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             try {
                 Object hostObject = env.asHostObject(object);
                 Object hostKlass = env.asHostObject(klass);
@@ -260,14 +264,15 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     return ((Class<?>) hostKlass).isInstance(hostObject);
                 }
             } catch (ClassCastException cce) {
-                throw raise(ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
             }
             return false;
         }
 
         @Fallback
-        boolean fallback(Object object, Object klass) {
-            throw raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
+        static boolean fallback(Object object, Object klass,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
         }
     }
 

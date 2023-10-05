@@ -135,18 +135,18 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         return CommonGeneratorBuiltinsFactory.getFactories();
     }
 
-    private static void checkResumable(PRaiseNode node, PGenerator self) {
+    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode.Lazy raiseNode) {
         if (self.isFinished()) {
             if (self.isAsyncGen()) {
-                throw node.raise(StopAsyncIteration);
+                throw raiseNode.get(inliningTarget).raise(StopAsyncIteration);
             }
             if (self.isCoroutine()) {
-                throw node.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
-            throw node.raiseStopIteration();
+            throw raiseNode.get(inliningTarget).raiseStopIteration();
         }
         if (self.isRunning()) {
-            throw node.raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
         }
     }
 
@@ -257,14 +257,15 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class SendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object send(VirtualFrame frame, PGenerator self, Object value,
+        static Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
+                        @Cached ResumeGeneratorNode resumeGeneratorNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
             // generators by PAsyncGenSend
-            checkResumable(getRaiseNode(), self);
+            checkResumable(inliningTarget, self, raiseNode);
             if (!self.isStarted() && value != PNone.NONE) {
-                throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
             }
             return resumeGeneratorNode.execute(frame, inliningTarget, self, value);
         }

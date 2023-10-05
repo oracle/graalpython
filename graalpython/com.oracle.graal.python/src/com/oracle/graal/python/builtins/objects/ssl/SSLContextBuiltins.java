@@ -162,13 +162,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SSLContextNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization
-        PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
+        static PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
                         @Bind("this") Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SSLMethod method = SSLMethod.fromPythonId(protocol);
             if (method == null) {
-                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
                 boolean checkHostname;
@@ -188,7 +189,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 context.setOptions(options);
                 return context;
             } catch (NoSuchAlgorithmException e) {
-                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e);
             } catch (KeyManagementException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
             }
@@ -423,13 +424,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        @SuppressWarnings("truffle-static-method")
-        Object set(VirtualFrame frame, PSSLContext self, Object value,
+        static Object set(VirtualFrame frame, PSSLContext self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int mode = asSizeNode.executeLossy(frame, inliningTarget, value);
             if (mode == SSLModuleBuiltins.SSL_CERT_NONE && self.getCheckHostname()) {
-                throw raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
             }
             switch (mode) {
                 case SSLModuleBuiltins.SSL_CERT_NONE:
@@ -438,14 +439,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     self.setVerifyMode(mode);
                     return PNone.NONE;
                 default:
-                    throw raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
             }
         }
     }
 
-    private static void setMinMaxVersion(PRaiseNode node, PSSLContext context, boolean maximum, int value) {
+    private static void setMinMaxVersion(Node inliningTarget, PRaiseNode.Lazy raiseNode, PSSLContext context, boolean maximum, int value) {
         if (context.getMethod().isSingleVersion()) {
-            throw node.raise(ValueError, ErrorMessages.CONTEXT_DOESNT_SUPPORT_MIN_MAX);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CONTEXT_DOESNT_SUPPORT_MIN_MAX);
         }
         SSLProtocol selected = null;
         switch (value) {
@@ -463,7 +464,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     }
                 }
                 if (selected == null) {
-                    throw node.raise(ValueError, ErrorMessages.UNSUPPORTED_PROTOCOL_VERSION, value);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNSUPPORTED_PROTOCOL_VERSION, value);
                 }
         }
         if (maximum) {
@@ -482,11 +483,11 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(obj)")
-        @SuppressWarnings("truffle-static-method")
-        Object set(VirtualFrame frame, PSSLContext self, Object obj,
+        static Object set(VirtualFrame frame, PSSLContext self, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            setMinMaxVersion(getRaiseNode(), self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            setMinMaxVersion(inliningTarget, raiseNode, self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
             return PNone.NONE;
         }
     }
@@ -500,11 +501,11 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(obj)")
-        @SuppressWarnings("truffle-static-method")
-        Object set(VirtualFrame frame, PSSLContext self, Object obj,
+        static Object set(VirtualFrame frame, PSSLContext self, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            setMinMaxVersion(getRaiseNode(), self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            setMinMaxVersion(inliningTarget, raiseNode, self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
             return PNone.NONE;
         }
     }
@@ -547,16 +548,18 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class NumTicketsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
-        int get(PSSLContext self, PNone value) {
+        static int get(PSSLContext self, PNone value,
+                        @Shared @Cached PRaiseNode raiseNode) {
             // not used yet so rather raise error
-            throw raise(NotImplementedError);
+            throw raiseNode.raise(NotImplementedError);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isNoValue(value)")
-        Object set(VirtualFrame frame, PSSLContext self, Object value) {
+        static Object set(VirtualFrame frame, PSSLContext self, Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
             // not used yet so rather raise error
-            throw raise(NotImplementedError);
+            throw raiseNode.raise(NotImplementedError);
             // int num;
             // try {
             // num = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
@@ -578,8 +581,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SNICallbackNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value) {
-            throw raise(NotImplementedError);
+        static Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -981,11 +985,12 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNone load(VirtualFrame frame, PSSLContext self, Object pathObject,
-                        @Cached PyUnicodeFSDecoderNode asPath) {
+        static PNone load(VirtualFrame frame, PSSLContext self, Object pathObject,
+                        @Cached PyUnicodeFSDecoderNode asPath,
+                        @Cached PRaiseNode raiseNode) {
             TruffleString path = asPath.execute(frame, pathObject);
             // not used yet so rather raise error
-            throw raise(NotImplementedError);
+            throw raiseNode.raise(NotImplementedError);
             // File file = new File(path);
             // if (!file.exists()) {
             // throw raiseOSError(frame, OSErrorEnum.ENOENT);

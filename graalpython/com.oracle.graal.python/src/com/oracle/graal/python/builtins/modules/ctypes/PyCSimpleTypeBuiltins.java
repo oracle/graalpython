@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -302,14 +303,15 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
     protected abstract static class FromParamNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object PyCSimpleType_from_param(VirtualFrame frame, Object type, Object value,
+        static Object PyCSimpleType_from_param(VirtualFrame frame, Object type, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectLookupAttr lookupAsParam,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * If the value is already an instance of the requested type, we can use it as is
              */
@@ -317,7 +319,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 return value;
             }
 
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
 
             /* I think we can rely on this being a one-character string */
             TruffleString fmt = (TruffleString) dict.proto;
@@ -341,11 +343,11 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
             Object as_parameter = lookupAsParam.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
             if (as_parameter != PNone.NO_VALUE) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
-                Object r = PyCSimpleType_from_param(frame, type, as_parameter, inliningTarget, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam, codePointAtIndexNode, factory);
+                Object r = PyCSimpleType_from_param(frame, type, as_parameter, inliningTarget, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam, codePointAtIndexNode, factory, raiseNode);
                 // Py_LeaveRecursiveCall();
                 return r;
             }
-            throw raise(TypeError, WRONG_TYPE);
+            throw raiseNode.get(inliningTarget).raise(TypeError, WRONG_TYPE);
         }
     }
 

@@ -74,6 +74,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
@@ -209,16 +210,17 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean check(VirtualFrame frame, PUnionType self, Object other,
+        static boolean check(VirtualFrame frame, PUnionType self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode) {
+                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
                 Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
-                    throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
                     result = isInstanceNode.executeWith(frame, other, arg);
@@ -233,20 +235,21 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean check(VirtualFrame frame, PUnionType self, Object other,
+        static boolean check(VirtualFrame frame, PUnionType self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode) {
+                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!isTypeNode.execute(inliningTarget, other)) {
-                throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
             }
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
                 Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
-                    throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
                     result = isSubClassNode.executeWith(frame, other, arg);

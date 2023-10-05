@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -177,34 +178,35 @@ public final class ChainBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object setState(VirtualFrame frame, PChain self, Object state,
+        static Object setState(VirtualFrame frame, PChain self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedBranchProfile len2Profile,
-                        @Cached PyIterCheckNode iterCheckNode) {
+                        @Cached PyIterCheckNode iterCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!(state instanceof PTuple)) {
-                throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = (int) lenNode.execute(frame, state);
             if (len < 1 || len > 2) {
-                throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(inliningTarget, iterCheckNode, source);
+            checkIterator(inliningTarget, iterCheckNode, source, raiseNode);
             self.setSource(source);
             if (len == 2) {
                 len2Profile.enter(inliningTarget);
                 Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(inliningTarget, iterCheckNode, active);
+                checkIterator(inliningTarget, iterCheckNode, active, raiseNode);
                 self.setActive(active);
             }
             return PNone.NONE;
         }
 
-        private void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj) throws PException {
+        private static void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj, PRaiseNode.Lazy raiseNode) throws PException {
             if (!iterCheckNode.execute(inliningTarget, obj)) {
-                throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }
     }

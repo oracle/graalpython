@@ -78,6 +78,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
@@ -810,32 +811,36 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(BinaryArithmetic.class)
     public abstract static class DivModNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "b != 0")
-        public PTuple doLong(long a, long b,
+        static PTuple doLong(long a, long b,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
         }
 
         @Specialization(replaces = "doLong")
-        public PTuple doLongZero(long a, long b,
-                        @Shared @Cached PythonObjectFactory factory) {
+        static PTuple doLongZero(long a, long b,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (b == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.INTEGER_DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.INTEGER_DIVISION_BY_ZERO);
             }
             return factory.createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
         }
 
         @Specialization
-        public PTuple doDouble(double a, double b,
-                        @Shared @Cached PythonObjectFactory factory) {
+        static PTuple doDouble(double a, double b,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (b == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             double q = Math.floor(a / b);
             return factory.createTuple(new Object[]{q, FloatBuiltins.ModNode.mod(a, b)});
         }
 
         @Specialization
-        public Object doObject(VirtualFrame frame, Object a, Object b,
+        static Object doObject(VirtualFrame frame, Object a, Object b,
                         @Cached("DivMod.create()") BinaryOpNode callDivmod) {
             return callDivmod.executeObject(frame, a, b);
         }
@@ -1605,8 +1610,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object iterNotCallable(Object callable, Object sentinel) {
-            throw raise(TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
+        static Object iterNotCallable(Object callable, Object sentinel,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
         }
     }
 
@@ -1654,7 +1660,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 currentValue = nextNode.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, errorProfile1);
-                if (hasDefaultProfile.profile(inliningTarget, PGuards.isNoValue(defaultVal))) {
+                if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
                     throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, getName());
                 } else {
                     return defaultVal;
@@ -1715,7 +1721,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             boolean kwArgsAreNone = keywordArgIsNone.profile(inliningTarget, PGuards.isPNone(keywordArgIn));
             Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
-            if (!hasDefaultProfile.profile(inliningTarget, PGuards.isNoValue(defaultVal))) {
+            if (!hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_SPECIFY_DEFAULT_FOR_S, getName());
             }
             Object currentValue = arg1;
@@ -1796,7 +1802,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached InlinedConditionProfile defaultIsNoValue,
                         @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
-            if (defaultIsNoValue.profile(inliningTarget, PGuards.isNoValue(defaultObject))) {
+            if (defaultIsNoValue.profile(inliningTarget, isNoValue(defaultObject))) {
                 return callNode.executeObject(frame, iterator);
             } else {
                 try {
@@ -1811,9 +1817,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @NeverDefault
         protected LookupAndCallUnaryNode createNextCall() {
             return LookupAndCallUnaryNode.create(T___NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
+                @Child PRaiseNode raiseNode = PRaiseNode.create();
+
                 @Override
                 public Object execute(Object iterator) {
-                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
+                    throw raiseNode.raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
                 }
             });
         }
@@ -2010,21 +2018,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(formatSpec)")
-        Object format(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
-                        @Shared("callFormat") @Cached("create(Format)") LookupAndCallBinaryNode callFormat) {
-            return format(frame, obj, T_EMPTY_STRING, callFormat);
-        }
-
-        @Specialization(guards = "!isNoValue(formatSpec)")
-        Object format(VirtualFrame frame, Object obj, Object formatSpec,
-                        @Shared("callFormat") @Cached("create(Format)") LookupAndCallBinaryNode callFormat) {
-            Object res = callFormat.executeObject(frame, obj, formatSpec);
+        @Specialization
+        static Object format(VirtualFrame frame, Object obj, Object formatSpec,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("create(Format)") LookupAndCallBinaryNode callFormat,
+                        @Cached InlinedConditionProfile formatIsNoValueProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object format = formatIsNoValueProfile.profile(inliningTarget, isNoValue(formatSpec)) ? T_EMPTY_STRING : formatSpec;
+            Object res = callFormat.executeObject(frame, obj, format);
             if (res == NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
             }
             if (!PGuards.isString(res)) {
-                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
             }
             return res;
         }
@@ -2408,7 +2414,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
 
                 Object meth = getMroEntries.execute(null, inliningTarget, base, T___MRO_ENTRIES__);
-                if (PGuards.isNoValue(meth)) {
+                if (isNoValue(meth)) {
                     if (newBases != null) {
                         newBases.add(base);
                     }
@@ -2596,7 +2602,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 p.expectAttributeError(inliningTarget, noAttributeProfile);
                 ns = factory.createDict(new DynamicObjectStorage(PythonLanguage.get(this)));
             }
-            if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(inliningTarget, ns)))) {
+            if (isNoValue(getGetItem.execute(getGetItemClass.execute(inliningTarget, ns)))) {
                 if (init.isClass) {
                     throw raise(PythonErrorType.TypeError, ErrorMessages.N_PREPARE_MUST_RETURN_MAPPING, init.meta, ns);
                 } else {

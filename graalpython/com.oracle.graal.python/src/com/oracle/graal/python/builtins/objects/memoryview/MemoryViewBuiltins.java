@@ -147,26 +147,28 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
-        Object getitem(VirtualFrame frame, PMemoryView self, Object index,
+        static Object getitem(VirtualFrame frame, PMemoryView self, Object index,
+                        @Bind("this") Node inliningTarget,
                         @Cached MemoryViewNodes.PointerLookupNode pointerFromIndexNode,
-                        @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode) {
-            self.checkReleased(getRaiseNode());
+                        @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
             MemoryViewNodes.MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
             return readItemAtNode.execute(frame, self, ptr.ptr, ptr.offset);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object getitemSlice(PMemoryView self, PSlice slice,
+        static Object getitemSlice(PMemoryView self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
-                        @Cached PythonObjectFactory factory) {
-            self.checkReleased(getRaiseNode());
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
             int[] shape = self.getBufferShape();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, shape[0], sliceUnpack.execute(inliningTarget, slice));
@@ -180,20 +182,21 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             int[] suboffsets = self.getBufferSuboffsets();
             int length = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             int flags = initFlagsNode.execute(inliningTarget, self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
-            return factory.createMemoryView(PythonContext.get(this), self.getLifecycleManager(), self.getBuffer(), self.getOwner(), length, self.isReadOnly(),
+            return factory.createMemoryView(PythonContext.get(inliningTarget), self.getLifecycleManager(), self.getBuffer(), self.getOwner(), length, self.isReadOnly(),
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
 
         @Specialization
-        Object getitemEllipsis(PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
+        static Object getitemEllipsis(PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlinedConditionProfile zeroDimProfile) {
-            self.checkReleased(getRaiseNode());
+                        @Exclusive @Cached InlinedConditionProfile zeroDimProfile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 return self;
             }
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
         }
     }
 
@@ -479,9 +482,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes tobytes(PMemoryView self, TruffleString order,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PythonObjectFactory factory) {
-            self.checkReleased(getRaiseNode());
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes;
             // The nodes act as branch profiles
             if (equalNode.execute(order, T_C, TS_ENCODING) || equalNode.execute(order, T_A, TS_ENCODING)) {
@@ -489,7 +494,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             } else if (equalNode.execute(order, T_F, TS_ENCODING)) {
                 bytes = getToJavaBytesFortranOrderNode().execute(self);
             } else {
-                throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
             }
             return factory.createBytes(bytes);
         }

@@ -75,6 +75,7 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -784,10 +785,12 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object remove(VirtualFrame frame, PSet self, Object key,
-                        @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
+        static Object remove(VirtualFrame frame, PSet self, Object key,
+                        @Bind("this") Node inliningTarget,
+                        @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!discardNode.execute(frame, self, key)) {
-                throw raise(PythonErrorType.KeyError, new Object[]{key});
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, new Object[]{key});
             }
             return PNone.NONE;
         }
@@ -797,7 +800,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object discard(VirtualFrame frame, PSet self, Object key,
+        static Object discard(VirtualFrame frame, PSet self, Object key,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
             discardNode.execute(frame, self, key);
             return PNone.NONE;

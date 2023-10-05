@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -179,13 +180,14 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object setState(PIslice self, Object state,
+        static Object setState(PIslice self, Object state,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaIntLossyNode castInt) {
+                        @Cached CastToJavaIntLossyNode castInt,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 self.setCnt(castInt.execute(inliningTarget, state));
             } catch (CannotCastException e) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

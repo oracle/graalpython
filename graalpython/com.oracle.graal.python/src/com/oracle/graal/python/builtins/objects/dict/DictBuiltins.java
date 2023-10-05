@@ -327,14 +327,15 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object run(VirtualFrame frame, PDict self, Object key,
+        static Object run(VirtualFrame frame, PDict self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageDelItem delItem) {
+                        @Cached HashingStorageDelItem delItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object found = delItem.executePop(frame, inliningTarget, self.getDictStorage(), key, self);
             if (found != null) {
                 return PNone.NONE;
             }
-            throw raise(KeyError, new Object[]{key});
+            throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
         }
     }
 

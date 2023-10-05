@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -290,9 +291,10 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(obj)")
-        Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj) {
+        static Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj,
+                        @Cached PRaiseNode raiseNode) {
             // JDK API doesn't support setting session ID
-            throw raise(NotImplementedError);
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -310,15 +312,17 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetPeerCertNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "der")
-        Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @Cached PythonObjectFactory factory) {
+        static Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory.Lazy factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (!self.isHandshakeComplete()) {
-                throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate != null) {
                 try {
-                    return factory.createBytes(getEncoded(certificate));
+                    return factory.get(inliningTarget).createBytes(getEncoded(certificate));
                 } catch (CertificateEncodingException e) {
                     // Fallthrough
                 }
@@ -329,16 +333,17 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!der")
-        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
+        static PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Shared @Cached PythonObjectFactory.Lazy factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (!self.isHandshakeComplete()) {
-                throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) certificate);
+                    return CertUtils.decodeCertificate(PythonContext.get(inliningTarget).factory(), (X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
                     return factory.get(inliningTarget).createDict();
                 }
@@ -379,9 +384,10 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object getChannelBinding(PSSLSocket self, TruffleString sbType) {
+        static Object getChannelBinding(PSSLSocket self, TruffleString sbType,
+                        @Cached PRaiseNode raiseNode) {
             // JDK doesn't have an API to access what we need. BouncyCastle could provide this
-            throw raise(ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
+            throw raiseNode.raise(ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
         }
 
         @Override

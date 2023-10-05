@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.modules.hashlib.ShakeDigestObjectBuiltin
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -91,10 +92,12 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes digest(DigestObject self, int length,
-                        @Cached PythonObjectFactory factory) {
+        static PBytes digest(DigestObject self, int length,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getDigestLength() != length) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
             return factory.createBytes(self.digest());
         }
@@ -110,11 +113,12 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString hexdigest(DigestObject self, int length,
+        static TruffleString hexdigest(DigestObject self, int length,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.ByteToHexNode toHexNode) {
+                        @Cached BytesNodes.ByteToHexNode toHexNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getDigestLength() != length) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
             byte[] digest = self.digest();
             return toHexNode.execute(inliningTarget, digest, digest.length, (byte) 0, 0);

@@ -538,8 +538,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached InlinedConditionProfile isCodeObjectProfile) {
+                        @Cached InlinedConditionProfile isCodeObjectProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
@@ -549,13 +549,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 if (info.size == 0) {
                     /* Does not contain executable code. */
-                    raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+                    raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
                 }
             } else {
                 FrozenResult result = findFrozen(getContext(), name, equalNode);
                 FrozenStatus status = result.status;
                 info = result.info;
-                raiseFrozenError(status, name, raiseNode);
+                raiseFrozenError(status, name, raiseNode.get(inliningTarget));
             }
 
             Object code = null;
@@ -563,11 +563,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
             } catch (MarshalError | NumberFormatException e) {
-                raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+                raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
             }
 
             if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
-                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
             return code;

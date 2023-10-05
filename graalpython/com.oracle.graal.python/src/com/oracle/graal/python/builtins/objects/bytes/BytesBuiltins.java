@@ -279,8 +279,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doError(VirtualFrame frame, Object self, Object key) {
-            return raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "byte", key);
+        static Object doError(VirtualFrame frame, Object self, Object key,
+                        @Cached PRaiseNode raiseNode) {
+            return raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "byte", key);
         }
 
         @NeverDefault
@@ -504,12 +505,13 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
                         @Cached @Exclusive BytesNodes.CreateBytesNode create,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
             } catch (PException e) {
-                throw raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
             try {
                 // TODO avoid copying
@@ -578,7 +580,8 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
-                        @Cached GetInternalByteArrayNode getArray) {
+                        @Cached GetInternalByteArrayNode getArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (check.execute(inliningTarget, self)) {
                 if (check.execute(inliningTarget, other)) {
                     SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
@@ -588,7 +591,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTES, self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTES, self);
         }
     }
 
@@ -673,12 +676,13 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
             Object buffer = acquireLib.acquireReadonly(self, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int bytesLen = bufferLib.getBufferLength(buffer);
-                BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this), getRaiseNode(), getTupleItemNode, bytes, bytesLen);
+                BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this), raiseNode, getTupleItemNode, bytes, bytesLen);
                 Object savedState = IndirectCallContext.enter(frame, this);
                 try {
                     byte[] data = formatter.format(right);
@@ -933,7 +937,8 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile notFound,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode createBytesNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
             byte[] bytes = toBytesNode.execute(null, self);
@@ -941,7 +946,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             try {
                 int lenSep = bufferLib.getBufferLength(sepBuffer);
                 if (lenSep == 0) {
-                    throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
                 }
                 byte[] sepBytes = bufferLib.getCopiedByteArray(sepBuffer);
                 int idx = BytesNodes.FindNode.find(bytes, len, sepBytes, 0, bytes.length, isRight());
@@ -2244,8 +2249,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object strip(Object self, Object object) {
-            throw raise(SystemError, ErrorMessages.INVALID_ARGS, "lstrip/rstrip");
+        static Object strip(Object self, Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.INVALID_ARGS, "lstrip/rstrip");
         }
 
         protected abstract int mod();
@@ -2582,13 +2588,13 @@ public final class BytesBuiltins extends PythonBuiltins {
         private static final byte S = ' ';
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        PBytesLike expandtabs(Object self, int tabsize,
+        static PBytesLike expandtabs(Object self, int tabsize,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached BytesNodes.CreateBytesNode create,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
             if (len == 0) {
@@ -2603,18 +2609,18 @@ public final class BytesBuiltins extends PythonBuiltins {
                     if (tabsize > 0) {
                         int incr = tabsize - (j % tabsize);
                         if (j > max - incr) {
-                            throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
                         }
                         j += incr;
                     }
                 } else {
                     if (j > max - 1) {
-                        throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                        throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
                     }
                     j++;
                     if (p == N || p == R) {
                         if (i > max - j) {
-                            throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
                         }
                         i += j;
                         j = 0;
@@ -2622,7 +2628,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                 }
             }
             if (i > max - j) {
-                throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
             }
 
             byte[] q = new byte[i + j];

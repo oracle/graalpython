@@ -79,6 +79,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -238,14 +239,14 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class LruDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(mapping)")
-        protected Object getDict(LruCacheObject self, @SuppressWarnings("unused") PNone mapping,
+        static Object getDict(LruCacheObject self, @SuppressWarnings("unused") PNone mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
-        protected Object setDict(LruCacheObject self, PDict mapping,
+        static Object setDict(LruCacheObject self, PDict mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
             setDict.execute(inliningTarget, self, mapping);
@@ -253,8 +254,9 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        protected Object setDict(@SuppressWarnings("unused") LruCacheObject self, Object mapping) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        static Object setDict(@SuppressWarnings("unused") LruCacheObject self, Object mapping,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 

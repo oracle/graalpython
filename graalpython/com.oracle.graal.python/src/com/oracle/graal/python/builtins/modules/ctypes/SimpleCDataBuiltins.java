@@ -93,14 +93,14 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
         return SimpleCDataBuiltinsFactory.getFactories();
     }
 
-    static void Simple_set_value(VirtualFrame frame, CDataObject self, Object value,
-                    PRaiseNode raiseNode,
+    static void Simple_set_value(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,
+                    PRaiseNode.Lazy raiseNode,
                     PyObjectStgDictNode pyObjectStgDictNode,
                     SetFuncNode setFuncNode,
                     KeepRefNode keepRefNode) {
         StgDictObject dict = pyObjectStgDictNode.execute(self);
         if (value == null) {
-            throw raiseNode.raise(TypeError, CANT_DELETE_ATTRIBUTE);
+            throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
         assert dict != null : "Cannot be NULL for CDataObject instances";
         assert dict.setfunc != FieldSet.nil;
@@ -128,11 +128,13 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (args.length > 0) {
-                Simple_set_value(frame, self, args[0], getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
+                Simple_set_value(frame, inliningTarget, self, args[0], raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             }
             return PNone.NONE;
         }
@@ -154,10 +156,12 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object set_value(VirtualFrame frame, CDataObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            Simple_set_value(frame, self, value, getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Simple_set_value(frame, inliningTarget, self, value, raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;
         }
     }

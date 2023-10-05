@@ -302,8 +302,9 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "length <= 0")
-        PBytes error(ZLibCompObject self, int length) {
-            throw raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
+        static PBytes error(ZLibCompObject self, int length,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
         }
     }
 

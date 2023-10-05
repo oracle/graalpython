@@ -43,10 +43,12 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -65,6 +67,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
 public final class ContextVarBuiltins extends PythonBuiltins {
@@ -77,19 +80,18 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(def)")
-        Object get(PContextVar self, @SuppressWarnings("unused") PNone def) {
-            return get(self, PContextVar.NO_DEFAULT);
-        }
-
-        @Specialization(guards = "!isNoValue(def)")
-        Object get(PContextVar self, Object def) {
-            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            Object value = self.get(threadState, def);
+        @Specialization
+        static Object get(PContextVar self, Object def,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile defIsNoValueProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
+            PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
+            Object value = self.get(threadState, defValue);
             if (value != null) {
                 return value;
             }
-            throw raise(LookupError);
+            throw raiseNode.get(inliningTarget).raise(LookupError);
         }
     }
 

@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -221,18 +222,21 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Shared @Cached GetDictIfExistsNode getDict) {
+        static Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetDictIfExistsNode getDict,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                doError(self, none);
+                doError(self, none, raiseNode.get(inliningTarget));
             }
             return dict;
         }
 
         @Fallback
-        Object doError(Object self, @SuppressWarnings("unused") Object dict) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
+        static Object doError(Object self, @SuppressWarnings("unused") Object dict,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
         }
 
         private static PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict, PythonObjectFactory factory) {
@@ -268,30 +272,19 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
+
         @Specialization
-        Object getattributeString(VirtualFrame frame, PythonModule self, TruffleString key,
-                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
+        static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached HandleGetattrExceptionNode handleException) {
+            TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
                 return handleException.execute(frame, self, key, e);
             }
-        }
-
-        @Specialization
-        Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
-            TruffleString key;
-            try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-            }
-            return getattributeString(frame, self, key, objectGetattrNode, handleException);
         }
 
         @GenerateInline(false) // footprint reduction 56 -> 37
@@ -336,8 +329,9 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPythonModule(self)")
-        Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
+        static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
         }
     }
 
@@ -359,12 +353,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isDeleteMarker(value)")
-        Object delete(Object self, @SuppressWarnings("unused") Object value,
+        static Object delete(Object self, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
-                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToObjectNode write,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                throw raise(AttributeError, new Object[]{T___ANNOTATIONS__});
+                throw raiseNode.get(inliningTarget).raise(AttributeError, new Object[]{T___ANNOTATIONS__});
             }
             write.execute(self, T___ANNOTATIONS__, PNone.NO_VALUE);
             return PNone.NONE;

@@ -232,27 +232,27 @@ public final class MMapBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!isPSlice(idxObj)")
-        int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
+        static int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             long i = asLongNode.execute(frame, inliningTarget, idxObj);
             long len = self.getLength();
             long idx = i < 0 ? i + len : i;
             if (idx < 0 || idx >= len) {
-                throw raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
             }
             try {
-                return posixSupportLib.mmapReadByte(getPosixSupport(), self.getPosixSupportHandle(), idx) & 0xFF;
+                return posixSupportLib.mmapReadByte(PosixSupport.get(inliningTarget), self.getPosixSupportHandle(), idx) & 0xFF;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
+        static Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached InlinedConditionProfile emptyProfile,
@@ -260,17 +260,18 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLenNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(self.getLength()));
                 int len = sliceLenNode.len(inliningTarget, info);
                 if (emptyProfile.profile(inliningTarget, len == 0)) {
                     return createEmptyBytes(factory);
                 }
-                byte[] result = readBytes(frame, inliningTarget, self, posixSupportLib, getPosixSupport(), info.start, len, constructAndRaiseNode);
+                byte[] result = readBytes(frame, inliningTarget, self, posixSupportLib, PosixSupport.get(inliningTarget), info.start, len, constructAndRaiseNode);
                 return factory.createBytes(result);
             } catch (OverflowException e) {
-                throw raise(PythonBuiltinClassType.OverflowError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, e);
             }
         }
     }
@@ -546,15 +547,16 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (!self.isWriteable()) {
-                    throw raise(TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
                 }
                 byte[] dataBytes = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
                 int dataLen = bufferLib.getBufferLength(dataBuffer);
                 if (self.getPos() > self.getLength() || self.getLength() - self.getPos() < dataLen) {
-                    throw raise(ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
                 }
                 posixLib.mmapWriteBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
                 self.setPos(self.getPos() + dataLen);

@@ -230,7 +230,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isInvalid(self, index)")
-        Object Array_item(CDataObject self, int index,
+        static Object Array_item(CDataObject self, int index,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
@@ -242,7 +242,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        Object Array_subscript(CDataObject self, PSlice slice,
+        static Object Array_subscript(CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCDataGetNode pyCDataGetNode,
@@ -306,15 +306,16 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPSlice(item)")
-        Object Array_item(VirtualFrame frame, CDataObject self, Object item,
+        static Object Array_item(VirtualFrame frame, CDataObject self, Object item,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!indexCheckNode.execute(inliningTarget, item)) {
-                throw raise(TypeError, INDICES_MUST_BE_INTEGERS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, INDICES_MUST_BE_INTEGERS);
             }
             Object idx = indexNode.execute(frame, inliningTarget, item);
             int index = asSizeNode.executeExact(frame, inliningTarget, idx);
@@ -322,7 +323,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                 index += self.b_length;
             }
             if (isInvalid(self, index)) {
-                throw raise(IndexError, INVALID_INDEX);
+                throw raiseNode.get(inliningTarget).raise(IndexError, INVALID_INDEX);
             }
 
             return Array_item(self, index, pyCDataGetNode, pyObjectStgDictNode);

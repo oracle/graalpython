@@ -67,6 +67,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -280,8 +281,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object or(Object self, @SuppressWarnings("unused") Object other) {
-            throw raise(TypeError, ErrorMessages.IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD, self);
+        static Object or(Object self, @SuppressWarnings("unused") Object other,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD, self);
         }
     }
 
@@ -289,7 +291,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reversed(VirtualFrame frame, PMappingproxy self,
+        static Object reversed(VirtualFrame frame, PMappingproxy self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getMapping(), T___REVERSED__);

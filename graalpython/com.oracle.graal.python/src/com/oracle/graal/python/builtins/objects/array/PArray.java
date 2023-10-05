@@ -123,13 +123,6 @@ public final class PArray extends PythonBuiltinObject {
         return exports;
     }
 
-    // TODO replace with the lazy version
-    public void checkCanResize(PRaiseNode node) {
-        if (exports.get() != 0) {
-            throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
-        }
-    }
-
     public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (exports.get() != 0) {
             throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);

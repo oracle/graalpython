@@ -226,8 +226,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isOK()")
         @SuppressWarnings("unused")
-        Object initError(PTextIO self, Object o) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(PTextIO self, Object o,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
     }
 
@@ -238,8 +239,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "self.isDetached()"})
         @SuppressWarnings("unused")
-        Object attachError(PTextIO self, Object o) {
-            throw raise(ValueError, DETACHED_BUFFER);
+        static Object attachError(PTextIO self, Object o,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, DETACHED_BUFFER);
         }
     }
 
@@ -361,13 +363,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.hasEncoder()"})
-        Object write(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") TruffleString data) {
-            throw raise(IOUnsupportedOperation, NOT_WRITABLE);
+        static Object write(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") TruffleString data,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, NOT_WRITABLE);
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasEncoder()"})
-        @SuppressWarnings("truffle-static-method")
-        Object write(VirtualFrame frame, PTextIO self, TruffleString data,
+        static Object write(VirtualFrame frame, PTextIO self, TruffleString data,
                         @Bind("this") Node inliningTarget,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
@@ -376,7 +378,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached StringReplaceNode replaceNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean haslf = false;
             boolean needflush = false;
             TruffleString text = data;
@@ -410,7 +413,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             Object b = callMethodEncode.execute(frame, inliningTarget, self.getEncoder(), T_ENCODE, text);
 
             if (b != text && !(b instanceof PBytes)) {
-                throw raise(TypeError, ENCODER_SHOULD_RETURN_A_BYTES_OBJECT_NOT_P, b);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ENCODER_SHOULD_RETURN_A_BYTES_OBJECT_NOT_P, b);
             }
 
             byte[] encodedText = bufferLib.getInternalOrCopiedByteArray(b);
@@ -508,8 +511,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.hasDecoder()"})
-        Object noDecoder(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int n) {
-            throw raise(IOUnsupportedOperation, NOT_READABLE);
+        static Object noDecoder(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, NOT_READABLE);
         }
     }
 

@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -130,7 +131,8 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
         int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
                         @Bind("this") Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (self.didWriteEOF()) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
@@ -141,7 +143,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
                     self.write(bytes, len);
                     return len;
                 } catch (OverflowException | OutOfMemoryError e) {
-                    throw raise(MemoryError);
+                    throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
             } finally {
                 bufferLib.release(buffer, frame, this);

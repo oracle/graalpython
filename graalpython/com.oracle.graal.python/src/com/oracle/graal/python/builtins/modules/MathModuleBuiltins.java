@@ -384,10 +384,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private BigInteger calculateComb(BigInteger n, BigInteger k) {
             if (n.signum() < 0) {
-                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
             }
             if (k.signum() < 0) {
-                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
             }
 
             BigInteger factors = k.min(n.subtract(k));
@@ -454,10 +454,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private BigInteger calculatePerm(BigInteger n, BigInteger k) {
             if (n.signum() < 0) {
-                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "n");
             }
             if (k.signum() < 0) {
-                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE_INTEGER, "k");
             }
             if (n.compareTo(k) < 0) {
                 return BigInteger.ZERO;
@@ -557,18 +557,19 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class FmodNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization
-        public double fmodDD(double left, double right,
+        static double fmodDD(double left, double right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile infProfile,
-                        @Cached InlinedConditionProfile zeroProfile) {
-            raiseMathDomainError(infProfile.profile(inliningTarget, Double.isInfinite(left)));
-            raiseMathDomainError(zeroProfile.profile(inliningTarget, right == 0));
+                        @Cached InlinedConditionProfile zeroProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            raiseMathDomainError(inliningTarget, Double.isInfinite(left), infProfile, raiseNode);
+            raiseMathDomainError(inliningTarget, right == 0, zeroProfile, raiseNode);
             return left % right;
         }
 
-        protected void raiseMathDomainError(boolean con) {
-            if (con) {
-                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+        static void raiseMathDomainError(Node inliningTarget, boolean con, InlinedConditionProfile profile, PRaiseNode.Lazy raiseNode) {
+            if (profile.profile(inliningTarget, con)) {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
 
@@ -585,10 +586,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class RemainderNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization
-        double remainderDD(double x, double y) {
+        static double remainderDD(double x, double y,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (Double.isFinite(x) && Double.isFinite(y)) {
                 if (y == 0.0) {
-                    throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 double absx = Math.abs(x);
                 double absy = Math.abs(y);
@@ -611,7 +614,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 return y;
             }
             if (Double.isInfinite(x)) {
-                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
             return x;
         }
@@ -763,32 +766,34 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return (int) result;
         }
 
-        private double exceptInfinity(double result, double arg) {
+        private static double exceptInfinity(Node inliningTarget, double result, double arg, PRaiseNode.Lazy raiseNode) {
             if (Double.isInfinite(result) && !Double.isInfinite(arg)) {
-                throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             } else {
                 return result;
             }
         }
 
         @Specialization
-        double ldexp(double mantissa, long exp) {
-            return exceptInfinity(Math.scalb(mantissa, makeInt(exp)), mantissa);
+        static double ldexp(double mantissa, long exp,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return exceptInfinity(inliningTarget, Math.scalb(mantissa, makeInt(exp)), mantissa, raiseNode);
         }
 
         @Specialization(guards = "!isInteger(exp)")
-        @SuppressWarnings("truffle-static-method")
-        double ldexp(VirtualFrame frame, double mantissa, Object exp,
+        static double ldexp(VirtualFrame frame, double mantissa, Object exp,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached CastToJavaLongLossyNode cast) {
+                        @Cached CastToJavaLongLossyNode cast,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, exp), PythonBuiltinClassType.PInt)) {
                 long longExp = cast.execute(inliningTarget, indexNode.execute(frame, inliningTarget, exp));
-                return ldexp(mantissa, longExp);
+                return ldexp(mantissa, longExp, inliningTarget, raiseNode);
             } else {
-                throw raise(TypeError, ErrorMessages.EXPECTED_INT_MESSAGE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_INT_MESSAGE);
             }
         }
 
@@ -1489,176 +1494,188 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return blex > 0 ? res + blex * LOG2 : res;
         }
 
-        private double countBase(double base, Node inliningTarget, InlinedConditionProfile divByZero) {
+        private static double countBase(double base, Node inliningTarget, InlinedConditionProfile divByZero, PRaiseNode.Lazy raiseNode) {
             double logBase = Math.log(base);
             if (divByZero.profile(inliningTarget, logBase == 0)) {
-                throw raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
+                throw raiseNode.get(inliningTarget).raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
             }
             return logBase;
         }
 
-        private double countBase(BigInteger base, Node inliningTarget, InlinedConditionProfile divByZero) {
+        private static double countBase(BigInteger base, Node inliningTarget, InlinedConditionProfile divByZero, PRaiseNode.Lazy raiseNode) {
             double logBase = logBigInteger(base);
             if (divByZero.profile(inliningTarget, logBase == 0)) {
-                throw raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
+                throw raiseNode.get(inliningTarget).raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
             }
             return logBase;
         }
 
         @Specialization
-        public double log(long value, PNone novalue,
+        static double log(long value, PNone novalue,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile doNotFit) {
-            return logDN(value, novalue, inliningTarget, doNotFit);
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return logDN(value, novalue, inliningTarget, doNotFit, raiseNode);
         }
 
         @Specialization
-        public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
+        static double logDN(double value, @SuppressWarnings("unused") PNone novalue,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile doNotFit) {
-            raiseMathError(inliningTarget, doNotFit, value <= 0);
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseMathError(inliningTarget, doNotFit, value <= 0, raiseNode);
             return Math.log(value);
         }
 
         @Specialization
         @TruffleBoundary
-        public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
+        static double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile doNotFit) {
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             BigInteger bValue = value.getValue();
-            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0, raiseNode);
             return logBigInteger(bValue);
         }
 
         @Specialization
-        public double logLL(long value, long base,
+        static double logLL(long value, long base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
-            return logDD(value, base, inliningTarget, doNotFit, divByZero);
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return logDD(value, base, inliningTarget, doNotFit, divByZero, raiseNode);
         }
 
         @Specialization
-        public double logDL(double value, long base,
+        static double logDL(double value, long base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
-            return logDD(value, base, inliningTarget, doNotFit, divByZero);
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return logDD(value, base, inliningTarget, doNotFit, divByZero, raiseNode);
         }
 
         @Specialization
-        public double logLD(long value, double base,
+        static double logLD(long value, double base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
-            return logDD(value, base, inliningTarget, doNotFit, divByZero);
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return logDD(value, base, inliningTarget, doNotFit, divByZero, raiseNode);
         }
 
         @Specialization
-        public double logDD(double value, double base,
+        static double logDD(double value, double base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
-            raiseMathError(inliningTarget, doNotFit, value < 0 || base <= 0);
-            double logBase = countBase(base, inliningTarget, divByZero);
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseMathError(inliningTarget, doNotFit, value < 0 || base <= 0, raiseNode);
+            double logBase = countBase(base, inliningTarget, divByZero, raiseNode);
             return Math.log(value) / logBase;
         }
 
         @Specialization
         @TruffleBoundary
-        public double logDPI(double value, PInt base,
+        static double logDPI(double value, PInt base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             BigInteger bBase = base.getValue();
-            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
-            double logBase = countBase(bBase, inliningTarget, divByZero);
+            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
+            double logBase = countBase(bBase, inliningTarget, divByZero, raiseNode);
             return Math.log(value) / logBase;
         }
 
         @Specialization
-        public double logPIL(PInt value, long base,
+        static double logPIL(PInt value, long base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
-            return logPID(value, base, inliningTarget, doNotFit, divByZero);
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return logPID(value, base, inliningTarget, doNotFit, divByZero, raiseNode);
         }
 
         @Specialization
         @TruffleBoundary
-        public double logPID(PInt value, double base,
+        static double logPID(PInt value, double base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             BigInteger bValue = value.getValue();
-            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0);
-            double logBase = countBase(base, inliningTarget, divByZero);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0, raiseNode);
+            double logBase = countBase(base, inliningTarget, divByZero, raiseNode);
             return logBigInteger(bValue) / logBase;
         }
 
         @Specialization
         @TruffleBoundary
-        public double logLPI(long value, PInt base,
+        static double logLPI(long value, PInt base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             BigInteger bBase = base.getValue();
-            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
-            double logBase = countBase(bBase, inliningTarget, divByZero);
+            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
+            double logBase = countBase(bBase, inliningTarget, divByZero, raiseNode);
             return Math.log(value) / logBase;
         }
 
         @Specialization
         @TruffleBoundary
-        public double logPIPI(PInt value, PInt base,
+        static double logPIPI(PInt value, PInt base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
-                        @Shared @Cached InlinedConditionProfile divByZero) {
+                        @Shared @Cached InlinedConditionProfile divByZero,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             BigInteger bValue = value.getValue();
             BigInteger bBase = base.getValue();
-            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
-            double logBase = countBase(bBase, inliningTarget, divByZero);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0, raiseNode);
+            double logBase = countBase(bBase, inliningTarget, divByZero, raiseNode);
             return logBigInteger(bValue) / logBase;
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double logO(VirtualFrame frame, Object value, PNone novalue,
+        double logO(VirtualFrame frame, Object value, PNone novalue,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
-        public double logOO(VirtualFrame frame, Object value, Object base,
+        double logOO(VirtualFrame frame, Object value, Object base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logLO(VirtualFrame frame, long value, Object base,
+        double logLO(VirtualFrame frame, long value, Object base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logDO(VirtualFrame frame, double value, Object base,
+        double logDO(VirtualFrame frame, double value, Object base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logPIO(VirtualFrame frame, PInt value, Object base,
+        double logPIO(VirtualFrame frame, PInt value, Object base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
-        private void raiseMathError(Node inliningTarget, InlinedConditionProfile doNotFit, boolean con) {
+        private static void raiseMathError(Node inliningTarget, InlinedConditionProfile doNotFit, boolean con, PRaiseNode.Lazy raiseNode) {
             if (doNotFit.profile(inliningTarget, con)) {
-                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
 
@@ -1772,7 +1789,9 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        double pow(double left, double right) {
+        static double pow(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double result = 0;
             if (!Double.isFinite(left) || !Double.isFinite(right)) {
                 if (Double.isNaN(left)) {
@@ -1796,7 +1815,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     } else if (right < 0 && Math.abs(left) < 1) {
                         result = -right;
                         if (left == 0) {
-                            throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                         }
                     } else {
                         result = 0;
@@ -1806,12 +1825,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 result = Math.pow(left, right);
                 if (!Double.isFinite(result)) {
                     if (Double.isNaN(result)) {
-                        throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                     } else if (Double.isInfinite(result)) {
                         if (left == 0) {
-                            throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                         } else {
-                            throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+                            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
                         }
                     }
                 }

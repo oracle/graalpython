@@ -182,11 +182,12 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         // Corresponds to _byref
         /* _byref consumes a refcount to its argument */
-        protected PyCArgObject byref(Object obj,
+        static PyCArgObject byref(Node inliningTarget, Object obj,
                         PyTypeCheck pyTypeCheck,
-                        PythonObjectFactory factory) {
+                        PythonObjectFactory factory,
+                        PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(obj)) {
-                throw raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
             }
 
             CDataObject cdata = (CDataObject) obj;
@@ -206,7 +207,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(value)")
-        Object PyCPointerType_from_param(VirtualFrame frame, Object type, Object value,
+        static Object PyCPointerType_from_param(VirtualFrame frame, Object type, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CastToJavaBooleanNode toJavaBooleanNode,
@@ -215,14 +216,15 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CDataTypeFromParamNode fromParamNode,
-                        @Cached PythonObjectFactory factory) {
-            StgDictObject typedict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject typedict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             /*
              * If we expect POINTER(<type>), but receive a <type> instance, accept it by calling
              * byref(<type>).
              */
             if (isInstanceNode.executeWith(frame, value, typedict.proto)) {
-                return byref(value, pyTypeCheck, factory);
+                return byref(inliningTarget, value, pyTypeCheck, factory, raiseNode);
             }
 
             if (pyTypeCheck.isPointerObject(value) || pyTypeCheck.isArrayObject(value)) {
