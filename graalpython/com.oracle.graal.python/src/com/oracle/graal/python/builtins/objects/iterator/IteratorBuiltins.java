@@ -64,6 +64,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -109,40 +110,38 @@ public final class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
+        @Specialization
+        static Object exhausted(VirtualFrame frame, PBuiltinIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached NonThrowingNextNode nonThrowingNextNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object value = nonThrowingNextNode.execute(frame, self);
+            if (value == NonThrowingNextNode.STOP_MARKER) {
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
+            }
+            return value;
+        }
+    }
+
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
+    public abstract static class NonThrowingNextNode extends Node {
+
         public static final Object STOP_MARKER = new Object();
-        private final boolean throwStopIteration;
-
-        NextNode() {
-            this.throwStopIteration = true;
-        }
-
-        NextNode(boolean throwStopIteration) {
-            this.throwStopIteration = throwStopIteration;
-        }
 
         public abstract Object execute(VirtualFrame frame, PBuiltinIterator iterator);
 
-        private Object stopIteration(PBuiltinIterator self) {
+        private static Object stopIteration(PBuiltinIterator self) {
             self.setExhausted();
-            if (throwStopIteration) {
-                throw raiseStopIteration();
-            } else {
-                return STOP_MARKER;
-            }
+            return STOP_MARKER;
         }
 
         @Specialization(guards = "self.isExhausted()")
-        Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
-            if (throwStopIteration) {
-                throw raiseStopIteration();
-            } else {
-                return STOP_MARKER;
-            }
+        static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            return STOP_MARKER;
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        @SuppressWarnings("truffle-static-method")
-        Object next(PArrayIterator self,
+        static Object next(PArrayIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedExactClassProfile itemTypeProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
@@ -154,7 +153,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PIntegerSequenceIterator self) {
+        static Object next(PIntegerSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
@@ -162,7 +161,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PObjectSequenceIterator self) {
+        static Object next(PObjectSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getItemNormalized(self.index++);
             }
@@ -170,7 +169,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PIntRangeIterator self,
+        static Object next(PIntRangeIterator self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile profile) {
             if (profile.profile(inliningTarget, self.hasNextInt())) {
@@ -180,7 +179,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PBigRangeIterator self,
+        static Object next(PBigRangeIterator self,
                         @Cached PythonObjectFactory factory) {
             if (self.hasNextBigInt()) {
                 return factory.createInt(self.nextBigInt());
@@ -189,7 +188,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PDoubleSequenceIterator self) {
+        static Object next(PDoubleSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
@@ -197,7 +196,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PLongSequenceIterator self) {
+        static Object next(PLongSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
@@ -205,7 +204,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PStringIterator self,
+        static Object next(PStringIterator self,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             if (self.getIndex() < codePointLengthNode.execute(self.value, TS_ENCODING)) {
@@ -215,20 +214,20 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        @SuppressWarnings("truffle-static-method")
-        Object nextHashingStorageIter(PHashingStorageIterator self,
+        static Object nextHashingStorageIter(PHashingStorageIterator self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile sizeChanged,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
-                        @Exclusive @Cached InlinedConditionProfile profile) {
+                        @Exclusive @Cached InlinedConditionProfile profile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             HashingStorage storage = self.getHashingStorage();
             final HashingStorageIterator it = self.getIterator();
             if (profile.profile(inliningTarget, nextNode.execute(inliningTarget, storage, it))) {
                 if (sizeChanged.profile(inliningTarget, self.checkSizeChanged(inliningTarget, lenNode))) {
                     String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
-                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
+                    throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
                 }
                 self.index++;
                 return itValueNode.execute(inliningTarget, self, storage, it);
@@ -237,8 +236,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        @SuppressWarnings("truffle-static-method")
-        Object next(PSequenceIterator self,
+        static Object next(PSequenceIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
@@ -250,8 +248,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        @SuppressWarnings("truffle-static-method")
-        Object next(VirtualFrame frame, PSequenceIterator self,
+        static Object next(VirtualFrame frame, PSequenceIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItem,
                         @Cached IsBuiltinObjectProfile profile) {

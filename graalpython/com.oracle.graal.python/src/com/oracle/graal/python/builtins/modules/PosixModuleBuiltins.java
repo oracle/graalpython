@@ -468,9 +468,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] name = toBytesNode.execute(nameBytes);
-            Object nameOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), name));
+            Object nameOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(getPosixSupport(), name), raiseNode);
             auditNode.audit(inliningTarget, "os.unsetenv", nameBytes);
             try {
                 posixLib.unsetenv(getPosixSupport(), nameOpaque);
@@ -480,9 +481,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private Object checkNull(Object value) {
+        private static Object checkNull(Node inliningTarget, Object value, PRaiseNode.Lazy raiseNode) {
             if (value == null) {
-                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
             return value;
         }
@@ -2475,30 +2476,32 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WaitstatusToExitcodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int waitstatusToExitcode(VirtualFrame frame, Object statusObj,
+        static int waitstatusToExitcode(VirtualFrame frame, Object statusObj,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyLongAsIntNode longAsInt) {
+                        @Cached PyLongAsIntNode longAsInt,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int status = longAsInt.execute(frame, inliningTarget, statusObj);
-            if (posixLib.wifexited(getPosixSupport(), status)) {
-                int exitcode = posixLib.wexitstatus(getPosixSupport(), status);
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+            if (posixLib.wifexited(posixSupport, status)) {
+                int exitcode = posixLib.wexitstatus(posixSupport, status);
                 if (exitcode < 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WEXITSTATUS, exitcode);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WEXITSTATUS, exitcode);
                 }
                 return exitcode;
             }
-            if (posixLib.wifsignaled(getPosixSupport(), status)) {
-                int signum = posixLib.wtermsig(getPosixSupport(), status);
+            if (posixLib.wifsignaled(posixSupport, status)) {
+                int signum = posixLib.wtermsig(posixSupport, status);
                 if (signum <= 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WTERMSIG, signum);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WTERMSIG, signum);
                 }
                 return -signum;
             }
-            if (posixLib.wifstopped(getPosixSupport(), status)) {
-                int signum = posixLib.wstopsig(getPosixSupport(), status);
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.PROCESS_STOPPED_BY_DELIVERY_OF_SIGNAL, signum);
+            if (posixLib.wifstopped(posixSupport, status)) {
+                int signum = posixLib.wstopsig(posixSupport, status);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.PROCESS_STOPPED_BY_DELIVERY_OF_SIGNAL, signum);
             }
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WAIT_STATUS, status);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WAIT_STATUS, status);
         }
     }
 
@@ -2675,8 +2678,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "size < 0")
-        Object urandomNeg(@SuppressWarnings("unused") int size) {
-            throw raise(ValueError, ErrorMessages.NEG_ARG_NOT_ALLOWED);
+        static Object urandomNeg(@SuppressWarnings("unused") int size,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.NEG_ARG_NOT_ALLOWED);
         }
 
         @TruffleBoundary
@@ -2713,13 +2717,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int sysconf(TruffleString mask,
-                        @Cached TruffleString.EqualNode equalNode) {
+        static int sysconf(TruffleString mask,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (equalNode.execute(mask, T_SC_CLK_TCK, TS_ENCODING)) {
                 return 100; // it's 100 on most default kernel configs. TODO: use real value through
                             // NFI
             }
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME, mask);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME, mask);
         }
     }
 

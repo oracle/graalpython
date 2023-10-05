@@ -151,6 +151,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -560,7 +561,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
     abstract static class ReadallNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "!self.isClosed()")
-        Object readall(VirtualFrame frame, PFileIO self,
+        static Object readall(VirtualFrame frame, PFileIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached InlinedBranchProfile readErrorProfile,
@@ -569,12 +570,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile multipleReadsProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int bufsize = SMALLCHUNK;
             boolean mayBeQuick = false;
             try {
-                long pos = posixLib.lseek(getPosixSupport(), self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
-                long[] status = posixLib.fstat(getPosixSupport(), self.getFD());
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                long pos = posixLib.lseek(posixSupport, self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
+                long[] status = posixLib.fstat(posixSupport, self.getFD());
                 long end = status[6]; // TODO: st_size
                 if (end > 0 && end >= pos && pos >= 0 && end - pos < MAX_SIZE) {
                     /*
@@ -615,7 +618,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     // see CPython's function 'fileio.c: new_buffersize'
                     bufsize = bytesRead + Math.max(SMALLCHUNK, bytesRead + 256);
                     if (bufsize <= 0) {
-                        throw raise(OverflowError, UNBOUNDED_READ_RETURNED_MORE_BYTES);
+                        throw raiseNode.get(inliningTarget).raise(OverflowError, UNBOUNDED_READ_RETURNED_MORE_BYTES);
                     }
                 }
 
@@ -648,8 +651,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -982,8 +986,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -996,8 +1001,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -1010,8 +1016,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -1045,8 +1052,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isClosed()")
-        boolean closedError(@SuppressWarnings("unused") PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static boolean closedError(@SuppressWarnings("unused") PFileIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -1155,27 +1163,27 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isClosed()")
-        @SuppressWarnings("truffle-static-method")
-        TruffleString doit(VirtualFrame frame, PFileIO self,
+        static TruffleString doit(VirtualFrame frame, PFileIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupName,
                         @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString mode = ModeNode.modeString(self);
             TruffleString closefd = self.isCloseFD() ? T_TRUE : T_FALSE;
             Object nameobj = lookupName.execute(frame, inliningTarget, self, T_NAME);
             if (nameobj instanceof PNone) {
                 return simpleTruffleStringFormatNode.format("<_io.FileIO fd=%d mode='%s' closefd=%s>", self.getFD(), mode, closefd);
             }
-            if (!getContext().reprEnter(self)) {
-                throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
+            if (!PythonContext.get(inliningTarget).reprEnter(self)) {
+                throw raiseNode.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
             }
             try {
                 TruffleString name = castToTruffleStringNode.execute(inliningTarget, repr.executeObject(frame, nameobj));
                 return simpleTruffleStringFormatNode.format("<_io.FileIO name=%s mode='%s' closefd=%s>", name, mode, closefd);
             } finally {
-                getContext().reprLeave(self);
+                PythonContext.get(inliningTarget).reprLeave(self);
             }
         }
     }

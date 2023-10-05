@@ -331,38 +331,43 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
-        TruffleString doSelfIsObjet(VirtualFrame frame, PMethod method,
+        static TruffleString doSelfIsObjet(VirtualFrame frame, PMethod method,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getQualname") @Cached PyObjectGetAttr getQualname,
                         @Shared("lookupName") @Cached PyObjectLookupAttr lookupName,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return getQualName(frame, inliningTarget, method.getSelf(), method.getFunction(), getClassNode, isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode);
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return getQualName(frame, inliningTarget, method.getSelf(), method.getFunction(), getClassNode, isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode,
+                            raiseNode);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
-        TruffleString doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method,
+        static TruffleString doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getQualname") @Cached PyObjectGetAttr getQualname,
                         @Shared("lookupName") @Cached PyObjectLookupAttr lookupName,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return getQualName(frame, inliningTarget, method.getSelf(), method.getFunction(), getClassNode, isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode);
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return getQualName(frame, inliningTarget, method.getSelf(), method.getFunction(), getClassNode, isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode,
+                            raiseNode);
         }
 
-        private TruffleString getQualName(VirtualFrame frame, Node inliningTarget, Object self, Object func, GetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode,
-                        CastToTruffleStringNode toStringNode, PyObjectGetAttr getQualname, PyObjectLookupAttr lookupName, SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+        private static TruffleString getQualName(VirtualFrame frame, Node inliningTarget, Object self, Object func, GetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode,
+                        CastToTruffleStringNode toStringNode, PyObjectGetAttr getQualname, PyObjectLookupAttr lookupName, SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        PRaiseNode.Lazy raiseNode) {
             Object type = isTypeNode.execute(inliningTarget, self) ? self : getClassNode.execute(inliningTarget, self);
 
             try {
                 TruffleString typeQualName = toStringNode.execute(inliningTarget, getQualname.execute(frame, inliningTarget, type, T___QUALNAME__));
                 return simpleTruffleStringFormatNode.format("%s.%s", typeQualName, getName(frame, inliningTarget, func, toStringNode, lookupName));
             } catch (CannotCastException cce) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
             }
         }
 

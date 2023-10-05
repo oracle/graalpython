@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PTeeDataObject extends PythonBuiltinObject {
@@ -120,14 +121,14 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         return nextlink;
     }
 
-    Object getItem(VirtualFrame frame, int i, BuiltinFunctions.NextNode nextNode, PRaiseNode node) {
+    Object getItem(VirtualFrame frame, Node inliningTarget, int i, BuiltinFunctions.NextNode nextNode, PRaiseNode.Lazy raiseNode) {
         assert i < TeeDataObjectBuiltins.LINKCELLS;
         if (i < numread) {
             return values[i];
         } else {
             assert i == numread;
             if (running) {
-                throw node.raise(PythonBuiltinClassType.RuntimeError, CANNOT_REENTER_TEE_ITERATOR);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, CANNOT_REENTER_TEE_ITERATOR);
             }
 
             running = true;

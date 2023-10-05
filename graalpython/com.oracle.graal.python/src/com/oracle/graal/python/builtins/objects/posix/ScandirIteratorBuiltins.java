@@ -54,10 +54,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -106,23 +108,25 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PDirEntry next(VirtualFrame frame, PScandirIterator self,
+        static PDirEntry next(VirtualFrame frame, PScandirIterator self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.ref.isReleased()) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             try {
-                Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.getReference());
+                Object dirEntryData = posixLib.readdir(posixSupport, self.ref.getReference());
                 if (dirEntryData == null) {
-                    self.ref.rewindAndClose(posixLib, getPosixSupport());
-                    throw raiseStopIteration();
+                    self.ref.rewindAndClose(posixLib, posixSupport);
+                    throw raiseNode.get(inliningTarget).raiseStopIteration();
                 }
                 return factory.createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
-                self.ref.rewindAndClose(posixLib, getPosixSupport());
+                self.ref.rewindAndClose(posixLib, posixSupport);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }

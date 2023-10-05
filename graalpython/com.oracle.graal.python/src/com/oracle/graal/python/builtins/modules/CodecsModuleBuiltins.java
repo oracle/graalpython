@@ -1037,16 +1037,17 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object lookup(Object searchFunction,
+        static Object lookup(Object searchFunction,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyCallableCheckNode callableCheckNode) {
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (callableCheckNode.execute(inliningTarget, searchFunction)) {
-                PythonContext context = PythonContext.get(this);
+                PythonContext context = PythonContext.get(inliningTarget);
                 ensureRegistryInitialized(context);
                 add(context, searchFunction);
                 return PNone.NONE;
             } else {
-                throw raise(TypeError, ARG_MUST_BE_CALLABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ARG_MUST_BE_CALLABLE);
             }
         }
 

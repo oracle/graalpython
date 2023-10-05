@@ -124,12 +124,14 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
     public abstract static class SimpleQueueGetNoWaitNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doNoTimeout(PSimpleQueue self) {
+        static Object doNoTimeout(PSimpleQueue self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = self.poll();
             if (result != null) {
                 return result;
             }
-            throw raise(Empty);
+            throw raiseNode.get(inliningTarget).raise(Empty);
         }
     }
 

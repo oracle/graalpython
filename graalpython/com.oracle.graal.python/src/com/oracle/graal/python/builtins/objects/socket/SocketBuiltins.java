@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -286,28 +287,30 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AcceptNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object accept(VirtualFrame frame, PSocket self,
+        static Object accept(VirtualFrame frame, PSocket self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
-            checkSelectable(getRaiseNode(), self);
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            checkSelectable(inliningTarget, raiseNode, self);
 
             try {
-                PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, self,
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, self,
                                 (p, s) -> p.accept(s, self.getFd()),
                                 false, false);
                 try {
                     Object pythonAddr = makeSockAddrNode.execute(frame, inliningTarget, acceptResult.sockAddr);
-                    posixLib.setInheritable(getPosixSupport(), acceptResult.socketFd, false);
+                    posixLib.setInheritable(posixSupport, acceptResult.socketFd, false);
                     return factory.createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     try {
-                        posixLib.close(getPosixSupport(), acceptResult.socketFd);
+                        posixLib.close(posixSupport, acceptResult.socketFd);
                     } catch (PosixException posixException) {
                         // ignore
                     }

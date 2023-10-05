@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SET_STORAGE_ITEM;
-import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode.STOP_MARKER;
+import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NonThrowingNextNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -78,7 +78,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NonThrowingNextNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.BuiltinIteratorLengthHint;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.GetInternalIteratorSequenceStorage;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
@@ -3576,8 +3576,8 @@ public abstract class SequenceStorageNodes {
          * This version is specific to builtin iterators and looks for STOP_MARKER instead of
          * StopIteration.
          */
-        protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NextNode nextNode, IsBuiltinObjectProfile errorProfile,
-                        Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, InlinedLoopConditionProfile loopProfile) {
+        protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NonThrowingNextNode nextNode,
+                        IsBuiltinObjectProfile errorProfile, Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, InlinedLoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
                 Object[] elements = new Object[size];
@@ -3706,7 +3706,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        private static SequenceStorage genericFallback(VirtualFrame frame, PBuiltinIterator iterator, Object array, int count, Object result, NextNode nextNode, Node inliningTarget,
+        private static SequenceStorage genericFallback(VirtualFrame frame, PBuiltinIterator iterator, Object array, int count, Object result, NonThrowingNextNode nextNode, Node inliningTarget,
                         IsBuiltinObjectProfile errorProfile) {
             Object[] elements = new Object[Array.getLength(array) * 2];
             int i = 0;
@@ -3764,7 +3764,7 @@ public abstract class SequenceStorageNodes {
                             @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                             @Exclusive @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Exclusive @Cached GetElementType getElementType,
-                            @Exclusive @Cached NextNode nextNode) {
+                            @Exclusive @Cached NonThrowingNextNode nextNode) {
                 int expectedLen = lengthHint.execute(inliningTarget, iterator);
                 if (expectedLen < 0) {
                     expectedLen = startSizeProfiled;
@@ -3781,7 +3781,7 @@ public abstract class SequenceStorageNodes {
                             @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                             @Exclusive @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Exclusive @Cached GetElementType getElementType,
-                            @Exclusive @Cached NextNode nextNode) {
+                            @Exclusive @Cached NonThrowingNextNode nextNode) {
                 SequenceStorage s = createStorageFromBuiltin(frame, iterator, len, expectedElementType, nextNode, errorProfile, inliningTarget, arrayGrowProfile, loopProfile);
                 return profileResult(getElementType, inliningTarget, s, false);
             }

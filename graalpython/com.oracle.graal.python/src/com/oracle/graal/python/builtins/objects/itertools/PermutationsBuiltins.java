@@ -99,21 +99,22 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isStopped()")
-        Object next(PPermutations self) {
+        static Object next(PPermutations self,
+                        @Cached PRaiseNode raiseNode) {
             self.setRaisedStopIteration(true);
-            throw raiseStopIteration();
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isStopped()")
-        @SuppressWarnings("truffle-static-method")
-        Object next(PPermutations self,
+        static Object next(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile isStartedProfile,
                         @Cached InlinedBranchProfile jProfile,
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
                         @Cached InlinedLoopConditionProfile shiftIndicesProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
@@ -150,7 +151,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             } else {
                 self.setStarted(true);
             }

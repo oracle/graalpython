@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -117,13 +118,14 @@ public final class RLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReleaseSaveRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object releaseSave(PRLock self,
+        static Object releaseSave(PRLock self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile countProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int count = self.getCount();
             if (countProfile.profile(inliningTarget, count == 0)) {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);
             }
             PTuple retVal = factory.createTuple(new Object[]{count, self.getOwnerId()});
             self.releaseAll();

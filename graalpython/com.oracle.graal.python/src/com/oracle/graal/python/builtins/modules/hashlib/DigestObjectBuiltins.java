@@ -86,12 +86,14 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        DigestObject copy(DigestObject self,
-                        @Cached PythonObjectFactory factory) {
+        static DigestObject copy(DigestObject self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return self.copy(factory);
             } catch (CloneNotSupportedException e) {
-                throw raise(PythonBuiltinClassType.ValueError);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError);
             }
         }
     }

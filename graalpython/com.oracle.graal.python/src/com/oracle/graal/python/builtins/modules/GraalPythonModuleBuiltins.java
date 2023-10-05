@@ -849,26 +849,28 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doIt(Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+        static Object doIt(Object value,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM.toJavaStringUncached());
             }
             if (ImageInfo.inImageRuntimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
+                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
             }
 
-            Env env = getContext().getEnv();
+            Env env = PythonContext.get(inliningTarget).getEnv();
             if (!isType(value, env, lib)) {
-                throw raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
             }
 
             try {
                 return env.createHostAdapter(new Object[]{value});
             } catch (Exception ex) {
-                throw raise(TypeError, PythonUtils.getMessage(ex), ex);
+                throw raiseNode.get(inliningTarget).raise(TypeError, PythonUtils.getMessage(ex), ex);
             }
         }
 

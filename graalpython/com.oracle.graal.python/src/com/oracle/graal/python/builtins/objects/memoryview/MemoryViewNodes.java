@@ -486,8 +486,8 @@ public class MemoryViewNodes {
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
                         @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            self.checkReleased(raiseNode);
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
                 readBytesAtNode.execute(inliningTarget, bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
@@ -502,8 +502,8 @@ public class MemoryViewNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
                         @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            self.checkReleased(raiseNode);
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
                 readBytesAtNode.execute(inliningTarget, bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -94,7 +95,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PGrouper self,
+        static Object next(VirtualFrame frame, PGrouper self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
@@ -102,11 +103,12 @@ public final class GrouperBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile currGrouperProfile,
                         @Cached InlinedBranchProfile currValueMarkerProfile,
                         @Cached InlinedBranchProfile currValueTgtProfile,
-                        @Cached InlinedConditionProfile hasFuncProfile) {
+                        @Cached InlinedConditionProfile hasFuncProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PGroupBy gbo = self.getParent();
             if (gbo.getCurrGrouper() != self) {
                 currGrouperProfile.enter(inliningTarget);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter(inliningTarget);
@@ -114,7 +116,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
             }
             if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             Object r = gbo.getCurrValue();
             gbo.setCurrValue(null);

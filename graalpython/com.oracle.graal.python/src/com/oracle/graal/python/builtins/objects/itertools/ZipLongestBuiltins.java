@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -94,13 +95,13 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "zeroSize(self)")
-        Object nextNoFillValue(VirtualFrame frame, PZipLongest self) {
-            throw raiseStopIteration();
+        static Object nextNoFillValue(VirtualFrame frame, PZipLongest self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "!zeroSize(self)")
-        @SuppressWarnings("truffle-static-method")
-        Object next(VirtualFrame frame, PZipLongest self,
+        static Object next(VirtualFrame frame, PZipLongest self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
@@ -108,13 +109,14 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noActiveProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedConditionProfile isNullFillProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
-            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, factory);
+            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, factory, raiseNode);
         }
 
-        private Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PythonObjectFactory factory) {
+        private static Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
+                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, result.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
@@ -129,7 +131,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         if (isStopIterationProfile.profileException(inliningTarget, e, StopIteration)) {
                             self.setNumActive(self.getNumActive() - 1);
                             if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
-                                throw raiseStopIteration();
+                                throw raiseNode.get(inliningTarget).raiseStopIteration();
                             } else {
                                 item = fillValue;
                                 self.getItTuple()[i] = PNone.NONE;
@@ -145,11 +147,11 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
             return factory.createTuple(result);
         }
 
-        protected boolean isNullFillValue(PZipLongest self) {
+        protected static boolean isNullFillValue(PZipLongest self) {
             return self.getFillValue() == null;
         }
 
-        protected boolean zeroSize(PZipLongest self) {
+        protected static boolean zeroSize(PZipLongest self) {
             return self.getItTuple().length == 0 || self.getNumActive() == 0;
         }
     }

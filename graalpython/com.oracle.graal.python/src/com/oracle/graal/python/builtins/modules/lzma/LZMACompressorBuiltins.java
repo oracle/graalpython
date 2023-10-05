@@ -221,18 +221,19 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doit(LZMACompressor self,
+        static PBytes doit(LZMACompressor self,
                         @Bind("this") Node inliningTarget,
                         @Cached LZMANodes.CompressNode compress,
                         @Cached PythonObjectFactory factory) {
             self.setFlushed();
-            return factory.createBytes(compress.flush(inliningTarget, self, PythonContext.get(this)));
+            return factory.createBytes(compress.flush(inliningTarget, self, PythonContext.get(inliningTarget)));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(LZMACompressor self) {
-            throw raise(ValueError, REPEATED_CALL_TO_FLUSH);
+        static PNone error(LZMACompressor self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 

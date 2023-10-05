@@ -818,16 +818,16 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class NextNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        @SuppressWarnings("truffle-static-method")
-        PBytes doit(VirtualFrame frame, PBuffered self,
+        static PBytes doit(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, inliningTarget, self, -1);
             if (line.length == 0) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return factory.createBytes(line);
         }

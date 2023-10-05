@@ -153,8 +153,9 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadInitNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone setCompleter(@SuppressWarnings("unused") PythonModule self) {
-            throw raise(PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
+        static PNone setCompleter(@SuppressWarnings("unused") PythonModule self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
         }
     }
 

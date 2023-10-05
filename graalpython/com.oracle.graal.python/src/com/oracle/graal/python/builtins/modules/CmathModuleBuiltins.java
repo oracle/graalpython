@@ -13,6 +13,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
@@ -28,6 +29,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -41,6 +43,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "cmath")
 public final class CmathModuleBuiltins extends PythonBuiltins {
@@ -151,6 +154,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     abstract static class CmathComplexUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
+        @Child private PRaiseNode raiseNode;
+
         public abstract PComplex executeComplex(VirtualFrame frame, Object value);
 
         @SuppressWarnings("unused")
@@ -184,6 +189,18 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Shared @Cached PythonObjectFactory factory) {
             return doC(frame, coerceToComplex.execute(frame, inliningTarget, value), factory);
+        }
+
+        final PException raise(PythonBuiltinClassType type, TruffleString string) {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                if (isAdoptable()) {
+                    raiseNode = insert(PRaiseNode.create());
+                } else {
+                    raiseNode = PRaiseNode.getUncached();
+                }
+            }
+            return raiseNode.raise(type, string);
         }
     }
 

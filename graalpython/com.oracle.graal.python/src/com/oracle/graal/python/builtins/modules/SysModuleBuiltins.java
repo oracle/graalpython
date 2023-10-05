@@ -894,31 +894,23 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class InternNode extends PythonUnaryBuiltinNode {
-        private PString doIntern(Node inliningTarget, Object str, StringNodes.InternStringNode internNode) {
-            final PString interned = internNode.execute(inliningTarget, str);
+
+        @Specialization(guards = "isPString(s) || isTruffleString(s)")
+        static Object doPString(Object s,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringNodes.InternStringNode internNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            final PString interned = internNode.execute(inliningTarget, s);
             if (interned == null) {
-                throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, str);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_INTERN_P, s);
             }
             return interned;
         }
 
-        @Specialization
-        Object doString(TruffleString s,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
-            return doIntern(inliningTarget, s, internNode);
-        }
-
-        @Specialization
-        Object doPString(PString s,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
-            return doIntern(inliningTarget, s, internNode);
-        }
-
         @Fallback
-        Object doOthers(Object obj) {
-            throw raise(TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
+        static Object doOthers(Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
         }
     }
 

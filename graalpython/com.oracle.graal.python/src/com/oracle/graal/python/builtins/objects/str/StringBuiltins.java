@@ -2643,14 +2643,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doString")
-        long doGeneric(Object self,
+        static long doGeneric(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
-                        @Shared("hashCode") @Cached TruffleString.HashCodeNode hashCodeNode) {
+                        @Shared("hashCode") @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return doString(cast.execute(inliningTarget, self), hashCodeNode);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___HASH__, self);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___HASH__, self);
             }
         }
     }

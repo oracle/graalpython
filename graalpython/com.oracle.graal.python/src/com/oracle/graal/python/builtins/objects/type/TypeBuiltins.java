@@ -353,8 +353,9 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doit(Object object) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_MRO, "type", object);
+        static Object doit(Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_MRO, "type", object);
         }
     }
 
@@ -1361,14 +1362,15 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FlagsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doGeneric(Object self,
+        static Object doGeneric(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached GetTypeFlagsNode getTypeFlagsNode) {
+                        @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (PGuards.isClass(inliningTarget, self, isTypeNode)) {
                 return getTypeFlagsNode.execute(self);
             }
-            throw raise(PythonErrorType.TypeError, ErrorMessages.DESC_FLAG_FOR_TYPE_DOESNT_APPLY_TO_OBJ, self);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.DESC_FLAG_FOR_TYPE_DOESNT_APPLY_TO_OBJ, self);
         }
     }
 

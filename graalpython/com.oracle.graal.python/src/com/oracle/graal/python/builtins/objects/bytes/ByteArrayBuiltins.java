@@ -691,11 +691,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone clear(VirtualFrame frame, PByteArray byteArray,
+        static PNone clear(VirtualFrame frame, PByteArray byteArray,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached PySliceNew sliceNode) {
-            byteArray.checkCanResize(getRaiseNode());
+                        @Cached PySliceNew sliceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            byteArray.checkCanResize(inliningTarget, raiseNode);
             deleteNode.execute(frame, byteArray.getSequenceStorage(), sliceNode.execute(inliningTarget, PNone.NONE, PNone.NONE, 1));
             return PNone.NONE;
         }

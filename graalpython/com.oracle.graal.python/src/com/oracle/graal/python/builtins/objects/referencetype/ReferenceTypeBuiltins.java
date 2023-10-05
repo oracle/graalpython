@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -130,28 +131,30 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         static long HASH_UNSET = -1;
 
         @Specialization(guards = "self.getHash() != HASH_UNSET")
-        long getHash(PReferenceType self) {
+        static long getHash(PReferenceType self) {
             return self.getHash();
         }
 
         @Specialization(guards = "self.getHash() == HASH_UNSET")
-        long computeHash(VirtualFrame frame, PReferenceType self,
+        static long computeHash(VirtualFrame frame, PReferenceType self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile referentProfile,
-                        @Cached PyObjectHashNode hashNode) {
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object referent = self.getObject();
             if (referentProfile.profile(inliningTarget, referent != null)) {
                 long hash = hashNode.execute(frame, inliningTarget, referent);
                 self.setHash(hash);
                 return hash;
             } else {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
             }
         }
 
         @Fallback
-        int hashWrong(@SuppressWarnings("unused") Object self) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
+        static int hashWrong(@SuppressWarnings("unused") Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
         }
     }
 

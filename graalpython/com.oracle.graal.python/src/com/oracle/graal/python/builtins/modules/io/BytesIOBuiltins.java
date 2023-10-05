@@ -139,8 +139,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class ClosedCheckPythonUnaryBuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
-        Object closedError(PBytesIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -754,8 +755,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object close(PBytesIO self) {
-            self.checkExports(getRaiseNode());
+        static Object close(PBytesIO self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
             self.setBuf(null);
             return PNone.NONE;
         }
@@ -766,12 +769,14 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object doit(PBytesIO self,
+        static Object doit(PBytesIO self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return readBytes(self, n, bufferLib, factory);
         }

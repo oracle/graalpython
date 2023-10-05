@@ -188,11 +188,12 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     abstract static class PythonUnaryWithInitErrorBuiltinNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
-        Object initError(PBuffered self) {
+        static Object initError(PBuffered self,
+                        @Cached PRaiseNode raiseNode) {
             if (self.isDetached()) {
-                throw raise(ValueError, IO_STREAM_DETACHED);
+                throw raiseNode.raise(ValueError, IO_STREAM_DETACHED);
             } else {
-                throw raise(ValueError, IO_UNINIT);
+                throw raiseNode.raise(ValueError, IO_UNINIT);
             }
         }
     }

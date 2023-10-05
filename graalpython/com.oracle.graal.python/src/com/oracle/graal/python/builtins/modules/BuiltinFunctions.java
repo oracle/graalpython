@@ -329,21 +329,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int absBoolean(boolean arg) {
+        static int absBoolean(boolean arg) {
             return arg ? 1 : 0;
         }
 
         @Specialization
-        public double absDouble(double arg) {
+        static double absDouble(double arg) {
             return Math.abs(arg);
         }
 
         @Specialization
-        public Object absObject(VirtualFrame frame, Object object,
-                        @Cached("create(T___ABS__)") LookupAndCallUnaryNode callAbs) {
+        static Object absObject(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("create(T___ABS__)") LookupAndCallUnaryNode callAbs,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = callAbs.executeObject(frame, object);
             if (result == NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
             return result;
         }
@@ -651,7 +653,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached InlinedBranchProfile isPInt,
                         @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object index = indexNode.execute(frame, inliningTarget, x);
             if (index instanceof Boolean || index instanceof Integer) {
                 isInt.enter(inliningTarget);
@@ -664,7 +667,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return doPI((PInt) index, fromJavaStringNode, appendStringNode, toStringNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("bin/oct/hex with native integer subclasses"));
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("bin/oct/hex with native integer subclasses"));
             }
         }
     }
@@ -749,12 +752,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ArgumentClinic(name = "i", conversion = ArgumentClinic.ClinicConversion.Int)
     public abstract static class ChrNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        public TruffleString charFromInt(int arg,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            if (arg >= 0 && arg <= 1114111) {
+        static TruffleString charFromInt(int arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (arg >= 0 && arg <= Character.MAX_CODE_POINT) {
                 return fromCodePointNode.execute(arg, TS_ENCODING, true);
             } else {
-                throw raise(ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
             }
         }
 
@@ -2352,13 +2357,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(obj)")
-        @SuppressWarnings("truffle-static-method")
-        Object vars(VirtualFrame frame, Object obj,
+        static Object vars(VirtualFrame frame, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttr) {
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object dict = lookupAttr.execute(frame, inliningTarget, obj, T___DICT__);
             if (dict == NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.VARS_ARGUMENT_MUST_HAVE_DICT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.VARS_ARGUMENT_MUST_HAVE_DICT);
             }
             return dict;
         }

@@ -161,6 +161,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -191,8 +192,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class InitCheckPythonUnaryBuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isOK()")
         @SuppressWarnings("unused")
-        Object initError(PTextIO self) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(PTextIO self,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
     }
 
@@ -203,8 +205,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "self.isDetached()"})
         @SuppressWarnings("unused")
-        Object attachError(PTextIO self) {
-            throw raise(ValueError, DETACHED_BUFFER);
+        static Object attachError(PTextIO self,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, DETACHED_BUFFER);
         }
     }
 
@@ -807,13 +810,15 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class TellNode extends ClosedCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.isSeekable()"})
-        Object notSeekable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self) {
-            throw raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
+        static Object notSeekable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.isTelling()"})
-        Object notTelling(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self) {
-            throw raise(OSError, TELLING_POSITION_DISABLED_BY_NEXT_CALL);
+        static Object notTelling(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OSError, TELLING_POSITION_DISABLED_BY_NEXT_CALL);
         }
 
         protected static boolean hasDecoderAndSnapshot(PTextIO self) {
@@ -864,8 +869,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         "hasDecoderAndSnapshot(self)", //
                         "!hasUsedDecodedChar(self)" //
         })
-        @SuppressWarnings("truffle-static-method")
-        Object didntMove(VirtualFrame frame, PTextIO self,
+        static Object didntMove(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
@@ -885,8 +889,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         "hasDecoderAndSnapshot(self)", //
                         "hasUsedDecodedChar(self)" //
         })
-        @SuppressWarnings("truffle-static-method")
-        Object tell(VirtualFrame frame, PTextIO self,
+        static Object tell(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
@@ -902,7 +905,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "2") InteropLibrary isString,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
             int nextInputLength = self.getSnapshotNextInput().length;
@@ -920,7 +924,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 PBytes in = factory.createBytes(snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, inliningTarget, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
-                    Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState);
+                    Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, raiseNode);
                     int decFlags = asSizeNode.executeExact(frame, inliningTarget, state[1]);
                     int decBufferLen = sizeNode.execute(frame, inliningTarget, state[0]);
                     if (decBufferLen == 0) {
@@ -962,7 +966,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
-                Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState);
+                Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, raiseNode);
                 int decFlags = asSizeNode.executeExact(frame, inliningTarget, state[1]);
                 int decBufferLen = sizeNode.execute(frame, inliningTarget, state[0]);
 
@@ -986,7 +990,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 if (!isString.isString(decoded)) {
                     fail(frame, inliningTarget, self, savedState, callMethodSetState);
-                    throw raise(TypeError, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
                 }
 
                 charsDecoded += sizeNode.execute(frame, inliningTarget, decoded);
@@ -994,7 +998,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 if (charsDecoded < decodedCharsUsed) {
                     fail(frame, inliningTarget, self, savedState, callMethodSetState);
-                    throw raise(OSError, CAN_T_RECONSTRUCT_LOGICAL_FILE_POSITION);
+                    throw raiseNode.get(inliningTarget).raise(OSError, CAN_T_RECONSTRUCT_LOGICAL_FILE_POSITION);
                 }
             }
             callMethodSetState.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, savedState);
@@ -1009,24 +1013,25 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             callMethodSetState.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, savedState);
         }
 
-        Object[] decoderGetstate(VirtualFrame frame, Node inliningTarget, PTextIO self, Object saved_state,
+        static Object[] decoderGetstate(VirtualFrame frame, Node inliningTarget, PTextIO self, Object saved_state,
                         SequenceNodes.GetObjectArrayNode getArray,
                         PyObjectCallMethodObjArgs callMethodGetState,
-                        PyObjectCallMethodObjArgs callMethodSetState) {
+                        PyObjectCallMethodObjArgs callMethodSetState,
+                        PRaiseNode.Lazy raiseNode) {
             Object state = callMethodGetState.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
                 fail(frame, inliningTarget, self, saved_state, callMethodSetState);
-                throw raise(TypeError, ILLEGAL_DECODER_STATE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_DECODER_STATE);
             }
             Object[] array = getArray.execute(inliningTarget, state);
             if (array.length < 2) {
                 fail(frame, inliningTarget, self, saved_state, callMethodSetState);
-                throw raise(TypeError, ILLEGAL_DECODER_STATE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_DECODER_STATE);
             }
 
             if (!(array[0] instanceof PBytes)) {
                 fail(frame, inliningTarget, self, saved_state, callMethodSetState);
-                throw raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
             }
             return array;
         }
@@ -1190,14 +1195,16 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)"})
-        TruffleString doit(VirtualFrame frame, PTextIO self,
-                        @Cached TextIOWrapperNodes.ReadlineNode readlineNode) {
+        static TruffleString doit(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TextIOWrapperNodes.ReadlineNode readlineNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             self.setTelling(false);
             TruffleString line = readlineNode.execute(frame, self, -1);
             if (line.isEmpty()) {
                 self.clearSnapshot();
                 self.setTelling(self.isSeekable());
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return line;
         }
@@ -1208,16 +1215,16 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends InitCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        @SuppressWarnings("truffle-static-method") // raise
-        Object doit(VirtualFrame frame, PTextIO self,
+        static Object doit(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
                         @Cached IONodes.ToTruffleStringNode toString,
-                        @Cached IsBuiltinObjectProfile isValueError) {
-            if (!getContext().reprEnter(self)) {
-                throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
+                        @Cached IsBuiltinObjectProfile isValueError,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!PythonContext.get(inliningTarget).reprEnter(self)) {
+                throw raiseNode.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
             }
             try {
                 Object nameobj = PNone.NO_VALUE;
@@ -1241,7 +1248,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s mode='%s' encoding='%s'>", toString.execute(inliningTarget, name), toString.execute(inliningTarget, modeobj),
                                 self.getEncoding());
             } finally {
-                getContext().reprLeave(self);
+                PythonContext.get(inliningTarget).reprLeave(self);
             }
         }
     }

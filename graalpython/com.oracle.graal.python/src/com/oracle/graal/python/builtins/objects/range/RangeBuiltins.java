@@ -186,16 +186,16 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        int doPBigRange(VirtualFrame frame, PBigRange self,
+        static int doPBigRange(VirtualFrame frame, PBigRange self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object length = self.getLength();
             if (indexCheckNode.execute(inliningTarget, length)) {
                 return asSizeNode.executeExact(frame, inliningTarget, length);
             }
-            throw raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, length);
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, length);
         }
     }
 

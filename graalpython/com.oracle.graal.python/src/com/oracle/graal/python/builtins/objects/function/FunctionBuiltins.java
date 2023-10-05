@@ -269,8 +269,9 @@ public final class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(Object object) {
-            throw raise(TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
+        static Object doGeneric(Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
         }
     }
 

@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -90,7 +91,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
     abstract static class AbcInitCollectionFlagsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object init(Object object,
+        static Object init(Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached DeleteAttributeNode deleteAttributeNode) {
             if (TypeNodes.IsTypeNode.executeUncached(object)) {
@@ -102,7 +103,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
                 if ((val & COLLECTION_FLAGS) == COLLECTION_FLAGS) {
-                    throw raise(TypeError, ErrorMessages.ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING);
+                    throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING);
                 }
                 long tpFlags = TypeNodes.GetTypeFlagsNode.getUncached().execute(object);
                 tpFlags |= (val & COLLECTION_FLAGS);

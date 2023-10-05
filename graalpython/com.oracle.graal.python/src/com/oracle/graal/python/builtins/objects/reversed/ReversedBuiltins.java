@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -57,6 +58,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -83,15 +85,17 @@ public final class ReversedBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.isExhausted()")
-        public Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
-            throw raiseStopIteration();
+        static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(VirtualFrame frame, PSequenceReverseIterator self,
+        static Object next(VirtualFrame frame, PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
-                        @Cached IsBuiltinObjectProfile profile) {
+                        @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (self.index >= 0) {
                 try {
                     return callGetItem.executeObject(frame, self.getObject(), self.index--);
@@ -100,17 +104,19 @@ public final class ReversedBuiltins extends PythonBuiltins {
                 }
             }
             self.setExhausted();
-            throw raiseStopIteration();
+            throw raiseNode.get(inliningTarget).raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PStringReverseIterator self,
-                        @Cached TruffleString.SubstringNode substringNode) {
+        static Object next(PStringReverseIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (self.index >= 0) {
                 return substringNode.execute(self.value, self.index--, 1, TS_ENCODING, false);
             }
             self.setExhausted();
-            throw raiseStopIteration();
+            throw raiseNode.get(inliningTarget).raiseStopIteration();
         }
     }
 
@@ -129,22 +135,23 @@ public final class ReversedBuiltins extends PythonBuiltins {
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.isExhausted()")
-        public int exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+        static int exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
             return 0;
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public int lengthHint(PStringReverseIterator self) {
+        static int lengthHint(PStringReverseIterator self) {
             return self.index + 1;
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        public int lengthHint(PSequenceReverseIterator self,
+        static int lengthHint(PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceNodes.LenNode lenNode) {
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int len = lenNode.execute(inliningTarget, self.getPSequence());
             if (len == -1) {
-                throw raise(TypeError, OBJ_HAS_NO_LEN, self);
+                throw raiseNode.get(inliningTarget).raise(TypeError, OBJ_HAS_NO_LEN, self);
             }
             if (len < self.index) {
                 return 0;
@@ -153,7 +160,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        public static int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+        static int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
             int len = sizeNode.execute(frame, inliningTarget, self.getObject());

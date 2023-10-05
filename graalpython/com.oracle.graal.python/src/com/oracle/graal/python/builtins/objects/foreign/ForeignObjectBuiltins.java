@@ -79,6 +79,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -147,7 +148,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
@@ -226,9 +226,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public long len(Object self,
+        static long len(Object self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 if (lib.hasArrayElements(self)) {
@@ -243,7 +245,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
         }
     }
 
@@ -1268,13 +1270,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class BasesNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        Object getBases(Object self,
+        static Object getBases(Object self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary lib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (lib.isMetaObject(self)) {
                 return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             } else {
-                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
             }
         }
     }

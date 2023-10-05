@@ -219,9 +219,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     public abstract static class StrNode extends AbstractNumericUnaryBuiltin {
         public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
 
+        @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
         @Override
         protected TruffleString op(double self) {
-            FloatFormatter f = new FloatFormatter(getRaiseNode(), spec);
+            // TODO GR-49237 use uncached raise in Formatter
+            FloatFormatter f = new FloatFormatter(raiseNode, spec);
             f.setMinFracDigits(1);
             return doFormat(self, f);
         }
@@ -946,18 +949,19 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class AsIntegerRatio extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PTuple get(Object selfObj,
+        static PTuple get(Object selfObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double self = castToDoubleChecked(inliningTarget, selfObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(self))) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }
             if (infProfile.profile(inliningTarget, Double.isInfinite(self))) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
             }
 
             // At the first time find mantissa and exponent. This is functionality of

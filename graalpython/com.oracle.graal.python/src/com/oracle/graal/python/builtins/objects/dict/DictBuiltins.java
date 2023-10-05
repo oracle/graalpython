@@ -214,14 +214,15 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object popItem(VirtualFrame frame, PDict dict,
+        static Object popItem(VirtualFrame frame, PDict dict,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageDelItem delItem,
                         @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             HashingStorage storage = dict.getDictStorage();
             HashingStorageIterator it = getReverseIterator.execute(inliningTarget, storage);
             while (iterNext.execute(inliningTarget, storage, it)) {
@@ -230,7 +231,7 @@ public final class DictBuiltins extends PythonBuiltins {
                 delItem.execute(frame, inliningTarget, storage, key, dict);
                 return result;
             }
-            throw raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
+            throw raiseNode.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
         }
     }
 

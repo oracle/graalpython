@@ -105,6 +105,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "math")
 public final class MathModuleBuiltins extends PythonBuiltins {
@@ -125,13 +126,27 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
     public abstract static class MathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
-        public void checkMathRangeError(boolean con) {
+        @Child private PRaiseNode raiseNode;
+
+        final PException raise(PythonBuiltinClassType type, TruffleString string) {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                if (isAdoptable()) {
+                    raiseNode = insert(PRaiseNode.create());
+                } else {
+                    raiseNode = PRaiseNode.getUncached();
+                }
+            }
+            return raiseNode.raise(type, string);
+        }
+
+        final void checkMathRangeError(boolean con) {
             if (con) {
                 throw raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
         }
 
-        public void checkMathDomainError(boolean con) {
+        final void checkMathDomainError(boolean con) {
             if (con) {
                 throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
@@ -324,8 +339,9 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value < 0"})
-        long factorialNegativeInt(@SuppressWarnings("unused") int value) {
-            throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
+        static long factorialNegativeInt(@SuppressWarnings("unused") int value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -340,8 +356,9 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value < 0"})
-        long factorialNegativeLong(@SuppressWarnings("unused") long value) {
-            throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
+        static long factorialNegativeLong(@SuppressWarnings("unused") long value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -356,19 +373,19 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        @SuppressWarnings("truffle-static-method")
-        Object factorialObject(VirtualFrame frame, Object value,
+        static Object factorialObject(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode convert,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached FactorialNode recursiveNode) {
+                        @Cached FactorialNode recursiveNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return recursiveNode.execute(frame, convert.execute(frame, inliningTarget, value));
             } catch (OverflowException e) {
                 if (asSizeNode.executeLossy(frame, inliningTarget, value) >= 0) {
-                    throw raise(OverflowError, ErrorMessages.FACTORIAL_ARGUMENT_SHOULD_NOT_EXCEED_D, Long.MAX_VALUE);
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.FACTORIAL_ARGUMENT_SHOULD_NOT_EXCEED_D, Long.MAX_VALUE);
                 } else {
-                    throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
                 }
             }
         }
@@ -833,14 +850,15 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        double doIt(VirtualFrame frame, Object iterable,
+        static double doIt(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached("create(Next)") LookupAndCallUnaryNode callNextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached IsBuiltinObjectProfile stopProfile) {
+                        @Cached IsBuiltinObjectProfile stopProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
-            return fsum(frame, iterator, callNextNode, asDoubleNode, inliningTarget, stopProfile);
+            return fsum(frame, iterator, callNextNode, asDoubleNode, inliningTarget, stopProfile, raiseNode);
         }
 
         /*
@@ -853,8 +871,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        private double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next,
-                        PyFloatAsDoubleNode asDoubleNode, Node inliningTarget, IsBuiltinObjectProfile stopProfile) {
+        private static double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next,
+                        PyFloatAsDoubleNode asDoubleNode, Node inliningTarget, IsBuiltinObjectProfile stopProfile, PRaiseNode.Lazy raiseNode) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
@@ -891,7 +909,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                          * as a result of a nan or inf in the summands
                          */
                         if (Double.isFinite(xsave)) {
-                            throw raise(OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
+                            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
                         }
                         if (Double.isInfinite(xsave)) {
                             inf_sum += xsave;
@@ -910,7 +928,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
             if (special_sum != 0.0) {
                 if (Double.isNaN(inf_sum)) {
-                    throw raise(ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
                 } else {
                     sum = special_sum;
                     return sum;
@@ -1849,11 +1867,13 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class TruncNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object trunc(VirtualFrame frame, Object obj,
-                        @Cached("create(T___TRUNC__)") LookupAndCallUnaryNode callTrunc) {
+        static Object trunc(VirtualFrame frame, Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("create(T___TRUNC__)") LookupAndCallUnaryNode callTrunc,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = callTrunc.executeObject(frame, obj);
             if (result == PNone.NO_VALUE) {
-                raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, obj, "__trunc__");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, obj, "__trunc__");
             }
             return result;
         }
@@ -2298,18 +2318,20 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsqrtNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object isqrtLong(long x,
+        static Object isqrtLong(long x,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached NarrowBigIntegerNode makeInt) {
-            raiseIfNegative(x < 0);
+                        @Shared @Cached NarrowBigIntegerNode makeInt,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseIfNegative(inliningTarget, x < 0, raiseNode);
             return makeInt.execute(inliningTarget, op(PInt.longToBigInteger(x)));
         }
 
         @Specialization
-        Object isqrtPInt(PInt x,
+        static Object isqrtPInt(PInt x,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached NarrowBigIntegerNode makeInt) {
-            raiseIfNegative(x.isNegative());
+                        @Shared @Cached NarrowBigIntegerNode makeInt,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            raiseIfNegative(inliningTarget, x.isNegative(), raiseNode);
             return makeInt.execute(inliningTarget, op(x.getValue()));
         }
 
@@ -2347,9 +2369,9 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private void raiseIfNegative(boolean condition) {
+        private static void raiseIfNegative(Node inliningTarget, boolean condition, PRaiseNode.Lazy raiseNode) {
             if (condition) {
-                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "isqrt() argument");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "isqrt() argument");
             }
         }
     }

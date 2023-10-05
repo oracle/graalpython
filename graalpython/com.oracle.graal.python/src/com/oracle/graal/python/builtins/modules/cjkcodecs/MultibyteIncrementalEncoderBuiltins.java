@@ -263,11 +263,12 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteIncrementalEncoder_getstate_impl
         @Specialization
-        Object getstate(MultibyteIncrementalEncoderObject self,
+        static Object getstate(MultibyteIncrementalEncoderObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode asUTF8AndSize,
-                        @Cached IntNodes.PyLongFromByteArray fromByteArray) {
+                        @Cached IntNodes.PyLongFromByteArray fromByteArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * state made up of 1 byte for buffer size, up to MAXENCPENDING*4 bytes for UTF-8
              * encoded buffer (each character can use up to 4 bytes), and required bytes for
@@ -282,7 +283,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                 byte[] pendingbuffer = asUTF8AndSize.execute(self.pending, T_UTF8, T_STRICT);
                 int pendingsize = pendingbuffer.length;
                 if (pendingsize > MAXENCPENDING * 4) {
-                    throw raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
+                    throw raiseNode.get(inliningTarget).raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
                 }
                 statebytes[0] = (byte) pendingsize;
                 PythonUtils.arraycopy(pendingbuffer, 0, statebytes, 1, pendingsize);
