@@ -9,8 +9,23 @@ patch = 'numpy-1.19.5.patch'
 dist-type = 'sdist'
 
 [[rules]]
+version = '== 1.21.2'
+patch = 'numpy-1.21.2.patch'
+dist-type = 'sdist'
+
+[[rules]]
+version = '== 1.21.4'
+patch = 'numpy-1.21.4.patch'
+dist-type = 'sdist'
+
+[[rules]]
 version = '== 1.21.6'
 patch = 'numpy-1.21.6.patch'
+dist-type = 'sdist'
+
+[[rules]]
+version = '== 1.22.2'
+patch = 'numpy-1.22.2.patch'
 dist-type = 'sdist'
 
 [[rules]]

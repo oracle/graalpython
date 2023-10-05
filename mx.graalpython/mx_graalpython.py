@@ -1974,7 +1974,10 @@ def _python_checkpatchfiles():
             # numpy started putting the whole license text in the field. Its BSD-3-Clause
             'numpy-1.16.4.patch',
             'numpy-1.19.5.patch',
+            'numpy-1.21.2.patch',
+            'numpy-1.21.4.patch',
             'numpy-1.21.6.patch',
+            'numpy-1.22.2.patch',
             'numpy-1.22.4.patch',
             'numpy-1.23.1.patch',
             'numpy-1.23.4.patch',
