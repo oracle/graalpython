@@ -2956,6 +2956,18 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
 
 mx_unittest.register_unittest_config(PythonMxUnittestConfig('python-internal'))
 
+def graalpy_standalone_wrapper(args_in):
+    parser = ArgumentParser(description='Builds GraalPy standalone of give configuration and prints path to its launcher.')
+    parser.add_argument('type', nargs='?', default='jvm', choices=['jvm', 'native'])
+    parser.add_argument('edition', nargs='?', default='ce', choices=['ce', 'ee'])
+    parser.add_argument('--no-build', action='store_true',
+                        help="Doesn't build the standalone, only prints the patch to its launcher")
+    args = parser.parse_args(args_in)
+    if args.edition == 'ee':
+        if not mx.suite('graalpython-enterprise', fatalIfMissing=False):
+            mx.abort("You must add --dynamicimports graalpython-enterprise for EE edition")
+    print(graalpy_standalone(args.type, enterprise=args.edition == 'ee', build=not args.no_build))
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -2972,6 +2984,7 @@ mx.update_commands(SUITE, {
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [no_return(python_svm), ''],
     'python-jvm': [no_return(python_jvm), ''],
+    'graalpy-standalone': [graalpy_standalone_wrapper, '[jvm|native] [ce|ee] [--no-build]'],
     'python-gvm': [no_return(python_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
