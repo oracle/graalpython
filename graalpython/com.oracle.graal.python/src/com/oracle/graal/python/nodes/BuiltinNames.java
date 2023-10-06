@@ -142,6 +142,8 @@ public abstract class BuiltinNames {
 
     public static final String J_DEQUE_REV_ITER = "_deque_reverse_iterator";
 
+    public static final String J_ORDERED_DICT = "OrderedDict";
+
     public static final String J_MIN = "min";
     public static final TruffleString T_MIN = tsLiteral(J_MIN);
 

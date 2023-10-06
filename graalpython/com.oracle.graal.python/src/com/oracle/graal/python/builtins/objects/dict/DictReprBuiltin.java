@@ -65,11 +65,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -278,30 +280,39 @@ public final class DictReprBuiltin extends PythonBuiltins {
         public static TruffleString repr(PDictKeysView view,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(3)") ForEachKeyRepr consumerNode,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached TypeNodes.GetNameNode getNameNode,
                         @Shared @Cached HashingStorageForEach forEachNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            return viewRepr(inliningTarget, view, PythonBuiltinClassType.PDictKeysView.getName(), forEachNode, consumerNode, appendStringNode, toStringNode);
+            TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, view));
+            return viewRepr(inliningTarget, view, typeName, forEachNode, consumerNode, appendStringNode, toStringNode);
         }
 
         @Specialization // use same limit as for EachRepr nodes library
         public static TruffleString repr(PDictValuesView view,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(3)") ForEachValueRepr consumerNode,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached TypeNodes.GetNameNode getNameNode,
                         @Shared @Cached HashingStorageForEach forEachNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            return viewRepr(inliningTarget, view, PythonBuiltinClassType.PDictValuesView.getName(), forEachNode, consumerNode, appendStringNode, toStringNode);
+            TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, view));
+            return viewRepr(inliningTarget, view, typeName, forEachNode, consumerNode, appendStringNode, toStringNode);
         }
 
         @Specialization// use same limit as for EachRepr nodes library
         public static TruffleString repr(PDictItemsView view,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(3)") ForEachItemRepr consumerNode,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached TypeNodes.GetNameNode getNameNode,
                         @Shared @Cached HashingStorageForEach forEachNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            return viewRepr(inliningTarget, view, PythonBuiltinClassType.PDictItemsView.getName(), forEachNode, consumerNode, appendStringNode, toStringNode);
+            TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, view));
+            return viewRepr(inliningTarget, view, typeName, forEachNode, consumerNode, appendStringNode, toStringNode);
         }
 
         private static TruffleString viewRepr(Node inliningTarget, PDictView view, TruffleString type, HashingStorageForEach forEachNode, AbstractForEachRepr consumerNode,

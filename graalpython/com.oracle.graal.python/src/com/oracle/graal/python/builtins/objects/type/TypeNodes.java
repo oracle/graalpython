@@ -170,11 +170,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclas
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveDictNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveWeakrefsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveWeakrefsNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -375,6 +375,7 @@ public abstract class TypeNodes {
                 case PReferenceType:
                 case PProperty:
                 case PDeque:
+                case POrderedDict:
                 case PSimpleQueue:
                 case PSimpleNamespace:
                 case PMap:
