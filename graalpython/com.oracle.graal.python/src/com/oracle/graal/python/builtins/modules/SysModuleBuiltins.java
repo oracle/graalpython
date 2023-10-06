@@ -458,8 +458,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         ns.setAttribute(tsLiteral("name"), T_GRAALPYTHON_ID);
         /*- 'cache_tag' must match the format of mx.graalpython/mx_graalpython.py:graalpy_ext */
         ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID +
-                        PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR +
-                        "-" + PythonLanguage.CAPI_REV +
+                        PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR + PythonLanguage.DEV_TAG +
                         "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
         ns.setAttribute(T_VERSION, versionInfo);
         ns.setAttribute(T__MULTIARCH, gmultiarch);

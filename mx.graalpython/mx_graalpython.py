@@ -1717,16 +1717,17 @@ def graalpy_ext(llvm_mode, **kwargs):
     # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
-    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "")}-{capi_rev()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
+    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "") + dev_tag()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
 
-def capi_rev(arg=None, **kwargs):
+def dev_tag(arg=None, **kwargs):
+    if os.environ.get('GRAALPYTHONDEVMODE', '1') == '0' or 'dev' not in SUITE.release_version():
+        return ''
     rev_capi = SUITE.vc.git_command(SUITE.dir, ['rev-parse', 'HEAD',
-                                            os.path.join('graalpython', 'com.oracle.graal.python.cext')])
+                                            os.path.join('graalpython', 'com.oracle.graal.python.cext', 'src', 'capi.h')])
     rev_patches = SUITE.vc.git_command(SUITE.dir, ['rev-parse', 'HEAD',
-                                            os.path.join('graalpython', 'lib-graalpython', 'patches')])    
-    return rev_capi[:5] + rev_patches[:5]
-    
+                                            os.path.join('graalpython', 'lib-graalpython', 'patches')])
+    return 'dev' + rev_capi[:5] + rev_patches[:5]
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
@@ -1734,7 +1735,7 @@ mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
 mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
-mx_subst.results_substitutions.register_with_arg('capi_rev', capi_rev)
+mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 
 mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
