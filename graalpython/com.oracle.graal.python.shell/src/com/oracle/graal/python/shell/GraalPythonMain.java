@@ -132,8 +132,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         args.addAll(originalArgs);
         if (!originalArgs.contains("-o")) {
-            args.add("-o");
-            args.add(Paths.get(exe).getParent().resolveSibling("modules").toString());
+            var binPath = Paths.get(exe).getParent();
+            if (binPath != null) {
+                args.add("-o");
+                args.add(binPath.resolveSibling("modules").toString());
+            }
         }
         if (!originalArgs.contains("-v")) {
             try (var tmpEngine = Engine.newBuilder().useSystemProperties(false).//
