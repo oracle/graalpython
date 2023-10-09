@@ -12,7 +12,7 @@ suite = {
     "version": "24.0.0",
     "graalpython:pythonVersion": "3.10.8",
     "release": False,
-    "groupId": "org.graalvm.graalpython",
+    "groupId": "org.graalvm.python",
     "url": "http://www.graalvm.org/",
 
     "developer": {
@@ -516,7 +516,6 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
-            "testProject": True,
         },
 
         "python-venvlauncher": {
@@ -1104,18 +1103,24 @@ suite = {
         },
 
         "GRAALPYTHON_TCK": {
-            "description": "unit tests",
             "dependencies": [
                 "com.oracle.graal.python.tck",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
+                "GRAALPYTHON",
                 # We run the TCK with Python home served from resources
                 "GRAALPYTHON_RESOURCES",
             ],
-            "testDistribution": True,
-            "maven": False,
+            "description" : "Truffle TCK provider for Python language.",
+            "license": "UPL",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-truffle-tck",
+                "tag": ["default", "public"],
+            },
+            "noMavenJavadoc": True,
         },
 
         # Now come the different resource projects. These all end up bundled
