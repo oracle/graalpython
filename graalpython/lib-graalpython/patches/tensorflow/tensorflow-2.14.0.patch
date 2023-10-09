@@ -1,23 +1,21 @@
-From 1abbffd2c9892a1f9d0b12b48345a3bf256fdbe8 Mon Sep 17 00:00:00 2001
+From 3e40415231d65c1dc8017f99790898523b659501 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
-Date: Mon, 2 Oct 2023 01:09:28 +0300
+Date: Sun, 8 Oct 2023 15:53:04 +0300
 Subject: [PATCH] patch tensorflow 2.14.0
 
 ---
- .tf_configure.bazelrc                         |   8 +
  WORKSPACE                                     |   7 +-
- graalpy_build.py                              | 252 ++++++++++++++++++
- graalpy_patch.py                              | 120 +++++++++
- pyproject.toml                                |  49 ++++
- requirements_lock_3_10.txt                    |   6 +-
+ graalpy_build.py                              | 253 ++++++++++++++++++
+ graalpy_patch.py                              | 105 ++++++++
+ pyproject.toml                                |  50 ++++
  rules_python-0.23.1.patch                     | 182 +++++++++++++
  .../python/client/tf_session_wrapper.cc       |   4 +-
  tensorflow/python/eager/pywrap_tfe_src.cc     |  11 +-
  tensorflow/python/framework/dtypes.py         |   2 +-
  .../python_api_dispatcher_wrapper.cc          |   2 +-
- tensorflow/python/keras/engine/training.py    |   1 +
- tensorflow/python/keras/saving/hdf5_format.py |   1 +
- tensorflow/python/keras/saving/save.py        |   1 +
+ tensorflow/python/keras/engine/training.py    |   2 +-
+ tensorflow/python/keras/saving/hdf5_format.py |   2 +-
+ tensorflow/python/keras/saving/save.py        |   2 +-
  .../tools/api/generator/create_python_api.py  |   2 +-
  tensorflow/python/util/module_wrapper.py      |  55 +++-
  tensorflow/tools/git/gen_git_source.py        |   3 +-
@@ -25,33 +23,16 @@ Subject: [PATCH] patch tensorflow 2.14.0
  .../devel.usertools/squash_testlogs.py        |  13 +-
  .../tools/toolchains/python/python_repo.bzl   |   7 +-
  tensorflow/workspace2.bzl                     |   6 +-
- tf_build_backend.py                           |  55 ++++
+ tf_build_backend.py                           |  57 ++++
  third_party/protobuf/protobuf.patch           |   2 +-
  third_party/repo.bzl                          |   8 +-
- tox.ini                                       |  10 +
- 25 files changed, 782 insertions(+), 27 deletions(-)
- create mode 100644 .tf_configure.bazelrc
+ 22 files changed, 749 insertions(+), 28 deletions(-)
  create mode 100644 graalpy_build.py
  create mode 100644 graalpy_patch.py
  create mode 100644 pyproject.toml
  create mode 100644 rules_python-0.23.1.patch
  create mode 100644 tf_build_backend.py
- create mode 100644 tox.ini
 
-diff --git a/.tf_configure.bazelrc b/.tf_configure.bazelrc
-new file mode 100644
-index 00000000000..b2add9620ca
---- /dev/null
-+++ b/.tf_configure.bazelrc
-@@ -0,0 +1,8 @@
-+build:opt --copt=-Wno-sign-compare
-+build:opt --host_copt=-Wno-sign-compare
-+test --flaky_test_attempts=3
-+test --test_size_filters=small,medium
-+test:v1 --test_tag_filters=-benchmark-test,-no_oss,-gpu,-oss_serial
-+test:v1 --build_tag_filters=-benchmark-test,-no_oss,-gpu
-+test:v2 --test_tag_filters=-benchmark-test,-no_oss,-gpu,-oss_serial,-v1only
-+test:v2 --build_tag_filters=-benchmark-test,-no_oss,-gpu,-v1only
 diff --git a/WORKSPACE b/WORKSPACE
 index fb3af8a2bea..44ddffba73c 100644
 --- a/WORKSPACE
@@ -86,10 +67,10 @@ index fb3af8a2bea..44ddffba73c 100644
  load("@pypi//:requirements.bzl", "install_deps")
 diff --git a/graalpy_build.py b/graalpy_build.py
 new file mode 100644
-index 00000000000..b98870582c4
+index 00000000000..3da98203ff8
 --- /dev/null
 +++ b/graalpy_build.py
-@@ -0,0 +1,252 @@
+@@ -0,0 +1,253 @@
 +
 +import subprocess
 +import os
@@ -281,6 +262,7 @@ index 00000000000..b98870582c4
 +    if os.environ.get('PYTHONNOUSERSITE', '0') == '1':
 +        add_isolated_sites(os.environ, lib_dirs)
 +
++    # Site-packages are mostly needed for `rules_python`'s builtin packages
 +    VENV_SITE_PACKAGES = os.pathsep.join(lib_dirs)
 +
 +    if not args.no_all:
@@ -345,10 +327,10 @@ index 00000000000..b98870582c4
 \ No newline at end of file
 diff --git a/graalpy_patch.py b/graalpy_patch.py
 new file mode 100644
-index 00000000000..a4330468cc8
+index 00000000000..728d8a8863a
 --- /dev/null
 +++ b/graalpy_patch.py
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,105 @@
 +try:
 +    import __graalpython__
 +except:
@@ -357,21 +339,10 @@ index 00000000000..a4330468cc8
 +
 +
 +import sys
++import os
 +
 +if sys.prefix == sys.base_prefix:
 +    raise SystemError('Running in virtualenv is required!')
-+
-+
-+# ATTENTION: GraalPy uses existence of this module to verify that it is
-+# running a patched pip in pip_hook.py
-+import os
-+import re
-+from pathlib import Path
-+from urllib.parse import urlparse
-+
-+from pip._vendor import tomli
-+from pip._vendor.packaging.specifiers import SpecifierSet
-+from pip._vendor.packaging.version import VERSION_PATTERN
 +
 +PATCHES_BASE_DIR = os.path.join(__graalpython__.core_home, "patches")
 +
@@ -456,26 +427,23 @@ index 00000000000..a4330468cc8
 +    import autopatch_capi
 +    autopatch_capi.auto_patch_tree(location)
 +
-+def print_entry(strip_prefix):
-+    print('"%s": ""' % strip_prefix)
-+
-+
++# There are couple of parts that have been taken from the pip installer patch
 +def main():
 +    target_dir = sys.argv[1]
 +    target_strip_prefix = sys.argv[2]
 +    find_patch(target_dir, target_strip_prefix)
 +    autopatch(target_dir)
-+    # print_entry(target_strip_prefix)
 +
 +if __name__ == '__main__':
 +  main()
 diff --git a/pyproject.toml b/pyproject.toml
 new file mode 100644
-index 00000000000..0a08c9d062a
+index 00000000000..841b726f3fe
 --- /dev/null
 +++ b/pyproject.toml
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,50 @@
 +[build-system]
++# These requirements are needed to cached wheels during bazel build.
 +requires = [
 +    "setuptools",
 +    "packaging",
@@ -524,30 +492,6 @@ index 00000000000..0a08c9d062a
 +]
 +build-backend = "tf_build_backend"
 +backend-path = ["."]
-diff --git a/requirements_lock_3_10.txt b/requirements_lock_3_10.txt
-index 55b56f40b32..d2d3303a33d 100644
---- a/requirements_lock_3_10.txt
-+++ b/requirements_lock_3_10.txt
-@@ -97,7 +97,8 @@ google-auth-oauthlib==1.0.0 \
-     --hash=sha256:95880ca704928c300f48194d1770cf5b1462835b6e49db61445a520f793fd5fb \
-     --hash=sha256:e375064964820b47221a7e1b7ee1fd77051b6323c3f9e3e19785f78ab67ecfc5
-     # via tensorboard
--grpcio==1.57.0 \
-+grpcio==1.56.2 \
-+    --hash=sha256:0ff789ae7d8ddd76d2ac02e7d13bfef6fc4928ac01e1dcaa182be51b6bcc0aaa \
-     --hash=sha256:00258cbe3f5188629828363ae8ff78477ce976a6f63fb2bb5e90088396faa82e \
-     --hash=sha256:092fa155b945015754bdf988be47793c377b52b88d546e45c6a9f9579ac7f7b6 \
-     --hash=sha256:0f80bf37f09e1caba6a8063e56e2b87fa335add314cf2b78ebf7cb45aa7e3d06 \
-@@ -146,7 +147,8 @@ grpcio==1.57.0 \
-     # via
-     #   -r ./requirements.in
-     #   tensorboard
--h5py==3.9.0 \
-+h5py==2.10.0 \
-+    --hash=sha256:84412798925dc870ffd7107f045d7659e60f5d46d1c70c700375248bf6bf512d \
-     --hash=sha256:12aa556d540f11a2cae53ea7cfb94017353bd271fb3962e1296b342f6550d1b8 \
-     --hash=sha256:23e74b878bbe1653ab34ca49b83cac85529cd0b36b9d625516c5830cc5ca2eac \
-     --hash=sha256:36408f8c62f50007d14e000f9f3acf77e103b9e932c114cbe52a3089e50ebf94 \
 diff --git a/rules_python-0.23.1.patch b/rules_python-0.23.1.patch
 new file mode 100644
 index 00000000000..cb8c98b661b
@@ -821,41 +765,44 @@ index d3f688578a7..071fadb1e45 100644
          throw py::type_error("`*py_classes` must be a tuple of types.");
        }
 diff --git a/tensorflow/python/keras/engine/training.py b/tensorflow/python/keras/engine/training.py
-index 1e94ca45aef..004c9ad5b49 100644
+index 1e94ca45aef..8adcb4f99c0 100644
 --- a/tensorflow/python/keras/engine/training.py
 +++ b/tensorflow/python/keras/engine/training.py
-@@ -83,6 +83,7 @@ from tensorflow.tools.docs import doc_controls
+@@ -83,7 +83,7 @@ from tensorflow.tools.docs import doc_controls
  
  # pylint: disable=g-import-not-at-top
  try:
-+  raise ImportError
-   import h5py
+-  import h5py
++  raise ImportError; import h5py
  except ImportError:
    h5py = None
+ # pylint: enable=g-import-not-at-top
 diff --git a/tensorflow/python/keras/saving/hdf5_format.py b/tensorflow/python/keras/saving/hdf5_format.py
-index 1f6bbc43320..a0085d001cc 100644
+index 1f6bbc43320..61edd5143b9 100644
 --- a/tensorflow/python/keras/saving/hdf5_format.py
 +++ b/tensorflow/python/keras/saving/hdf5_format.py
-@@ -34,6 +34,7 @@ from tensorflow.python.platform import tf_logging as logging
+@@ -34,7 +34,7 @@ from tensorflow.python.platform import tf_logging as logging
  
  # pylint: disable=g-import-not-at-top
  try:
-+  raise ImportError
-   import h5py
+-  import h5py
++  raise ImportError; import h5py
    HDF5_OBJECT_HEADER_LIMIT = 64512
  except ImportError:
+   h5py = None
 diff --git a/tensorflow/python/keras/saving/save.py b/tensorflow/python/keras/saving/save.py
-index eee859233e5..4bdddc307a5 100644
+index eee859233e5..eee6eb3093c 100644
 --- a/tensorflow/python/keras/saving/save.py
 +++ b/tensorflow/python/keras/saving/save.py
-@@ -25,6 +25,7 @@ from tensorflow.python.keras.utils.io_utils import path_to_string
+@@ -25,7 +25,7 @@ from tensorflow.python.keras.utils.io_utils import path_to_string
  
  # pylint: disable=g-import-not-at-top
  try:
-+  raise ImportError
-   import h5py
+-  import h5py
++  raise ImportError; import h5py
  except ImportError:
    h5py = None
+ # pylint: enable=g-import-not-at-top
 diff --git a/tensorflow/python/tools/api/generator/create_python_api.py b/tensorflow/python/tools/api/generator/create_python_api.py
 index 742cc879d0e..cdc65b36473 100644
 --- a/tensorflow/python/tools/api/generator/create_python_api.py
@@ -1049,10 +996,10 @@ index 7e9faa558a4..d4ace12a6a6 100644
      # LINT.IfChange
 diff --git a/tf_build_backend.py b/tf_build_backend.py
 new file mode 100644
-index 00000000000..57118801ae9
+index 00000000000..7da2ad7c9ee
 --- /dev/null
 +++ b/tf_build_backend.py
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,57 @@
 +import os
 +import re
 +import sys
@@ -1069,6 +1016,8 @@ index 00000000000..57118801ae9
 +SUB_VENV_PYTHON = SUB_VENV_BIN / 'python3'
 +
 +def setup_venv():
++    # During the installation process `pip` isn't available to use,
++    # So, we create a new environment to have access for fresh `pip` during bazel build.
 +    if not os.path.isdir(SUB_VENV_PATH):
 +        venv.create(SUB_VENV_PATH, with_pip=True)
 +    print('Using virtual env in:\n\t' + str(SUB_VENV_PATH))
@@ -1155,22 +1104,6 @@ index 226f8799392..6d7b830eb2b 100644
          "mirror.tensorflow.org",
          "mirror.bazel.build",
          "storage.googleapis.com",
-diff --git a/tox.ini b/tox.ini
-new file mode 100644
-index 00000000000..cb73413d28d
---- /dev/null
-+++ b/tox.ini
-@@ -0,0 +1,10 @@
-+[tox]
-+isolated_build = true
-+[testenv]
-+commands = 
-+    graalpylibtest: python3 graalpy_build.py --j 16 --max-memory 32 --test
-+    !graalpylibtest: bazel test -j 16 --config=opt -k //tensorflow/python/... 
-+deps = pytest
-+	mock
-+	!graalpylibtest: -rtensorflow/tools/ci_build/release/requirements_ubuntu.txt
-+	!graalpylibtest: -rtensorflow/tools/ci_build/release/requirements_common.txt
 -- 
 2.25.1
 
