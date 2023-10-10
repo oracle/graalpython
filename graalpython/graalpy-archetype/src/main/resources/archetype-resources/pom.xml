@@ -27,11 +27,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.graalvm.sdk</groupId>
-      <artifactId>graal-sdk</artifactId>
-      <version>${symbol_dollar}{graalpy.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>${symbol_dollar}{graalpy.edition}</artifactId>
       <version>${symbol_dollar}{graalpy.version}</version>
