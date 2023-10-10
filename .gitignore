@@ -26,6 +26,7 @@ mx.graalpython/eclipse-launches
 !**/META-INF/**/*.json
 !graalpython/lib-graalpython/modules/standalone/shared/native-image-resources.json
 !graalpython/lib-graalpython/modules/standalone/shared/native-image-proxy-configuration.json
+!graalpython/graalpy-archetype/src/main/resources/archetype-resources/native-image-proxy-configuration.json
 language
 *.bc
 *.iml
