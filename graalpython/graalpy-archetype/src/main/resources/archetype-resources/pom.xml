@@ -10,8 +10,10 @@
 
 #set( $symbol_dollar = '$' )
   <properties>
-    <graalpy.version>23.1.0</graalpy.version>
-    <graalpy.edition>python</graalpy.edition>
+    <!-- XXX what version? -->
+    <graalpy.version>24.0.0-dev</graalpy.version>
+    <!-- XXX python (enterprise) vs python-community -->
+    <graalpy.edition>python-community</graalpy.edition>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -54,7 +56,8 @@
           <execution>
             <configuration>
               <packages>
-                <package>termcolor</package>
+                <!-- specify python packages as if used with pip -->
+                <package>termcolor==2.2</package>
               </packages>
             </configuration>
             <goals>
