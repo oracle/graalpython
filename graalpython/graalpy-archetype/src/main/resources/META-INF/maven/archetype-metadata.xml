@@ -3,7 +3,7 @@
     xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <fileSets>
-    <fileSet filtered="true" encoding="UTF-8">
+    <fileSet filtered="true" encoding="UTF-8" packaged="true">
       <directory>src/main/java</directory>
       <includes>
         <include>**/*.java</include>
