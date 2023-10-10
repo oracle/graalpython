@@ -89,6 +89,7 @@
             </executions>
             <configuration>
               <fallback>false</fallback>
+              <mainClass>${package}.GraalPy</mainClass>
             </configuration>
           </plugin>
         </plugins>
