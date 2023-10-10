@@ -12,7 +12,7 @@
     <fileSet filtered="true" encoding="UTF-8">
       <directory>src/main/resources</directory>
       <includes>
-        <include>**/*.properties</include>
+        <include>**/*</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">
