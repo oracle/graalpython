@@ -260,38 +260,26 @@ class PolyglotJavaPython(AbstractStandalone):
     def create(self):
         self.check_output_directory()
 
-        target_dir = self.parsed_args.output_directory
-
         if self.parsed_args.verbose:
             print(f"Creating polyglot java python application in directory {target_dir}")
 
-        # java sources
-        shutil.copytree(os.path.join(os.path.dirname(__file__), "app"), os.path.join(target_dir))
+        cmd = ["mvn", "archetype:generate", "-DarchetypeGroupId=org.graalvm.python", "-DarchetypeArtifactId=graalpy-archetype"]
+        cmd += [f"-DgroupId={self.parsed_args.group_id}"]
+        cmd += [f"-DartifactId={self.parsed_args.artifact_id}"]
+        cmd += ["-Dversion=1.0-SNAPSHOT" if self.parsed_args.version else f"-Dversion={self.parsed_args.version}"]
+        if self.parsed_args.output_directory:
+            cmd += [f"-DoutputDirectory={self.parsed_args.output_directory}"]
 
-        # create launcher scripts to run graalpy
-        posix_launcher = os.path.join(target_dir, "graalpy.sh")
-        with open(posix_launcher, "w") as f:
-            f.write(POSIX_LAUNCHER_SCRIPT)
-        os.chmod(posix_launcher, os.stat(posix_launcher).st_mode | stat.S_IEXEC)
-        with open(os.path.join(target_dir, "graalpy.cmd"), "w") as f:
-            f.write(WIN32_LAUNCHER_SCRIPT)
+        if self.parsed_args.verbose:
+            p = subprocess.run(cmd)
+        else:
+            p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        virtual_filesystem_java_file = os.path.join(target_dir, MVN_CODE_PREFIX, "com", "mycompany", "javapython", VFS_JAVA_FILE)
-        self.create_virtual_filesystem_file(virtual_filesystem_java_file, POLYGLOT_APP_JAVA_PKG)
-
-        launcher_java_file = os.path.join(target_dir, MVN_CODE_PREFIX, "com", "mycompany", "javapython", POLYGLOT_APP_LAUNCHER_FILE)
-        self.create_launcher_file(get_file(POLYGLOT_APP_LAUNCHER_TEMPLATE_PATH), launcher_java_file)
-
-        # std lib
-        vfs_home = os.path.join(target_dir, MVN_RESOURCE_PREFIX, VFS_PREFIX, VFS_HOME)
-        os.makedirs(vfs_home, exist_ok=True)
-        shutil.copytree(__graalpython__.capi_home, os.path.join(vfs_home, "lib-graalpython"))
-        shutil.copytree(__graalpython__.stdlib_home, os.path.join(vfs_home, "lib-python", "3"))
-
-        # misc
-        shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), target_dir)
-        shutil.copy(get_file(NATIVE_IMAGE_PROXY_CONF_PATH), target_dir)
-        self.create_pom_file(get_file(POLYGLOT_APP_POM_TEMPLATE_PATH), os.path.join(target_dir, MVN_POM_FILE))
+        if p.returncode != 0:
+            if not self.parsed_args.verbose:
+                print(p.stdout.decode())
+                print(p.stderr.decode())
+            exit(1)
 
 class Standalone(AbstractStandalone):
     def __init__(self, parsed_args):
@@ -612,14 +600,33 @@ def main(args):
 
     parser_app = subparsers.add_parser(
         CMD_JAVA_PYTHON_APP,
-        help="Create a skeleton Java project. This gives the most flexibility, as the project can be used to build both standalone Jar files or native binaries using Maven.",
+        help="Create a polyglot Java-Python maven project skeleton preconfigured to build native binaries.",
+    )    
+    
+    parser_app.add_argument(
+        "-g",
+        "--group-id",
+        help="The created maven project group id.",
+        required=True,
     )
-
+    
+    parser_app.add_argument(
+        "-a",
+        "--artifact-id",
+        help="The created maven project artifact id.",
+        required=True,
+    )
+    
+    parser_app.add_argument(
+        "-v",
+        "--version",
+        help="The created maven project version.",
+    )
+    
     parser_app.add_argument(
         "-o",
         "--output-directory",
-        help="The directory to write the Java project to.",
-        required=True,
+        help="The directory to write the maven project to.",
     )
 
     parsed_args = parser.parse_args(args)
