@@ -1,0 +1,123 @@
+diff --git a/bazel/ray.bzl b/bazel/ray.bzl
+index b790e63d79..9f46ae31fb 100644
+--- a/bazel/ray.bzl
++++ b/bazel/ray.bzl
+@@ -29,6 +29,8 @@ PYX_COPTS = select({
+     "//conditions:default": [
+         # Ignore this warning since CPython and Cython have issue removing deprecated tp_print on MacOS
+         "-Wno-deprecated-declarations",
++        "-Wno-unused-variable",
++        "-Wno-unused-function",
+     ],
+ }) + select({
+     "@bazel_tools//src/conditions:windows": [
+diff --git a/bazel/ray_deps_setup.bzl b/bazel/ray_deps_setup.bzl
+index 916ca48834..aefa63672d 100644
+--- a/bazel/ray_deps_setup.bzl
++++ b/bazel/ray_deps_setup.bzl
+@@ -196,6 +196,10 @@ def ray_deps_setup():
+         build_file = True,
+         url = "https://github.com/cython/cython/archive/c48361d0a0969206e227ec016f654c9d941c2b69.tar.gz",
+         sha256 = "37c466fea398da9785bc37fe16f1455d2645d21a72e402103991d9e2fa1c6ff3",
++        patch_cmds = [
++            'graalpy -m autopatch_capi .',
++            '''patch -p1 < "$(graalpy -c 'print(__graalpython__.core_home)')/patches/Cython/Cython-0.29.32.patch"''',
++        ],
+     )
+ 
+     auto_http_archive(
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000..b49062688b
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,4 @@
++[build-system]
++requires = ["setuptools >= 40.6.0", "wheel"]
++build-backend = "ray_build_backend"
++backend-path = ["."]
+diff --git a/python/ray/cloudpickle/cloudpickle.py b/python/ray/cloudpickle/cloudpickle.py
+index 9c67ec64c8..12fda5a946 100644
+--- a/python/ray/cloudpickle/cloudpickle.py
++++ b/python/ray/cloudpickle/cloudpickle.py
+@@ -521,10 +521,8 @@ def _walk_global_ops(code):
+     """
+     Yield referenced name for all global-referencing instructions in *code*.
+     """
+-    for instr in dis.get_instructions(code):
+-        op = instr.opcode
+-        if op in GLOBAL_OPS:
+-            yield instr.argval
++    # GraalPy change: we don't support dis
++    yield from code.co_names
+ 
+ 
+ def _extract_class_dict(cls):
+diff --git a/python/ray/cloudpickle/cloudpickle_fast.py b/python/ray/cloudpickle/cloudpickle_fast.py
+index b3c20b9e4e..4e41ccc04c 100644
+--- a/python/ray/cloudpickle/cloudpickle_fast.py
++++ b/python/ray/cloudpickle/cloudpickle_fast.py
+@@ -766,7 +766,7 @@ class CloudPickler(Pickler):
+             self.globals_ref = {}
+             assert hasattr(self, "proto")
+ 
+-    if pickle.HIGHEST_PROTOCOL >= 5 and not PYPY:
++    if pickle.HIGHEST_PROTOCOL >= 5 and not hasattr(Pickler, 'dispatch'):
+         # Pickler is the C implementation of the CPython pickler and therefore
+         # we rely on reduce_override method to customize the pickler behavior.
+ 
+diff --git a/python/ray/cloudpickle/compat.py b/python/ray/cloudpickle/compat.py
+index bed27ab968..d5b7ac3f0f 100644
+--- a/python/ray/cloudpickle/compat.py
++++ b/python/ray/cloudpickle/compat.py
+@@ -24,4 +24,4 @@ elif sys.version_info < (3, 8):
+         from pickle import _Pickler as Pickler  # noqa: F401
+ else:
+     import pickle  # noqa: F401
+-    from _pickle import Pickler  # noqa: F401
++    from pickle import Pickler  # noqa: F401
+diff --git a/ray_build_backend.py b/ray_build_backend.py
+new file mode 100644
+index 0000000000..0c320607c8
+--- /dev/null
++++ b/ray_build_backend.py
+@@ -0,0 +1,39 @@
++# We need a whole custom build backend just because the setup.py is in a subdir
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import tempfile
++import shutil
++from pathlib import Path
++
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = 'ray-2.3.0'
++    srcdir = Path(__file__).parent
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|bazel-|venv|[^-/]+-venv|dist)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    wheel_directory = Path(wheel_directory).absolute()
++    os.chdir('python')
++    try:
++        subprocess.run([sys.executable, 'setup.py', 'bdist_wheel'], check=True)
++        wheels = list(Path('dist').glob('*.whl'))
++        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++        wheel = wheels[0]
++        shutil.copyfile(wheel, wheel_directory / wheel.name)
++        return str(wheel.name)
++    finally:
++        os.chdir('..')

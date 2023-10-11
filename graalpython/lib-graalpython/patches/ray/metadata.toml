@@ -1,0 +1,7 @@
+[[rules]]
+version = '== 2.3.0'
+patch = 'ray-2.3.0.patch'
+
+[[add-sources]]
+version = '2.3.0'
+url = 'https://github.com/ray-project/ray/releases/download/ray-2.3.0/ray-2.3.0.tar.gz'
