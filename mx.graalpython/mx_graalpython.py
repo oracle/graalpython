@@ -2002,6 +2002,8 @@ def _python_checkpatchfiles():
             'packaging.patch',
             # Empty license field. It's ASL 2.0
             'tokenizers-0.13.3.patch',
+            # Empty license field. It's Apache 2
+            'safetensors-0.3.3.patch',
         }
         allowed_licenses = [
             "MIT",
