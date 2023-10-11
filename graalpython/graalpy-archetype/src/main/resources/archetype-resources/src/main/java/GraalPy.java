@@ -67,7 +67,7 @@ public class GraalPy {
             // setting false will deny all privileges unless configured below
             .allowAllAccess(false)
             // allows python to access the java language
-            .allowHostAccess(true)                
+            .allowHostAccess(true)
             // allow access to the virtual and the host filesystem, as well as sockets
             .allowIO(IOAccess.newBuilder()
                             .allowHostSocketAccess(true)
@@ -100,24 +100,21 @@ public class GraalPy {
             // Do not warn if running without JIT. This can be desirable for short running scripts
             // to reduce memory footprint.
             .option("engine.WarnInterpreterOnly", "false")
-            // Used by the launcher to pass the path to be executed.
-            // VirtualFilesystem will take care, that at runtime this will be
-            // the python sources stored in src/main/resources/vfs/proj
-            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))                
+            // Set python path to point to sources stored in src/main/resources/vfs/proj
+            .option("python.PythonPath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
             .build();
         return context;
     }
 
     public static void main(String[] args) {
         try (Context context = getContext()) {
-            
             Source source;
             try {
-                source = Source.newBuilder(PYTHON, "__graalpython__.run_path()", "<internal>").internal(true).build();
+                source = Source.newBuilder(PYTHON, "import hello", "<internal>").internal(true).build();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            
+
             // eval the snipet __graalpython__.run_path() which executes what the option python.InputFilePath points to
             context.eval(source);
 
