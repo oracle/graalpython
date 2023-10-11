@@ -15,11 +15,5 @@
         <include>**/*</include>
       </includes>
     </fileSet>
-    <fileSet filtered="true" encoding="UTF-8">
-      <directory/>
-      <includes>
-        <include>native-image-proxy-configuration.json</include>
-      </includes>
-    </fileSet>
   </fileSets>
 </archetype-descriptor>
