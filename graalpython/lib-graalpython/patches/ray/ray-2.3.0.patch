@@ -1,5 +1,5 @@
 diff --git a/bazel/ray.bzl b/bazel/ray.bzl
-index b790e63d79..9f46ae31fb 100644
+index b790e63..9f46ae3 100644
 --- a/bazel/ray.bzl
 +++ b/bazel/ray.bzl
 @@ -29,6 +29,8 @@ PYX_COPTS = select({
@@ -12,10 +12,10 @@ index b790e63d79..9f46ae31fb 100644
  }) + select({
      "@bazel_tools//src/conditions:windows": [
 diff --git a/bazel/ray_deps_setup.bzl b/bazel/ray_deps_setup.bzl
-index 916ca48834..aefa63672d 100644
+index 63f67a9..e870de8 100644
 --- a/bazel/ray_deps_setup.bzl
 +++ b/bazel/ray_deps_setup.bzl
-@@ -196,6 +196,10 @@ def ray_deps_setup():
+@@ -190,6 +190,10 @@ def ray_deps_setup():
          build_file = True,
          url = "https://github.com/cython/cython/archive/c48361d0a0969206e227ec016f654c9d941c2b69.tar.gz",
          sha256 = "37c466fea398da9785bc37fe16f1455d2645d21a72e402103991d9e2fa1c6ff3",
@@ -28,16 +28,29 @@ index 916ca48834..aefa63672d 100644
      auto_http_archive(
 diff --git a/pyproject.toml b/pyproject.toml
 new file mode 100644
-index 0000000000..b49062688b
+index 0000000..757a6dd
 --- /dev/null
 +++ b/pyproject.toml
 @@ -0,0 +1,4 @@
 +[build-system]
-+requires = ["setuptools >= 40.6.0", "wheel"]
++requires = ["setuptools >= 40.6.0", "wheel", "pip"]
 +build-backend = "ray_build_backend"
 +backend-path = ["."]
+diff --git a/python/ray/__init__.py b/python/ray/__init__.py
+index 68a7a61..45f6c77 100644
+--- a/python/ray/__init__.py
++++ b/python/ray/__init__.py
+@@ -104,7 +104,7 @@ del _configure_system
+ 
+ # Replaced with the current commit when building the wheels.
+ __commit__ = "{{RAY_COMMIT_SHA}}"
+-__version__ = "3.0.0.dev0"
++__version__ = "2.3.0"
+ 
+ import ray._raylet  # noqa: E402
+ 
 diff --git a/python/ray/cloudpickle/cloudpickle.py b/python/ray/cloudpickle/cloudpickle.py
-index 9c67ec64c8..12fda5a946 100644
+index 9c67ec6..12fda5a 100644
 --- a/python/ray/cloudpickle/cloudpickle.py
 +++ b/python/ray/cloudpickle/cloudpickle.py
 @@ -521,10 +521,8 @@ def _walk_global_ops(code):
@@ -54,7 +67,7 @@ index 9c67ec64c8..12fda5a946 100644
  
  def _extract_class_dict(cls):
 diff --git a/python/ray/cloudpickle/cloudpickle_fast.py b/python/ray/cloudpickle/cloudpickle_fast.py
-index b3c20b9e4e..4e41ccc04c 100644
+index b3c20b9..4e41ccc 100644
 --- a/python/ray/cloudpickle/cloudpickle_fast.py
 +++ b/python/ray/cloudpickle/cloudpickle_fast.py
 @@ -766,7 +766,7 @@ class CloudPickler(Pickler):
@@ -67,7 +80,7 @@ index b3c20b9e4e..4e41ccc04c 100644
          # we rely on reduce_override method to customize the pickler behavior.
  
 diff --git a/python/ray/cloudpickle/compat.py b/python/ray/cloudpickle/compat.py
-index bed27ab968..d5b7ac3f0f 100644
+index bed27ab..d5b7ac3 100644
 --- a/python/ray/cloudpickle/compat.py
 +++ b/python/ray/cloudpickle/compat.py
 @@ -24,4 +24,4 @@ elif sys.version_info < (3, 8):
@@ -78,7 +91,7 @@ index bed27ab968..d5b7ac3f0f 100644
 +    from pickle import Pickler  # noqa: F401
 diff --git a/ray_build_backend.py b/ray_build_backend.py
 new file mode 100644
-index 0000000000..0c320607c8
+index 0000000..0c32060
 --- /dev/null
 +++ b/ray_build_backend.py
 @@ -0,0 +1,39 @@
