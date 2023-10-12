@@ -154,7 +154,7 @@ def create_native_exec(parsed_args):
     launcher_file = os.path.join(target_dir, MODULE_NAME, NATIVE_EXEC_LAUNCHER_FILE)
     
     try:
-        ni, jc = get_tools(target_dir, modules_path, parsed_args)
+        ni, jc = get_tools(target_dir, parsed_args)
         download_python(modules_path, parsed_args)
         create_target_directory(target_dir, launcher_file, parsed_args)
         index_vfs(target_dir)
@@ -319,14 +319,14 @@ def get_graalvm_url():
 
     return f"{GRAALVM_URL_BASE}{major_version}/archive/graalvm-jdk-{jdk_version}_{system}-{machine}_bin.{sufix}"
 
-def get_tools(target_dir, modules_path, parsed_args):
+def get_tools(target_dir, parsed_args):
     if os.getenv("JAVA_HOME"):
         graalvm_home = os.getenv("JAVA_HOME")
     else:
-        modules_path = os.path.join(target_dir, "lib")
+        vm_path = os.path.join(target_dir, "vm")
         graalvm_url = get_graalvm_url()
-        os.makedirs(modules_path, exist_ok=True)
-        graalvm_file = os.path.join(modules_path, graalvm_url[graalvm_url.rindex("/") + 1:])
+        os.makedirs(vm_path, exist_ok=True)
+        graalvm_file = os.path.join(vm_path, graalvm_url[graalvm_url.rindex("/") + 1:])
         if parsed_args.verbose:
             print(f"downloading {graalvm_url} to {graalvm_file}")
         try:
@@ -337,38 +337,38 @@ def get_tools(target_dir, modules_path, parsed_args):
         if platform.system() == 'Darwin' or platform.system() == 'Linux':
             with tarfile.open(graalvm_file) as tar_file:
                 first_member = tar_file.next().path
-                tar_file.extractall(modules_path)
+                tar_file.extractall(vm_path)
         else:
             with zipfile.ZipFile(graalvm_file) as zip_file:
                 first_member = zip_file.namelist()[0]
-                zip_file.extractall(modules_path)
+                zip_file.extractall(vm_path)
 
-        graalvm_dir = os.path.join(modules_path, first_member[:first_member.index("/")])
+        graalvm_dir = os.path.join(vm_path, first_member[:first_member.index("/")])
         if platform.system() == 'Darwin':
             graalvm_home = os.path.join(graalvm_dir, "Contents", "Home")
         else:
             graalvm_home = graalvm_dir
 
-    ni = get_executable(os.path.join(graalvm_home, "bin", "native-image"))
-    jc = get_executable(os.path.join(graalvm_home, "bin", "javac"))
-    if parsed_args.verbose:
-        print(f"using GRAALVM: {graalvm_home}")
-        print(f"  native_image: {ni}")
-        print(f"  javac: {jc}")
-
-    if not ni or not os.path.exists(ni):
-        if not parsed_args.verbose:
+        ni = get_executable(os.path.join(graalvm_home, "bin", "native-image"))
+        jc = get_executable(os.path.join(graalvm_home, "bin", "javac"))
+        if parsed_args.verbose:
             print(f"using GRAALVM: {graalvm_home}")
             print(f"  native_image: {ni}")
             print(f"  javac: {jc}")
-        if os.getenv("JAVA_HOME"):
-            print("If using JAVA_HOME env variable, please point it to a GraalVM installation with native image and javac")
-        else:
-            graalvm_url = get_graalvm_url()
-            print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
-        sys.exit(1)
 
-    return ni, jc
+        if not ni or not os.path.exists(ni):
+            if not parsed_args.verbose:
+                print(f"using GRAALVM: {graalvm_home}")
+                print(f"  native_image: {ni}")
+                print(f"  javac: {jc}")
+            if os.getenv("JAVA_HOME"):
+                print("If using JAVA_HOME env variable, please point it to a GraalVM installation with native image and javac")
+            else:
+                graalvm_url = get_graalvm_url()
+                print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
+            sys.exit(1)
+
+        return ni, jc
 
 def download_python(modules_path, parsed_args):
     graalvm_version = MVN_PYTHON_COMMUNITY_VERSION if MVN_PYTHON_COMMUNITY_VERSION else __graalpython__.get_graalvm_version()
