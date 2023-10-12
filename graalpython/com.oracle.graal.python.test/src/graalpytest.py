@@ -60,6 +60,7 @@ SERIAL_TESTS = [
     'test_imp',
     'test_subprocess',
     'test_posix',
+    'test_os',
     'test_io',
     'test_fileio',
     'test_imaplib',
