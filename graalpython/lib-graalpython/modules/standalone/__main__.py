@@ -60,6 +60,7 @@ import urllib
 import urllib.request
 import tarfile
 import zipfile
+import glob 
 
 assert sys.pycache_prefix is None
 
@@ -88,9 +89,10 @@ MODULE_INFO_PATH = f"shared/{MODULE_INFO_FILE}"
 GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
 MVN_REPOSITORY = os.getenv("MVN_REPOSITORY")
-MVN_PYTHON_ARTEFACT_ID = "python-community"
-MVN_PYTHON_COMMUNITY_VERSION = os.getenv("MVN_GRAALPY_VERSION")
-
+MVN_GRAALPY_ARTEFACT_ID = "python-community"
+MVN_GRAALPY_VERSION = os.getenv("MVN_GRAALPY_VERSION") if os.getenv("MVN_GRAALPY_VERSION") else __graalpython__.get_graalvm_version()
+PYTHON_LANGUAGE_JAR = f"org.graalvm.python-python-language-{MVN_GRAALPY_VERSION}.jar"
+ 
 FILES_LIST_NAME = "fileslist.txt"
 FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
 
@@ -148,15 +150,28 @@ def create_polyglot_app(parsed_args):
             print(p.stderr.decode())
         exit(1)
 
+
+def get_modules_path(target_dir):
+    mp = os.path.join(__graalpython__.home, "graalpy_downloaded_modules")  
+    try:
+        if not os.path.exists(mp):
+            os.mkdir(mp)
+        return mp
+    except Exception as e:
+        pass
+    return os.path.join(target_dir, "modules")
+
 def create_native_exec(parsed_args):
     target_dir = tempfile.mkdtemp()
-    modules_path = os.path.join(target_dir, "modules")
-    launcher_file = os.path.join(target_dir, MODULE_NAME, NATIVE_EXEC_LAUNCHER_FILE)
-    
     try:
         ni, jc = get_tools(target_dir, parsed_args)
+                
+        modules_path = get_modules_path(target_dir)
         download_python(modules_path, parsed_args)
+        
+        launcher_file = os.path.join(target_dir, MODULE_NAME, NATIVE_EXEC_LAUNCHER_FILE)    
         create_target_directory(target_dir, launcher_file, parsed_args)
+        
         index_vfs(target_dir)
         build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args)
     finally:
@@ -349,37 +364,38 @@ def get_tools(target_dir, parsed_args):
         else:
             graalvm_home = graalvm_dir
 
-        ni = get_executable(os.path.join(graalvm_home, "bin", "native-image"))
-        jc = get_executable(os.path.join(graalvm_home, "bin", "javac"))
-        if parsed_args.verbose:
+    ni = get_executable(os.path.join(graalvm_home, "bin", "native-image"))
+    jc = get_executable(os.path.join(graalvm_home, "bin", "javac"))
+    if parsed_args.verbose:
+        print(f"using GRAALVM: {graalvm_home}")
+        print(f"  native_image: {ni}")
+        print(f"  javac: {jc}")
+
+    if not ni or not os.path.exists(ni):
+        if not parsed_args.verbose:
             print(f"using GRAALVM: {graalvm_home}")
             print(f"  native_image: {ni}")
             print(f"  javac: {jc}")
+        if os.getenv("JAVA_HOME"):
+            print("If using JAVA_HOME env variable, please point it to a GraalVM installation with native image and javac")
+        else:
+            graalvm_url = get_graalvm_url()
+            print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
+        sys.exit(1)
 
-        if not ni or not os.path.exists(ni):
-            if not parsed_args.verbose:
-                print(f"using GRAALVM: {graalvm_home}")
-                print(f"  native_image: {ni}")
-                print(f"  javac: {jc}")
-            if os.getenv("JAVA_HOME"):
-                print("If using JAVA_HOME env variable, please point it to a GraalVM installation with native image and javac")
-            else:
-                graalvm_url = get_graalvm_url()
-                print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
-            sys.exit(1)
-
-        return ni, jc
+    return ni, jc
 
 def download_python(modules_path, parsed_args):
-    graalvm_version = MVN_PYTHON_COMMUNITY_VERSION if MVN_PYTHON_COMMUNITY_VERSION else __graalpython__.get_graalvm_version()
-    
+    if os.path.exists((os.path.join(modules_path, PYTHON_LANGUAGE_JAR))):
+        return
+            
     mvnd = get_executable(os.path.join(__graalpython__.home, "libexec", "graalpy-polyglot-get"))
     cmd = [mvnd]
 
     if MVN_REPOSITORY:
         cmd += ["-r", MVN_REPOSITORY]
-    cmd += ["-a", MVN_PYTHON_ARTEFACT_ID]
-    cmd += ["-v", graalvm_version]
+    cmd += ["-a", MVN_GRAALPY_ARTEFACT_ID]
+    cmd += ["-v", MVN_GRAALPY_VERSION]
     cmd += ["-o", modules_path]
     if parsed_args.verbose:
         print(f"downloading graalpython maven artefacts: {' '.join(cmd)}")
