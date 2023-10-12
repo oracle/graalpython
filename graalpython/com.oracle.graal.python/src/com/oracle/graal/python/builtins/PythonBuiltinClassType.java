@@ -81,6 +81,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
@@ -151,6 +152,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PTupleGetter(J_TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDequeIter(J_DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PDequeRevIter(J_DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
+    POrderedDict(J_ORDERED_DICT, "_collections", Flags.PUBLIC_BASE_WDICT, DICT_M_FLAGS),
+    POrderedDictKeys("odict_keys", Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS),
+    POrderedDictValues("odict_values", Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS),
+    POrderedDictItems("odict_items", Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS),
+    POrderedDictIterator("odict_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PComplex("complex", J_BUILTINS, COMPLEX_M_FLAGS),
     PDict("dict", J_BUILTINS, DICT_M_FLAGS),
     PDictItemIterator(J_DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
@@ -807,6 +813,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PThreadInfo.base = PTuple;
         PUnraisableHookArgs.base = PTuple;
         PDefaultDict.base = PDict;
+        POrderedDict.base = PDict;
+        POrderedDictKeys.base = PDictKeysView;
+        POrderedDictValues.base = PDictValuesView;
+        POrderedDictItems.base = PDictItemsView;
 
         PArrayIterator.type = PythonClass;
         PSocket.type = PythonClass;

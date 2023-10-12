@@ -49,10 +49,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -83,7 +81,7 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
 
     public abstract PKeyword[] execute(VirtualFrame frame, Node inliningTarget, Object starargs) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinIter(inliningTarget, starargs, getClassNode, lookupIter)", limit = "1")
+    @Specialization(guards = "hasBuiltinDictIter(inliningTarget, starargs, getClassNode, lookupIter)", limit = "1")
     static PKeyword[] doDict(VirtualFrame frame, Node inliningTarget, PDict starargs,
                     @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
@@ -97,11 +95,6 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
                     @Exclusive @Cached HashingStorageToKeywords convert) throws SameDictKeyException, NonMappingException {
         HashingStorage storage = concatDictToStorageNode.execute(frame, EmptyStorage.INSTANCE, starargs);
         return convert.execute(frame, inliningTarget, storage);
-    }
-
-    /* CPython tests that tp_iter is dict_iter */
-    protected static boolean hasBuiltinIter(Node inliningTarget, PDict dict, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
-        return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(inliningTarget, dict)) == BuiltinMethodDescriptors.DICT_ITER;
     }
 
     @GenerateUncached

@@ -168,6 +168,8 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict;
+import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDictIterator;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -799,6 +801,30 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDict createDict(Object cls) {
         return trace(new PDict(cls, getShape(cls)));
+    }
+
+    public final POrderedDict createOrderedDict(Object cls) {
+        return trace(new POrderedDict(cls, getShape(cls)));
+    }
+
+    public final PDictKeysView createOrderedDictKeys(POrderedDict dict) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictKeys;
+        return trace(new PDictKeysView(cls, cls.getInstanceShape(getLanguage()), dict));
+    }
+
+    public final PDictValuesView createOrderedDictValues(POrderedDict dict) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictValues;
+        return trace(new PDictValuesView(cls, cls.getInstanceShape(getLanguage()), dict));
+    }
+
+    public final PDictItemsView createOrderedDictItems(POrderedDict dict) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictItems;
+        return trace(new PDictItemsView(cls, cls.getInstanceShape(getLanguage()), dict));
+    }
+
+    public POrderedDictIterator createOrderedDictIterator(POrderedDict dict, POrderedDictIterator.IteratorType type, boolean reversed) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictIterator;
+        return trace(new POrderedDictIterator(cls, cls.getInstanceShape(getLanguage()), dict, type, reversed));
     }
 
     @SuppressWarnings("unchecked")

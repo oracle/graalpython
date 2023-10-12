@@ -860,11 +860,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDict)
     @GenerateNodeFactory
     public abstract static class DictionaryNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isBuiltinDict(cls)")
         @SuppressWarnings("unused")
-        public PDict dictEmpty(Object cls, Object[] args, PKeyword[] keywordArgs,
-                        @Cached PythonObjectFactory factory) {
+        static PDict builtinDict(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createDict();
+        }
+
+        @Specialization(replaces = "builtinDict")
+        @SuppressWarnings("unused")
+        static PDict dict(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile orderedProfile,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            if (orderedProfile.profile(inliningTarget, isSubtypeNode.execute(cls, PythonBuiltinClassType.POrderedDict))) {
+                return factory.createOrderedDict(cls);
+            }
             return factory.createDict(cls);
+        }
+
+        protected static boolean isBuiltinDict(Object cls) {
+            return cls == PythonBuiltinClassType.PDict;
         }
     }
 

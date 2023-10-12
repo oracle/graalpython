@@ -305,6 +305,11 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictItemsBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictKeysBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
@@ -591,6 +596,11 @@ public abstract class Python3Core {
                         new CodecsTruffleModuleBuiltins(),
                         new DequeBuiltins(),
                         new DequeIterBuiltins(),
+                        new OrderedDictBuiltins(),
+                        new OrderedDictKeysBuiltins(),
+                        new OrderedDictValuesBuiltins(),
+                        new OrderedDictItemsBuiltins(),
+                        new OrderedDictIteratorBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new DefaultDictBuiltins(),
                         new TupleGetterBuiltins(),

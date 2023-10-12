@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -79,7 +78,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
+    @Specialization(guards = "hasBuiltinDictIter(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
@@ -88,7 +87,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
         return copyNode.execute(inliningTarget, other.getDictStorage());
     }
 
-    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
+    @Specialization(guards = "hasBuiltinDictIter(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
@@ -120,7 +119,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
 
     // Not using @Fallback because of GR-43912
     static boolean isFallback(Node inliningTarget, Object other, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
-        return !(other instanceof PDict otherDict && hasBuiltinIter(inliningTarget, otherDict, getClassNode, lookupIter));
+        return !(other instanceof PDict otherDict && PGuards.hasBuiltinDictIter(inliningTarget, otherDict, getClassNode, lookupIter));
     }
 
     @Specialization(guards = "isFallback(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
@@ -160,10 +159,5 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
             e.expectAttributeError(inliningTarget, errorProfile);
             throw new NonMappingException(other);
         }
-    }
-
-    /* CPython tests that tp_iter is dict_iter */
-    protected static boolean hasBuiltinIter(Node inliningTarget, PDict dict, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
-        return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(inliningTarget, dict)) == BuiltinMethodDescriptors.DICT_ITER;
     }
 }
