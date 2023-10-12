@@ -180,6 +180,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_ftruncate("(sint32, sint64):sint32"),
         call_fsync("(sint32):sint32"),
         call_flock("(sint32, sint32):sint32"),
+        call_fcntl_lock("(sint32, sint32, sint32, sint32, sint64, sint64):sint32"),
         call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
         call_fstat("(sint32, [sint64]):sint32"),
         call_statvfs("([sint8], [sint64]):sint32"),
@@ -661,9 +662,18 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void flock(int fd, int operation,
+    void flock(int fd, int operation,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int res = invokeNode.callInt(this, PosixNativeFunction.call_flock, fd, operation);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_fcntl_lock, fd, blocking, lockType, whence, start, length);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
