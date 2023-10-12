@@ -63,23 +63,16 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 
 import org.graalvm.home.Version;
@@ -1020,94 +1013,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
                         @Cached CreateTypeNode createType) {
             return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
-        }
-    }
-
-    @Builtin(name = "list_files", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class ListFiles extends PythonBinaryBuiltinNode {
-        @TruffleBoundary
-        @Specialization
-        Object list(TruffleString dirPath, TruffleString filesListPath) {
-            if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            print(getContext().getStandardOut(), String.format("listing files from '%s' to '%s'\n", dirPath, filesListPath));
-
-            TruffleFile dir = getContext().getPublicTruffleFileRelaxed(dirPath);
-            if (!dir.exists() || !dir.isDirectory()) {
-                print(getContext().getStandardErr(), String.format("'%s' has to exist and be a directory.\n", dirPath));
-            }
-
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
-                TruffleFile p = getContext().getPublicTruffleFileRelaxed(filesListPath).getParent();
-                if (!p.exists()) {
-                    getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
-                }
-                Set<String> ret = list(dir, null);
-                String[] a = ret.toArray(new String[ret.size()]);
-                Arrays.sort(a);
-                for (String f : a) {
-                    if (f.charAt(0) == '\\') {
-                        f = f.replace("\\", "/");
-                    }
-
-                    bw.write(f);
-                    bw.write("\n");
-                }
-            } catch (IOException e) {
-                String msg = String.format("error while creating '%s': %s \n", filesListPath, e);
-                print(getContext().getStandardErr(), msg);
-            }
-            return PNone.NONE;
-        }
-
-        private static Set<String> list(TruffleFile dir, TruffleFile rd) throws IOException {
-            HashSet<String> ret = new HashSet<>();
-            Collection<TruffleFile> files = dir.list();
-            String dirPath = makeDirPath(dir.getAbsoluteFile().getPath());
-
-            // add dir
-            TruffleFile rootDir = rd == null ? dir : rd;
-            String rootPath = makeDirPath(rootDir.getAbsoluteFile().getPath());
-            int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
-            ret.add(dirPath.substring(rootEndIdx));
-
-            // add parents up to root
-            TruffleFile parent = dir;
-            while (!parent.equals(rootDir)) {
-                String p = makeDirPath(parent.getAbsoluteFile().getPath());
-                p = p.substring(rootEndIdx);
-                ret.add(p);
-                parent = parent.getParent();
-            }
-
-            // add children
-            if (files != null) {
-                for (TruffleFile f : files) {
-                    if (f.isRegularFile()) {
-                        ret.add(f.getAbsoluteFile().getPath().substring(rootEndIdx));
-                    } else {
-                        ret.addAll(list(f, rootDir));
-                    }
-                }
-            }
-            return ret;
-        }
-
-        private static String makeDirPath(String p) {
-            if (!p.endsWith(File.separator)) {
-                p = p + File.separator;
-            }
-            return p;
-        }
-
-        private void print(OutputStream out, String msg) {
-            try {
-                out.write(String.format("%s: %s", getContext().getOption(PythonOptions.Executable), msg).getBytes(StandardCharsets.UTF_8));
-            } catch (IOException ioException) {
-                // Ignore
-            }
         }
     }
 

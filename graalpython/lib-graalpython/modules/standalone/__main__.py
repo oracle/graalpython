@@ -156,18 +156,28 @@ def create_native_exec(parsed_args):
     try:
         ni, jc = get_tools(target_dir, modules_path, parsed_args)
         download_python(modules_path, parsed_args)
-        
         create_target_directory(target_dir, launcher_file, parsed_args)
-        
-        files_list_path = os.path.join(target_dir, FILES_LIST_PATH)
-        dir_to_list = os.path.join(target_dir, VFS_PREFIX)        
-        __graalpython__.list_files(dir_to_list, files_list_path)
-                    
+        index_vfs(target_dir)
         build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args)
     finally:
         if not parsed_args.keep_temp:
             shutil.rmtree(target_dir)
    
+def index_vfs(target_dir):   
+    files_list_path = os.path.join(target_dir, FILES_LIST_PATH)
+    dir_to_list = os.path.join(target_dir, VFS_PREFIX)        
+    target_dir_len = len(target_dir)
+    with open(files_list_path, "w") as files_list:
+        def f(dir_path, names, line_end):
+            rel_path = dir_path[target_dir_len:]
+            for name in names:
+                vfs_path = os.path.join(rel_path, name)
+                files_list.write(f"{vfs_path}{line_end}")
+        w = os.walk(dir_to_list)            
+        for (dir_path, dir_names, file_names) in w:
+            f(dir_path, dir_names, "/\n")
+            f(dir_path, file_names, "\n")
+                
 def create_virtual_filesystem_file(vfs_file, java_pkg=""):
     lines = open(get_file(VFS_JAVA_FILE_TEMPLATE), 'r').readlines()
     with open(vfs_file, 'w') as f:
