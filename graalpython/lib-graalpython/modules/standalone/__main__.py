@@ -293,8 +293,6 @@ def copy_folder_to_target(resource_root, folder, prefix, path_filter=lambda file
     """
     folder = folder.rstrip("/\\")
     for root, dirs, files in os.walk(folder):
-        dirs[:] = filter(lambda d: not path_filter(dir=d) and d != "__pycache__", dirs)
-
         for file in files:
             if path_filter(file=file):
                 continue
