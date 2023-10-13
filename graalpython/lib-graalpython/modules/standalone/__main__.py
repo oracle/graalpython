@@ -70,21 +70,15 @@ VFS_HOME_PREFIX = f"{VFS_PREFIX}/{VFS_HOME}"
 VFS_VENV_PREFIX = VFS_PREFIX + "/venv"
 VFS_PROJ_PREFIX = VFS_PREFIX + "/proj"
 
-NATIVE_EXEC_JAVA_PKG = "package standalone;"
-
 VFS_JAVA_FILE = "VirtualFileSystem.java"
-VFS_JAVA_FILE_TEMPLATE = f"templates/{VFS_JAVA_FILE}"
+VFS_JAVA_FILE_TEMPLATE = f"resources/{VFS_JAVA_FILE}"
 
 NATIVE_EXEC_LAUNCHER = "Py2BinLauncher"
 NATIVE_EXEC_LAUNCHER_FILE = f"{NATIVE_EXEC_LAUNCHER}.java"
-NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH = f"templates/{NATIVE_EXEC_LAUNCHER_FILE}"
+NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH = f"resources/{NATIVE_EXEC_LAUNCHER_FILE}"
 
 NATIVE_IMAGE_RESOURCES_FILE = "native-image-resources.json"
-NATIVE_IMAGE_RESOURCES_PATH = f"shared/{NATIVE_IMAGE_RESOURCES_FILE}"
-
-MODULE_NAME = "standalone"
-MODULE_INFO_FILE = "module-info.java"
-MODULE_INFO_PATH = f"shared/{MODULE_INFO_FILE}"
+NATIVE_IMAGE_RESOURCES_PATH = f"resources/{NATIVE_IMAGE_RESOURCES_FILE}"
 
 GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
@@ -169,7 +163,7 @@ def create_native_exec(parsed_args):
         modules_path = get_modules_path(target_dir)
         download_python(modules_path, parsed_args)
         
-        launcher_file = os.path.join(target_dir, MODULE_NAME, NATIVE_EXEC_LAUNCHER_FILE)    
+        launcher_file = os.path.join(target_dir, NATIVE_EXEC_LAUNCHER_FILE)    
         create_target_directory(target_dir, launcher_file, parsed_args)
         
         index_vfs(target_dir)
@@ -193,24 +187,20 @@ def index_vfs(target_dir):
             f(dir_path, dir_names, "/\n")
             f(dir_path, file_names, "\n")
                 
-def create_virtual_filesystem_file(vfs_file, java_pkg=""):
+def create_virtual_filesystem_file(vfs_file):
     lines = open(get_file(VFS_JAVA_FILE_TEMPLATE), 'r').readlines()
     with open(vfs_file, 'w') as f:
         for line in lines:
-            if "{java-pkg}" in line:
-                line = line.replace("{java-pkg}", java_pkg)
             if "{vfs-prefix}" in line:
                 line = line.replace("{vfs-prefix}", VFS_PREFIX)
             if "{files-list-name}" in line:
                 line = line.replace("{files-list-name}", FILES_LIST_NAME)
             f.write(line)
 
-def create_launcher_file(template, launcher, java_pkg=""):
+def create_launcher_file(template, launcher):
     lines = open(template, 'r').readlines()
     with open(launcher, 'w') as f:
         for line in lines:
-            if "{java-pkg}" in line:
-                line = line.replace("{java-pkg}", java_pkg)
             if "{vfs-home-prefix}" in line:
                 line = line.replace("{vfs-home-prefix}", VFS_HOME_PREFIX)
             if "{vfs-venv-prefix}" in line:
@@ -230,13 +220,12 @@ def create_target_directory(target_dir, launcher_file, parsed_args):
     )
 
     os.makedirs(os.path.dirname(launcher_file), exist_ok=True)
-    create_launcher_file(get_file(NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH), launcher_file, NATIVE_EXEC_JAVA_PKG)
+    create_launcher_file(get_file(NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH), launcher_file)
 
-    virtual_filesystem_java_file = os.path.join(target_dir, MODULE_NAME, VFS_JAVA_FILE)
-    create_virtual_filesystem_file(virtual_filesystem_java_file, NATIVE_EXEC_JAVA_PKG)
+    virtual_filesystem_java_file = os.path.join(target_dir, VFS_JAVA_FILE)
+    create_virtual_filesystem_file(virtual_filesystem_java_file)
 
     shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), os.path.join(target_dir, NATIVE_IMAGE_RESOURCES_FILE))
-    shutil.copy(get_file(MODULE_INFO_PATH), os.path.join(target_dir, MODULE_INFO_FILE))
 
 def bundle_python_resources(target_dir, project, venv=None):
     """
@@ -414,8 +403,8 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
     output = os.path.abspath(parsed_args.output)
     os.chdir(target_dir)
 
-    try:
-        cmd = [jc, "--module-path", modules_path, os.path.join(target_dir,MODULE_INFO_FILE), os.path.join(target_dir, MODULE_NAME, "VirtualFileSystem.java"), launcher_file]
+    try:        
+        cmd = [jc, "-cp", f"{modules_path}/*", os.path.join(target_dir, "VirtualFileSystem.java"), launcher_file]
         if parsed_args.verbose:
             print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
         p = subprocess.run(cmd, cwd=target_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -425,7 +414,7 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
             exit(1)
 
         ni_modules = os.pathsep.join([os.path.join(modules_path, f) for f in os.listdir(modules_path) if f.endswith(".jar")] + [target_dir])
-        cmd = [ni, "--module-path", ni_modules] + parsed_args.ni_args[:]
+        cmd = [ni, "-cp", ni_modules] + parsed_args.ni_args[:]
 
         if parsed_args.Os:
             cmd +=[
@@ -441,7 +430,7 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
             f"-H:ResourceConfigurationFiles={target_dir}/{NATIVE_IMAGE_RESOURCES_FILE}",
             "-o",
             output,
-            f"{MODULE_NAME}.{NATIVE_EXEC_LAUNCHER}",
+            f"{NATIVE_EXEC_LAUNCHER}",
         ]
         if parsed_args.verbose:
             print(f"Building Python standalone binary: {' '.join(cmd)}")

@@ -38,95 +38,81 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.mycompany.javapython;
-
 import java.io.IOException;
-import org.graalvm.nativeimage.ImageInfo;
+import java.util.stream.Stream;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
 
-public class Main {
+/**
+ * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,
+ * standard library, a Python virtual environment, and the module to launch from an embedded
+ * resource. Any other file system accesses are passed through to the underlying filesystem. The
+ * options are set such that most access is allowed and the interpreter works mostly as if run via
+ * the launcher. To support the virtual filesystem, however, the POSIX and C API backends are set
+ * up to use Java instead of native execution.
+ *
+ * This class can serve as a skeleton for more elaborate embeddings, an example of a virtual
+ * filesystem, as well as showing how to embed Python code into a single native image binary.
+ */
+public class Py2BinLauncher {
     private static final String HOME_PREFIX = "/{vfs-home-prefix}";
     private static final String VENV_PREFIX = "/{vfs-venv-prefix}";
     private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
-
-    private static String PYTHON = "python";
 
     public static void main(String[] args) throws IOException {
         VirtualFileSystem vfs = new VirtualFileSystem(p -> {
             String s = p.toString();
             return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
         });
-        Builder builder = Context.newBuilder()
-            // set true to allow experimental options
+        var builder = Context.newBuilder()
             .allowExperimentalOptions(true)
-            // allow all privileges
             .allowAllAccess(true)
-            // alow access to host IO
             .allowIO(true)
-            // install a truffle FileSystem
             .fileSystem(vfs)
-            // choose the backend for the POSIX module
+            .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
             .option("python.PosixModuleBackend", "java")
-            // equivalent to the Python -B flag
             .option("python.DontWriteBytecodeFlag", "true")
-            // equivalent to the Python -v flag
             .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
-            // log level
             .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
-            // equivalent to setting the PYTHONWARNINGS environment variable
             .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-            // print exceptions directly
             .option("python.AlwaysRunExcepthook", "true")
-            // Force to automatically import site.py module
             .option("python.ForceImportSite", "true")
-            // The sys.executable path
+            .option("python.RunViaLauncher", "true")
             .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
-            // Used by the launcher to pass the path to be executed.
-            // VirtualFilesystem will take care, that at runtime this will be
-            // the python sources stored in src/main/resources/{vfs-proj-prefix}
             .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
-            // Value of the --check-hash-based-pycs command line option
-            .option("python.CheckHashPycsMode", "never")
-            // Do not warn if running without JIT. This can be desirable for short running scripts
-            // to reduce memory footprint.
-            .option("engine.WarnInterpreterOnly", "false");
+            .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
+            .option("python.CheckHashPycsMode", "never");
         if(ImageInfo.inImageRuntimeCode()) {
-            // Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable
-            builder.option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX));
+            builder.option("engine.WarnInterpreterOnly", "false");
         }
-        Context context = builder.build();
-
-        try {
-            Source source;
+        try (var context = builder.build()) {
             try {
-                source = Source.newBuilder(PYTHON, "__graalpython__.run_path()", "<internal>").internal(true).build();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            // eval the snipet __graalpython__.run_path() which executes what the option python.InputFilePath points to
-            context.eval(source);
-
-            // retrieve the python PyHello class
-            Value pyHelloClass = context.getPolyglotBindings().getMember("PyHello");
-            Value pyHello = pyHelloClass.newInstance();
-            // and cast it to the Hello interface which matches PyHello
-            Hello hello = pyHello.as(Hello.class);
-            hello.hello("java");
-
-        } catch (PolyglotException e) {
-            if (e.isExit()) {
-                System.exit(e.getExitStatus());
-            } else {
-                throw e;
+                var src = Source.newBuilder("python", "__graalpython__.run_path()", "<internal>").internal(true).build();
+                context.eval(src);
+            } catch (PolyglotException e) {
+                if (e.isExit()) {
+                    System.exit(e.getExitStatus());
+                } else {
+                    throw e;
+                }
             }
         } finally {
             vfs.close();
         }
     }
 
+    private static String getProgramName() {
+        if (ImageInfo.inImageRuntimeCode()) {
+            if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
+                return ProcessProperties.getArgumentVectorProgramName();
+            } else {
+                return ProcessProperties.getExecutableName();
+            }
+        }
+        return "";
+    }
 }
