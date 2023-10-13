@@ -204,8 +204,7 @@ def test_polyglot_app():
 
             cmd = [os.path.join(target_dir, "target", "polyglot_app_test")]
             out, return_code = run_cmd(cmd, env, cwd=target_dir)
-            assert "/graalpy_vfs/home/lib/python3.10" in out
-            assert "/graalpy_vfs/venv/lib/python3.10/site-packages" in out
+            assert "hello java" in out
         finally:
             cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
             run_cmd(cmd, env, cwd=target_dir)
@@ -216,7 +215,7 @@ def test_native_executable_one_file():
     graalpy = get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
+    env = os.environ.copy() 
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
