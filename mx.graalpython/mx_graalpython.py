@@ -2004,6 +2004,8 @@ def _python_checkpatchfiles():
             'tokenizers-0.13.3.patch',
             # Empty license field. It's Apache 2
             'safetensors-0.3.3.patch',
+            'tensorflow-io-0.34.0.patch',
+            'tensorflow-io-gcs-filesystem-0.34.0.patch',
         }
         allowed_licenses = [
             "MIT",
