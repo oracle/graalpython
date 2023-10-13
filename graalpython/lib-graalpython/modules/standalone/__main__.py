@@ -186,7 +186,7 @@ def index_vfs(target_dir):
         def f(dir_path, names, line_end):
             rel_path = dir_path[target_dir_len:]
             for name in names:
-                vfs_path = os.path.join(rel_path, name)
+                vfs_path = os.path.join(rel_path, name).replace(os.sep, '/')
                 files_list.write(f"{vfs_path}{line_end}")
         w = os.walk(dir_to_list)            
         for (dir_path, dir_names, file_names) in w:
