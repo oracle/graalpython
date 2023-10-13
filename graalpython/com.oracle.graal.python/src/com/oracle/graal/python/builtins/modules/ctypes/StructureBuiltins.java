@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -92,11 +93,12 @@ public final class StructureBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
 
         @Specialization
-        Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
@@ -116,12 +118,13 @@ public final class StructureBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (args.length > 0) {
                 int res = _init_pos_args(frame, inliningTarget, self, getClassNode.execute(inliningTarget, self), args, kwds, 0,
-                                setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, RECURSION_LIMIT);
+                                setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, raiseNode, RECURSION_LIMIT);
                 if (res < args.length) {
-                    throw raise(TypeError, TOO_MANY_INITIALIZERS);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, TOO_MANY_INITIALIZERS);
                 }
             }
 
@@ -152,6 +155,7 @@ public final class StructureBuiltins extends PythonBuiltins {
                         PyTypeStgDictNode pyTypeStgDictNode,
                         GetBaseClassNode getBaseClassNode,
                         EqualNode equalNode,
+                        PRaiseNode.Lazy raiseNode,
                         int recursionLimit) {
             Object fields;
             int index = idx;
@@ -161,7 +165,7 @@ public final class StructureBuiltins extends PythonBuiltins {
                 if (recursionLimit > 0) {
                     index = _init_pos_args(frame, inliningTarget, self, base, args, kwds, index,
                                     setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
-                                    recursionLimit - 1);
+                                    raiseNode, recursionLimit - 1);
                 } else {
                     Object savedState = IndirectCallContext.enter(frame, this);
                     try {
@@ -184,7 +188,9 @@ public final class StructureBuiltins extends PythonBuiltins {
                 Object val = args[i + index];
                 if (kwds.length > 0) {
                     if (KeywordsStorage.findStringKey(kwds, name, equalNode) != -1) {
-                        throw raise(TypeError, DUPLICATE_VALUES_FOR_FIELD_S, name);
+                        // using execute() instead of raise() because we need to pass raisingNode
+                        // explicitly (raiseNode might be uncached)
+                        throw raiseNode.get(inliningTarget).execute(inliningTarget, TypeError, null, PNone.NO_VALUE, DUPLICATE_VALUES_FOR_FIELD_S, new Object[]{name});
                     }
                 }
 
@@ -200,7 +206,7 @@ public final class StructureBuiltins extends PythonBuiltins {
             return _init_pos_args(null, null, self, type, args, kwds, idx, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),
                             HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),
-                            GetBaseClassNode.getUncached(), TruffleString.EqualNode.getUncached(), 0);
+                            GetBaseClassNode.getUncached(), TruffleString.EqualNode.getUncached(), PRaiseNode.Lazy.getUncached(), 0);
         }
     }
 

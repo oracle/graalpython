@@ -114,7 +114,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
     protected abstract static class PyCFuncPtrTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
-        Object PyCFuncPtrType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+        static Object PyCFuncPtrType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -158,7 +158,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
             Object ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_FLAGS_);
             if (!PGuards.isInteger(ob)) {
-                throw raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
             stgdict.flags = asNumber.execute(inliningTarget, ob) | TYPEFLAG_ISPOINTER;
 
@@ -166,7 +166,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_ARGTYPES_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
-                    throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
                 Object[] obtuple = getArray.execute(inliningTarget, ((PTuple) ob).getSequenceStorage());
                 Object[] converters = converters_from_argtypes(frame, inliningTarget, obtuple, raiseNode, lookupAttr);
@@ -178,7 +178,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(ob);
                 if (dict == null && !callableCheck.execute(inliningTarget, ob)) {
-                    throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
                 Object checker = lookupAttr.execute(frame, inliningTarget, ob, T__CHECK_RETVAL_);

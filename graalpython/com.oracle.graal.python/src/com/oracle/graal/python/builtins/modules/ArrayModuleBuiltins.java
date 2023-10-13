@@ -337,8 +337,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
         @Specialization(guards = "mformatCode == cachedCode", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object reconstructCached(VirtualFrame frame, Object arrayType, TruffleString typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
+        static Object reconstructCached(VirtualFrame frame, Object arrayType, TruffleString typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
                         @Bind("this") Node inliningTarget,
                         @Cached("mformatCode") int cachedCode,
                         // Truffle lacks generic inline value profile, but it still warns that this
@@ -351,18 +350,18 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode,
-                        @Exclusive @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
             if (format == null) {
-                throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
             return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format),
-                            factory);
+                            factory, raiseNode);
         }
 
         @Specialization(replaces = "reconstructCached")
-        @SuppressWarnings("truffle-static-method")
-        Object reconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes,
+        static Object reconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callDecode,
                         @Exclusive @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
@@ -371,20 +370,21 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode,
-                        @Exclusive @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
             if (format == null) {
-                throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format, factory);
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format, factory, raiseNode);
         }
 
-        private Object doReconstruct(VirtualFrame frame, Node inliningTarget, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
+        private static Object doReconstruct(VirtualFrame frame, Node inliningTarget, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format,
-                        PythonObjectFactory factory) {
+                        PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
             if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
-                throw raise(TypeError, ErrorMessages.N_NOT_SUBTYPE_OF_ARRAY, arrayType);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.N_NOT_SUBTYPE_OF_ARRAY, arrayType);
             }
             MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);
             if (machineFormat != null) {
@@ -407,14 +407,15 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
                 return array;
             } else {
-                throw raise(ValueError, ErrorMessages.THIRD_ARG_MUST_BE_A_VALID_MACHINE_CODE_FMT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.THIRD_ARG_MUST_BE_A_VALID_MACHINE_CODE_FMT);
             }
         }
 
         @Specialization(guards = "!isPBytes(value)")
         @SuppressWarnings("unused")
-        Object error(Object arrayType, TruffleString typeCode, int mformatCode, Object value) {
-            throw raise(TypeError, ErrorMessages.FOURTH_ARG_SHOULD_BE_BYTES, value);
+        static Object error(Object arrayType, TruffleString typeCode, int mformatCode, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.FOURTH_ARG_SHOULD_BE_BYTES, value);
         }
 
         protected static boolean isPBytes(Object obj) {

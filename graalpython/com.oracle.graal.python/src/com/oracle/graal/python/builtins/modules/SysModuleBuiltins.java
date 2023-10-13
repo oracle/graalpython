@@ -825,13 +825,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PFrame counted(VirtualFrame frame, int num,
+        static PFrame counted(VirtualFrame frame, int num,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadCallerFrameNode readCallerNode,
-                        @Cached InlinedConditionProfile callStackDepthProfile) {
+                        @Cached InlinedConditionProfile callStackDepthProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PFrame requested = escapeFrame(frame, num, readCallerNode);
             if (callStackDepthProfile.profile(inliningTarget, requested == null)) {
-                throw raiseCallStackDepth();
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CALL_STACK_NOT_DEEP_ENOUGH);
             }
             return requested;
         }
@@ -842,9 +843,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             return readCallerNode.executeWith(currentFrameInfo, num);
         }
 
-        private PException raiseCallStackDepth() {
-            return raise(ValueError, ErrorMessages.CALL_STACK_NOT_DEEP_ENOUGH);
-        }
     }
 
     @Builtin(name = "_current_frames")
@@ -1264,10 +1262,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, PythonModule sys, Object args,
-                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             final Object cls = getObjectClass(args);
             if (cls != PythonBuiltinClassType.PUnraisableHookArgs) {
-                throw raise(TypeError, ARG_TYPE_MUST_BE, "sys.unraisablehook", "UnraisableHookArgs");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ARG_TYPE_MUST_BE, "sys.unraisablehook", "UnraisableHookArgs");
             }
             final Object excType = getItemNode.execute(frame, args, 0);
             final Object excValue = getItemNode.execute(frame, args, 1);
@@ -1597,7 +1597,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class DisplayHookNode extends PythonBuiltinNode {
 
         @Specialization
-        Object doHook(VirtualFrame frame, PythonModule sys, Object obj,
+        static Object doHook(VirtualFrame frame, PythonModule sys, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached IsBuiltinObjectProfile unicodeEncodeErrorProfile,
@@ -1609,10 +1609,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectStrAsObjectNode strAsObjectNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
-                        @Cached PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
-            final PythonModule builtins = getContext().getBuiltins();
+                        @Cached PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            final PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
             if (builtins == null) {
-                throw raise(RuntimeError, LOST_S, "builtins module");
+                throw raiseNode.get(inliningTarget).raise(RuntimeError, LOST_S, "builtins module");
             }
             // Print value except if None
             // After printing, also assign to '_'
@@ -1624,7 +1625,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             setAttr.execute(frame, inliningTarget, builtins, T___, PNone.NONE);
             Object stdOut = objectLookupAttr(frame, inliningTarget, sys, T_STDOUT, lookupAttr);
             if (PGuards.isPNone(stdOut)) {
-                throw raise(RuntimeError, LOST_S, "sys.stdout");
+                throw raiseNode.get(inliningTarget).raise(RuntimeError, LOST_S, "sys.stdout");
             }
 
             boolean reprWriteOk = false;
@@ -1780,12 +1781,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetRecursionLimitNode extends PythonBuiltinNode {
         @Specialization
-        Object setRecLim(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object limit,
+        static Object setRecLim(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object limit,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode longAsIntNode,
-                        @Cached PyFloatCheckExactNode floatCheckExactNode) {
+                        @Cached PyFloatCheckExactNode floatCheckExactNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (floatCheckExactNode.execute(inliningTarget, limit)) {
-                throw raise(TypeError, S_EXPECTED_GOT_P, "integer", limit);
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_EXPECTED_GOT_P, "integer", limit);
             }
 
             int newLimit;
@@ -1796,11 +1798,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
 
             if (newLimit < 1) {
-                throw raise(ValueError, REC_LIMIT_GREATER_THAN_1);
+                throw raiseNode.get(inliningTarget).raise(ValueError, REC_LIMIT_GREATER_THAN_1);
             }
 
             // TODO: check to see if Issue #25274 applies
-            getContext().getSysModuleState().setRecursionLimit(newLimit);
+            PythonContext.get(inliningTarget).getSysModuleState().setRecursionLimit(newLimit);
             return PNone.NONE;
         }
     }
@@ -1831,19 +1833,20 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetCheckIntervalNode extends PythonBuiltinNode {
         @Specialization
-        Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
+        static Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PyLongAsIntNode longAsIntNode,
-                        @Cached PyFloatCheckExactNode floatCheckExactNode) {
+                        @Cached PyFloatCheckExactNode floatCheckExactNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (floatCheckExactNode.execute(inliningTarget, arg)) {
-                throw raise(TypeError, S_EXPECTED_GOT_P, "integer", arg);
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_EXPECTED_GOT_P, "integer", arg);
             }
 
             try {
                 final int n = longAsIntNode.execute(frame, inliningTarget, arg);
                 warnNode.warnFormat(frame, DeprecationWarning, WARN_DEPRECTATED_SYS_CHECKINTERVAL);
-                getContext().getSysModuleState().setCheckInterval(n);
+                PythonContext.get(inliningTarget).getSysModuleState().setCheckInterval(n);
             } catch (PException ignore) {
             }
             return PNone.NONE;
@@ -1880,14 +1883,15 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         private static final double FACTOR = 1.e6;
 
         @Specialization
-        Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
+        static Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyFloatAsDoubleNode floatAsDoubleNode) {
+                        @Cached PyFloatAsDoubleNode floatAsDoubleNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double interval = floatAsDoubleNode.execute(frame, inliningTarget, arg);
             if (interval <= 0.0) {
-                throw raise(ValueError, SWITCH_INTERVAL_MUST_BE_POSITIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, SWITCH_INTERVAL_MUST_BE_POSITIVE);
             }
-            getContext().getSysModuleState().setSwitchInterval(FACTOR * interval);
+            PythonContext.get(inliningTarget).getSysModuleState().setSwitchInterval(FACTOR * interval);
             return PNone.NONE;
         }
     }

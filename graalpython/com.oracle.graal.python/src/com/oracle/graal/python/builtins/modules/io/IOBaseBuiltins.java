@@ -335,8 +335,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonBuiltinNode {
         @Specialization
-        Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args) {
-            throw unsupported(getRaiseNode(), T_SEEK);
+        static Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw unsupported(raiseNode, T_SEEK);
         }
     }
 
@@ -344,8 +345,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBuiltinNode {
         @Specialization
-        Object truncate(@SuppressWarnings("unused") PythonObject self) {
-            throw unsupported(getRaiseNode(), T_TRUNCATE);
+        static Object truncate(@SuppressWarnings("unused") PythonObject self,
+                        @Cached PRaiseNode raiseNode) {
+            throw unsupported(raiseNode, T_TRUNCATE);
         }
     }
 

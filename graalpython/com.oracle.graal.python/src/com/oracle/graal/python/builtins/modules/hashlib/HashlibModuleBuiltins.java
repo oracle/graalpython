@@ -454,7 +454,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetFipsNode extends PythonBuiltinNode {
         @Specialization
-        int getFips() {
+        static int getFips() {
             return 0;
         }
     }
@@ -464,8 +464,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
+        static Object hash(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
         }
     }
 
@@ -474,8 +475,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HashXofNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASHXOF");
+        static Object hash(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASHXOF");
         }
     }
 
@@ -484,8 +486,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HmacNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HMAC");
+        static Object hash(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HMAC");
         }
     }
 }

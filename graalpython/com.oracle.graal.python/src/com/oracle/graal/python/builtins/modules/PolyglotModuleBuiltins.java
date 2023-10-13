@@ -76,7 +76,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -89,6 +88,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -146,10 +146,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class ImportNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object importSymbol(TruffleString name) {
+        Object importSymbol(TruffleString name) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotBindingsAccessAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             Object object = env.importSymbol(name.toJavaStringUncached());
             if (object == null) {
@@ -167,7 +167,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         Object evalString(@SuppressWarnings("unused") PNone path, TruffleString tvalue, TruffleString tlangOrMimeType) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotEvalAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             try {
                 String value = tvalue.toJavaStringUncached();
@@ -181,14 +181,14 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 }
                 return env.parsePublic(newBuilder.build()).call();
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e);
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
             }
         }
 
         private void raiseIfInternal(Env env, String lang) {
             LanguageInfo languageInfo = env.getPublicLanguages().get(lang);
             if (languageInfo != null && languageInfo.isInternal()) {
-                throw raise(NotImplementedError, ErrorMessages.ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED, lang);
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, ErrorMessages.ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED, lang);
             }
         }
 
@@ -197,7 +197,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, TruffleString tlangOrMimeType) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotEvalAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             try {
                 String path = tpath.toJavaStringUncached();
@@ -211,9 +211,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 }
                 return getContext().getEnv().parsePublic(newBuilder.name(path).build()).call();
             } catch (IOException e) {
-                throw raise(OSError, ErrorMessages.S, e);
+                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e);
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
             }
         }
 
@@ -222,28 +222,30 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotEvalAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             try {
                 String path = tpath.toJavaStringUncached();
                 return getContext().getEnv().parsePublic(Source.newBuilder(PythonLanguage.ID, env.getPublicTruffleFile(path)).name(path).build()).call();
             } catch (IOException e) {
-                throw raise(OSError, ErrorMessages.S, e);
+                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e);
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
             }
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        Object evalStringWithoutLang(PNone path, TruffleString string, PNone lang) {
-            throw raise(ValueError, ErrorMessages.POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG);
+        static Object evalStringWithoutLang(PNone path, TruffleString string, PNone lang,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object evalWithoutContent(Object path, Object string, Object lang) {
-            throw raise(ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_STRINGS);
+        static Object evalWithoutContent(Object path, Object string, Object lang,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_STRINGS);
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)
@@ -269,15 +271,12 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ExportSymbolNode.class);
 
-        @Child private GetAttributeNode.GetFixedAttributeNode getNameAttributeNode;
-        @Child private CastToJavaStringNode castToStringNode;
-
         @Specialization(guards = "!isString(value)")
         @TruffleBoundary
-        public Object exportSymbolKeyValue(TruffleString name, Object value) {
+        Object exportSymbolKeyValue(TruffleString name, Object value) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotBindingsAccessAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             env.exportSymbol(name.toJavaStringUncached(), value);
             return value;
@@ -285,7 +284,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isString(value)")
         @TruffleBoundary
-        public Object exportSymbolValueKey(Object value, TruffleString name) {
+        Object exportSymbolValueKey(Object value, TruffleString name) {
             LOGGER.warning("[deprecation] polyglot.export_value(value, name) is deprecated " +
                             "and will be removed. Please swap the arguments.");
             return exportSymbolKeyValue(name, value);
@@ -293,7 +292,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(arg1)")
         @TruffleBoundary
-        public Object exportSymbolAmbiguous(Object arg1, TruffleString arg2) {
+        Object exportSymbolAmbiguous(Object arg1, TruffleString arg2) {
             LOGGER.warning("[deprecation] polyglot.export_value(str, str) is ambiguous. In the future, this will " +
                             "default to using the first argument as the name and the second as value, but now it " +
                             "uses the first argument as value and the second as the name.");
@@ -302,10 +301,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object exportSymbol(PFunction fun, @SuppressWarnings("unused") PNone name) {
+        Object exportSymbol(PFunction fun, @SuppressWarnings("unused") PNone name) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotBindingsAccessAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             env.exportSymbol(fun.getName().toJavaStringUncached(), fun);
             return fun;
@@ -313,58 +312,47 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
+        Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotBindingsAccessAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             env.exportSymbol(fun.getName().toJavaStringUncached(), fun);
             return fun;
         }
 
-        @Specialization(guards = "isModule(fun.getSelf())")
-        Object exportSymbol(VirtualFrame frame, PMethod fun, @SuppressWarnings("unused") PNone name) {
-            export(getMethodName(frame, fun), fun);
-            return fun;
-        }
-
-        @Specialization(guards = "isModule(fun.getSelf())")
-        Object exportSymbol(VirtualFrame frame, PBuiltinMethod fun, @SuppressWarnings("unused") PNone name) {
-            export(getMethodName(frame, fun), fun);
+        @Specialization(guards = "isModuleMethod(fun)")
+        static Object exportSymbol(VirtualFrame frame, Object fun, @SuppressWarnings("unused") PNone name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("create(T___NAME__)") GetAttributeNode.GetFixedAttributeNode getNameAttributeNode,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object attrNameValue = getNameAttributeNode.executeObject(frame, fun);
+            String methodName;
+            try {
+                methodName = castToStringNode.execute(attrNameValue);
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.METHOD_NAME_MUST_BE, attrNameValue);
+            }
+            export(inliningTarget, methodName, fun);
             return fun;
         }
 
         @Fallback
-        public Object exportSymbol(Object value, Object name) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P, "function", "object, str", value, name);
+        static Object exportSymbol(Object value, Object name,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P, "function", "object, str", value, name);
         }
 
-        private String getMethodName(VirtualFrame frame, Object o) {
-            if (getNameAttributeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameAttributeNode = insert(GetAttributeNode.GetFixedAttributeNode.create(SpecialAttributeNames.T___NAME__));
-            }
-            if (castToStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToJavaStringNodeGen.create());
-            }
-            Object attrNameValue = getNameAttributeNode.executeObject(frame, o);
-            try {
-                return castToStringNode.execute(attrNameValue);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.METHOD_NAME_MUST_BE, attrNameValue);
-            }
-        }
-
-        protected static boolean isModule(Object o) {
-            return o instanceof PythonModule;
+        protected static boolean isModuleMethod(Object o) {
+            return (o instanceof PMethod m && m.getSelf() instanceof PythonModule) || (o instanceof PBuiltinMethod bm && bm.getSelf() instanceof PythonModule);
         }
 
         @TruffleBoundary
-        private void export(String name, Object obj) {
-            Env env = getContext().getEnv();
+        private static void export(Node raisingNode, String name, Object obj) {
+            Env env = PythonContext.get(raisingNode).getEnv();
             if (!env.isPolyglotBindingsAccessAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             env.exportSymbol(name, obj);
         }
@@ -394,10 +382,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 } else if (key instanceof Number) {
                     return getInterop().readArrayElement(receiver, ((Number) key).longValue());
                 } else {
-                    throw raise(PythonErrorType.AttributeError, ErrorMessages.UNKNOWN_ATTR, key);
+                    throw PRaiseNode.raiseUncached(this, PythonErrorType.AttributeError, ErrorMessages.UNKNOWN_ATTR, key);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw raise(PythonErrorType.AttributeError, e);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -416,10 +404,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 } else if (key instanceof Number) {
                     getInterop().writeArrayElement(receiver, ((Number) key).longValue(), value);
                 } else {
-                    throw raise(PythonErrorType.AttributeError, ErrorMessages.UNKNOWN_ATTR, key);
+                    throw PRaiseNode.raiseUncached(this, PythonErrorType.AttributeError, ErrorMessages.UNKNOWN_ATTR, key);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw raise(PythonErrorType.AttributeError, e);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.AttributeError, e);
             }
             return PNone.NONE;
         }
@@ -439,10 +427,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 } else if (key instanceof Number) {
                     getInterop().removeArrayElement(receiver, ((Number) key).longValue());
                 } else {
-                    throw raise(PythonErrorType.AttributeError, ErrorMessages.UNKNOWN_ATTR, key);
+                    throw PRaiseNode.raiseUncached(this, PythonErrorType.AttributeError, ErrorMessages.UNKNOWN_ATTR, key);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw raise(PythonErrorType.AttributeError, e);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.AttributeError, e);
             }
             return PNone.NONE;
         }
@@ -452,11 +440,13 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class executeNode extends PythonBuiltinNode {
         @Specialization
-        Object exec(Object receiver, Object[] arguments) {
+        static Object exec(Object receiver, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return getInterop().execute(receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                throw raise(PythonErrorType.AttributeError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -465,11 +455,13 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class newNode extends PythonBuiltinNode {
         @Specialization
-        Object instantiate(Object receiver, Object[] arguments) {
+        static Object instantiate(Object receiver, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return getInterop().instantiate(receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                throw raise(PythonErrorType.AttributeError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -478,12 +470,14 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class invokeNode extends PythonBuiltinNode {
         @Specialization
-        Object invoke(Object receiver, TruffleString key, Object[] arguments,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        static Object invoke(Object receiver, TruffleString key, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return getInterop().invokeMember(receiver, toJavaStringNode.execute(key), arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
-                throw raise(PythonErrorType.AttributeError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -492,7 +486,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsNullNode extends PythonBuiltinNode {
         @Specialization
-        boolean isNull(Object receiver) {
+        static boolean isNull(Object receiver) {
             return getInterop().isNull(receiver);
         }
     }
@@ -501,7 +495,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class HasSizeNode extends PythonBuiltinNode {
         @Specialization
-        boolean hasSize(Object receiver) {
+        static boolean hasSize(Object receiver) {
             return getInterop().hasArrayElements(receiver);
         }
     }
@@ -510,11 +504,13 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetSizeNode extends PythonBuiltinNode {
         @Specialization
-        Object getSize(Object receiver) {
+        static Object getSize(Object receiver,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return getInterop().getArraySize(receiver);
             } catch (UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, e);
             }
         }
     }
@@ -523,7 +519,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsBoxedNode extends PythonBuiltinNode {
         @Specialization
-        boolean isBoxed(Object receiver) {
+        static boolean isBoxed(Object receiver) {
             return getInterop().isString(receiver) || getInterop().fitsInDouble(receiver) || getInterop().fitsInLong(receiver);
         }
     }
@@ -532,7 +528,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class HasKeysNode extends PythonBuiltinNode {
         @Specialization
-        boolean hasKeys(Object receiver) {
+        static boolean hasKeys(Object receiver) {
             return getInterop().hasMembers(receiver);
         }
     }
@@ -541,7 +537,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class KeyInfoNode extends PythonBuiltinNode {
         @Specialization
-        boolean keyInfo(Object receiver, TruffleString tmember, TruffleString info,
+        static boolean keyInfo(Object receiver, TruffleString tmember, TruffleString info,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode equalNode) {
             String member = toJavaStringNode.execute(tmember);
@@ -575,11 +571,13 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(Object receiver) {
+        static Object remove(Object receiver,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return getInterop().getMembers(receiver);
             } catch (UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, e);
             }
         }
     }
@@ -589,7 +587,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ArrayElementInfoNode extends PythonBuiltinNode {
         @Specialization
-        boolean keyInfo(Object receiver, long member, TruffleString info,
+        static boolean keyInfo(Object receiver, long member, TruffleString info,
                         @Cached TruffleString.EqualNode equalNode) {
             if (equalNode.execute(info, T_EXISTS, TS_ENCODING)) {
                 return getInterop().isArrayElementExisting(receiver, member);

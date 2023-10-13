@@ -1304,14 +1304,16 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isDefault(dirFd)")
         @SuppressWarnings("unused")
-        PTuple doStatFdWithDirFd(PosixFd fd, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "stat");
+        static PTuple doStatFdWithDirFd(PosixFd fd, int dirFd, boolean followSymlinks,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "stat");
         }
 
         @Specialization(guards = {"isDefault(dirFd)", "!followSymlinks"})
         @SuppressWarnings("unused")
-        PTuple doStatFdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "stat");
+        static PTuple doStatFdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "stat");
         }
 
         @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
@@ -1733,8 +1735,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class ScandirIteratorNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object scandirIterator(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.ScandirIterator");
+        static Object scandirIterator(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.ScandirIterator");
         }
     }
 
@@ -1743,8 +1746,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class DirEntryNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object dirEntry(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.DirEntry");
+        static Object dirEntry(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.DirEntry");
         }
     }
 
@@ -1976,7 +1980,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "HAVE_UTIMENSAT.value")
-        PNone utimensat(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks,
+        static PNone utimensat(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -1985,7 +1989,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             long[] timespec = timespecNode.execute(frame, times, ns);
             auditNode.audit(inliningTarget, "os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.utimensat(getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
+                posixLib.utimensat(PosixSupport.get(inliningTarget), dirFd, path.value, timespec, followSymlinks);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -1994,7 +1998,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!HAVE_UTIMENSAT.value", "isDefault(dirFd)", "followSymlinks"})
-        PNone utimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+        static PNone utimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -2003,7 +2007,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
             auditNode.audit(inliningTarget, "os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.utimes(getPosixSupport(), path.value, timeval);
+                posixLib.utimes(PosixSupport.get(inliningTarget), path.value, timeval);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2012,7 +2016,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!HAVE_UTIMENSAT.value", "isDefault(dirFd)", "!followSymlinks"})
-        PNone lutimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+        static PNone lutimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -2021,7 +2025,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
             auditNode.audit(inliningTarget, "os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.lutimes(getPosixSupport(), path.value, timeval);
+                posixLib.lutimes(PosixSupport.get(inliningTarget), path.value, timeval);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2031,18 +2035,20 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!HAVE_UTIMENSAT.value", "!isDefault(dirFd)", "followSymlinks"})
         @SuppressWarnings("unused")
-        PNone dirFdNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks) {
-            throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC, "dir_fd");
+        static PNone dirFdNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC, "dir_fd");
         }
 
         @Specialization(guards = {"!HAVE_UTIMENSAT.value", "!isDefault(dirFd)", "!followSymlinks"})
         @SuppressWarnings("unused")
-        PNone dirFdAndFollowSymlinksNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS, "dir_fd");
+        static PNone dirFdAndFollowSymlinksNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS, "dir_fd");
         }
 
         @Specialization(guards = {"HAVE_FUTIMENS.value", "isDefault(dirFd)", "followSymlinks"})
-        PNone futimens(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+        static PNone futimens(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -2051,7 +2057,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             long[] timespec = timespecNode.execute(frame, times, ns);
             auditNode.audit(inliningTarget, "os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.futimens(getPosixSupport(), fd.fd, timespec);
+                posixLib.futimens(PosixSupport.get(inliningTarget), fd.fd, timespec);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2060,7 +2066,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!HAVE_FUTIMENS.value", "isDefault(dirFd)", "followSymlinks"})
-        PNone futimes(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+        static PNone futimes(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached UtimeArgsToTimespecNode timespecNode,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -2069,7 +2075,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
             auditNode.audit(inliningTarget, "os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
-                posixLib.futimes(getPosixSupport(), fd.fd, timeval);
+                posixLib.futimes(PosixSupport.get(inliningTarget), fd.fd, timeval);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2079,14 +2085,16 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "!isDefault(dirFd)"})
         @SuppressWarnings("unused")
-        PNone fdWithDirFd(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "utime");
+        static PNone fdWithDirFd(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "utime");
         }
 
         @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "isDefault(dirFd)", "!followSymlinks"})
         @SuppressWarnings("unused")
-        PNone fdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "utime");
+        static PNone fdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "utime");
         }
 
         protected static boolean isDefault(int dirFd) {
@@ -2201,21 +2209,22 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone chmodFollow(VirtualFrame frame, PosixPath path, int mode, int dirFd, boolean followSymlinks,
+        static PNone chmodFollow(VirtualFrame frame, PosixPath path, int mode, int dirFd, boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             auditNode.audit(inliningTarget, "os.chmod", path.originalObject, mode, dirFdForAudit(dirFd));
             try {
-                posixLib.fchmodat(getPosixSupport(), dirFd, path.value, mode, followSymlinks);
+                posixLib.fchmodat(PosixSupport.get(inliningTarget), dirFd, path.value, mode, followSymlinks);
             } catch (PosixException e) {
                 // TODO CPython checks for ENOTSUP as well
                 if (e.getErrorCode() == OSErrorEnum.EOPNOTSUPP.getNumber() && !followSymlinks) {
                     if (dirFd != AT_FDCWD.value) {
-                        throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chmod");
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chmod");
                     } else {
-                        throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM, "chmod", "follow_symlinks");
+                        throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM, "chmod", "follow_symlinks");
                     }
                 }
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -2228,7 +2237,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        // unused node to avoid mixing shared and non-shared inlined nodes
+                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode.Lazy raiseNode) {
             auditNode.audit(inliningTarget, "os.chmod", fd.originalObject, mode, dirFdForAudit(dirFd));
             // Unlike stat and utime which raise CANT_SPECIFY_DIRFD_WITHOUT_PATH or
             // CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER when an inappropriate combination of
@@ -2318,17 +2329,19 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ChownNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object chown(VirtualFrame frame, PosixPath path, long uid, long gid, int dirFd, boolean followSymlinks,
+        static Object chown(VirtualFrame frame, PosixPath path, long uid, long gid, int dirFd, boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        // unused node to avoid mixing shared and non-shared inlined nodes
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, dirFd != AT_FDCWD.value ? dirFd : -1);
             try {
                 gil.release(true);
                 try {
-                    posixLib.fchownat(getPosixSupport(), dirFd, path.value, uid, gid, followSymlinks);
+                    posixLib.fchownat(PosixSupport.get(inliningTarget), dirFd, path.value, uid, gid, followSymlinks);
                 } finally {
                     gil.acquire();
                 }
@@ -2339,23 +2352,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object chown(VirtualFrame frame, PosixFd fd, long uid, long gid, int dirFd, boolean followSymlinks,
+        static Object chown(VirtualFrame frame, PosixFd fd, long uid, long gid, int dirFd, boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (dirFd != AT_FDCWD.value) {
-                throw raise(ValueError, ErrorMessages.CANT_SPECIFY_BOTH_DIR_FD_AND_FD);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANT_SPECIFY_BOTH_DIR_FD_AND_FD);
             }
             if (followSymlinks) {
-                throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chown");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chown");
             }
             auditNode.audit(inliningTarget, "os.chown", fd.originalObject, uid, gid, -1);
             try {
                 gil.release(true);
                 try {
-                    posixLib.fchown(getPosixSupport(), fd.fd, uid, gid);
+                    posixLib.fchown(PosixSupport.get(inliningTarget), fd.fd, uid, gid);
                 } finally {
                     gil.acquire();
                 }

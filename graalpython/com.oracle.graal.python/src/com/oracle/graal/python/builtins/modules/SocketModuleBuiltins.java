@@ -608,7 +608,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetAddrInfoNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
+        static Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary cursorLib,
@@ -623,24 +623,26 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object host = null;
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             if (hostObject != PNone.NONE) {
-                host = posixLib.createPathFromBytes(getPosixSupport(), idna.execute(frame, hostObject));
+                host = posixLib.createPathFromBytes(posixSupport, idna.execute(frame, hostObject));
             }
 
             Object port;
             Object portObjectProfiled = profile.profile(inliningTarget, portObject);
             if (PGuards.canBeInteger(portObjectProfiled)) {
-                port = posixLib.createPathFromString(getPosixSupport(), fromLongNode.execute(asLongNode.execute(frame, inliningTarget, portObjectProfiled), TS_ENCODING, false));
+                port = posixLib.createPathFromString(posixSupport, fromLongNode.execute(asLongNode.execute(frame, inliningTarget, portObjectProfiled), TS_ENCODING, false));
             } else if (PGuards.isString(portObjectProfiled)) {
-                port = posixLib.createPathFromString(getPosixSupport(), castToString.execute(inliningTarget, portObjectProfiled));
+                port = posixLib.createPathFromString(posixSupport, castToString.execute(inliningTarget, portObjectProfiled));
             } else if (PGuards.isBytes(portObjectProfiled)) {
-                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(frame, portObjectProfiled));
+                port = posixLib.createPathFromBytes(posixSupport, toBytes.execute(frame, portObjectProfiled));
             } else if (portObject == PNone.NONE) {
                 port = null;
             } else {
-                throw raise(OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
             }
 
             auditNode.audit(inliningTarget, "socket.getaddrinfo", hostObject, portObjectProfiled, family, type, proto, flags);
@@ -650,7 +652,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 // TODO getaddrinfo lock
                 gil.release(true);
                 try {
-                    cursor = posixLib.getaddrinfo(getPosixSupport(), host, port, family, type, proto, flags);
+                    cursor = posixLib.getaddrinfo(posixSupport, host, port, family, type, proto, flags);
                 } finally {
                     gil.acquire();
                 }
@@ -663,7 +665,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     Object addr = makeSockAddrNode.execute(frame, inliningTarget, cursorLib.getSockAddr(cursor));
                     TruffleString canonName = T_EMPTY_STRING;
                     if (cursorLib.getCanonName(cursor) != null) {
-                        canonName = posixLib.getPathAsString(getPosixSupport(), cursorLib.getCanonName(cursor));
+                        canonName = posixLib.getPathAsString(posixSupport, cursorLib.getCanonName(cursor));
                     }
                     PTuple tuple = factory.createTuple(new Object[]{cursorLib.getFamily(cursor), cursorLib.getSockType(cursor), cursorLib.getProtocol(cursor), canonName, addr});
                     storage = appendNode.execute(inliningTarget, storage, tuple, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);

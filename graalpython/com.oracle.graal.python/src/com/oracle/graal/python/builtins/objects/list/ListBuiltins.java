@@ -641,84 +641,94 @@ public final class ListBuiltins extends PythonBuiltins {
             return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
         }
 
-        private int findIndex(VirtualFrame frame, Node inliningTarget, SequenceStorageNodes.ItemIndexNode itemIndexNode, SequenceStorage s, Object value, int start, int end) {
+        private static int findIndex(VirtualFrame frame, Node inliningTarget, SequenceStorageNodes.ItemIndexNode itemIndexNode, SequenceStorage s, Object value, int start, int end,
+                        PRaiseNode.Lazy raiseNode) {
             int idx = itemIndexNode.execute(frame, inliningTarget, s, value, start, end);
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_LIST);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_LIST);
         }
 
         @Specialization
-        int index(VirtualFrame frame, PList self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+        static int index(VirtualFrame frame, PList self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, 0, s.length());
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, 0, s.length(), raiseNode);
         }
 
         @Specialization
-        int index(VirtualFrame frame, PList self, Object value, long start, @SuppressWarnings("unused") PNone end,
+        static int index(VirtualFrame frame, PList self, Object value, long start, @SuppressWarnings("unused") PNone end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), s.length());
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), s.length(), raiseNode);
         }
 
         @Specialization
-        int index(VirtualFrame frame, PList self, Object value, long start, long end,
+        static int index(VirtualFrame frame, PList self, Object value, long start, long end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end));
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
-        int indexPI(VirtualFrame frame, PList self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
+        static int indexPI(VirtualFrame frame, PList self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), s.length());
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), s.length(), raiseNode);
         }
 
         @Specialization
-        int indexPIPI(VirtualFrame frame, PList self, Object value, PInt start, PInt end,
+        static int indexPIPI(VirtualFrame frame, PList self, Object value, PInt start, PInt end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end));
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
-        int indexLPI(VirtualFrame frame, PList self, Object value, long start, PInt end,
+        static int indexLPI(VirtualFrame frame, PList self, Object value, long start, PInt end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end));
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
-        int indexPIL(VirtualFrame frame, PList self, Object value, PInt start, Long end,
+        static int indexPIL(VirtualFrame frame, PList self, Object value, PInt start, Long end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage s = self.getSequenceStorage();
-            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end));
+            return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        int indexDO(PTuple self, Object value, double start, Object end) {
-            throw raise(TypeError, ERROR_TYPE_MESSAGE);
+        static int indexDO(PTuple self, Object value, double start, Object end,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ERROR_TYPE_MESSAGE);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        int indexOD(PTuple self, Object value, Object start, double end) {
-            throw raise(TypeError, ERROR_TYPE_MESSAGE);
+        static int indexOD(PTuple self, Object value, Object start, double end,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ERROR_TYPE_MESSAGE);
         }
 
         @Specialization(guards = "!isNumber(start)")
-        int indexO(VirtualFrame frame, PTuple self, Object value, Object start, PNone end,
+        static int indexO(VirtualFrame frame, PTuple self, Object value, Object start, PNone end,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
                         @Shared @Cached("createIndexNode()") ListIndexNode indexNode) {
             Object startValue = startNode.execute(frame, start);
@@ -726,7 +736,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(end)"})
-        int indexLO(VirtualFrame frame, PTuple self, Object value, long start, Object end,
+        static int indexLO(VirtualFrame frame, PTuple self, Object value, long start, Object end,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Shared @Cached("createIndexNode()") ListIndexNode indexNode) {
             Object endValue = endNode.execute(frame, end);
@@ -734,7 +744,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(start) || !isNumber(end)"})
-        int indexOO(VirtualFrame frame, PTuple self, Object value, Object start, Object end,
+        static int indexOO(VirtualFrame frame, PTuple self, Object value, Object start, Object end,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Shared @Cached("createIndexNode()") ListIndexNode indexNode) {
@@ -809,15 +819,17 @@ public final class ListBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PList list, Object keyfunc, boolean reverse);
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
-                        @Cached SortSequenceStorageNode sortSequenceStorageNode) {
+        static Object doGeneric(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SortSequenceStorageNode sortSequenceStorageNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = list.getSequenceStorage();
             // Make the list temporarily empty to prevent concurrent modification
             list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
             try {
                 sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
                 if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
-                    throw raise(ValueError, ErrorMessages.LIST_MODIFIED_DURING_SOFT);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.LIST_MODIFIED_DURING_SOFT);
                 }
             } finally {
                 list.setSequenceStorage(storage);

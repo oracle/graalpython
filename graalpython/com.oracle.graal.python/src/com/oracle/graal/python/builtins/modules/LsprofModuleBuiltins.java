@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -148,7 +149,7 @@ public final class LsprofModuleBuiltins extends PythonBuiltins {
                     return factory.trace(new Profiler(cls, factory.getShape(cls), sampler));
                 }
             }
-            throw raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
         }
     }
 }

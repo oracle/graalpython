@@ -2600,18 +2600,18 @@ public final class IntBuiltins extends PythonBuiltins {
     public abstract static class ToBytesNode extends PythonClinicBuiltinNode {
 
         @TruffleBoundary
-        private boolean isBigEndian(TruffleString order) {
+        private static boolean isBigEndian(Node raisingNode, TruffleString order) {
             if (order.equalsUncached(T_BIG, TS_ENCODING)) {
                 return true;
             }
             if (order.equalsUncached(T_LITTLE, TS_ENCODING)) {
                 return false;
             }
-            throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
+            throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
         }
 
         @Specialization
-        PBytes fromLong(long self, int byteCount, TruffleString byteorder, boolean signed,
+        static PBytes fromLong(long self, int byteCount, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile negativeByteCountProfile,
                         @Exclusive @Cached InlinedConditionProfile negativeNumberProfile,
@@ -2619,14 +2619,14 @@ public final class IntBuiltins extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (negativeByteCountProfile.profile(inliningTarget, byteCount < 0)) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
             }
             if (self < 0) {
                 if (negativeNumberProfile.profile(inliningTarget, !signed)) {
-                    throw raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
                 }
             }
-            return factory.createBytes(fromLong(self, byteCount, isBigEndian(byteorder), signed,
+            return factory.createBytes(fromLong(self, byteCount, isBigEndian(inliningTarget, byteorder), signed,
                             inliningTarget, overflowProfile, raiseNode));
         }
 
@@ -2691,7 +2691,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes fromPIntInt(PInt self, int byteCount, TruffleString byteorder, boolean signed,
+        static PBytes fromPIntInt(PInt self, int byteCount, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile negativeByteCountProfile,
                         @Exclusive @Cached InlinedConditionProfile overflowProfile,
@@ -2700,7 +2700,7 @@ public final class IntBuiltins extends PythonBuiltins {
             if (negativeByteCountProfile.profile(inliningTarget, byteCount < 0)) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
             }
-            return factory.createBytes(fromBigInteger(self, byteCount, isBigEndian(byteorder), signed,
+            return factory.createBytes(fromBigInteger(self, byteCount, isBigEndian(inliningTarget, byteorder), signed,
                             inliningTarget, overflowProfile, raiseNode));
         }
 
@@ -2806,14 +2806,14 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private boolean isBigEndian(TruffleString order) {
+        private static boolean isBigEndian(Node raisingNode, TruffleString order) {
             if (order.equalsUncached(T_BIG, TS_ENCODING)) {
                 return true;
             }
             if (order.equalsUncached(T_LITTLE, TS_ENCODING)) {
                 return false;
             }
-            throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
+            throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
         }
 
         private Object createIntObject(Object cl, BigInteger number, PythonObjectFactory factory) {
@@ -2834,21 +2834,23 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         private Object compute(Object cl, byte[] bytes, TruffleString byteorder, boolean signed, PythonObjectFactory factory) {
-            BigInteger bi = createBigInteger(bytes, isBigEndian(byteorder), signed);
+            BigInteger bi = createBigInteger(bytes, isBigEndian(this, byteorder), signed);
             return createIntObject(cl, bi, factory);
         }
 
         @Specialization
         Object fromObject(VirtualFrame frame, Object cl, Object object, TruffleString byteorder, boolean signed,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(Bytes)") LookupAndCallUnaryNode callBytes,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.BytesFromObject bytesFromObject,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] bytes;
             Object bytesObj = callBytes.executeObject(frame, object);
             if (bytesObj != PNone.NO_VALUE) {
                 if (!(bytesObj instanceof PBytes)) {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__);
                 }
                 bytes = bufferLib.getCopiedByteArray(bytesObj);
             } else {
@@ -2905,12 +2907,13 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString doPInt(PInt self,
+        static TruffleString doPInt(PInt self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached InlinedIntValueProfile maxDigitsProfile,
-                        @Cached InlinedIntValueProfile maxDigitsBitLengthProfile) {
-            PythonContext context = PythonContext.get(this);
+                        @Cached InlinedIntValueProfile maxDigitsBitLengthProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
             int intMaxStrDigits = maxDigitsProfile.profile(inliningTarget, context.getIntMaxStrDigits());
             /*
              * Approximate pre-check for the number of digits. It's done as a prevention for DoS
@@ -2927,7 +2930,7 @@ public final class IntBuiltins extends PythonBuiltins {
             if (intMaxStrDigits > 0) {
                 int bitLength = positiveBitLength(self);
                 if (bitLength >= maxDigitsBitLengthProfile.profile(inliningTarget, context.getMinIntBitLengthOverLimit())) {
-                    throw raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
                 }
             }
             String value = self.toString();
@@ -2938,7 +2941,7 @@ public final class IntBuiltins extends PythonBuiltins {
             if (intMaxStrDigits > 0) {
                 int digits = self.isNegative() ? value.length() - 1 : value.length();
                 if (digits > intMaxStrDigits) {
-                    throw raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION);
                 }
             }
             return fromJavaStringNode.execute(value, TS_ENCODING);

@@ -342,8 +342,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RandStatusNode extends PythonBuiltinNode {
         @Specialization
-        Object randStatus() {
-            throw raise(NotImplementedError);
+        static Object randStatus(
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 

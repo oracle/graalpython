@@ -373,14 +373,15 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(table)")
-        Object translate(VirtualFrame frame, Object self, Object table, @SuppressWarnings("unused") PNone delete,
+        static Object translate(VirtualFrame frame, Object self, Object table, @SuppressWarnings("unused") PNone delete,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyBytesCheckExactNode checkExactNode,
                         @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(bTable, isLenTable256Profile);
+            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
             byte[] bSelf = toBytesNode.execute(null, self);
 
             Result result = translate(bSelf, bTable);
@@ -407,14 +408,15 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
-        Object translateAndDelete(VirtualFrame frame, Object self, Object table, Object delete,
+        static Object translateAndDelete(VirtualFrame frame, Object self, Object table, Object delete,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyBytesCheckExactNode checkExactNode,
                         @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(bTable, isLenTable256Profile);
+            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
             byte[] bDelete = toBytesNode.execute(frame, delete);
             byte[] bSelf = toBytesNode.execute(null, self);
 
@@ -2377,13 +2379,15 @@ public final class BytesBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        PBytes maketrans(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object from, Object to,
+        static PBytes maketrans(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object from, Object to,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toByteNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] fromB = toByteNode.execute(frame, from);
             byte[] toB = toByteNode.execute(frame, to);
             if (fromB.length != toB.length) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.ARGS_MUST_HAVE_SAME_LENGTH, "maketrans");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.ARGS_MUST_HAVE_SAME_LENGTH, "maketrans");
             }
 
             byte[] table = new byte[256];
@@ -2403,9 +2407,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
     public abstract static class BaseTranslateNode extends PythonBuiltinNode {
 
-        protected final void checkLengthOfTable(byte[] table, InlinedConditionProfile isLenTable256Profile) {
-            if (isLenTable256Profile.profile(this, table.length != 256)) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
+        static void checkLengthOfTable(Node inliningTarget, byte[] table, InlinedConditionProfile isLenTable256Profile, PRaiseNode.Lazy raiseNode) {
+            if (isLenTable256Profile.profile(inliningTarget, table.length != 256)) {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
             }
         }
 

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -258,7 +259,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("fallthrough")
         @Specialization(guards = "isValidCategory(category)")
         @TruffleBoundary
-        TruffleString doWithoutLocaleID(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
+        static TruffleString doWithoutLocaleID(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
             Locale defaultLocale;
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
@@ -295,7 +296,8 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isValidCategory(category)")
         @TruffleBoundary
         @SuppressWarnings("fallthrough")
-        TruffleString doWithLocaleID(int category, TruffleString posixLocaleID) {
+        static TruffleString doWithLocaleID(int category, TruffleString posixLocaleID,
+                        @Bind("this") Node inliningTarget) {
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
             if (!ImageInfo.inImageBuildtimeCode()) {
@@ -331,21 +333,21 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
                     Locale.setDefault(newLocale);
                 }
             } else {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.UNSUPPORTED_LOCALE_SETTING);
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonErrorType.ValueError, ErrorMessages.UNSUPPORTED_LOCALE_SETTING);
             }
 
             return toPosix(newLocale);
         }
 
         @Specialization(replaces = {"doWithoutLocaleID", "doWithLocaleID"})
-        @SuppressWarnings("truffle-static-method")
-        TruffleString doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
+        static TruffleString doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Cached CastToTruffleStringNode castToStringNode) {
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             long l = asLongNode.execute(frame, inliningTarget, category);
             if (!isValidCategory(l)) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
             }
 
             TruffleString posixLocaleIDStr = null;
@@ -359,7 +361,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             }
 
             if (posixLocaleIDStr != null) {
-                return doWithLocaleID((int) l, posixLocaleIDStr);
+                return doWithLocaleID((int) l, posixLocaleIDStr, inliningTarget);
             }
             return doWithoutLocaleID((int) l, PNone.NONE);
         }

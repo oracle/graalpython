@@ -116,7 +116,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
     protected abstract static class PyCPointerTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
-        protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+        static Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
@@ -128,7 +128,8 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * stgdict items size, align, length contain info about pointers itself, stgdict.proto
              * has info about the pointed to type!
@@ -145,7 +146,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
             // Borrowed ref:
             Object proto = getItem.execute(inliningTarget, typedict.getDictStorage(), T__TYPE_);
             if (proto != null) {
-                PyCPointerType_SetProto(inliningTarget, stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
+                PyCPointerType_SetProto(inliningTarget, stgdict, proto, isTypeNode, pyTypeStgDictNode, raiseNode);
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
                 /* PyCPointerType_SetProto has verified proto has a stgdict. */
                 /*
@@ -246,21 +247,23 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
     protected abstract static class SetTypeNode extends PythonBuiltinNode {
 
         @Specialization
-        Object PyCPointerType_set_type(Object self, TruffleString type,
+        static Object PyCPointerType_set_type(Object self, TruffleString type,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(self, getRaiseNode());
-            PyCPointerType_SetProto(inliningTarget, dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, self, raiseNode);
+            PyCPointerType_SetProto(inliningTarget, dict, type, isTypeNode, pyTypeStgDictNode, raiseNode);
             dict.setDictStorage(setItem.execute(inliningTarget, dict.getDictStorage(), T__TYPE_, type));
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(type)")
-        Object error(Object self, Object type) {
-            throw raise(TypeError, TYPE_MUST_BE_A_TYPE);
+        static Object error(Object self, Object type,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, TYPE_MUST_BE_A_TYPE);
         }
     }
 
@@ -279,12 +282,12 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
     static void PyCPointerType_SetProto(Node inliningTarget, StgDictObject stgdict, Object proto,
                     IsTypeNode isTypeNode,
                     PyTypeStgDictNode pyTypeStgDictNode,
-                    PRaiseNode raiseNode) {
+                    PRaiseNode.Lazy raiseNode) {
         if (proto == null || !isTypeNode.execute(inliningTarget, proto)) {
-            throw raiseNode.raise(TypeError, TYPE_MUST_BE_A_TYPE);
+            throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_BE_A_TYPE);
         }
         if (pyTypeStgDictNode.execute(proto) == null) {
-            throw raiseNode.raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
+            throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
         }
         stgdict.proto = proto;
     }

@@ -88,17 +88,17 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         return UnicodeErrorBuiltinsFactory.getFactories();
     }
 
-    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToTruffleStringNode castNode) {
+    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PRaiseNode.Lazy raiseNode, CastToTruffleStringNode castNode) {
         if (args.length < index + 1 || !PGuards.isString(args[index])) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
         } else {
             return castNode.execute(inliningTarget, args[index]);
         }
     }
 
-    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToJavaIntExactNode castNode) {
+    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PRaiseNode.Lazy raiseNode, CastToJavaIntExactNode castNode) {
         if (args.length < index + 1 || !(PGuards.isInteger(args[index]) || PGuards.isPInt(args[index]))) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
         } else {
             return castNode.execute(inliningTarget, args[index]);
         }
@@ -118,7 +118,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytes(PBytes value) {
+        static PBytes doBytes(PBytes value) {
             return value;
         }
 
@@ -136,9 +136,9 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static Object getArgAsBytes(VirtualFrame frame, Object[] args, int index, PRaiseNode raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
+    public static Object getArgAsBytes(VirtualFrame frame, Node inliningTarget, Object[] args, int index, PRaiseNode.Lazy raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
         if (args.length < index + 1) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
         } else {
             return getArgAsBytesNode.execute(frame, args[index]);
         }
@@ -148,7 +148,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UnicodeErrorEncodingNode extends PythonBuiltinNode {
         @Specialization
-        Object generic(PBaseException self, Object value,
+        static Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY);
         }
@@ -158,7 +158,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UnicodeErrorNode extends PythonBuiltinNode {
         @Specialization
-        Object generic(PBaseException self, Object value,
+        static Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
         }
@@ -168,31 +168,31 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UnicodeErrorStartNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object get(PBaseException self, PNone none,
+        static Object get(PBaseException self, PNone none,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, none, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setBool(PBaseException self, boolean value,
+        static Object setBool(PBaseException self, boolean value,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value ? 1 : 0, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setInt(PBaseException self, int value,
+        static Object setInt(PBaseException self, int value,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setInt(PBaseException self, long value,
+        static Object setInt(PBaseException self, long value,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, (int) value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setPInt(PBaseException self, PInt value,
+        static Object setPInt(PBaseException self, PInt value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
@@ -201,8 +201,9 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
         @SuppressWarnings("unused")
-        Object generic(PBaseException self, Object value) {
-            throw raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
+        static Object generic(PBaseException self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }
 
@@ -210,25 +211,25 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UnicodeErrorEndNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object get(PBaseException self, PNone none,
+        static Object get(PBaseException self, PNone none,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, none, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setBool(PBaseException self, boolean value,
+        static Object setBool(PBaseException self, boolean value,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value ? 1 : 0, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setInt(PBaseException self, int value,
+        static Object setInt(PBaseException self, int value,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
-        Object setPInt(PBaseException self, PInt value,
+        static Object setPInt(PBaseException self, PInt value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
@@ -237,8 +238,9 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
         @SuppressWarnings("unused")
-        Object generic(PBaseException self, Object value) {
-            throw raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
+        static Object generic(PBaseException self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }
 
@@ -246,7 +248,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UnicodeErrorReasonNode extends PythonBuiltinNode {
         @Specialization
-        Object generic(PBaseException self, Object value,
+        static Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY);
         }

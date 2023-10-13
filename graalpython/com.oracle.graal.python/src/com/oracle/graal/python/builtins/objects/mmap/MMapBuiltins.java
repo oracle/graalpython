@@ -408,9 +408,10 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        long resize(PMMap self, Object n) {
+        static long resize(PMMap self, Object n,
+                        @Cached PRaiseNode raiseNode) {
             // TODO: implement resize in NFI
-            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.RESIZING_NOT_AVAILABLE);
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.RESIZING_NOT_AVAILABLE);
         }
     }
 
@@ -453,8 +454,7 @@ public final class MMapBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonBuiltinNode {
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        PBytes read(VirtualFrame frame, PMMap self, Object n,
+        static PBytes read(VirtualFrame frame, PMMap self, Object n,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile noneProfile,
                         @Cached InlinedConditionProfile emptyProfile,
@@ -463,7 +463,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedConditionProfile negativeProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             long nread;
             // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
             if (noneProfile.profile(inliningTarget, isPNone(n))) {
@@ -471,7 +472,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             } else {
                 // _Py_convert_optional_to_ssize_t:
                 if (!indexCheckNode.execute(inliningTarget, n)) {
-                    throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
                 }
                 nread = asSizeNode.executeExact(frame, inliningTarget, n);
 
@@ -485,11 +486,11 @@ public final class MMapBuiltins extends PythonBuiltins {
                 return createEmptyBytes(factory);
             }
             try {
-                byte[] buffer = MMapBuiltins.readBytes(frame, inliningTarget, self, posixLib, getPosixSupport(), self.getPos(), PythonUtils.toIntExact(nread), constructAndRaiseNode);
+                byte[] buffer = MMapBuiltins.readBytes(frame, inliningTarget, self, posixLib, PosixSupport.get(inliningTarget), self.getPos(), PythonUtils.toIntExact(nread), constructAndRaiseNode);
                 self.setPos(self.getPos() + buffer.length);
                 return factory.createBytes(buffer);
             } catch (OverflowException e) {
-                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.TOO_MANY_REMAINING_BYTES_TO_BE_STORED);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.TOO_MANY_REMAINING_BYTES_TO_BE_STORED);
             }
         }
     }

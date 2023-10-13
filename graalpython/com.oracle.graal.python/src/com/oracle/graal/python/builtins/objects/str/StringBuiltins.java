@@ -297,8 +297,9 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isString(self)")
         @SuppressWarnings("unused")
-        TruffleString generic(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
+        static TruffleString generic(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
         }
     }
 
@@ -2300,9 +2301,6 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PString.class)
     abstract static class CenterNode extends PythonBuiltinNode {
-        protected boolean isSingleCodePoint(TruffleString s, TruffleString.CodePointLengthNode codePointLengthNode) {
-            return codePointLengthNode.execute(s, TS_ENCODING) == 1;
-        }
 
         @Specialization
         TruffleString doIt(VirtualFrame frame, Object selfObj, Object width, Object fill,
@@ -2315,22 +2313,23 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached InlinedConditionProfile errorProfile) {
+                        @Cached InlinedConditionProfile errorProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString self = castSelfNode.cast(inliningTarget, selfObj, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___ITER__, selfObj);
             int fillChar;
             if (PGuards.isNoValue(fill)) {
                 fillChar = ' ';
             } else {
                 TruffleString fillStr = castFillNode.cast(inliningTarget, fill, FILL_CHAR_MUST_BE_UNICODE_CHAR_NOT_P, fill);
-                if (errorProfile.profile(inliningTarget, !isSingleCodePoint(fillStr, codePointLengthNode))) {
-                    throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
+                if (errorProfile.profile(inliningTarget, codePointLengthNode.execute(fillStr, TS_ENCODING) != 1)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
                 }
                 fillChar = codePointAtIndexNode.execute(fillStr, 0, TS_ENCODING);
             }
             return make(self, asSizeNode.executeExact(frame, inliningTarget, width), fillChar, codePointLengthNode, appendCodePointNode, appendStringNode, toStringNode);
         }
 
-        protected TruffleString make(TruffleString self, int width, int fillChar, TruffleString.CodePointLengthNode codePointLengthNode, TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+        private TruffleString make(TruffleString self, int width, int fillChar, TruffleString.CodePointLengthNode codePointLengthNode, TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
             int len = codePointLengthNode.execute(self, TS_ENCODING);
             if (width <= len) {

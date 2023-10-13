@@ -155,13 +155,14 @@ public final class RandomBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
         @Specialization
-        PNone setstate(PRandom random, PTuple tuple,
+        static PNone setstate(PRandom random, PTuple tuple,
                         @Bind("this") Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Cached CastToJavaUnsignedLongNode castNode) {
+                        @Cached CastToJavaUnsignedLongNode castNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] arr = getObjectArrayNode.execute(inliningTarget, tuple);
             if (arr.length != PRandom.N + 1) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             int[] state = new int[PRandom.N];
             for (int i = 0; i < PRandom.N; ++i) {
@@ -170,7 +171,7 @@ public final class RandomBuiltins extends PythonBuiltins {
             }
             long index = castNode.execute(inliningTarget, arr[PRandom.N]);
             if (index < 0 || index > PRandom.N) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             random.restore(state, (int) index);
             return PNone.NONE;
@@ -178,8 +179,9 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object setstate(Object random, Object state) {
-            throw raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
+        static Object setstate(Object random, Object state,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
         }
     }
 

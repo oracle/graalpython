@@ -519,8 +519,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
-        Object err(PythonModule self, long seconds) {
-            throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
+        static Object err(PythonModule self, long seconds,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
         @Specialization(guards = "isPositive(seconds)", limit = "1")
@@ -542,8 +543,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
-        Object err(PythonModule self, double seconds) {
-            throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
+        static Object err(PythonModule self, double seconds,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
         @Specialization(guards = "!isInteger(secondsObj)")

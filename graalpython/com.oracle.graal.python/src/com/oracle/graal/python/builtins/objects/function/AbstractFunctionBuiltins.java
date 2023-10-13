@@ -127,8 +127,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object getClosure(Object self) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
+        static Object getClosure(Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
         }
     }
 
@@ -151,8 +152,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object getGlobals(Object self) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
+        static Object getGlobals(Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
         }
     }
 
@@ -203,8 +205,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object getModule(PBuiltinFunction self, Object value) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
+        static Object getModule(PBuiltinFunction self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
         }
     }
 
@@ -234,8 +237,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object getModule(PBuiltinFunction self, Object value) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
+        static Object getModule(PBuiltinFunction self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
         }
     }
 

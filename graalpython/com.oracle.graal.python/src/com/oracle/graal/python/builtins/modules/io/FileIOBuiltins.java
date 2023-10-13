@@ -1031,8 +1031,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PFileIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 

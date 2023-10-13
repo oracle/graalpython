@@ -350,8 +350,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isValid(self, encodingObj, errorsObj, newlineObj)")
-        Object error(VirtualFrame frame, PTextIO self, Object encodingObj, Object errorsObj, Object newlineObj, Object lineBufferingObj, Object writeThroughObj) {
-            throw raise(IOUnsupportedOperation, NOT_POSSIBLE_TO_SET_THE_ENCODING_OR);
+        static Object error(VirtualFrame frame, PTextIO self, Object encodingObj, Object errorsObj, Object newlineObj, Object lineBufferingObj, Object writeThroughObj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, NOT_POSSIBLE_TO_SET_THE_ENCODING_OR);
         }
     }
 
@@ -1168,26 +1169,28 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isDetached()", "!isNoValue(arg)"})
-        @SuppressWarnings("truffle-static-method")
-        Object chunkSize(VirtualFrame frame, PTextIO self, Object arg,
+        static Object chunkSize(VirtualFrame frame, PTextIO self, Object arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int size = asSizeNode.executeExact(frame, inliningTarget, arg, ValueError);
             if (size <= 0) {
-                throw raise(ValueError, A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED);
+                throw raiseNode.get(inliningTarget).raise(ValueError, A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED);
             }
             self.setChunkSize(size);
             return 0;
         }
 
         @Specialization(guards = "!self.isOK()")
-        Object initError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object arg) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object arg,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
 
         @Specialization(guards = {"self.isOK()", "self.isDetached()"})
-        Object attachError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object arg) {
-            throw raise(ValueError, DETACHED_BUFFER);
+        static Object attachError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object arg,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, DETACHED_BUFFER);
         }
     }
 

@@ -129,6 +129,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -174,29 +175,31 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object simple(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object simple(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
 
         @Specialization(guards = {"args.length <= 1", "isTuple(args)"})
-        Object fromNativeLibrary(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object fromNativeLibrary(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached PyCFuncPtrFromDllNode pyCFuncPtrFromDllNode) {
             return pyCFuncPtrFromDllNode.execute(frame, type, args);
         }
 
         @Specialization(guards = {"args.length == 1", "isLong(this, args, longCheckNode)"})
-        Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             CDataObject cdata = pyCDataNewNode.execute(inliningTarget, type, dict);
             Pointer value = pointerFromLongNode.execute(inliningTarget, args[0]);
             writePointerNode.execute(inliningTarget, cdata.b_ptr, value);
@@ -204,24 +207,25 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(this, args, longCheckNode)"})
-        Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object callable = args[0];
             if (!callableCheck.execute(inliningTarget, callable)) {
-                throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
             }
 
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             if (dict == null || dict.argtypes == null) {
-                throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
-            CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags,
+            CThunkObject thunk = _ctypes_alloc_callback(inliningTarget, callable, dict.argtypes, dict.restype, dict.flags,
                             pyTypeStgDictNode);
             PyCFuncPtrObject self = (PyCFuncPtrObject) pyCDataNewNode.execute(inliningTarget, type, dict);
             self.callable = callable;
@@ -232,10 +236,11 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"})
-        Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode) {
-            throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
+                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
 
         static CThunkObject CThunkObjectNew(int nArgs) {
@@ -257,7 +262,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return p;
         }
 
-        FFIType _ctypes_get_ffi_type(Object obj,
+        static FFIType _ctypes_get_ffi_type(Object obj,
                         PyTypeStgDictNode pyTypeStgDictNode) {
             if (obj == null) {
                 return ffi_type_sint;
@@ -270,7 +275,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags,
+        static CThunkObject _ctypes_alloc_callback(Node raisingNode, Object callable, Object[] converters, Object restype, int flags,
                         PyTypeStgDictNode pyTypeStgDictNode) {
             int nArgs = converters.length;
             CThunkObject thunk = CThunkObjectNew(nArgs);
@@ -289,14 +294,14 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             } else {
                 StgDictObject dict = pyTypeStgDictNode.execute(restype);
                 if (dict == null || dict.setfunc == FieldSet.nil) {
-                    throw raise(TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
+                    throw PRaiseNode.raiseUncached(raisingNode, TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
                 }
                 thunk.setfunc = dict.setfunc;
                 thunk.ffi_restype = dict.ffi_type_pointer;
             }
             TruffleString signatureStr = FFIType.buildNFISignature(thunk.atypes, thunk.ffi_restype, true);
             Source source = Source.newBuilder(J_NFI_LANGUAGE, signatureStr.toJavaStringUncached(), "<ctypes callback>").build();
-            Object nfiSignature = PythonContext.get(this).getEnv().parseInternal(source).call();
+            Object nfiSignature = PythonContext.get(raisingNode).getEnv().parseInternal(source).call();
             thunk.pcl_exec = SignatureLibrary.getUncached().createClosure(nfiSignature, new CThunkObject.CtypeCallback(thunk));
             thunk.pcl_write = thunk.pcl_exec;
             thunk.converters = converters;

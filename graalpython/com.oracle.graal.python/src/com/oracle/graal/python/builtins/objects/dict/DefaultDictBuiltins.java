@@ -165,16 +165,17 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
+        static Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached DictBuiltins.InitNode dictInitNode,
-                        @Cached PyCallableCheckNode callableCheckNode) {
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] newArgs = args;
             Object newDefault = PNone.NONE;
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
                 if (newDefault != PNone.NONE && !callableCheckNode.execute(inliningTarget, newDefault)) {
-                    throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
+                    throw raiseNode.get(inliningTarget).raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             }

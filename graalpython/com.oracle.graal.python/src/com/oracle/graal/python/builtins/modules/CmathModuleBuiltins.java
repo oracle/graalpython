@@ -17,6 +17,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.AbsNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -35,6 +36,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1052,40 +1054,45 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         private static final double DEFAULT_REL_TOL = 1e-09;
         private static final double DEFAULT_ABS_TOL = 0;
 
-        @Child ComplexBuiltins.AbsNode abs = ComplexBuiltins.AbsNode.create();
-
         @Specialization
-        boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return isClose(a, b, relTolObj, absTolObj, factory);
+        static boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached AbsNode absNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return isClose(inliningTarget, a, b, relTolObj, absTolObj, factory, absNode, raiseNode);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return isClose(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, factory);
+        static boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached AbsNode absNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return isClose(inliningTarget, a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, factory, absNode, raiseNode);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean doGeneral(VirtualFrame frame, Object aObj, Object bObj, Object relTolObj, Object absTolObj,
+        static boolean doGeneral(VirtualFrame frame, Object aObj, Object bObj, Object relTolObj, Object absTolObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceAToComplex,
                         @Cached CoerceToComplexNode coerceBToComplex,
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,
                         @Cached PyFloatAsDoubleNode absAsDoubleNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached AbsNode absNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             PComplex a = coerceAToComplex.execute(frame, inliningTarget, aObj);
             PComplex b = coerceBToComplex.execute(frame, inliningTarget, bObj);
             double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, inliningTarget, relTolObj);
             double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, inliningTarget, absTolObj);
-            return isClose(a, b, relTol, absTol, factory);
+            return isClose(inliningTarget, a, b, relTol, absTol, factory, absNode, raiseNode);
         }
 
-        private boolean isClose(PComplex a, PComplex b, double relTol, double absTol, PythonObjectFactory factory) {
+        private static boolean isClose(Node inliningTarget, PComplex a, PComplex b, double relTol, double absTol, PythonObjectFactory factory, AbsNode absNode, PRaiseNode.Lazy raiseNode) {
             if (relTol < 0.0 || absTol < 0.0) {
-                throw raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
             }
             if (a.getReal() == b.getReal() && a.getImag() == b.getImag()) {
                 return true;
@@ -1095,8 +1102,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 return false;
             }
             PComplex diff = factory.createComplex(a.getReal() - b.getReal(), a.getImag() - b.getImag());
-            double len = abs.executeDouble(diff);
-            return len <= absTol || len <= relTol * abs.executeDouble(b) || len <= relTol * abs.executeDouble(a);
+            double len = absNode.executeDouble(diff);
+            return len <= absTol || len <= relTol * absNode.executeDouble(b) || len <= relTol * absNode.executeDouble(a);
         }
     }
 }

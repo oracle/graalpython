@@ -272,9 +272,10 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
         @Specialization
-        Object defaultIntHandler(@SuppressWarnings("unused") Object[] args) {
+        static Object defaultIntHandler(@SuppressWarnings("unused") Object[] args,
+                        @Cached PRaiseNode raiseNode) {
             // TODO should be implemented properly.
-            throw raise(PythonErrorType.KeyboardInterrupt);
+            throw raiseNode.raise(PythonErrorType.KeyboardInterrupt);
         }
     }
 

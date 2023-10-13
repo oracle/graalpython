@@ -1053,16 +1053,17 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WarnExplicitBuiltinNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
+        static Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         int lineno, Object module, Object registry, Object globals, Object source,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached WarningsModuleNode moduleFunctionsNode) {
+                        @Cached WarningsModuleNode moduleFunctionsNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString filename;
             try {
                 filename = castStr.execute(inliningTarget, flname);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "warn_explicit()", 3, "str", flname);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "warn_explicit()", 3, "str", flname);
             }
             PDict globalsDict;
             if (globals instanceof PNone) {
@@ -1070,7 +1071,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (globals instanceof PDict) {
                 globalsDict = (PDict) globals;
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MOD_GLOBALS_MUST_BE_DICT, globals);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.MOD_GLOBALS_MUST_BE_DICT, globals);
             }
             // CPython calls get_source_line here. But since that's potentially slow, maybe we can
             // get away with doing that lazily
