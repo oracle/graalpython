@@ -136,7 +136,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         public abstract double executeDouble(Object arg);
 
         @Specialization
-        double abs(PComplex c) {
+        static double abs(PComplex c,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double x = c.getReal();
             double y = c.getImag();
             if (Double.isInfinite(x) || Double.isInfinite(y)) {
@@ -169,7 +171,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                     // remove scaling
                     double r = scalb(scaledH, middleExp);
                     if (Double.isInfinite(r)) {
-                        throw raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
+                        throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
                     }
                     return r;
                 }
@@ -728,12 +730,10 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString repr(PComplex self) {
-            return repr(self, getRaiseNode());
-        }
-
         @TruffleBoundary
-        private static TruffleString repr(PComplex self, PRaiseNode raiseNode) {
+        static TruffleString repr(PComplex self,
+                        @Cached PRaiseNode raiseNode) {
+            // TODO GR-49237 use uncached raise in Formatter
             ComplexFormatter formatter = new ComplexFormatter(raiseNode, new Spec(-1, Spec.NONE));
             formatter.format(self);
             return formatter.pad().getResult();

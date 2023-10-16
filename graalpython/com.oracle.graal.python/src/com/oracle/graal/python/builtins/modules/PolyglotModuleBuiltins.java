@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -613,16 +614,17 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StorageNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doSequence(PSequence seq,
+        static Object doSequence(PSequence seq,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, seq);
-            return PythonContext.get(this).getEnv().asGuestValue(storage.getInternalArrayObject());
+            return PythonContext.get(inliningTarget).getEnv().asGuestValue(storage.getInternalArrayObject());
         }
 
         @Fallback
-        Object doError(Object object) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
+        static Object doError(Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }
 

@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -71,6 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -122,41 +122,34 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
-        private Object get(TruffleString name, TruffleString.ToJavaStringNode toJavaStringNode) {
-            Env env = getContext().getEnv();
+
+        @Specialization(guards = "isPString(name) || isTruffleString(name)")
+        static Object type(Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
             }
+            String javaString = castToStringNode.execute(name);
             Object hostValue;
             try {
-                hostValue = env.lookupHostSymbol(toJavaStringNode.execute(name));
+                hostValue = env.lookupHostSymbol(javaString);
             } catch (RuntimeException e) {
                 hostValue = null;
             }
             if (hostValue == null) {
-                throw raise(PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, name);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, javaString);
             } else {
                 return hostValue;
             }
         }
 
-        @Specialization
-        Object type(TruffleString name,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return get(name, toJavaStringNode);
-        }
-
-        @Specialization
-        Object type(PString name,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return get(castToStringNode.execute(inliningTarget, name), toJavaStringNode);
-        }
-
         @Fallback
-        Object doError(Object object) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
+        static Object doError(Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }
 

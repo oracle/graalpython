@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -71,8 +72,9 @@ public final class PZipBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
-        Object doEmpty(@SuppressWarnings("unused") PZip self) {
-            throw raiseStopIteration();
+        static Object doEmpty(@SuppressWarnings("unused") PZip self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
@@ -88,12 +90,12 @@ public final class PZipBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
-        @SuppressWarnings("truffle-static-method")
-        Object doNext(VirtualFrame frame, PZip self,
+        static Object doNext(VirtualFrame frame, PZip self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetNextNode next,
                         @Cached IsBuiltinObjectProfile classProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             int i = 0;
@@ -105,12 +107,12 @@ public final class PZipBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, classProfile);
                 if (i > 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                 }
                 for (i = 1; i < iterators.length; i++) {
                     try {
                         next.execute(frame, iterators[i]);
-                        throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                     } catch (PException e2) {
                         e2.expectStopIteration(inliningTarget, classProfile);
                     }

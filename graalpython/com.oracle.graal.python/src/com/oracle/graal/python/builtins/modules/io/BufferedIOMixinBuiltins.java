@@ -106,6 +106,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -404,14 +405,15 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString repr(VirtualFrame frame, PBuffered self,
+        static TruffleString repr(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinObjectProfile isValueError,
                         @Cached PyObjectReprAsTruffleStringNode repr,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             Object nameobj = PNone.NO_VALUE;
             try {
@@ -423,14 +425,14 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             if (nameobj instanceof PNone) {
                 return simpleTruffleStringFormatNode.format("<%s>", typeName);
             } else {
-                if (!getContext().reprEnter(self)) {
-                    throw raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
+                if (!PythonContext.get(inliningTarget).reprEnter(self)) {
+                    throw raiseNode.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
                 } else {
                     try {
                         TruffleString name = repr.execute(frame, inliningTarget, nameobj);
                         return simpleTruffleStringFormatNode.format("<%s name=%s>", typeName, name);
                     } finally {
-                        getContext().reprLeave(self);
+                        PythonContext.get(inliningTarget).reprLeave(self);
                     }
                 }
             }

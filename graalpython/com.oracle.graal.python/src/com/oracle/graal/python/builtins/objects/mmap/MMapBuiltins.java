@@ -429,15 +429,16 @@ public final class MMapBuiltins extends PythonBuiltins {
     abstract static class ReadByteNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int readByte(VirtualFrame frame, PMMap self,
+        static int readByte(VirtualFrame frame, PMMap self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getPos() >= self.getLength()) {
-                throw raise(PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
             }
             try {
-                byte res = posixSupportLib.mmapReadByte(getPosixSupport(), self.getPosixSupportHandle(), self.getPos());
+                byte res = posixSupportLib.mmapReadByte(PosixSupport.get(inliningTarget), self.getPosixSupportHandle(), self.getPos());
                 self.setPos(self.getPos() + 1);
                 return res & 0xFF;
             } catch (PosixException e) {

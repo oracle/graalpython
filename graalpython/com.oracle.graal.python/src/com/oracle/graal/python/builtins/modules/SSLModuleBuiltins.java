@@ -332,8 +332,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class Nid2ObjNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object nid2obj(Object nid) {
-            throw raise(NotImplementedError);
+        static Object nid2obj(Object nid,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -362,8 +363,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object randBytes(Object n) {
-            throw raise(NotImplementedError);
+        static Object randBytes(Object n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -372,8 +374,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandPseudoBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object randPseudoBytes(Object n) {
-            throw raise(NotImplementedError);
+        static Object randPseudoBytes(Object n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 

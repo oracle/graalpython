@@ -26,6 +26,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
@@ -115,13 +116,15 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString call(TruffleString string,
+        static TruffleString call(TruffleString string,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
@@ -129,7 +132,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                 JSONUtils.appendString(string, createCodePointIteratorNode.execute(string, TS_ENCODING), builder, false, nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
 
@@ -149,13 +152,15 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString call(TruffleString string,
+        static TruffleString call(TruffleString string,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
@@ -164,7 +169,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                                 nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
     }

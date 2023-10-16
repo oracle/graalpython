@@ -145,19 +145,23 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
-        Object next(VirtualFrame frame, PTee self,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode) {
-            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, getRaiseNode());
+        static Object next(VirtualFrame frame, PTee self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
             return value;
         }
 
         @Specialization(guards = "self.getIndex() >= LINKCELLS")
-        Object nextNext(VirtualFrame frame, PTee self,
+        static Object nextNext(VirtualFrame frame, PTee self,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             self.setDataObj(self.getDataobj().jumplink(factory));
-            Object value = self.getDataobj().getItem(frame, 0, nextNode, getRaiseNode());
+            Object value = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
             self.setIndex(1);
             return value;
         }

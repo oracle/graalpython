@@ -811,12 +811,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object remove(VirtualFrame frame, PSet self,
+        static Object remove(VirtualFrame frame, PSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageDelItem delItem) {
+                        @Cached HashingStorageDelItem delItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             HashingStorage storage = self.getDictStorage();
             HashingStorageIterator it = getIter.execute(inliningTarget, storage);
             if (iterNext.execute(inliningTarget, storage, it)) {
@@ -826,7 +827,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 delItem.execute(frame, inliningTarget, storage, key, self);
                 return key;
             }
-            throw raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
     }
 

@@ -76,7 +76,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = BZ2Decompressor)
 public final class BZ2DecompressorBuiltins extends PythonBuiltins {
@@ -90,16 +89,16 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone init(BZ2Object.BZ2Decompressor self,
+        static PNone init(BZ2Object.BZ2Decompressor self,
                         @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
-                        @Cached InlinedConditionProfile errProfile) {
-            NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            NFIBz2Support bz2Support = PythonContext.get(inliningTarget).getNFIBz2Support();
             Object bzst = bz2Support.createStream(createStream);
             int err = bz2Support.decompressInit(bzst, compressInit);
-            if (errProfile.profile(inliningTarget, err != BZ_OK)) {
-                errorHandling(err, getRaiseNode());
+            if (err != BZ_OK) {
+                errorHandling(err, raiseNode.get(inliningTarget));
             }
             self.init(bzst, bz2Support);
             return PNone.NONE;

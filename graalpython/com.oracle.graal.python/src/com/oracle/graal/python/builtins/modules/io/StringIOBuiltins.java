@@ -144,13 +144,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
     abstract static class ClosedCheckPythonUnaryBuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isOK()")
-        Object initError(@SuppressWarnings("unused") PStringIO self) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(@SuppressWarnings("unused") PStringIO self,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PStringIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PStringIO self,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -783,8 +785,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isOK()")
-        Object initError(@SuppressWarnings("unused") PStringIO self) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(@SuppressWarnings("unused") PStringIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
     }
 
@@ -809,17 +812,17 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"}, limit = "1")
-        @SuppressWarnings("truffle-static-method") // raise
-        Object builtin(PStringIO self,
+        static Object builtin(PStringIO self,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectProfile profile,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached FindLineEndingNode findLineEndingNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             self.realize();
             TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode, toStringNode);
             if (line.isEmpty()) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return line;
         }
@@ -827,21 +830,21 @@ public final class StringIOBuiltins extends PythonBuiltins {
         /*
          * This path is rarely executed.
          */
-        @SuppressWarnings("truffle-static-method")
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
-        Object slowpath(VirtualFrame frame, PStringIO self,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static Object slowpath(VirtualFrame frame, PStringIO self,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectProfile profile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadline,
-                        @Cached CastToTruffleStringNode toString) {
+                        @Cached CastToTruffleStringNode toString,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             self.realize();
             Object res = callMethodReadline.execute(frame, inliningTarget, self, T_READLINE);
             if (!PGuards.isString(res)) {
-                throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, T_READLINE, res);
+                throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, T_READLINE, res);
             }
             TruffleString line = toString.execute(inliningTarget, res);
             if (line.isEmpty()) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return line;
         }

@@ -752,16 +752,19 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetAtoNNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PBytes doConvert(TruffleString addr,
+        static PBytes doConvert(TruffleString addr,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                int converted = posixLib.inet_aton(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), addr));
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                int converted = posixLib.inet_aton(posixSupport, posixLib.createPathFromString(posixSupport, addr));
                 byte[] bytes = new byte[4];
                 ByteArraySupport.bigEndian().putInt(bytes, 0, converted);
                 return factory.createBytes(bytes);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
-                throw raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
             }
         }
 
@@ -775,16 +778,19 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         TruffleString doGeneric(VirtualFrame frame, Object addr,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (len != 4) {
-                    throw raise(OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
+                    throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
                 }
                 Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
                 return posixLib.getPathAsString(getPosixSupport(), result);
@@ -873,13 +879,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NToHSNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int convert(VirtualFrame frame, Object xObj,
+        static int convert(VirtualFrame frame, Object xObj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int x = asIntNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
-                throw raise(OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
             }
             if (x > 0xFFFF) {
                 warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.NTOH_PYTHON_STRING_TOO_LARGE_TO_CONVERT, 1);
@@ -897,15 +904,16 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NToHLNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long convert(VirtualFrame frame, Object xObj,
+        static long convert(VirtualFrame frame, Object xObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyLongAsLongNode asLongNode) {
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             long x = asLongNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
-                throw raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
             }
             if (x > 0xFFFFFFFFL) {
-                throw raise(OverflowError, ErrorMessages.INT_LATGER_THAN_32_BITS);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.INT_LATGER_THAN_32_BITS);
             }
             int i = (int) x;
             if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {

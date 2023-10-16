@@ -1217,14 +1217,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ToUnicodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString tounicode(PArray self,
+        static TruffleString tounicode(PArray self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile formatProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (formatProfile.profile(inliningTarget, self.getFormat() != BufferFormat.UNICODE)) {
-                throw raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
             }
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             for (int i = 0; i < self.getLength(); i++) {

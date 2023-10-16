@@ -103,13 +103,14 @@ public final class ChainBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PChain self,
+        static Object next(VirtualFrame frame, PChain self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile nextExceptioProfile,
-                        @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             while (loopProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (self.getActive() == PNone.NONE) {
                     try {
@@ -129,7 +130,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                     self.setActive(PNone.NONE);
                 }
             }
-            throw raiseStopIteration();
+            throw raiseNode.get(inliningTarget).raiseStopIteration();
         }
     }
 

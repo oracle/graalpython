@@ -245,13 +245,6 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.shouldReleaseImmediately = shouldReleaseImmediately;
     }
 
-    // TODO replace with the lazy version below
-    void checkReleased(PRaiseNode raiseNode) {
-        if (isReleased()) {
-            throw raiseNode.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
-        }
-    }
-
     public void checkReleased(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (isReleased()) {
             throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
@@ -291,29 +284,30 @@ public final class PMemoryView extends PythonBuiltinObject {
 
     @ExportMessage
     Object acquire(int requestedFlags,
-                    @Cached PRaiseNode raiseNode) {
-        checkReleased(raiseNode);
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PRaiseNode.Lazy raiseNode) {
+        checkReleased(inliningTarget, raiseNode);
         if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
         }
         if (BufferFlags.requestsCContiguous(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
         }
         if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
         }
         if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isCContiguous() && !isFortranContiguous()) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
         }
         if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
         }
         if (!BufferFlags.requestsStrides(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
         }
         // TODO should reflect the cast to unsigned bytes if necessary
         if (!BufferFlags.requestsShape(requestedFlags) && BufferFlags.requestsFormat(requestedFlags)) {
-            throw raiseNode.raise(BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
         }
         exports.incrementAndGet();
         return this;

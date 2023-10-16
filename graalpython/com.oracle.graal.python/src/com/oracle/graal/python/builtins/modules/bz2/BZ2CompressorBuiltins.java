@@ -176,8 +176,9 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(BZ2Object.BZ2Compressor self) {
-            throw raise(ValueError, REPEATED_CALL_TO_FLUSH);
+        static PNone error(BZ2Object.BZ2Compressor self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 }

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -97,7 +98,7 @@ public final class ProductBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
-        Object next(PProduct self,
+        static Object next(PProduct self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -111,15 +112,15 @@ public final class ProductBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
-        Object next(PProduct self,
+        static Object next(PProduct self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile gearsProfile,
                         @Cached InlinedConditionProfile indexProfile,
                         @Cached InlinedBranchProfile wasStoppedProfile,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile doneProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
             if (gearsProfile.profile(inliningTarget, x >= 0)) {
@@ -139,7 +140,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
             if (self.isStopped()) {
                 wasStoppedProfile.enter(inliningTarget);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
 
             // the existing lst array can be changed in a following next call
@@ -150,8 +151,9 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
-        Object nextStopped(PProduct self) {
-            throw raiseStopIteration();
+        static Object nextStopped(PProduct self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         private static void rotatePreviousGear(Node inliningTarget, PProduct self, InlinedLoopConditionProfile loopProfile, InlinedBranchProfile doneProfile) {

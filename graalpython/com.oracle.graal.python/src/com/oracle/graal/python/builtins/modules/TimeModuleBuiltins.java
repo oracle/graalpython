@@ -1109,10 +1109,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getClockInfo(TruffleString name,
+        static Object getClockInfo(TruffleString name,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             final boolean adjustable;
             final boolean monotonic;
 
@@ -1124,7 +1126,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 adjustable = true;
                 monotonic = false;
             } else {
-                throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
             }
 
             final PSimpleNamespace ns = factory.createSimpleNamespace();

@@ -292,21 +292,21 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasDecoder()")
-        @SuppressWarnings("truffle-static-method")
-        Object withDecoder(VirtualFrame frame, PNLDecoder self,
+        static Object withDecoder(VirtualFrame frame, PNLDecoder self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
-                throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             flag <<= 1;

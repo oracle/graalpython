@@ -163,13 +163,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object dir(VirtualFrame frame, PythonModule self,
+        static Object dir(VirtualFrame frame, PythonModule self,
                         @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isDictProfile,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached HashingStorageGetItem getItem) {
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object dict = lookup.execute(frame, inliningTarget, self, T___DICT__);
             if (isDictProfile.profileObject(inliningTarget, dict, PythonBuiltinClassType.PDict)) {
                 HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
@@ -180,7 +181,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
                     return constructListNode.execute(frame, dict);
                 }
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");
             }
         }
     }

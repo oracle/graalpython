@@ -337,21 +337,22 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object close(VirtualFrame frame, PGenerator self,
+        static Object close(VirtualFrame frame, PGenerator self,
                         @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isGeneratorExit,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached InlinedConditionProfile isStartedPorfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.isRunning()) {
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             if (isStartedPorfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = factory.createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(getLanguage());
+                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget));
                 try {
                     resumeGeneratorNode.execute(frame, inliningTarget, self, new ThrowData(pythonException, withJavaStacktrace));
                 } catch (PException pe) {
@@ -363,7 +364,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 } finally {
                     self.markAsFinished();
                 }
-                throw raise(RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
+                throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
             } else {
                 self.markAsFinished();
                 return PNone.NONE;

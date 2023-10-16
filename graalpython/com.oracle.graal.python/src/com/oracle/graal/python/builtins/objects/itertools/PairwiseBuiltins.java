@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -109,8 +110,9 @@ public final class PairwiseBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getIterable() == null")
-        Object next(@SuppressWarnings("unused") PPairwise self) {
-            throw raiseStopIteration();
+        static Object next(@SuppressWarnings("unused") PPairwise self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
     }
 }

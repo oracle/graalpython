@@ -529,10 +529,12 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequePopNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(PDeque self) {
+        static Object doGeneric(PDeque self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object value = self.pop();
             if (value == null) {
-                throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
+                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
             }
             return value;
         }
@@ -544,10 +546,12 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequePopLeftNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(PDeque self) {
+        static Object doGeneric(PDeque self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object value = self.popLeft();
             if (value == null) {
-                throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
+                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
             }
             return value;
         }

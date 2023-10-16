@@ -524,7 +524,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class PointerTypeNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object POINTER(VirtualFrame frame, Object cls,
+        static Object POINTER(VirtualFrame frame, Object cls,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
@@ -533,8 +533,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached GetNameNode getNameNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached SimpleTruffleStringFormatNode formatNode,
-                        @Cached PythonObjectFactory factory) {
-            CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            CtypesThreadState ctypes = CtypesThreadState.get(PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget));
             Object result = getItem.execute(frame, inliningTarget, ctypes.ptrtype_cache, cls);
             if (result != null) {
                 return result;
@@ -553,7 +554,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
                 key = cls;
             } else {
-                throw raise(TypeError, MUST_BE_A_CTYPES_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_A_CTYPES_TYPE);
             }
             HashingStorage newStorage = setItem.execute(frame, inliningTarget, ctypes.ptrtype_cache, key, result);
             assert newStorage == ctypes.ptrtype_cache;
@@ -605,16 +606,18 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class BufferInfoNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object buffer_info(Object arg,
+        static Object buffer_info(Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(arg);
             if (dict == null) {
                 dict = pyObjectStgDictNode.execute(arg);
             }
             if (dict == null) {
-                throw raise(TypeError, NOT_A_CTYPES_TYPE_OR_OBJECT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPES_TYPE_OR_OBJECT);
             }
             Object[] shape = new Object[dict.ndim];
             for (int i = 0; i < dict.ndim; ++i) {
@@ -779,15 +782,16 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class DlCloseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object py_dl_close(Object pointerObj,
+        static Object py_dl_close(Object pointerObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             DLHandler handle = handleFromLongNode.getDLHandler(inliningTarget, pointerObj);
             if (handle != null) {
                 handle.isClosed = true;
                 return PNone.NONE;
             }
-            throw raise(OSError, T_DL_ERROR);
+            throw raiseNode.get(inliningTarget).raise(OSError, T_DL_ERROR);
         }
     }
 
@@ -938,9 +942,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class AlignmentNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object align_func(Object obj,
+        static Object align_func(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(obj);
             if (dict != null) {
                 return dict.align;
@@ -951,7 +957,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 return dict.align;
             }
 
-            throw raise(TypeError, NO_ALIGNMENT_INFO);
+            throw raiseNode.get(inliningTarget).raise(TypeError, NO_ALIGNMENT_INFO);
         }
     }
 
@@ -960,9 +966,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doit(Object obj,
+        static Object doit(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(obj);
             if (dict != null) {
                 return dict.size;
@@ -971,7 +979,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (pyTypeCheck.isCDataObject(obj)) {
                 return ((CDataObject) obj).b_size;
             }
-            throw raise(TypeError, THIS_TYPE_HAS_NO_SIZE);
+            throw raiseNode.get(inliningTarget).raise(TypeError, THIS_TYPE_HAS_NO_SIZE);
         }
     }
 
@@ -1051,22 +1059,23 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class AddressOfNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doit(CDataObject obj,
+        static Object doit(CDataObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached AuditNode auditNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(obj)) {
-                return error(null, obj);
+                return error(obj, raiseNode.get(inliningTarget));
             }
             auditNode.audit(inliningTarget, "ctypes.addressof", obj);
             return factory.createNativeVoidPtr(obj.b_ptr);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, Object o) {
-            throw raise(TypeError, INVALID_TYPE);
+        static Object error(@SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, INVALID_TYPE);
         }
     }
 
@@ -1075,7 +1084,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class CallCdeclfunctionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
+        static Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
                         @Bind("this") Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached CallProcNode callProcNode,
@@ -1097,8 +1106,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class FormatErrorNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(Object errorCode) {
-            throw raise(NotImplementedError);
+        static Object doit(@SuppressWarnings("unused") Object errorCode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 

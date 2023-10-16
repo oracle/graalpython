@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -62,14 +63,15 @@ public final class ForeignIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object next(PForeignArrayIterator foreignIter,
+        static Object next(PForeignArrayIterator foreignIter,
                         @Bind("this") Node inliningTarget,
                         @Cached PForeignToPTypeNode fromForeignNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") InteropLibrary interop,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (foreignIter.getCursor() >= foreignIter.getSize(interop, inliningTarget, asSizeNode)) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
 
             gil.release(true);
@@ -77,7 +79,7 @@ public final class ForeignIteratorBuiltins extends PythonBuiltins {
                 Object element = interop.readArrayElement(foreignIter.getForeignArray(), foreignIter.advance());
                 return fromForeignNode.executeConvert(element);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             } finally {
                 gil.acquire();
             }

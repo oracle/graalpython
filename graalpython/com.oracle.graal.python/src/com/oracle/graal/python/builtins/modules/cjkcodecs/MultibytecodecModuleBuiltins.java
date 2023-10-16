@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -127,18 +128,20 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
     abstract static class CreateCodecNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object createCodec(PyCapsule arg,
+        static Object createCodec(PyCapsule arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
-                        @Cached PythonObjectFactory factory) {
-            return createCodec(this, arg, nameMatchesNode, factory, getRaiseNode());
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            return createCodec(inliningTarget, arg, nameMatchesNode, factory, raiseNode);
         }
 
         static Object createCodec(Node inliningTarget, PyCapsule arg,
                         PyCapsuleNameMatchesNode nameMatchesNode,
                         PythonObjectFactory factory,
-                        PRaiseNode raiseNode) {
+                        PRaiseNode.Lazy raiseNode) {
             if (PyCapsule_IsValid.doCapsule(arg, PyMultibyteCodec_CAPSULE_NAME, inliningTarget, nameMatchesNode) == 0) {
-                throw raiseNode.raise(ValueError, ARGUMENT_TYPE_INVALID);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ARGUMENT_TYPE_INVALID);
             }
             MultibyteCodec codec;
             codec = (MultibyteCodec) arg.getPointer();
@@ -147,8 +150,9 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object createCodec(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object arg) {
-            throw raise(ValueError, ARGUMENT_TYPE_INVALID);
+        static Object createCodec(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ARGUMENT_TYPE_INVALID);
         }
 
     }

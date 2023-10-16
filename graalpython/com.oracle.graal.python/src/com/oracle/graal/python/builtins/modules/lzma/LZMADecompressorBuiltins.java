@@ -268,8 +268,9 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doCheck(@SuppressWarnings("unused") LZMADecompressor.Java self) {
-            throw raise(SystemError, T_LZMA_JAVA_ERROR);
+        static int doCheck(@SuppressWarnings("unused") LZMADecompressor.Java self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, T_LZMA_JAVA_ERROR);
         }
 
     }

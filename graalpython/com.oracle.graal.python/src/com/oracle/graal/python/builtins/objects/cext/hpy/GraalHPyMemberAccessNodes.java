@@ -265,13 +265,15 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self) {
+        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
 
             Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_READ_FROM_OFFSET_D, offset, self);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_READ_FROM_OFFSET_D, offset, self);
             }
             Object nativeResult;
             switch (type) {
@@ -282,7 +284,7 @@ public class GraalHPyMemberAccessNodes {
                             if (type == HPY_MEMBER_OBJECT) {
                                 return PNone.NONE;
                             } else {
-                                throw raise(PythonBuiltinClassType.AttributeError);
+                                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError);
                             }
                         }
                         return fieldValue;

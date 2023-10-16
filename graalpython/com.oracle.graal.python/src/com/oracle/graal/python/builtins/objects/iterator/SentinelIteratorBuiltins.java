@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -60,13 +61,14 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
+        static Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (iterator.sentinelReached()) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             Object nextValue;
             try {
@@ -79,7 +81,7 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
             boolean iteratorDone = eqNode.compare(frame, inliningTarget, nextValue, iterator.getSentinel());
             if (iteratorDone) {
                 iterator.markSentinelReached();
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return nextValue;
         }

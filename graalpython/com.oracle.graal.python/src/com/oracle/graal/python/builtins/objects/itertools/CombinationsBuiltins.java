@@ -103,12 +103,13 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
-        Object nextStopped(PAbstractCombinations self) {
-            throw raiseStopIteration();
+        static Object nextStopped(PAbstractCombinations self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
-        Object nextNoResult(PAbstractCombinations self,
+        static Object nextNoResult(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared PythonObjectFactory factory,
                         @Cached @Exclusive InlinedLoopConditionProfile loopConditionProfile) {
@@ -124,25 +125,27 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
-        Object next(PCombinations self,
+        static Object next(PCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared PythonObjectFactory factory,
-                        @Cached @Shared InlinedLoopConditionProfile indexLoopProfile,
-                        @Cached @Shared InlinedLoopConditionProfile resultLoopProfile) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
+                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
-        Object next(PCombinationsWithReplacement self,
+        static Object next(PCombinationsWithReplacement self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared PythonObjectFactory factory,
-                        @Cached @Shared InlinedLoopConditionProfile indexLoopProfile,
-                        @Cached @Shared InlinedLoopConditionProfile resultLoopProfile) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
+                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
-        private Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
-                        InlinedLoopConditionProfile resultLoopProfile) throws PException {
+        private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
+                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode.Lazy raiseNode) throws PException {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
 
@@ -159,7 +162,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
 
             // Increment the current index which we know is not at its maximum.

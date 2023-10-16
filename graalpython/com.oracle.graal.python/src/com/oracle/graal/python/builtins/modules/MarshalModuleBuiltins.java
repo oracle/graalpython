@@ -232,13 +232,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, Object buffer,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }

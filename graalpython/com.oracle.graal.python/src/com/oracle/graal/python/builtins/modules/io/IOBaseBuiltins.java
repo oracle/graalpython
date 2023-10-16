@@ -320,11 +320,12 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone flush(VirtualFrame frame, PythonObject self,
+        static PNone flush(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookup) {
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isClosed(inliningTarget, self, frame, lookup)) {
-                throw raise(ValueError, ErrorMessages.IO_CLOSED);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
         }
@@ -386,8 +387,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FilenoNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object fileno(@SuppressWarnings("unused") PythonObject self) {
-            throw unsupported(getRaiseNode(), T_FILENO);
+        static Object fileno(@SuppressWarnings("unused") PythonObject self,
+                        @Cached PRaiseNode raiseNode) {
+            throw unsupported(raiseNode, T_FILENO);
         }
     }
 
@@ -419,13 +421,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PythonObject self,
+        static Object next(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectSizeNode sizeNode) {
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
             if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return line;
         }

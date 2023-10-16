@@ -110,12 +110,13 @@ public final class CycleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PCycle self,
+        static Object next(VirtualFrame frame, PCycle self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile iterableProfile,
-                        @Cached InlinedBranchProfile firstPassProfile) {
+                        @Cached InlinedBranchProfile firstPassProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getIterable() != null) {
                 iterableProfile.enter(inliningTarget);
                 try {
@@ -131,7 +132,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 }
             }
             if (isEmpty(self.getSaved())) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             Object item = get(self.getSaved(), self.getIndex());
             self.setIndex(self.getIndex() + 1);
@@ -142,26 +143,22 @@ public final class CycleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private boolean isEmpty(List<Object> l) {
+        private static boolean isEmpty(List<Object> l) {
             return l.isEmpty();
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private Object add(List<Object> l, Object item) {
+        private static Object add(List<Object> l, Object item) {
             return l.add(item);
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private Object get(List<Object> l, int idx) {
+        private static Object get(List<Object> l, int idx) {
             return l.get(idx);
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private int size(List<Object> l) {
+        private static int size(List<Object> l) {
             return l.size();
         }
     }

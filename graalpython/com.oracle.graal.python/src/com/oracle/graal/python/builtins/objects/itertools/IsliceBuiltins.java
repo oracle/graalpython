@@ -100,19 +100,20 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
-        Object next(@SuppressWarnings("unused") PIslice self) {
-            throw raiseStopIteration();
+        static Object next(@SuppressWarnings("unused") PIslice self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
-        @SuppressWarnings("truffle-static-method")
-        Object next(VirtualFrame frame, PIslice self,
+        static Object next(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile nextExceptionProfile,
                         @Cached InlinedBranchProfile nextExceptionProfile2,
-                        @Cached InlinedBranchProfile setNextProfile) {
+                        @Cached InlinedBranchProfile setNextProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object it = self.getIterable();
             int stop = self.getStop();
             Object item;
@@ -129,7 +130,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
             }
             if (stop != -1 && self.getCnt() >= stop) {
                 self.setIterable(PNone.NONE);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             try {
                 item = nextNode.execute(frame, it, PNone.NO_VALUE);
