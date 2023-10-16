@@ -665,7 +665,12 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String toDisassembledString(boolean quickened) {
-        final RootNode rootNode = getRootCallTarget().getRootNode();
+        RootNode rootNode = getRootCallTarget().getRootNode();
+        if (rootNode instanceof PBytecodeGeneratorRootNode r) {
+            rootNode = r.getBytecodeRootNode();
+        } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
+            rootNode = r.getBytecodeRootNode();
+        }
         if (rootNode instanceof PBytecodeRootNode) {
             CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
             if (quickened) {
