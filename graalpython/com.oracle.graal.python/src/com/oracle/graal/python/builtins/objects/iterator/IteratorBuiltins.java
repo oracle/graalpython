@@ -115,7 +115,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached NonThrowingNextNode nonThrowingNextNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object value = nonThrowingNextNode.execute(frame, self);
+            Object value = nonThrowingNextNode.execute(frame, inliningTarget, self);
             if (value == NonThrowingNextNode.STOP_MARKER) {
                 throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
@@ -123,12 +123,13 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class NonThrowingNextNode extends Node {
 
         public static final Object STOP_MARKER = new Object();
 
-        public abstract Object execute(VirtualFrame frame, PBuiltinIterator iterator);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, PBuiltinIterator iterator);
 
         private static Object stopIteration(PBuiltinIterator self) {
             self.setExhausted();
@@ -141,8 +142,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        static Object next(PArrayIterator self,
-                        @Bind("this") Node inliningTarget,
+        static Object next(Node inliningTarget, PArrayIterator self,
                         @Cached InlinedExactClassProfile itemTypeProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             PArray array = self.array;
@@ -169,8 +169,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        static Object next(PIntRangeIterator self,
-                        @Bind("this") Node inliningTarget,
+        static Object next(Node inliningTarget, PIntRangeIterator self,
                         @Exclusive @Cached InlinedConditionProfile profile) {
             if (profile.profile(inliningTarget, self.hasNextInt())) {
                 return self.nextInt();
@@ -179,10 +178,10 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        static Object next(PBigRangeIterator self,
-                        @Cached PythonObjectFactory factory) {
+        static Object next(Node inliningTarget, PBigRangeIterator self,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (self.hasNextBigInt()) {
-                return factory.createInt(self.nextBigInt());
+                return factory.get(inliningTarget).createInt(self.nextBigInt());
             }
             return stopIteration(self);
         }
@@ -205,8 +204,8 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(PStringIterator self,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
+                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached(inline = false) TruffleString.SubstringNode substringNode) {
             if (self.getIndex() < codePointLengthNode.execute(self.value, TS_ENCODING)) {
                 return substringNode.execute(self.value, self.index++, 1, TS_ENCODING, false);
             }
@@ -214,8 +213,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        static Object nextHashingStorageIter(PHashingStorageIterator self,
-                        @Bind("this") Node inliningTarget,
+        static Object nextHashingStorageIter(Node inliningTarget, PHashingStorageIterator self,
                         @Exclusive @Cached InlinedConditionProfile sizeChanged,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
@@ -236,10 +234,9 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        static Object next(PSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
+        static Object next(Node inliningTarget, PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached(value = "createNotNormalized()", inline = false) SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = getStorage.execute(inliningTarget, self.getPSequence());
             if (self.getIndex() < s.length()) {
                 return getItemNode.execute(s, self.index++);
@@ -248,9 +245,8 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        static Object next(VirtualFrame frame, PSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PySequenceGetItemNode getItem,
+        static Object next(VirtualFrame frame, Node inliningTarget, PSequenceIterator self,
+                        @Cached(inline = false) PySequenceGetItemNode getItem,
                         @Cached IsBuiltinObjectProfile profile) {
             try {
                 /*
