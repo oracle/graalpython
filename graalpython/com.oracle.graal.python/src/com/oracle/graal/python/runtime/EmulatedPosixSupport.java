@@ -64,6 +64,9 @@ import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
 import static com.oracle.graal.python.runtime.PosixConstants.EAI_SERVICE;
 import static com.oracle.graal.python.runtime.PosixConstants.EAI_SOCKTYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_RDLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_UNLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_WRLCK;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
@@ -805,67 +808,90 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    final void flock(int fd, int operation,
+    void flock(int fd, int operation,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
-        // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
-        if (channel instanceof FileChannel) {
-            FileChannel fc = (FileChannel) channel;
-            FileLock lock = getFileLock(fd);
-            try {
-                lock = doLockOperation(operation, fc, lock);
-            } catch (IOException e) {
-                throw posixException(OSErrorEnum.fromException(e, eqNode));
-            }
-            setFileLock(fd, lock);
+        boolean unlock = operation == LOCK_UN.value;
+        boolean shared = (operation & LOCK_SH.value) != 0;
+        boolean exclusive = (operation & LOCK_EX.value) != 0;
+        boolean blocking = (operation & LOCK_NB.value) == 0;
+        if (!unlock && !shared && !exclusive) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EINVAL);
         }
+        doLockOperation(fd, channel, unlock, shared, blocking, 0, 0, Long.MAX_VALUE);
+    }
+
+    @ExportMessage
+    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        Channel channel = getFileChannel(fd);
+        if (channel == null) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EBADFD);
+        }
+        boolean unlock = lockType == F_UNLCK.getValueIfDefined();
+        boolean shared = lockType == F_RDLCK.getValueIfDefined();
+        boolean exclusive = lockType == F_WRLCK.getValueIfDefined();
+        if (!unlock && !shared && !exclusive) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        doLockOperation(fd, channel, unlock, shared, blocking, whence, start, length);
     }
 
     @TruffleBoundary
-    private static FileLock doLockOperation(int operation, FileChannel fc, FileLock oldLock) throws IOException {
-        FileLock lock = oldLock;
-        if (lock == null) {
-            if ((operation & LOCK_SH.value) != 0) {
-                if ((operation & LOCK_NB.value) != 0) {
-                    lock = fc.tryLock(0, Long.MAX_VALUE, true);
-                } else {
-                    lock = fc.lock(0, Long.MAX_VALUE, true);
+    private void doLockOperation(int fd, Channel channel, boolean unlock, boolean shared, boolean blocking, int whence, long start, long length) throws PosixException {
+        // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
+        if (channel instanceof FileChannel fc) {
+            FileLock lock = getFileLock(fd);
+            try {
+                long position = start;
+                if (whence == SEEK_CUR.value) {
+                    position += fc.position();
+                } else if (whence == SEEK_END.value) {
+                    position += fc.size();
                 }
-            } else if ((operation & LOCK_EX.value) != 0) {
-                if ((operation & LOCK_NB.value) != 0) {
-                    lock = fc.tryLock();
+                if (lock == null) {
+                    if (unlock) {
+                        // not locked, that's ok
+                    } else {
+                        if (!blocking) {
+                            lock = fc.tryLock(position, length, shared);
+                        } else {
+                            lock = fc.lock(position, length, shared);
+                        }
+                    }
                 } else {
-                    lock = fc.lock();
-                }
-            } else {
-                // not locked, that's ok
-            }
-        } else {
-            if ((operation & LOCK_UN.value) != 0) {
-                lock.release();
-                lock = null;
-            } else if ((operation & LOCK_EX.value) != 0) {
-                if (lock.isShared()) {
-                    if ((operation & LOCK_NB.value) != 0) {
-                        FileLock newLock = fc.tryLock();
-                        if (newLock != null) {
-                            lock = newLock;
+                    if (unlock) {
+                        lock.release();
+                        lock = null;
+                    } else if (!shared) {
+                        if (lock.isShared()) {
+                            if (!blocking) {
+                                FileLock newLock = fc.tryLock(position, length, false);
+                                if (newLock != null) {
+                                    lock = newLock;
+                                }
+                            } else {
+                                lock = fc.lock();
+                            }
                         }
                     } else {
-                        lock = fc.lock();
+                        // we already have a suitable lock
                     }
                 }
-            } else {
-                // we already have a suitable lock
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached()));
             }
+            setFileLock(fd, lock);
         }
-        return lock;
     }
 
     @ExportMessage

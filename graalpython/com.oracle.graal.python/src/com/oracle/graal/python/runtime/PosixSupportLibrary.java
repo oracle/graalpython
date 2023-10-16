@@ -115,6 +115,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void flock(Object receiver, int fd, int operation) throws PosixException;
 
+    public abstract void fcntlLock(Object receiver, int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException;
+
     public abstract boolean getBlocking(Object receiver, int fd) throws PosixException;
 
     public abstract void setBlocking(Object receiver, int fd, boolean blocking) throws PosixException;

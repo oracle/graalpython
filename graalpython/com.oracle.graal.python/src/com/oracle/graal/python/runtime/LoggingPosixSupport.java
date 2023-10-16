@@ -306,6 +306,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fcntlLock", "%d %s %d %d %d %d", fd, blocking, lockType, whence, start, length);
+        try {
+            lib.fcntlLock(delegate, fd, blocking, lockType, whence, start, length);
+        } catch (PosixException e) {
+            throw logException("fcntlLock", e);
+        }
+    }
+
+    @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("getBlocking", "%d", fd);

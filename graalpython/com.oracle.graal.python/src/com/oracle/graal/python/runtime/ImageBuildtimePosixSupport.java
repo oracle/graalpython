@@ -283,6 +283,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.fcntlLock(nativePosixSupport, fd, blocking, lockType, whence, start, length);
+    }
+
+    @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();

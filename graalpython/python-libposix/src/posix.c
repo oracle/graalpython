@@ -227,6 +227,15 @@ int32_t call_flock(int32_t fd, int32_t operation) {
     return flock(fd, operation);
 }
 
+int32_t call_fcntl_lock(int32_t fd, int32_t blocking, int32_t lockType, int32_t whence, int64_t start, int64_t length) {
+    struct flock l;
+    l.l_type = lockType;
+    l.l_whence = whence;
+    l.l_start = start;
+    l.l_len = length;
+    return fcntl(fd, blocking ? F_SETLKW : F_SETLK, &l);
+}
+
 int32_t get_blocking(int32_t fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0) {

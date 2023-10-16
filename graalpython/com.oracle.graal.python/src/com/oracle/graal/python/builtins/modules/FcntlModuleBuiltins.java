@@ -40,6 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.PosixConstants.F_RDLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_UNLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_WRLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
+
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -51,9 +60,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltinsClinicProviders.FlockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
@@ -114,6 +127,53 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "lockf", minNumOfPositionalArgs = 2, parameterNames = {"fd", "cmd", "len", "start", "whence"})
+    @ArgumentClinic(name = "fd", conversionClass = FileDescriptorConversionNode.class)
+    @ArgumentClinic(name = "cmd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "whence", conversion = ClinicConversion.Int, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class LockfNode extends PythonClinicBuiltinNode {
+        @Specialization
+        PNone lockf(VirtualFrame frame, int fd, int code, Object lenObj, Object startObj, int whence,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "fcntl.lockf", fd, code, lenObj != PNone.NO_VALUE ? lenObj : PNone.NONE, startObj != PNone.NO_VALUE ? startObj : PNone.NONE, whence);
+            int lockType;
+            if (code == LOCK_UN.value) {
+                lockType = F_UNLCK.getValueIfDefined();
+            } else if ((code & LOCK_SH.value) != 0) {
+                lockType = F_RDLCK.getValueIfDefined();
+            } else if ((code & LOCK_EX.value) != 0) {
+                lockType = F_WRLCK.getValueIfDefined();
+            } else {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNRECOGNIZED_LOCKF_ARGUMENT);
+            }
+            long start = 0;
+            if (startObj != PNone.NO_VALUE) {
+                start = asLongNode.execute(frame, inliningTarget, startObj);
+            }
+            long len = 0;
+            if (lenObj != PNone.NO_VALUE) {
+                len = asLongNode.execute(frame, inliningTarget, lenObj);
+            }
+            try {
+                posix.fcntlLock(getPosixSupport(), fd, (code & LOCK_NB.value) == 0, lockType, whence, start, len);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FcntlModuleBuiltinsClinicProviders.LockfNodeClinicProviderGen.INSTANCE;
         }
     }
 }
