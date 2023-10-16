@@ -1,0 +1,32 @@
+diff --git a/ffi/build.py b/ffi/build.py
+index f4f8c69..9a4e091 100755
+--- a/ffi/build.py
++++ b/ffi/build.py
+@@ -224,5 +224,27 @@ def main():
+         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
+ 
+ 
++def build_llvm():
++    import urllib.request
++    import tarfile
++    import shutil
++    llvmdir = 'llvm-project-llvmorg-14.0.6'
++    tarname = 'llvmorg-14.0.6.tar.gz'
++    shutil.rmtree(tarname, ignore_errors=True)
++    shutil.rmtree(llvmdir, ignore_errors=True)
++    print("Downloading LLVM 14")
++    urllib.request.urlretrieve('https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-14.0.6.tar.gz', tarname)
++    with tarfile.open(tarname) as tar:
++        tar.extractall()
++    print("Building LLVM 14")
++    subprocess.check_call(['cmake', '-S', f'{llvmdir}/llvm', '-B', 'llvm-build', '-DCMAKE_BUILD_TYPE=Release', '-DLLVM_TARGETS_TO_BUILD=host'])
++    subprocess.check_call(['cmake', '--build', 'llvm-build'])
++    os.environ['LLVM_CONFIG'] = os.path.abspath('llvm-build/bin/llvm-config')
++
++
+ if __name__ == "__main__":
++    # GraalPy change: llvmlite only supports up to LLVM 14. That's quite old
++    # and causes dependency hell with other things that require newer LLVM.
++    # Fetch and build LLVM 14 here
++    build_llvm()
+     main()
