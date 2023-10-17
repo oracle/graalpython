@@ -308,22 +308,23 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
-        Object create(Object type, @SuppressWarnings("unused") Object value,
+        static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                        @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode) {
-            throw raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
+                        @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
 
         @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
-        Object create(Object type, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static Object create(Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
-            throw PRaiseNode.raiseExceptionObject(this, exception);
+            throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
         }
 
         protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
@@ -337,9 +338,9 @@ public final class PythonCextErrBuiltins {
         @TruffleBoundary
         Object raiseNone(Object filename, int lineno) {
             if (filename == PNone.NONE) {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw PRaiseNode.raiseUncached(this, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             } else {
-                throw raise(SystemError, S_S_BAD_ARG_TO_INTERNAL_FUNC, filename, lineno);
+                throw PRaiseNode.raiseUncached(this, SystemError, S_S_BAD_ARG_TO_INTERNAL_FUNC, filename, lineno);
             }
         }
     }

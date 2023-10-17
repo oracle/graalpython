@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextComplexBuiltins {
@@ -105,31 +107,25 @@ public final class PythonCextComplexBuiltins {
             return d.getReal();
         }
 
-        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object asDouble(Object obj,
+        @Specialization(guards = "!isPComplex(obj)")
+        static Object asDouble(Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isComplexSubtypeProfile,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            try {
-                return callNode.execute(getAttr.execute(null, inliningTarget, obj, T_REAL));
-            } catch (PException e) {
-                throw raise(TypeError);
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString name;
+            if (isComplexSubtypeProfile.profile(inliningTarget, isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode))) {
+                name = T_REAL;
+            } else {
+                name = T___FLOAT__;
             }
-        }
-
-        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object asDoubleFloat(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttr,
-                        @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             try {
-                return callNode.execute(getAttr.execute(null, inliningTarget, obj, T___FLOAT__));
+                return callNode.execute(getAttr.execute(null, inliningTarget, obj, name));
             } catch (PException e) {
-                throw raise(TypeError);
+                throw raiseNode.get(inliningTarget).raise(TypeError);
             }
         }
     }

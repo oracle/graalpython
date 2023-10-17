@@ -140,7 +140,7 @@ public final class PythonCextBytesBuiltins {
         @Fallback
         @TruffleBoundary
         long fallback(Object obj) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
 
@@ -176,13 +176,13 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object fromObject(Object obj,
+        static Object fromObject(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached BytesNode bytesNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode) {
-
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (PGuards.isPBytes(obj)) {
                 return obj;
             } else {
@@ -192,7 +192,7 @@ public final class PythonCextBytesBuiltins {
                 } else if (isAcceptedSubtype(inliningTarget, obj, klass, isSubtypeNode, lookupAttrNode)) {
                     return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
                 } else {
-                    throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+                    throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
                 }
             }
         }
@@ -300,8 +300,9 @@ public final class PythonCextBytesBuiltins {
         }
 
         @Fallback
-        int fallback(Object self, @SuppressWarnings("unused") Object o) {
-            throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
+        static int fallback(Object self, @SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
     }
 
@@ -428,20 +429,22 @@ public final class PythonCextBytesBuiltins {
         }
 
         @Specialization
-        Object doNative(PythonAbstractNativeObject obj,
+        static Object doNative(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray) {
+                        @Cached CStructAccess.GetElementPtrNode getArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
-            return doError(obj);
+            return doError(obj, raiseNode.get(inliningTarget));
         }
 
         @Fallback
-        Object doError(Object obj) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
+        static Object doError(Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
         }
     }
 }

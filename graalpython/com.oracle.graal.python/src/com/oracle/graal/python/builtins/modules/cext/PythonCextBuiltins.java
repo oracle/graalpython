@@ -392,46 +392,16 @@ public final class PythonCextBuiltins {
             throw PRaiseNode.raiseUncached(this, SystemError, INDEX_OUT_OF_RANGE);
         }
 
-        protected void checkNonNullArg(Object obj) {
+        protected static void checkNonNullArg(Node inliningTarget, Object obj, PRaiseNode.Lazy raiseNode) {
             if (obj == PNone.NO_VALUE) {
-                throw raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
+                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
             }
         }
 
-        protected void checkNonNullArg(Object obj1, Object obj2) {
+        protected static void checkNonNullArg(Node inliningTarget, Object obj1, Object obj2, PRaiseNode.Lazy raiseNode) {
             if (obj1 == PNone.NO_VALUE || obj2 == PNone.NO_VALUE) {
-                throw raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
+                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
             }
-        }
-
-        @Child private PRaiseNode raiseNode;
-
-        protected final PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (isAdoptable()) {
-                    raiseNode = insert(PRaiseNode.create());
-                } else {
-                    raiseNode = PRaiseNode.getUncached();
-                }
-            }
-            return raiseNode;
-        }
-
-        public PException raise(PythonBuiltinClassType type, TruffleString string) {
-            return getRaiseNode().raise(type, string);
-        }
-
-        public PException raise(PythonBuiltinClassType exceptionType) {
-            return getRaiseNode().raise(exceptionType);
-        }
-
-        public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
-            return getRaiseNode().raise(type, format, arguments);
-        }
-
-        public final PException raiseBadInternalCall() {
-            return getRaiseNode().raiseBadInternalCall();
         }
     }
 
@@ -932,9 +902,11 @@ public final class PythonCextBuiltins {
         };
 
         @Specialization
-        Object doI(TruffleString typeName,
-                        @Cached TruffleString.EqualNode eqNode) {
-            Python3Core core = getCore();
+        static Object doI(TruffleString typeName,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Python3Core core = PythonContext.get(inliningTarget);
             for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
                 if (eqNode.execute(type.getName(), typeName, TS_ENCODING)) {
                     return core.lookupType(type);
@@ -946,7 +918,7 @@ public final class PythonCextBuiltins {
                     return attribute;
                 }
             }
-            throw raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
         }
     }
 

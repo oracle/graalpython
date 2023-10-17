@@ -93,6 +93,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -231,12 +232,13 @@ public final class PythonCextLongBuiltins {
     abstract static class PyTruffleLong_AsPrimitive extends CApiTernaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(Object object, int mode, long targetTypeSize,
+        static Object doGeneric(Object object, int mode, long targetTypeSize,
                         @Bind("this") Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
-                        @Cached CastToNativeLongNode castToNativeLongNode) {
+                        @Cached CastToNativeLongNode castToNativeLongNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 /*
                  * The 'mode' parameter is usually a constant since this function is primarily used
@@ -244,7 +246,7 @@ public final class PythonCextLongBuiltins {
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
                 if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
-                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
                 Object coerced = convertPIntToPrimitiveNode.execute(object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
@@ -360,13 +362,15 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         long doPointer(PInt n,
-                        @Cached BranchProfile overflowProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached BranchProfile overflowProfile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return n.longValueExact();
             } catch (OverflowException e) {
                 overflowProfile.enter();
                 try {
-                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 } catch (PException pe) {
                     ensureTransformExcNode().execute(pe);
                     return 0;
@@ -380,7 +384,9 @@ public final class PythonCextLongBuiltins {
         }
 
         @Fallback
-        long doGeneric(Object n) {
+        long doGeneric(Object n,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (asPrimitiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 asPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
@@ -389,7 +395,7 @@ public final class PythonCextLongBuiltins {
                 try {
                     return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
                 } catch (UnexpectedResultException e) {
-                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 }
             } catch (PException e) {
                 ensureTransformExcNode().execute(e);

@@ -61,8 +61,11 @@ import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.To
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextMemoryViewBuiltins {
@@ -73,14 +76,16 @@ public final class PythonCextMemoryViewBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int, CHAR}, call = Direct)
     abstract static class PyMemoryView_GetContiguous extends CApiTernaryBuiltinNode {
         @Specialization()
-        Object get(Object obj, int buffertype, byte orderByte,
+        static Object get(Object obj, int buffertype, byte orderByte,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyMemoryViewFromObject memoryViewFromObject,
                         @Cached ReleaseNode releaseNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached CastNode castNode,
                         @Cached ContiguousNode contiguousNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             assert buffertype == PY_BUF_READ || buffertype == PY_BUF_WRITE;
             char order = (char) orderByte;
             assert order == 'C' || order == 'F' || order == 'A';
@@ -89,14 +94,14 @@ public final class PythonCextMemoryViewBuiltins {
             boolean release = true;
             try {
                 if (buffertype == PY_BUF_WRITE && mv.isReadOnly()) {
-                    throw raise(BufferError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
+                    throw raiseNode.get(inliningTarget).raise(BufferError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
                 }
                 if ((boolean) contiguousNode.execute(null, mv)) {
                     release = false;
                     return mv;
                 }
                 if (buffertype == PY_BUF_WRITE) {
-                    throw raise(BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
+                    throw raiseNode.get(inliningTarget).raise(BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
                 }
                 PMemoryView mvBytes = memoryViewFromObject.execute(null, toBytesNode.execute(null, mv, fromCodePointNode.execute(order, TS_ENCODING, true)));
                 if (eqNode.execute(T_UINT_8_TYPE_CODE, mv.getFormatString(), TS_ENCODING)) {
