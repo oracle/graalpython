@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -115,8 +116,8 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_New extends CApiNullaryBuiltinNode {
 
         @Specialization
-        Object run() {
-            return factory().createDict();
+        static Object run(@Cached PythonObjectFactory factory) {
+            return factory.createDict();
         }
     }
 
@@ -136,7 +137,8 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached PromoteBorrowedValue promoteKeyNode,
                         @Cached PromoteBorrowedValue promoteValueNode,
-                        @Cached HashingStorageSetItem setItem) {
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached PythonObjectFactory factory) {
             /*
              * We need to promote primitive values and strings to object types for borrowing to work
              * correctly. This is very hard to do mid-iteration, so we do all the promotion for the
@@ -204,7 +206,7 @@ public final class PythonCextDictBuiltins {
             assert promoteValueNode.execute(value) == null;
             long hash = itKeyHash.execute(inliningTarget, storage, it);
             int newPos = it.getState() + 1;
-            return factory().createTuple(new Object[]{key, value, hash, newPos});
+            return factory.createTuple(new Object[]{key, value, hash, newPos});
         }
 
         @Fallback
@@ -245,14 +247,15 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
-        Object copy(PDict dict,
+        static Object copy(PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCopy copyNode) {
-            return factory().createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        PythonNativePointer fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -442,13 +445,14 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyDict_Keys extends CApiUnaryBuiltinNode {
         @Specialization
-        Object keys(PDict dict,
-                        @Cached ConstructListNode listNode) {
-            return listNode.execute(null, factory().createDictKeysView(dict));
+        static Object keys(PDict dict,
+                        @Cached ConstructListNode listNode,
+                        @Cached PythonObjectFactory factory) {
+            return listNode.execute(null, factory.createDictKeysView(dict));
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        PythonNativePointer fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -456,13 +460,14 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyDict_Values extends CApiUnaryBuiltinNode {
         @Specialization
-        Object values(PDict dict,
-                        @Cached ConstructListNode listNode) {
-            return listNode.execute(null, factory().createDictValuesView(dict));
+        static Object values(PDict dict,
+                        @Cached ConstructListNode listNode,
+                        @Cached PythonObjectFactory factory) {
+            return listNode.execute(null, factory.createDictValuesView(dict));
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        PythonNativePointer fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }

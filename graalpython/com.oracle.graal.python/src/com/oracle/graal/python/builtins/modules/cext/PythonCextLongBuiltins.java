@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -282,17 +283,18 @@ public final class PythonCextLongBuiltins {
         }
 
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
-        Object doPointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
+        static Object doPointer(Object pointer,
+                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @Cached PythonObjectFactory factory) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return factory().createNativeVoidPtr(pointer, lib.asPointer(pointer));
+                    return factory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return factory().createNativeVoidPtr(pointer);
+            return factory.createNativeVoidPtr(pointer);
         }
     }
 
@@ -315,22 +317,24 @@ public final class PythonCextLongBuiltins {
         }
 
         @Specialization(guards = "n < 0")
-        Object doUnsignedLongNegative(long n) {
-            return factory().createInt(convertToBigInteger(n));
+        static Object doUnsignedLongNegative(long n,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(convertToBigInteger(n));
         }
 
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
-        Object doPointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
+        static Object doPointer(Object pointer,
+                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @Shared @Cached PythonObjectFactory factory) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return factory().createNativeVoidPtr(pointer, lib.asPointer(pointer));
+                    return factory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return factory().createNativeVoidPtr(pointer);
+            return factory.createNativeVoidPtr(pointer);
         }
 
         @TruffleBoundary

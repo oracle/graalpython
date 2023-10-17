@@ -78,6 +78,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -91,14 +92,15 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PySet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        Object newSet(Object iterable,
+        static Object newSet(Object iterable,
                         @Cached ConstructSetNode constructSetNode) {
             return constructSetNode.executeWith(null, iterable);
         }
 
         @Specialization
-        Object newSet(@SuppressWarnings("unused") PNone iterable) {
-            return factory().createSet();
+        static Object newSet(@SuppressWarnings("unused") PNone iterable,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createSet();
         }
     }
 
@@ -139,8 +141,9 @@ public final class PythonCextSetBuiltins {
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached LoopConditionProfile loopProfile) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
         }
 
         @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)", limit = "3")
@@ -151,8 +154,9 @@ public final class PythonCextSetBuiltins {
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached LoopConditionProfile loopProfile) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
         }
 
         @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"}, limit = "1")
@@ -190,7 +194,7 @@ public final class PythonCextSetBuiltins {
 
         private Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
                         HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
-                        LoopConditionProfile loopProfile) {
+                        LoopConditionProfile loopProfile, PythonObjectFactory.Lazy factory) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
             loopProfile.profileCounted(pos);
             for (int i = 0; loopProfile.inject(i <= pos); i++) {
@@ -200,7 +204,7 @@ public final class PythonCextSetBuiltins {
             }
             Object key = itKey.execute(inliningTarget, storage, it);
             long hash = itKeyHash.execute(inliningTarget, storage, it);
-            return factory().createTuple(new Object[]{key, hash});
+            return factory.get(inliningTarget).createTuple(new Object[]{key, hash});
         }
     }
 
@@ -221,15 +225,16 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyFrozenSet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        Object newFrozenSet(Object iterable,
+        static Object newFrozenSet(Object iterable,
                         @Cached FrozenSetNode frozenSetNode) {
             return frozenSetNode.execute(null, PythonBuiltinClassType.PFrozenSet, iterable);
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        Object newFrozenSet(PNone iterable) {
-            return factory().createFrozenSet(PythonBuiltinClassType.PFrozenSet);
+        static Object newFrozenSet(PNone iterable,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createFrozenSet(PythonBuiltinClassType.PFrozenSet);
         }
     }
 

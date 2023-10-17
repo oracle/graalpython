@@ -121,6 +121,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -490,12 +491,13 @@ public class PythonCextObjectBuiltins {
         }
 
         @Specialization(guards = "isNoValue(obj)")
-        Object bytesNoValue(@SuppressWarnings("unused") Object obj) {
+        static Object bytesNoValue(@SuppressWarnings("unused") Object obj,
+                        @Cached PythonObjectFactory factory) {
             /*
              * Note: CPython calls PyBytes_FromString("<NULL>") but we do not directly have it.
              * Therefore, we directly create the bytes object with string "<NULL>" here.
              */
-            return factory().createBytes(BytesUtils.NULL_STRING);
+            return factory.createBytes(BytesUtils.NULL_STRING);
         }
 
         protected static boolean hasBytes(Node inliningTarget, Object obj, PyObjectLookupAttr lookupAttrNode) {

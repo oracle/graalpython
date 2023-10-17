@@ -331,21 +331,7 @@ public final class PythonCextBuiltins {
             return ByteBuffer.wrap(data, offset, length);
         }
 
-        @Child private PythonObjectFactory objectFactory;
-
         @CompilationFinal private ArgDescriptor ret;
-
-        protected final PythonObjectFactory factory() {
-            if (objectFactory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (isAdoptable()) {
-                    objectFactory = insert(PythonObjectFactory.create());
-                } else {
-                    objectFactory = getCore().factory();
-                }
-            }
-            return objectFactory;
-        }
 
         public final Python3Core getCore() {
             return getContext();
@@ -403,7 +389,7 @@ public final class PythonCextBuiltins {
                 return (int) elementSize;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw raise(SystemError, INDEX_OUT_OF_RANGE);
+            throw PRaiseNode.raiseUncached(this, SystemError, INDEX_OUT_OF_RANGE);
         }
 
         protected void checkNonNullArg(Object obj) {
@@ -1091,14 +1077,15 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = Direct)
     abstract static class PyFrame_New extends CApiQuaternaryBuiltinNode {
         @Specialization
-        Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
+        static Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals,
+                        @Cached PythonObjectFactory factory) {
             Object frameLocals;
             if (locals == null || PGuards.isPNone(locals)) {
-                frameLocals = factory().createDict();
+                frameLocals = factory.createDict();
             } else {
                 frameLocals = locals;
             }
-            return factory().createPFrame(threadState, code, globals, frameLocals);
+            return factory.createPFrame(threadState, code, globals, frameLocals);
         }
     }
 
@@ -1106,7 +1093,7 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffle_MemoryViewFromBuffer extends CApi11BuiltinNode {
 
         @Specialization
-        Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
+        static Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @Bind("this") Node inliningTarget,
@@ -1118,7 +1105,8 @@ public final class PythonCextBuiltins {
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Cached PythonObjectFactory factory) {
             int ndim = castToIntNode.execute(inliningTarget, ndimObj);
             int itemsize = castToIntNode.execute(inliningTarget, itemsizeObj);
             int len = castToIntNode.execute(inliningTarget, lenObj);
@@ -1149,7 +1137,7 @@ public final class PythonCextBuiltins {
             if (!lib.isNull(bufferStructPointer)) {
                 bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
             }
-            return factory().createMemoryView(getContext(), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
+            return factory.createMemoryView(PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
         }
     }

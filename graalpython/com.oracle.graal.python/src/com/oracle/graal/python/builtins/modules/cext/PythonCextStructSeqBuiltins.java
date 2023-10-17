@@ -70,12 +70,14 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -136,10 +138,11 @@ public final class PythonCextStructSeqBuiltins {
                         @Cached PyTruffleStructSequence_InitType2 initNode,
                         @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Cached CallNode callTypeNewNode) {
+                        @Cached CallNode callTypeNewNode,
+                        @Cached PythonObjectFactory factory) {
             Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
-            PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
-            PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
+            PTuple bases = factory.createTuple(new Object[]{PythonBuiltinClassType.PTuple});
+            PDict namespace = factory.createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
             Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
             initNode.execute(cls, fields, nInSequence);
             if (cls instanceof PythonClass) {
@@ -153,17 +156,19 @@ public final class PythonCextStructSeqBuiltins {
     abstract static class PyStructSequence_New extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(Object cls,
+        static Object doGeneric(Object cls,
                         @Bind("this") Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
-                        @Cached CastToJavaIntExactNode castToIntNode) {
+                        @Cached CastToJavaIntExactNode castToIntNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.T_N_FIELDS);
                 if (realSizeObj == PNone.NO_VALUE) {
-                    throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
+                    throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
                 } else {
                     int realSize = castToIntNode.execute(inliningTarget, realSizeObj);
-                    return factory().createTuple(cls, new Object[realSize]);
+                    return factory.createTuple(cls, new Object[realSize]);
                 }
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");

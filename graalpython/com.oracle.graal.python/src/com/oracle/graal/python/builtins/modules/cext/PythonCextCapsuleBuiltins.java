@@ -64,9 +64,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -84,13 +86,16 @@ public final class PythonCextCapsuleBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
-        Object doGeneric(Object pointer, Object name, Object destructor,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
+        static Object doGeneric(Object pointer, Object name, Object destructor,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (interopLibrary.isNull(pointer)) {
-                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
             }
             Object n = interopLibrary.isNull(name) ? null : name;
-            return factory().createCapsule(pointer, n, destructor);
+            return factory.createCapsule(pointer, n, destructor);
         }
     }
 

@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextClassBuiltins {
@@ -56,9 +58,10 @@ public final class PythonCextClassBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyInstanceMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
-        Object staticmethod(Object func) {
+        Object staticmethod(Object func,
+                        @Cached PythonObjectFactory factory) {
             checkNonNullArg(func);
-            PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
+            PDecoratedMethod res = factory.createInstancemethod(PythonBuiltinClassType.PInstancemethod);
             res.setCallable(func);
             return res;
         }
@@ -67,11 +70,12 @@ public final class PythonCextClassBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyMethod_New extends CApiBinaryBuiltinNode {
         @Specialization
-        Object methodNew(Object func, Object self) {
+        Object methodNew(Object func, Object self,
+                        @Cached PythonObjectFactory factory) {
             checkNonNullArg(func, self);
             // Note: CPython also constructs the object directly, without running the constructor or
             // checking the inputs
-            return factory().createMethod(self, func);
+            return factory.createMethod(self, func);
         }
     }
 }

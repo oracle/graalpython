@@ -67,6 +67,7 @@ import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -84,8 +85,9 @@ public final class PythonCextTupleBuiltins {
     abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
 
         @Specialization
-        PTuple doGeneric(long size) {
-            return factory().createTuple(new Object[(int) size]);
+        static PTuple doGeneric(long size,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[(int) size]);
         }
     }
 

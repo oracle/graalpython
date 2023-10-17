@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,7 +62,7 @@ public final class PythonCextIterBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
     abstract static class PyIter_Check extends CApiUnaryBuiltinNode {
         @Specialization
-        int check(Object obj,
+        static int check(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyIterCheckNode check) {
             return check.execute(inliningTarget, obj) ? 1 : 0;
@@ -71,8 +72,9 @@ public final class PythonCextIterBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
         @Specialization
-        PSequenceIterator call(Object seq) {
-            return factory().createSequenceIterator(seq);
+        static PSequenceIterator call(Object seq,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createSequenceIterator(seq);
         }
     }
 
