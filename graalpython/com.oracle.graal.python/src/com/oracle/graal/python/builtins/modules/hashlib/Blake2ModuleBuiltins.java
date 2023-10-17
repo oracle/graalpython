@@ -129,7 +129,7 @@ public final class Blake2ModuleBuiltins extends PythonBuiltins {
                         PNone key, PNone salt, PNone person, int fanout, int depth, int leafSize, int nodeOffset, int nodeDepth, int innerSize, boolean lastNode, boolean usedforsecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
-                         @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (fanout != 1 || depth != 1 || leafSize != 0 || nodeOffset != 0 || nodeDepth != 0 || innerSize != 0 || lastNode) {
                 throw fail(frame, type, data, digestSize, key, salt, person, fanout, depth, leafSize, nodeOffset, nodeDepth, innerSize, lastNode, usedforsecurity, raiseNode.get(inliningTarget));
             }

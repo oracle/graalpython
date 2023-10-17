@@ -85,7 +85,7 @@ public final class Sha3ModuleBuiltins extends PythonBuiltins {
         Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
-                         @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PythonBuiltinClassType resultType;
             if (type instanceof PythonBuiltinClass builtinType) {
                 resultType = builtinType.getType();
