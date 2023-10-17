@@ -993,7 +993,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
                             if (delta != PNone.NONE) {
                                 int seconds = castToIntNode.execute(inliningTarget, lib.readMember(delta, "seconds"));
-                                return createZoneId(seconds);
+                                int days = castToIntNode.execute(inliningTarget, lib.readMember(delta, "days"));
+                                int offset = days * 3600 * 24 + seconds;
+                                return createZoneId(offset);
                             }
                         }
                     } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {

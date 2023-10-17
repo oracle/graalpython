@@ -42,6 +42,8 @@ package com.oracle.graal.python.test.integration.interop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
@@ -164,6 +166,22 @@ public class TimeDateTest extends PythonTests {
         checkDate(value, 2011, 11, 4);
         checkTime(value, 0, 5, 23, 283000000);
         assertEquals(ZoneId.of("UTC+4"), value.asTimeZone());
+    }
+
+    @Test
+    public void testDateTimeDateTime04() {
+        String source = "from datetime import timedelta, datetime, timezone\n" +
+                        "\n" +
+                        "zone = timezone(timedelta(seconds=-18000), \"US/Eastern\")\n" +
+                        "dt = datetime(1970, 1, 1, 0, 0, 1, tzinfo=zone)\n" +
+                        "\n" +
+                        "\n" +
+                        "dt";
+        Value value = getValue(source, ZoneId.of("US/Eastern"));
+        assertTrue("Value represents a datatime: " + value, value.isDate());
+        assertTrue("Value represents a datatime: " + value, value.isTime());
+        assertTrue("Value represents a timezone: " + value, value.isTimeZone());
+        assertNotNull("Can return a time zone", value.asTimeZone());
     }
 
     @Test
