@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltinsFactory.PyObjectStgDictNodeGen;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltinsFactory.PyTypeStgDictNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -90,6 +90,8 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -221,13 +223,19 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     protected abstract static class PyTypeStgDictNode extends Node {
 
-        abstract StgDictObject execute(Object type);
+        abstract StgDictObject execute(Node inliningTarget, Object type);
+
+        static StgDictObject executeUncached(Object type) {
+            return PyTypeStgDictNodeGen.getUncached().execute(null, type);
+        }
 
         protected StgDictObject checkAbstractClass(Node inliningTarget, Object type, PRaiseNode.Lazy raiseNode) {
-            StgDictObject dict = execute(type);
+            StgDictObject dict = execute(inliningTarget, type);
             if (dict == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ABSTRACT_CLASS);
             }
@@ -236,10 +244,9 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         /* May return NULL, but does not set an exception! */
         @Specialization
-        static StgDictObject PyType_stgdict(Object obj,
-                        @Bind("this") Node inliningTarget,
+        static StgDictObject PyType_stgdict(Node inliningTarget, Object obj,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached GetDictIfExistsNode getDict) {
+                        @Cached(inline = false) GetDictIfExistsNode getDict) {
             if (!isTypeNode.execute(inliningTarget, obj)) {
                 return null;
             }
@@ -255,27 +262,24 @@ public final class StgDictBuiltins extends PythonBuiltins {
      * This function should be as fast as possible, so we don't call PyType_stgdict above but inline
      * the code, and avoid the PyType_Check().
      */
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     protected abstract static class PyObjectStgDictNode extends Node {
 
-        abstract StgDictObject execute(Object type);
+        abstract StgDictObject execute(Node inliningTarget, Object type);
 
         /* May return null, but does not raise an exception! */
         @Specialization
-        static StgDictObject PyObject_stgdict(Object self,
-                        @Bind("this") Node inliningTarget,
+        static StgDictObject PyObject_stgdict(Node inliningTarget, Object self,
                         @Cached GetClassNode getType,
-                        @Cached GetDictIfExistsNode getDict) {
+                        @Cached(inline = false) GetDictIfExistsNode getDict) {
             Object type = getType.execute(inliningTarget, self);
             PDict dict = getDict.execute(type);
             if (!PGuards.isStgDict(dict)) {
                 return null;
             }
             return (StgDictObject) dict;
-        }
-
-        public static PyObjectStgDictNode getUncached() {
-            return PyObjectStgDictNodeGen.getUncached();
         }
     }
 

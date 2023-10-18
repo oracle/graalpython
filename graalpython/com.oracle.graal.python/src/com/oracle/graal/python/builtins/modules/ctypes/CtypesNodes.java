@@ -70,7 +70,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -84,54 +83,56 @@ public class CtypesNodes {
     public static final int WCHAR_T_SIZE = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
     public static final TruffleString.Encoding WCHAR_T_ENCODING = WCHAR_T_SIZE == 2 ? TruffleString.Encoding.UTF_16 : TruffleString.Encoding.UTF_32;
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     protected abstract static class PyTypeCheck extends Node {
 
-        protected abstract boolean execute(Object receiver, Object type);
+        protected abstract boolean execute(Node inliningTarget, Object receiver, Object type);
 
         // corresponds to UnionTypeObject_Check
-        protected final boolean isUnionTypeObject(Object obj) {
-            return execute(obj, UnionType);
+        protected final boolean isUnionTypeObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, UnionType);
         }
 
         // corresponds to CDataObject_Check
-        protected final boolean isCDataObject(Object obj) {
-            return obj instanceof CDataObject && execute(obj, PyCData);
+        protected final boolean isCDataObject(Node inliningTarget, Object obj) {
+            return obj instanceof CDataObject && execute(inliningTarget, obj, PyCData);
         }
 
         // corresponds to PyCArrayTypeObject_Check
-        protected final boolean isPyCArrayTypeObject(Object obj) {
-            return execute(obj, PyCArrayType);
+        protected final boolean isPyCArrayTypeObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCArrayType);
         }
 
         // corresponds to ArrayObject_Check
-        protected final boolean isArrayObject(Object obj) {
-            return execute(obj, PyCArray);
+        protected final boolean isArrayObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCArray);
         }
 
         // corresponds to PyCFuncPtrObject_Check
-        protected final boolean isPyCFuncPtrObject(Object obj) {
-            return execute(obj, PyCFuncPtr);
+        protected final boolean isPyCFuncPtrObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCFuncPtr);
         }
 
         // corresponds to PyCFuncPtrTypeObject_Check
-        protected final boolean isPyCFuncPtrTypeObject(Object obj) {
-            return execute(obj, PyCFuncPtrType);
+        protected final boolean isPyCFuncPtrTypeObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCFuncPtrType);
         }
 
         // corresponds to PyCPointerTypeObject_Check
-        protected final boolean isPyCPointerTypeObject(Object obj) {
-            return execute(obj, PyCPointerType);
+        protected final boolean isPyCPointerTypeObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCPointerType);
         }
 
         // corresponds to PointerObject_Check
-        protected final boolean isPointerObject(Object obj) {
-            return execute(obj, PyCPointer);
+        protected final boolean isPointerObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCPointer);
         }
 
         // corresponds to PyCSimpleTypeObject_Check
-        protected final boolean isPyCSimpleTypeObject(Object obj) {
-            return execute(obj, PyCSimpleType);
+        protected final boolean isPyCSimpleTypeObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCSimpleType);
         }
 
         /*
@@ -140,22 +141,21 @@ public class CtypesNodes {
          */
         // corresponds to _ctypes_simple_instance
         boolean ctypesSimpleInstance(Node inliningTarget, Object type, GetBaseClassNode getBaseClassNode, IsSameTypeNode isSameTypeNode) {
-            if (isPyCSimpleTypeObject(type)) {
+            if (isPyCSimpleTypeObject(inliningTarget, type)) {
                 return !isSameTypeNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, type), SimpleCData);
             }
             return false;
         }
 
         // corresponds to PyCStructTypeObject_Check
-        protected final boolean isPyCStructTypeObject(Object obj) {
-            return execute(obj, PyCStructType);
+        protected final boolean isPyCStructTypeObject(Node inliningTarget, Object obj) {
+            return execute(inliningTarget, obj, PyCStructType);
         }
 
         @Specialization
-        static boolean checkType(Object receiver, Object type,
-                        @Bind("this") Node inliningTarget,
+        static boolean checkType(Node inliningTarget, Object receiver, Object type,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
             Object clazz = getClassNode.execute(inliningTarget, receiver);
             // IsSameTypeNode.execute(clazz, type) is done within IsSubtypeNode
             return isSubtypeNode.execute(clazz, type);
@@ -306,7 +306,7 @@ public class CtypesNodes {
         @Specialization
         static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
                         @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached(inline = false) StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CreateCDataObjectNode createCDataObjectNode,
                         @Cached PyCDataMallocBufferNode mallocBufferNode,
                         @Cached PointerNodes.MemcpyNode memcpyNode) {

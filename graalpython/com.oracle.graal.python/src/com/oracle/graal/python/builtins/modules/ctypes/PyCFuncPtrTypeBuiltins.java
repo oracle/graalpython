@@ -176,7 +176,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
             ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_RESTYPE_);
             if (!PGuards.isPNone(ob)) {
-                StgDictObject dict = pyTypeStgDictNode.execute(ob);
+                StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, ob);
                 if (dict == null && !callableCheck.execute(inliningTarget, ob)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }

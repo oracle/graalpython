@@ -178,6 +178,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -612,9 +613,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            StgDictObject dict = pyTypeStgDictNode.execute(arg);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, arg);
             if (dict == null) {
-                dict = pyObjectStgDictNode.execute(arg);
+                dict = pyObjectStgDictNode.execute(inliningTarget, arg);
             }
             if (dict == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPES_TYPE_OR_OBJECT);
@@ -643,7 +644,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            StgDictObject dict = pyObjectStgDictNode.execute(obj);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, obj);
             if (dict == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, EXCEPTED_CTYPES_INSTANCE);
             }
@@ -948,12 +949,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            StgDictObject dict = pyTypeStgDictNode.execute(obj);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, obj);
             if (dict != null) {
                 return dict.align;
             }
 
-            dict = pyObjectStgDictNode.execute(obj);
+            dict = pyObjectStgDictNode.execute(inliningTarget, obj);
             if (dict != null) {
                 return dict.align;
             }
@@ -972,12 +973,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            StgDictObject dict = pyTypeStgDictNode.execute(obj);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, obj);
             if (dict != null) {
                 return dict.size;
             }
 
-            if (pyTypeCheck.isCDataObject(obj)) {
+            if (pyTypeCheck.isCDataObject(inliningTarget, obj)) {
                 return ((CDataObject) obj).b_size;
             }
             throw raiseNode.get(inliningTarget).raise(TypeError, THIS_TYPE_HAS_NO_SIZE);
@@ -997,11 +998,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(CDataObject obj, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (!pyTypeCheck.isCDataObject(obj)) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            if (!pyTypeCheck.isCDataObject(inliningTarget, obj)) {
                 return error(null, obj, offset, inliningTarget, getClassNode, raiseNode);
             }
             PyCArgObject parg = factory.createCArgObject();
@@ -1017,8 +1018,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Fallback
         static Object error(VirtualFrame frame, Object obj, Object off,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             TruffleString name = GetNameNode.executeUncached(clazz);
             throw raiseNode.get(inliningTarget).raise(TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S, name);
@@ -1066,7 +1067,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (!pyTypeCheck.isCDataObject(obj)) {
+            if (!pyTypeCheck.isCDataObject(inliningTarget, obj)) {
                 return error(obj, raiseNode.get(inliningTarget));
             }
             auditNode.audit(inliningTarget, "ctypes.addressof", obj);
@@ -1225,7 +1226,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             FFIType rtype = FFIType.ffi_type_sint;
             if (restype != null) {
-                StgDictObject dict = pyTypeStgDictNode.execute(restype);
+                StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, restype);
                 if (dict != null) {
                     rtype = dict.ffi_type_pointer;
                 }
@@ -1396,9 +1397,10 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
         static Object callResType(Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
-                        @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @SuppressWarnings("unused") @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @SuppressWarnings("unused") @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Shared @Cached CallNode callNode) {
             try {
                 return callNode.execute(restype, ilib.asInt(result));
@@ -1411,8 +1413,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
-                        @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Shared @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetBaseClassNode getBaseClassNode,
@@ -1468,8 +1470,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             return callNode.execute(checker, retval);
         }
 
-        protected static StgDictObject getStgDict(Object restype, PyTypeStgDictNode pyTypeStgDictNode) {
-            return pyTypeStgDictNode.execute(restype);
+        protected static StgDictObject getStgDict(Node inliningTarget, Object restype, PyTypeStgDictNode pyTypeStgDictNode) {
+            return pyTypeStgDictNode.execute(inliningTarget, restype);
         }
     }
 
@@ -1502,8 +1504,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached ConvParamNode recursive,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (obj instanceof CDataObject cdata) {
-                pa.stgDict = pyObjectStgDictNode.execute(cdata);
-                PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
+                pa.stgDict = pyObjectStgDictNode.execute(inliningTarget, cdata);
+                PyCArgObject carg = paramFuncNode.execute(inliningTarget, cdata, pa.stgDict);
                 pa.ffi_type = carg.pffi_type;
                 pa.valuePointer = carg.valuePointer;
                 pa.keep = cdata;
@@ -1512,7 +1514,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             if (PGuards.isPyCArg(obj)) {
                 PyCArgObject carg = (PyCArgObject) obj;
-                pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
+                // helpful for llvm backend
+                pa.stgDict = pyObjectStgDictNode.execute(inliningTarget, carg.obj);
                 pa.ffi_type = carg.pffi_type;
                 pa.valuePointer = carg.valuePointer;
                 pa.keep = carg;
@@ -1807,32 +1810,34 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     // cast_check_pointertype
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     abstract static class CastCheckPtrTypeNode extends Node {
 
         private static final char[] sPzUZXO = "sPzUZXO".toCharArray();
 
-        abstract void execute(Object arg);
+        abstract void execute(Node inliningTarget, Object arg);
 
-        protected static boolean isPtrTypeObject(Object arg, PyTypeCheck pyTypeCheck) {
-            return pyTypeCheck.isPyCPointerTypeObject(arg) || pyTypeCheck.isPyCFuncPtrTypeObject(arg);
+        protected static boolean isPtrTypeObject(Node inliningTarget, Object arg, PyTypeCheck pyTypeCheck) {
+            return pyTypeCheck.isPyCPointerTypeObject(inliningTarget, arg) || pyTypeCheck.isPyCFuncPtrTypeObject(inliningTarget, arg);
         }
 
-        @Specialization(guards = "isPtrTypeObject(arg, pyTypeCheck)")
-        static void fastCheck(@SuppressWarnings("unused") Object arg,
-                        @SuppressWarnings("unused") @Shared @Cached PyTypeCheck pyTypeCheck) {
+        @Specialization(guards = "isPtrTypeObject(inliningTarget, arg, pyTypeCheck)", limit = "1")
+        static void fastCheck(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") Object arg,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTypeCheck pyTypeCheck) {
         }
 
         @Specialization(replaces = {"fastCheck"})
-        static void fullcheck(Object arg,
-                        @Shared @Cached PyTypeCheck pyTypeCheck,
+        static void fullcheck(Node inliningTarget, Object arg,
+                        @Exclusive @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached FailedCastCheckNode failedCastCheckNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            if (isPtrTypeObject(arg, pyTypeCheck)) {
+                        @Cached(inline = false) FailedCastCheckNode failedCastCheckNode,
+                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            if (isPtrTypeObject(inliningTarget, arg, pyTypeCheck)) {
                 return;
             }
-            StgDictObject dict = pyTypeStgDictNode.execute(arg);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, arg);
             if (dict != null && dict.proto != null) {
                 if (PGuards.isTruffleString(dict.proto)) {
                     int code = codePointAtIndexNode.execute((TruffleString) dict.proto, 0, TS_ENCODING);
@@ -1865,7 +1870,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PointerNodes.WritePointerNode writePointerNode) {
             Object src = readPythonObject.execute(inliningTarget, srcObj);
             Object ctype = readPythonObject.execute(inliningTarget, ctypeObj);
-            castCheckPtrTypeNode.execute(ctype);
+            castCheckPtrTypeNode.execute(inliningTarget, ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
             /*
@@ -1874,7 +1879,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
              * It must certainly contain the source objects one. It must contain the source object
              * itself.
              */
-            if (src instanceof CDataObject cdata && pyTypeCheck.isCDataObject(cdata)) {
+            if (src instanceof CDataObject cdata && pyTypeCheck.isCDataObject(inliningTarget, cdata)) {
                 /*
                  * PyCData_GetContainer will initialize src.b_objects, we need this so it can be
                  * shared
@@ -1919,16 +1924,17 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     protected abstract static class MemmoveNode extends Node {
 
-        abstract Object execute(Object dest, Object src, Object size);
+        abstract Object execute(Node inliningTarget, Object dest, Object src, Object size);
 
         @Specialization
-        static Object memmove(Pointer destPtr, Pointer srcPtr, long size,
-                        @Bind("this") Node inliningTarget,
+        static Object memmove(Node inliningTarget, Pointer destPtr, Pointer srcPtr, long size,
                         @Cached PointerNodes.MemcpyNode memcpyNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) PythonObjectFactory factory) {
             memcpyNode.execute(inliningTarget, destPtr, srcPtr, (int) size);
             return factory.createNativeVoidPtr(destPtr);
         }
@@ -1973,23 +1979,25 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object managed(@SuppressWarnings("unused") MemMoveFunction self, Object[] arguments,
+                            @Bind("$node") Node inliningTarget,
                             @Cached MemmoveNode memmoveNode) {
-                return memmoveNode.execute(arguments[0], arguments[1], arguments[2]);
+                return memmoveNode.execute(inliningTarget, arguments[0], arguments[1], arguments[2]);
             }
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     protected abstract static class MemsetNode extends Node {
 
-        abstract Object execute(Object dest, Object src, Object size);
+        abstract Object execute(Node inliningTarget, Object dest, Object src, Object size);
 
         @Specialization
-        static Object memset(Pointer ptr, int value, long size,
-                        @Bind("this") Node inliningTarget,
+        static Object memset(Node inliningTarget, Pointer ptr, int value, long size,
                         @Cached PointerNodes.WriteLongNode writeLongNode,
                         @Cached PointerNodes.WriteByteNode writeByteNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) PythonObjectFactory factory) {
             byte b = (byte) value;
             long fill = 0;
             for (int i = 0; i < Long.BYTES * 8; i += 8) {
@@ -2049,8 +2057,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object managed(@SuppressWarnings("unused") MemSetFunction self, Object[] arguments,
+                            @Bind("$node") Node inliningTarget,
                             @Cached MemsetNode memsetNode) {
-                return memsetNode.execute(arguments[0], arguments[1], arguments[2]);
+                return memsetNode.execute(inliningTarget, arguments[0], arguments[1], arguments[2]);
             }
         }
     }

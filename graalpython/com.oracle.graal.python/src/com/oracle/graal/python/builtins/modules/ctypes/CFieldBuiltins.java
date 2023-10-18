@@ -100,6 +100,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -149,7 +151,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyCDataSetNode cDataSetNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (!pyTypeCheck.isCDataObject(inst)) {
+            if (!pyTypeCheck.isCDataObject(inliningTarget, inst)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             if (value == PNone.NO_VALUE) {
@@ -181,11 +183,11 @@ public final class CFieldBuiltins extends PythonBuiltins {
             if (inst instanceof PNone) {
                 return self;
             }
-            if (!pyTypeCheck.isCDataObject(inst)) {
+            if (!pyTypeCheck.isCDataObject(inliningTarget, inst)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
-            return pyCDataGetNode.execute(self.proto, self.getfunc, src, self.index, self.size, src.b_ptr.withOffset(self.offset));
+            return pyCDataGetNode.execute(inliningTarget, self.proto, self.getfunc, src, self.index, self.size, src.b_ptr.withOffset(self.offset));
         }
     }
 
@@ -229,19 +231,20 @@ public final class CFieldBuiltins extends PythonBuiltins {
      * bitfields extension: bitsize != 0: this is a bit field. pbitofs points to the current bit
      * offset, this will be updated. prev_desc points to the type of the previous bitfield, if any.
      */
+    @GenerateInline
+    @GenerateCached(false)
     @SuppressWarnings("fallthrough")
     abstract static class PyCFieldFromDesc extends Node {
 
-        abstract CFieldObject execute(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory);
+        abstract CFieldObject execute(Node inliningTarget, Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory);
 
         @Specialization
-        static CFieldObject PyCField_FromDesc(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
-                        @Bind("this") Node inliningTarget,
+        static CFieldObject PyCField_FromDesc(Node inliningTarget, Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             CFieldObject self = factory.createCFieldObject(PythonBuiltinClassType.CField);
-            StgDictObject dict = pyTypeStgDictNode.execute(desc);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, desc);
             if (dict == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
             }
@@ -278,10 +281,10 @@ public final class CFieldBuiltins extends PythonBuiltins {
              * Field descriptors for 'c_char * n' are a special case that returns a Python string
              * instead of an Array object instance...
              */
-            if (pyTypeCheck.isPyCArrayTypeObject(desc)) {
-                StgDictObject adict = pyTypeStgDictNode.execute(desc);
+            if (pyTypeCheck.isPyCArrayTypeObject(inliningTarget, desc)) {
+                StgDictObject adict = pyTypeStgDictNode.execute(inliningTarget, desc);
                 if (adict != null && adict.proto != null) {
-                    StgDictObject idict = pyTypeStgDictNode.execute(adict.proto);
+                    StgDictObject idict = pyTypeStgDictNode.execute(inliningTarget, adict.proto);
                     if (idict == null) {
                         throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
                     }
