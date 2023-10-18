@@ -2136,8 +2136,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     ],
     library_configs=[
         mx_sdk.LanguageLibraryConfig(
-            launchers=['bin/<exe:graalpy>', 'bin/<exe:graalpy-lt>', 'bin/<exe:python>', 'bin/<exe:python3>'],
-            jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
+            launchers=['bin/<exe:graalpy>', 'bin/<exe:graalpy-lt>', 'bin/<exe:python>', 'bin/<exe:python3>', 'libexec/<exe:graalpy-polyglot-get>'],
+            jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER', 'sdk:MAVEN_DOWNLOADER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+DetectUserDirectoriesInImageHeap',
@@ -2147,17 +2147,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             language='python',
             default_vm_args=[
                 '--vm.Xss16777216', # request 16M of stack
-            ],
-        ),
-    ],
-    launcher_configs=[
-        mx_sdk.LauncherConfig(
-            destination='libexec/<exe:graalpy-polyglot-get>',
-            jar_distributions=['sdk:MAVEN_DOWNLOADER'],
-            main_class='org.graalvm.maven.downloader.Main',
-            build_args=[
-                '-Dorg.graalvm.maven.downloader.relative_output_dir=../modules',
-                f'-Dorg.graalvm.maven.downloader.default_version={GRAAL_VERSION}',
             ],
         ),
     ],

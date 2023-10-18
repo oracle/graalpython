@@ -195,6 +195,8 @@ public abstract class HashingStorage {
     // partial impl dict_update_arg
     @GenerateCached
     @GenerateInline(false)
+    // spurious warning, since we don't generate inline variant
+    @SuppressWarnings("truffle-interpreted-performance")
     public abstract static class ObjectToArrayPairNode extends PNodeWithContext {
         public abstract ArrayBuilder<KeyValue> execute(VirtualFrame frame, Object mapping, Object keyAttr);
 

@@ -157,6 +157,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
         }
 
+        // multiple non-inlined specializations share nodes
+        @SuppressWarnings("truffle-interpreted-performance")
         @ImportStatic(PGuards.class)
         @GenerateInline
         @GenerateCached(false)

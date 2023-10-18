@@ -74,6 +74,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     // Duplicate of SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD
     public static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
 
+    /**
+     * The first method called with the arguments by the thin launcher is
+     * {@link #preprocessArguments}.
+     */
     public static void main(String[] args) {
         new GraalPythonMain().launch(args);
     }
@@ -121,8 +125,43 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
+    private void polyglotGet(String exe, List<String> originalArgs) {
+        List<String> args = new ArrayList<>();
+        if (originalArgs.size() == 1 && !originalArgs.get(0).startsWith("-")) {
+            args.add("-a");
+        }
+        args.addAll(originalArgs);
+        if (!originalArgs.contains("-o")) {
+            var binPath = Paths.get(exe).getParent();
+            if (binPath != null) {
+                args.add("-o");
+                args.add(binPath.resolveSibling("modules").toString());
+            }
+        }
+        if (!originalArgs.contains("-v")) {
+            try (var tmpEngine = Engine.newBuilder().useSystemProperties(false).//
+                            out(OutputStream.nullOutputStream()).//
+                            err(OutputStream.nullOutputStream()).//
+                            option("engine.WarnInterpreterOnly", "false").//
+                            build()) {
+                args.add("-v");
+                args.add(tmpEngine.getVersion());
+            }
+        }
+        try {
+            org.graalvm.maven.downloader.Main.main(args.toArray(new String[0]));
+        } catch (Exception e) {
+            throw abort(e);
+        }
+        System.exit(0);
+    }
+
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
+        String launcherName = getLauncherExecName();
+        if (launcherName != null && (launcherName.endsWith("graalpy-polyglot-get") || launcherName.endsWith("graalpy-polyglot-get.exe"))) {
+            polyglotGet(launcherName, givenArgs);
+        }
         ArrayList<String> unrecognized = new ArrayList<>();
         List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
         ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
