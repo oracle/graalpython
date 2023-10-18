@@ -172,6 +172,10 @@ def check_enough_semaphores():
                             "to run the test (required: %d)." % nsems_min)
 
 
+# GraalPy change
+def get_id():
+    return multiprocessing.context._default_context._get_id()
+
 #
 # Creates a wrapper for a function which records the time it takes to finish
 #
@@ -259,7 +263,7 @@ class _TestProcess(BaseTestCase):
         self.assertTrue(len(authkey) > 0)
         # Begin Truffle change
         # self.assertEqual(current.ident, os.getpid())
-        self.assertEqual(current.ident, _multiprocessing._gettid())
+        self.assertEqual(current.ident, get_id())
         # End Truffle change
         self.assertEqual(current.exitcode, None)
 
@@ -299,7 +303,7 @@ class _TestProcess(BaseTestCase):
         self.assertEqual(parent_pid, self.current_process().pid)
         # Begin Truffle change
         # self.assertEqual(parent_pid, os.getpid())
-        self.assertEqual(parent_pid, _multiprocessing._gettid())
+        self.assertEqual(parent_pid, get_id())
         # End Truffle change
         self.assertEqual(parent_name, self.current_process().name)
 
@@ -4782,7 +4786,7 @@ class TestWait(unittest.TestCase):
                 time.sleep(random.random()*0.1)
             # Begin Truffle change
             #w.send((i, os.getpid()))
-            w.send((i, _multiprocessing._gettid()))
+            w.send((i, get_id()))
             # End Truffle change
         w.close()
 
@@ -5278,12 +5282,11 @@ class TestStartMethod(unittest.TestCase):
     def test_get_all(self):
         methods = multiprocessing.get_all_start_methods()
         if sys.platform == 'win32':
-            self.assertEqual(methods, ['spawn'])
+            # GraalVM change
+            self.assertEqual(methods, ['graalpy'])
         else:
-            self.assertTrue(methods == ['fork', 'spawn'] or
-                            methods == ['spawn', 'fork'] or
-                            methods == ['fork', 'spawn', 'forkserver'] or
-                            methods == ['spawn', 'fork', 'forkserver'])
+            # GraalVM change
+            self.assertEqual(methods, ['spawn', 'graalpy'])
 
     def test_preload_resources(self):
         if multiprocessing.get_start_method() != 'forkserver':

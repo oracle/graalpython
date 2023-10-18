@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 def test_SemLock_raises_on_non_string_name():    
-    from _multiprocessing import SemLock
+    from _multiprocessing_graalpy import SemLock
     try :
         SemLock(kind=1, value=1, name={1:2}, maxvalue=1, unlink=1)
     except TypeError:

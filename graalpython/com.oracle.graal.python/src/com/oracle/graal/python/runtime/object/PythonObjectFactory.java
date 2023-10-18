@@ -193,9 +193,9 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
+import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
-import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -1221,8 +1221,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PThread(cls, getShape(cls), thread));
     }
 
-    public final PSemLock createSemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
+    public final PGraalPySemLock createGraalPySemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
+        return trace(new PGraalPySemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
     public final PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {

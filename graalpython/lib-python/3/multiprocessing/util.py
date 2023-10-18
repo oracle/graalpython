@@ -19,7 +19,7 @@ from subprocess import _args_from_interpreter_flags
 from . import process
 
 # Begin Truffle change
-from _multiprocessing import _close, _gettid
+from .context import _default_context
 # End Truffle change
 
 __all__ = [
@@ -204,7 +204,7 @@ class Finalize(object):
         self._key = (exitpriority, next(_finalizer_counter))
         # Begin Truffle change
 #        self._pid = os.getpid()
-        self._pid = _gettid()
+        self._pid = _default_context._get_id()
         # End Truffle change
         
         _finalizer_registry[self._key] = self
@@ -215,7 +215,7 @@ class Finalize(object):
                  _finalizer_registry=_finalizer_registry,
                  # Begin Truffle change
                  #sub_debug=sub_debug, getpid=os.getpid):
-                 sub_debug=sub_debug, getpid=_gettid):
+                 sub_debug=sub_debug, getpid=_default_context._get_id):
                  # Begin Truffle change
         '''
         Run the callback unless it has already been called or cancelled
@@ -472,11 +472,7 @@ def close_fds(*fds):
     """Close each file descriptor given as an argument"""
     for fd in fds:
         # Begin Truffle change
-        #os.close(fd)
-        if fd < 0:
-            _close(fd)
-        else:
-            os.close(fd)
+        _default_context._close(fd)
         # End Truffle change
 
 

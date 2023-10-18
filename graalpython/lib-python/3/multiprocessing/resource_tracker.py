@@ -24,6 +24,10 @@ import warnings
 from . import spawn
 from . import util
 
+# Begin Truffle change
+from .context import _default_context
+# End Truffle change
+
 __all__ = ['ensure_running', 'register', 'unregister']
 
 _HAVE_SIGMASK = hasattr(signal, 'pthread_sigmask')
@@ -34,21 +38,27 @@ _CLEANUP_FUNCS = {
 }
 
 if os.name == 'posix':
-    import _multiprocessing
-    import _posixshmem
+    # Begin Truffle change
+    try:
+        import _multiprocessing
+        import _posixshmem
 
-    # Use sem_unlink() to clean up named semaphores.
-    #
-    # sem_unlink() may be missing if the Python build process detected the
-    # absence of POSIX named semaphores. In that case, no named semaphores were
-    # ever opened, so no cleanup would be necessary.
-    if hasattr(_multiprocessing, 'sem_unlink'):
+        # Use sem_unlink() to clean up named semaphores.
+        #
+        # sem_unlink() may be missing if the Python build process detected the
+        # absence of POSIX named semaphores. In that case, no named semaphores were
+        # ever opened, so no cleanup would be necessary.
+        if hasattr(_multiprocessing, 'sem_unlink'):
+            _CLEANUP_FUNCS.update({
+                'semaphore': _multiprocessing.sem_unlink,
+            })
         _CLEANUP_FUNCS.update({
-            'semaphore': _multiprocessing.sem_unlink,
+            'shared_memory': _posixshmem.shm_unlink,
         })
-    _CLEANUP_FUNCS.update({
-        'shared_memory': _posixshmem.shm_unlink,
-    })
+    except ImportError:
+        # We don't have _multiprocessing, so we're running graalpy mode
+        pass
+    # End Truffle change
 
 
 class ResourceTracker(object):
@@ -80,6 +90,11 @@ class ResourceTracker(object):
 
         This can be run from any process.  Usually a child process will use
         the resource created by its parent.'''
+        # Begin Truffle change
+        if _default_context._is_graalpy():
+            # No resource_tracker needed in graalpy mode
+            return
+        # End Truffle change
         with self._lock:
             if self._fd is not None:
                 # resource tracker was launched before, is it still running?
@@ -159,6 +174,11 @@ class ResourceTracker(object):
         self._send('UNREGISTER', name, rtype)
 
     def _send(self, cmd, name, rtype):
+        # Begin Truffle change
+        if _default_context._is_graalpy():
+            # No resource_tracker needed in graalpy mode
+            return
+        # End Truffle change
         self.ensure_running()
         msg = '{0}:{1}:{2}\n'.format(cmd, name, rtype).encode('ascii')
         if len(msg) > 512:
@@ -169,37 +189,15 @@ class ResourceTracker(object):
         assert nbytes == len(msg), "nbytes {0:n} but len(msg) {1:n}".format(
             nbytes, len(msg))
 
-# Begin Truffle change
-#_resource_tracker = ResourceTracker()
-#ensure_running = _resource_tracker.ensure_running
-#register = _resource_tracker.register
-#unregister = _resource_tracker.unregister
-#getfd = _resource_tracker.getfd
 
-def _pass():
-    pass
-
-def _pass2(a1, a2):
-    pass
-
-class _RT:
-    def _stop(self):
-        pass
-    
-_resource_tracker = _RT()
-ensure_running = _pass
-register = _pass2
-unregister = _pass2
-getfd = _pass
-# End Truffle change
+_resource_tracker = ResourceTracker()
+ensure_running = _resource_tracker.ensure_running
+register = _resource_tracker.register
+unregister = _resource_tracker.unregister
+getfd = _resource_tracker.getfd
 
 def main(fd):
     '''Run resource tracker.'''
-    
-    # Begin Truffle change
-    raise RuntimeError("Resource Tracker should not be started")
-    # End Truffle change
-    
     # protect the process from ^C and "killall python" etc
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)

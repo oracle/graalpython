@@ -21,10 +21,6 @@ import itertools
 import threading
 from _weakrefset import WeakSet
 
-# Begin Truffle change
-from _multiprocessing import _gettid
-# End Truffle change
-
 #
 #
 #
@@ -89,7 +85,8 @@ class BaseProcess(object):
         self._config = _current_process._config.copy()
         # Begin Truffle change
         # self._parent_pid = os.getpid()
-        self._parent_pid = _gettid()
+        from .context import _default_context
+        self._parent_pid = _default_context._get_id()
         # End Truffle change
         self._parent_name = _current_process.name
         self._popen = None
@@ -123,7 +120,8 @@ class BaseProcess(object):
         # Begin Truffle change
         # assert self._parent_pid == os.getpid(), \
         # 'can only start a process object created by current process'
-        assert self._parent_pid == _gettid(), \
+        from .context import _default_context
+        assert self._parent_pid == _default_context._get_id(), \
                'can only start a process object created by current process'
         # End Truffle change
         assert not _current_process._config.get('daemon'), \
@@ -157,7 +155,8 @@ class BaseProcess(object):
         self._check_closed()
         # Begin Truffle change
         # assert self._parent_pid == os.getpid(), 'can only join a child process'
-        assert self._parent_pid == _gettid(), 'can only join a child process'
+        from .context import _default_context
+        assert self._parent_pid == _default_context._get_id(), 'can only join a child process'
         # End Truffle change
         assert self._popen is not None, 'can only join a started process'
         res = self._popen.wait(timeout)
@@ -173,7 +172,8 @@ class BaseProcess(object):
             return True
         # Begin Truffle change
         # assert self._parent_pid == os.getpid(), 'can only test a child process'
-        assert self._parent_pid == _gettid(), 'can only test a child process'
+        from .context import _default_context
+        assert self._parent_pid == _default_context._get_id(), 'can only test a child process'
         # End Truffle change
         
         if self._popen is None:
@@ -257,7 +257,8 @@ class BaseProcess(object):
         if self is _current_process:
             # Begin Truffle change
             # return os.getpid()
-            return _gettid()
+            from .context import _default_context
+            return _default_context._get_id()
             # End Truffle change
         else:
             return self._popen and self._popen.pid
@@ -278,13 +279,14 @@ class BaseProcess(object):
 
     def __repr__(self):
         exitcode = None
+        from .context import _default_context
         if self is _current_process:
             status = 'started'
         elif self._closed:
             status = 'closed'
         # Begin Truffle change
         # elif self._parent_pid != os.getpid():
-        elif self._parent_pid != _gettid():
+        elif self._parent_pid != _default_context._get_id():
         # End Truffle change
             status = 'unknown'
         elif self._popen is None:

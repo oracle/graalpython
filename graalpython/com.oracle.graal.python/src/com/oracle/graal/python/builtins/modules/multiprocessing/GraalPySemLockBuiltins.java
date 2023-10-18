@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.thread;
+package com.oracle.graal.python.builtins.modules.multiprocessing;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -63,6 +63,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -75,12 +77,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PSemLock})
-public final class SemLockBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PGraalPySemLock})
+public final class GraalPySemLockBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return SemLockBuiltinsFactory.getFactories();
+        return GraalPySemLockBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -93,7 +95,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int getCount(PSemLock self) {
+        static int getCount(PGraalPySemLock self) {
             return self.getCount();
         }
     }
@@ -102,7 +104,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IsMineNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean isMine(PSemLock self) {
+        static boolean isMine(PGraalPySemLock self) {
             return self.isMine();
         }
     }
@@ -111,7 +113,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IsZeroNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean isZero(PSemLock self) {
+        static boolean isZero(PGraalPySemLock self) {
             return self.isZero();
         }
     }
@@ -120,7 +122,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetValueNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int getValue(PSemLock self) {
+        static int getValue(PGraalPySemLock self) {
             return self.getValue();
         }
     }
@@ -130,7 +132,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     abstract static class GetHandleNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        int getHandle(PSemLock self) {
+        static int getHandle(PGraalPySemLock self) {
             return self.hashCode();
         }
     }
@@ -139,7 +141,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString getName(PSemLock self) {
+        static TruffleString getName(PGraalPySemLock self) {
             return self.getName();
         }
     }
@@ -148,7 +150,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetMaxValue extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getMax(@SuppressWarnings("unused") PSemLock self) {
+        static Object getMax(@SuppressWarnings("unused") PGraalPySemLock self) {
             return Integer.MAX_VALUE;
         }
     }
@@ -157,39 +159,61 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetKindNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int getKind(PSemLock self) {
+        static int getKind(PGraalPySemLock self) {
             return self.getKind();
         }
     }
 
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
-    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "LockBuiltins.DEFAULT_BLOCKING")
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
     abstract static class AcquireNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return SemLockBuiltinsClinicProviders.AcquireNodeClinicProviderGen.INSTANCE;
+            return GraalPySemLockBuiltinsClinicProviders.AcquireNodeClinicProviderGen.INSTANCE;
         }
 
-        protected static boolean isFast(PSemLock self) {
-            return self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine();
+        protected static boolean isFast(PGraalPySemLock self) {
+            return self.getKind() == PGraalPySemLock.RECURSIVE_MUTEX && self.isMine();
         }
 
         @Specialization(guards = "isFast(self)")
-        boolean fast(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") Object timeout) {
+        static boolean fast(PGraalPySemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") Object timeout) {
             self.increaseCount();
             return true;
         }
 
         @Specialization(guards = "!isFast(self)")
-        Object slow(VirtualFrame frame, PSemLock self, boolean blocking, Object timeout,
-                        @Cached AcquireLockNode acquireLockNode) {
-            Object tout = timeout;
-            if (!blocking) {
-                tout = LockBuiltins.UNSET_TIMEOUT;
+        static boolean slow(VirtualFrame frame, PGraalPySemLock self, boolean blocking, Object timeoutObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached GilNode gil) {
+            boolean hasDeadline = !(timeoutObj instanceof PNone);
+            long timeoutMs = 0;
+            if (hasDeadline) {
+                timeoutMs = (long) (asDoubleNode.execute(frame, inliningTarget, timeoutObj) * 1000);
+                if (timeoutMs < 0) {
+                    timeoutMs = 0;
+                }
             }
-            return acquireLockNode.execute(frame, self, blocking, tout);
+            boolean acquired = self.acquireNonBlocking();
+            if (acquired) {
+                return true;
+            }
+            if (!blocking) {
+                return false;
+            }
+            gil.release(true);
+            try {
+                if (hasDeadline) {
+                    return self.acquireTimeout(inliningTarget, timeoutMs);
+                } else {
+                    return self.acquireBlocking(inliningTarget);
+                }
+            } finally {
+                gil.acquire();
+            }
         }
     }
 
@@ -197,9 +221,9 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doEnter(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
-                        @Cached AcquireLockNode acquireLockNode) {
-            return acquireLockNode.execute(frame, self, blocking, timeout);
+        static Object doEnter(VirtualFrame frame, PGraalPySemLock self, Object blocking, Object timeout,
+                        @Cached AcquireNode acquireNode) {
+            return acquireNode.execute(frame, self, blocking, timeout);
         }
     }
 
@@ -210,25 +234,26 @@ public final class SemLockBuiltins extends PythonBuiltins {
     abstract static class RebuildNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return SemLockBuiltinsClinicProviders.RebuildNodeClinicProviderGen.INSTANCE;
+            return GraalPySemLockBuiltinsClinicProviders.RebuildNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name,
+        static Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory) {
-            SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+            SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
             Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
             if (semaphore == null) {
                 // TODO can this even happen? cpython simply creates a semlock object with the
                 // provided handle
-                semaphore = newSemaphore(0);
+                semaphore = newSemaphore();
             }
-            return factory.createSemLock(PythonBuiltinClassType.PSemLock, name, kind, semaphore);
+            return factory.createGraalPySemLock(PythonBuiltinClassType.PGraalPySemLock, name, kind, semaphore);
         }
 
         @TruffleBoundary
-        private static Semaphore newSemaphore(int value) {
-            return new Semaphore(value);
+        private static Semaphore newSemaphore() {
+            return new Semaphore(0);
         }
     }
 
@@ -236,10 +261,10 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doRelease(PSemLock self,
+        static Object doRelease(PGraalPySemLock self,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (self.getKind() == PSemLock.RECURSIVE_MUTEX) {
+            if (self.getKind() == PGraalPySemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {
                     throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
                 }
@@ -258,7 +283,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization
-        Object exit(AbstractPythonLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
+        static Object exit(PGraalPySemLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
             self.release();
             return PNone.NONE;
         }

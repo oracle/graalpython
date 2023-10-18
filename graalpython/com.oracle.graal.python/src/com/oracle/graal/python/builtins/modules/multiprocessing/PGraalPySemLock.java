@@ -38,18 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.thread;
+package com.oracle.graal.python.builtins.modules.multiprocessing;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class PSemLock extends AbstractPythonLock {
+public final class PGraalPySemLock extends AbstractPythonLock {
     public static final int RECURSIVE_MUTEX = 0;
     public static final int SEMAPHORE = 1;
 
@@ -60,7 +62,7 @@ public final class PSemLock extends AbstractPythonLock {
     private long lastThreadID = -1;
     private int count;
 
-    public PSemLock(Object cls, Shape instanceShape, TruffleString name, int kind, Semaphore sharedSemaphore) {
+    public PGraalPySemLock(Object cls, Shape instanceShape, TruffleString name, int kind, Semaphore sharedSemaphore) {
         super(cls, instanceShape);
         this.name = name;
         this.semaphore = sharedSemaphore;

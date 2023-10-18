@@ -213,6 +213,54 @@ class BaseContext(object):
     def _check_available(self):
         pass
 
+    # Begin Truffle change
+    def _is_graalpy(self):
+        return isinstance(self.get_context(), GraalPyContext)
+
+    def _get_id(self):
+        if self._is_graalpy():
+            from _multiprocessing_graalpy import _gettid
+            return _gettid()
+        import os
+        return os.getpid()
+
+    def _SemLock(self, kind, value, maxvalue, name, unlink):
+        if self._is_graalpy():
+            from _multiprocessing_graalpy import SemLock
+        else:
+            from _multiprocessing import SemLock
+        return SemLock(kind, value, maxvalue, name, unlink)
+
+    def _SemLock_rebuild(self, *args):
+        if self._is_graalpy():
+            from _multiprocessing_graalpy import SemLock
+        else:
+            from _multiprocessing import SemLock
+        return SemLock._rebuild(*args)
+
+    def _sem_unlink(self, name):
+        if self._is_graalpy():
+            from _multiprocessing_graalpy import sem_unlink
+        else:
+            from _multiprocessing import sem_unlink
+        sem_unlink(name)
+
+    def _close(self, fd):
+        if self._is_graalpy() and fd < 0:
+            from _multiprocessing_graalpy import _close as close
+        else:
+            from os import close
+        close(fd)
+
+    def _pipe(self):
+        if self._is_graalpy():
+            from _multiprocessing_graalpy import _pipe as pipe
+        else:
+            from os import pipe
+        return pipe()
+
+    # End Truffle change
+
 #
 # Type of default context -- underlying context can be set at most once
 #
@@ -258,18 +306,34 @@ class DefaultContext(BaseContext):
         return self._actual_context._name
 
     def get_all_start_methods(self):
-        if sys.platform == 'win32':
-            return ['spawn']
-        else:
-            methods = ['spawn', 'fork'] if sys.platform == 'darwin' else ['fork', 'spawn']
-            if reduction.HAVE_SEND_HANDLE:
-                methods.append('forkserver')
-            return methods
+        # Begin Truffle change
+        methods = ['spawn', 'graalpy'] if __graalpython__.posix_module_backend() == 'native' else ['graalpy']
+        return methods
+        # End Truffle change
 
 
 #
 # Context types for fixed start method
 #
+
+# Begin Truffle change
+class GraalPyProcess(process.BaseProcess):
+    _start_method = 'graalpy'
+    @staticmethod
+    def _Popen(process_obj):
+        from multiprocessing.popen_truffleprocess import Popen
+        return Popen(process_obj)
+
+    @staticmethod
+    def _after_fork():
+        pass
+
+
+class GraalPyContext(BaseContext):
+    _name = 'graalpy'
+    Process = GraalPyProcess
+# End Truffle change
+
 
 if sys.platform != 'win32':
 
@@ -287,13 +351,9 @@ if sys.platform != 'win32':
         _start_method = 'spawn'
         @staticmethod
         def _Popen(process_obj):
-            # Begin Truffle change
-            # from .popen_spawn_posix import Popen
-            # return Popen(process_obj)
-            from multiprocessing.popen_truffleprocess import Popen
-            return Popen(process_obj)    
-            # End Truffle change
-            
+            from .popen_spawn_posix import Popen
+            return Popen(process_obj)
+
         @staticmethod
         def _after_fork():
             # process is spawned, nothing to do
@@ -306,7 +366,7 @@ if sys.platform != 'win32':
             # Begin Truffle change
             # from .popen_forkserver import Popen
             # return Popen(process_obj)
-            raise NotImplementedError("'forkserver' not supported in graalpython")
+            raise NotImplementedError("'forkserver' not supported in GraalPy")
             # End Truffle change
 
     class ForkContext(BaseContext):
@@ -328,6 +388,9 @@ if sys.platform != 'win32':
         'fork': ForkContext(),
         'spawn': SpawnContext(),
         'forkserver': ForkServerContext(),
+        # Begin Truffle change
+        'graalpy': GraalPyContext(),
+        # End Truffle change
     }
     # Begin Truffle change
     # if sys.platform == 'darwin':
@@ -336,7 +399,10 @@ if sys.platform != 'win32':
     #     _default_context = DefaultContext(_concrete_contexts['spawn'])
     # else:
     #     _default_context = DefaultContext(_concrete_contexts['fork'])
-    _default_context = DefaultContext(_concrete_contexts['spawn'])
+    if __graalpython__.posix_module_backend() == 'native':
+        _default_context = DefaultContext(_concrete_contexts['spawn'])
+    else:
+        _default_context = DefaultContext(_concrete_contexts['graalpy'])
     # End Truffle change
 
 else:
@@ -359,8 +425,13 @@ else:
 
     _concrete_contexts = {
         'spawn': SpawnContext(),
+        # Begin Truffle change
+        'graalpy': GraalPyContext(),
+        # End Truffle change
     }
-    _default_context = DefaultContext(_concrete_contexts['spawn'])
+    # Begin Truffle change
+    _default_context = DefaultContext(_concrete_contexts['graalpy'])
+    # End Truffle change
 
 #
 # Force the start method
