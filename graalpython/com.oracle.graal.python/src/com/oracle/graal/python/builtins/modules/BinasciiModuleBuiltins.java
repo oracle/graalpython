@@ -310,7 +310,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             try {
                 encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
             } catch (IllegalArgumentException e) {
-                throw raise(BinasciiError, e);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
             }
             if (newline != 0) {
                 byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);

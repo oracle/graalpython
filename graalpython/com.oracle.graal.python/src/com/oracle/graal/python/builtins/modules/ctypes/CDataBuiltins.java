@@ -146,8 +146,9 @@ public final class CDataBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
-        public long hash(@SuppressWarnings("unused") CDataObject self) {
-            throw raise(TypeError, UNHASHABLE_TYPE);
+        static long hash(@SuppressWarnings("unused") CDataObject self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, UNHASHABLE_TYPE);
         }
     }
 

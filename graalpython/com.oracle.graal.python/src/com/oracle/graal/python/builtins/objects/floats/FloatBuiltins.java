@@ -500,7 +500,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             String str = arg.trim().toLowerCase();
 
             if (str.isEmpty()) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
             } else if (str.equals("inf") || str.equals("infinity") || str.equals("+inf") || str.equals("+infinity")) {
                 return Double.POSITIVE_INFINITY;
             } else if (str.equals("-inf") || str.equals("-infinity")) {
@@ -517,7 +517,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
 
             if (str.isEmpty()) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
             }
 
             if (!str.startsWith("0x")) {
@@ -535,23 +535,23 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 double result = Double.parseDouble(str);
                 if (Double.isInfinite(result)) {
-                    throw raise(PythonErrorType.OverflowError, ErrorMessages.HEX_VALUE_TOO_LARGE_AS_FLOAT);
+                    throw PRaiseNode.raiseUncached(this, PythonErrorType.OverflowError, ErrorMessages.HEX_VALUE_TOO_LARGE_AS_FLOAT);
                 }
 
                 return result;
             } catch (NumberFormatException ex) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
             }
         }
 
         @Specialization(guards = "isPythonBuiltinClass(cl)")
-        public double fromhexFloat(@SuppressWarnings("unused") Object cl, TruffleString arg,
+        double fromhexFloat(@SuppressWarnings("unused") Object cl, TruffleString arg,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             return fromHex(toJavaStringNode.execute(arg));
         }
 
         @Specialization(guards = "!isPythonBuiltinClass(cl)")
-        public Object fromhexO(Object cl, TruffleString arg,
+        Object fromhexO(Object cl, TruffleString arg,
                         @Cached("create(T___CALL__)") LookupAndCallVarargsNode constr,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             double value = fromHex(toJavaStringNode.execute(arg));
@@ -560,8 +560,9 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public double fromhex(Object object, Object arg) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        static double fromhex(Object object, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 

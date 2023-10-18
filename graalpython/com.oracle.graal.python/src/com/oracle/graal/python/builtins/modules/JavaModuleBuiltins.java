@@ -157,12 +157,13 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
-        PNone add(Object[] args,
+        static PNone add(Object[] args,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToString) {
-            Env env = getContext().getEnv();
+                        @Cached CastToTruffleStringNode castToString,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
@@ -171,11 +172,11 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     entry = castToString.execute(inliningTarget, arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
-                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, T_JAR));
+                    env.addToHostClassPath(PythonContext.get(inliningTarget).getPublicTruffleFileRelaxed(entry, T_JAR));
                 } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {
-                    throw raise(TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
                 }
             }
             return PNone.NONE;

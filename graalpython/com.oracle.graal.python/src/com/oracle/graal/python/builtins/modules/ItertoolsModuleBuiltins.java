@@ -173,10 +173,11 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)")
         @SuppressWarnings("unused")
-        protected Object notype(Object cls, Object iterable, Object func, Object initial,
+        static Object notype(Object cls, Object iterable, Object func, Object initial,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -685,12 +686,13 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @SuppressWarnings({"unused", "truffle-static-method"})
+        @SuppressWarnings("unused")
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat < 0"}, limit = "1")
-        Object constructNeg(Object cls, Object[] iterables, int repeat,
+        static Object constructNeg(Object cls, Object[] iterables, int repeat,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsTypeNode isTypeNode) {
-            throw raise(TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
+                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
         }
 
         private static void constructOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, ToArrayNode toArrayNode) {
@@ -723,10 +725,11 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)")
         @SuppressWarnings("unused")
-        protected Object construct(Object cls, Object iterables, Object repeat,
+        static Object construct(Object cls, Object iterables, Object repeat,
                         @Bind("this") Node inliningTarget,
-                        @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                        @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -811,9 +814,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     "first iterable until it is exhausted, then elements from the next\niterable, until all of the iterables are exhausted.")
     @GenerateNodeFactory
     public abstract static class ChainNode extends PythonBuiltinNode {
-        @SuppressWarnings({"unused", "truffle-static-method"})
+
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected static PChain construct(VirtualFrame frame, Object cls, Object[] iterables,
+        static PChain construct(VirtualFrame frame, Object cls, Object[] iterables,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
@@ -824,12 +827,13 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @SuppressWarnings({"unused", "truffle-static-method"})
+        @SuppressWarnings("unused")
         @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected Object notype(Object cls, Object[] iterables,
+        static Object notype(Object cls, Object[] iterables,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -904,8 +908,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsliceNode extends PythonBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object constructOne(VirtualFrame frame, Object cls, Object iterable, Object[] args,
+        static Object constructOne(VirtualFrame frame, Object cls, Object iterable, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
@@ -924,14 +927,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile wrongTypeBranch,
                         @Cached InlinedBranchProfile wrongArgsBranch,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 wrongTypeBranch.enter(inliningTarget);
-                throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
             if (args.length == 0 || args.length > 3) {
                 wrongArgsBranch.enter(inliningTarget);
-                throw raise(TypeError, ISLICE_WRONG_ARGS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ISLICE_WRONG_ARGS);
             }
             int start = 0;
             int step = 1;
@@ -943,12 +947,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         stop = asIntNode.executeExact(frame, inliningTarget, args[0], OverflowError);
                     } catch (PException e) {
                         stopNotInt.enter(inliningTarget);
-                        throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                        throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                     }
                 }
                 if (stop < -1 || stop > SysModuleBuiltins.MAXSIZE) {
                     stopWrongValue.enter(inliningTarget);
-                    throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                    throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                 }
             } else if (argsLen2.profile(inliningTarget, args.length == 2) || argsLen3.profile(inliningTarget, args.length == 3)) {
                 if (args[0] != PNone.NONE) {
@@ -957,7 +961,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         start = asIntNode.executeExact(frame, inliningTarget, args[0], OverflowError);
                     } catch (PException e) {
                         startNotInt.enter(inliningTarget);
-                        throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                        throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                     }
                 }
                 if (args[1] != PNone.NONE) {
@@ -966,12 +970,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         stop = asIntNode.executeExact(frame, inliningTarget, args[1], OverflowError);
                     } catch (PException e) {
                         stopNotInt.enter(inliningTarget);
-                        throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
+                        throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
                     }
                 }
                 if (start < 0 || stop < -1 || start > SysModuleBuiltins.MAXSIZE || stop > SysModuleBuiltins.MAXSIZE) {
                     wrongValue.enter(inliningTarget);
-                    throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                    throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                 }
             }
             if (argsLen3.profile(inliningTarget, args.length == 3)) {
@@ -986,7 +990,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                 }
                 if (step < 1) {
                     stepWrongValue.enter(inliningTarget);
-                    throw raise(ValueError, STEP_FOR_ISLICE_MUST_BE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, STEP_FOR_ISLICE_MUST_BE);
                 }
             }
             PIslice self = factory.createIslice(cls);
@@ -1010,18 +1014,19 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ZipLongestNode extends PythonBuiltinNode {
         @Specialization
-        Object construct(VirtualFrame frame, Object cls, Object[] args, Object fillValueIn,
+        static Object construct(VirtualFrame frame, Object cls, Object[] args, Object fillValueIn,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached InlinedConditionProfile fillIsNone,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached IsTypeNode isTypeNode,
                         @Cached InlinedBranchProfile errorProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 // Note: @Fallback or other @Specialization generate data-class
                 errorProfile.enter(inliningTarget);
-                throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
 
             Object fillValue = fillValueIn;

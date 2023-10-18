@@ -62,6 +62,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -92,6 +93,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -133,7 +135,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
     protected abstract static class PyCSimpleTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
-        Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+        static Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNode typeNew,
                         @Cached InternStringNode internStringNode,
@@ -151,7 +153,8 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             /*
              * create the new instance (which is a class, since we are a metatype!)
@@ -160,7 +163,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
             Object proto = lookupAttrType.execute(frame, inliningTarget, result, T__TYPE_);
             if (proto == PNone.NO_VALUE) {
-                throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
             TruffleString proto_str;
             int proto_len;
@@ -168,19 +171,19 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 proto_str = toTruffleStringNode.execute(inliningTarget, proto);
                 proto_len = codePointLengthNode.execute(proto_str, TS_ENCODING);
             } else {
-                throw raise(TypeError, CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE);
             }
             if (proto_len != 1) {
-                throw raise(ValueError, A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1);
+                throw raiseNode.get(inliningTarget).raise(ValueError, A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1);
             }
             if (indexOfStringNode.execute(T_SIMPLE_TYPE_CHARS, proto_str, 0, SIMPLE_TYPE_CHARS_LENGTH, TS_ENCODING) < 0) {
-                throw raise(AttributeError, WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S, T_SIMPLE_TYPE_CHARS);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S, T_SIMPLE_TYPE_CHARS);
             }
 
             char code = (char) codePointAtIndexNode.execute(proto_str, 0, TS_ENCODING);
             FieldDesc fmt = FFIType._ctypes_get_fielddesc(code);
             if (fmt == null) {
-                throw raise(ValueError, TYPE_S_NOT_SUPPORTED, proto_str);
+                throw raiseNode.get(inliningTarget).raise(ValueError, TYPE_S_NOT_SUPPORTED, proto_str);
             }
 
             StgDictObject stgdict = factory.createStgDictObject(StgDict);
@@ -210,18 +213,19 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
              * Install from_param class methods in ctypes base classes. Overrides the
              * PyCSimpleType_from_param generic method.
              */
-            Python3Core core = getContext();
+            Python3Core core = PythonContext.get(inliningTarget);
             PythonObjectSlowPathFactory slowPathFactory = core.factory();
             if (getBaseClassNode.execute(inliningTarget, result) == core.lookupType(SimpleCData)) {
+                PythonLanguage language = PythonLanguage.get(internStringNode);
                 if (eqNode.execute(T_LOWER_Z, proto_str, TS_ENCODING)) { /* c_char_p */
-                    LazyPyCSimpleTypeBuiltins.addCCharPFromParam(slowPathFactory, getLanguage(), result);
+                    LazyPyCSimpleTypeBuiltins.addCCharPFromParam(slowPathFactory, language, result);
                     stgdict.flags |= TYPEFLAG_ISPOINTER;
                 } else if (eqNode.execute(T_UPPER_Z, proto_str, TS_ENCODING)) { /* c_wchar_p */
-                    LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(slowPathFactory, getLanguage(), result);
+                    LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(slowPathFactory, language, result);
                     stgdict.flags |= TYPEFLAG_ISPOINTER;
 
                 } else if (eqNode.execute(T_UPPER_P, proto_str, TS_ENCODING)) { /* c_void_p */
-                    LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(slowPathFactory, getLanguage(), result);
+                    LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(slowPathFactory, language, result);
                     stgdict.flags |= TYPEFLAG_ISPOINTER;
                 } else if (eqNode.execute(T_LOWER_S, proto_str, TS_ENCODING) ||
                                 eqNode.execute(T_UPPER_X, proto_str, TS_ENCODING) ||

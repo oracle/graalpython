@@ -341,8 +341,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
         int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached ExecModuleNode execModuleNode) {
+                        @Cached ExecModuleNode execModuleNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
                 return 0;
@@ -359,7 +361,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PythonContext context = getContext();
             if (!context.hasCApiContext()) {
-                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
             }
 
             /*
@@ -421,13 +423,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         public static final TruffleString T_LOADER = tsLiteral("loader");
 
         @Specialization
-        public Object run(VirtualFrame frame, PythonObject moduleSpec,
+        static Object run(VirtualFrame frame, PythonObject moduleSpec,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached("create(T___LOADER__)") SetAttributeNode setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
             Object name = lookup.execute(frame, inliningTarget, moduleSpec, T_NAME);
-            PythonModule builtinModule = getContext().lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
+            PythonModule builtinModule = PythonContext.get(inliningTarget).lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
             if (builtinModule != null) {
                 // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
                 // We are setting the loader to the spec loader (since this is the loader that is
@@ -439,7 +441,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 return builtinModule;
             }
-            throw raise(NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
         }
     }
 

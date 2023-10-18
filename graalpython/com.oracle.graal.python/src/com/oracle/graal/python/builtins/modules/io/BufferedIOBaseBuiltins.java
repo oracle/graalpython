@@ -98,8 +98,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/bufferedio.h:_io__BufferedIOBase_detach
          */
         @Specialization
-        Object detach(@SuppressWarnings("unused") Object self) {
-            throw raise(IOUnsupportedOperation, T_DETACH);
+        static Object detach(@SuppressWarnings("unused") Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_DETACH);
         }
     }
 
@@ -112,8 +113,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization
-        Object read(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, T_READ);
+        static Object read(Object self, Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_READ);
         }
     }
 
@@ -126,8 +128,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization
-        Object read1(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, T_READ1);
+        static Object read1(Object self, Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_READ1);
         }
     }
 
@@ -213,8 +216,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization
-        Object write(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, T_WRITE);
+        static Object write(Object self, Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_WRITE);
         }
     }
 }

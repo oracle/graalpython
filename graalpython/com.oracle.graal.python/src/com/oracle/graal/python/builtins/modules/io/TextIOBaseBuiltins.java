@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,9 +60,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -79,8 +81,9 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonBuiltinNode {
         @Specialization
-        Object detach(@SuppressWarnings("unused") Object self) {
-            throw raise(IOUnsupportedOperation, T_DETACH);
+        static Object detach(@SuppressWarnings("unused") Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_DETACH);
         }
     }
 
@@ -88,8 +91,9 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
-        Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(IOUnsupportedOperation, T_READ);
+        static Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_READ);
         }
     }
 
@@ -97,8 +101,9 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonBuiltinNode {
         @Specialization
-        Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(IOUnsupportedOperation, T_READLINE);
+        static Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_READLINE);
         }
     }
 
@@ -106,8 +111,9 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
         @Specialization
-        Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(IOUnsupportedOperation, T_WRITE);
+        static Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_WRITE);
         }
     }
 

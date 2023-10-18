@@ -54,6 +54,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -120,16 +121,17 @@ public final class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
+        static Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             try {
@@ -141,8 +143,9 @@ public final class MethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPMethod(self)")
-        Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
+        static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
         }
     }
 

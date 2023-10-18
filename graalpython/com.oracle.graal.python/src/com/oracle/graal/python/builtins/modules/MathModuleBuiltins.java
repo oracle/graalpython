@@ -740,11 +740,13 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonClinicBuiltinNode {
         @Specialization
-        boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol) {
+        static boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double diff;
 
             if (rel_tol < 0.0 || abs_tol < 0.0) {
-                throw raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
             }
 
             if (a == b) {
@@ -2410,7 +2412,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class DistNode extends PythonBuiltinNode {
 
         @Specialization
-        public double doGeneric(VirtualFrame frame, Object p, Object q,
+        static double doGeneric(VirtualFrame frame, Object p, Object q,
                         @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached TupleNodes.ConstructTupleNode tupleCtor,
@@ -2419,13 +2421,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile loopProfile2,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile nanProfile,
-                        @Cached InlinedConditionProfile trivialProfile) {
+                        @Cached InlinedConditionProfile trivialProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // adapted from CPython math_dist_impl and vector_norm
             Object[] ps = getObjectArray.execute(inliningTarget, tupleCtor.execute(frame, p));
             Object[] qs = getObjectArray.execute(inliningTarget, tupleCtor.execute(frame, q));
             int len = ps.length;
             if (len != qs.length) {
-                throw raise(ValueError, ErrorMessages.BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS);
             }
             double[] diffs = new double[len];
             double max = 0.0;

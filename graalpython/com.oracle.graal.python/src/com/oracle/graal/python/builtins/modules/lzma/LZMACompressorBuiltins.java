@@ -117,7 +117,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badRawFilter(format, filters)"})
-        PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, long preset, PNone filters,
+        static PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, long preset, PNone filters,
                         @Shared("i") @Cached LZMANodes.LZMACompressInit compressInit) {
             self.setCheck(check == -1 && format == FORMAT_XZ ? CHECK_CRC64 : check);
             compressInit.execute(frame, self, format, preset, filters);
@@ -125,7 +125,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badRawFilter(format, filters)"})
-        PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, @SuppressWarnings("unused") PNone preset, Object filters,
+        static PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, @SuppressWarnings("unused") PNone preset, Object filters,
                         @Shared("i") @Cached LZMANodes.LZMACompressInit compressInit) {
             self.setCheck(check == -1 && format == FORMAT_XZ ? CHECK_CRC64 : check);
             compressInit.execute(frame, self, format, PRESET_DEFAULT, filters);
@@ -134,20 +134,23 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "badIntegrity(format, check)")
         @SuppressWarnings("unused")
-        PNone integrityError(LZMACompressor self, long format, long check, Object preset, Object filters) {
-            throw raise(ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
+        static PNone integrityError(LZMACompressor self, long format, long check, Object preset, Object filters,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "badPresetFilters(preset, filters)"})
         @SuppressWarnings("unused")
-        PNone presetError(LZMACompressor self, long format, long check, Object preset, Object filters) {
-            throw raise(ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
+        static PNone presetError(LZMACompressor self, long format, long check, Object preset, Object filters,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badPresetFilters(preset, filters)", "badRawFilter(format, filters)"})
         @SuppressWarnings("unused")
-        PNone rawError(LZMACompressor self, long format, long check, Object preset, PNone filters) {
-            throw raise(ValueError, MUST_SPECIFY_FILTERS);
+        static PNone rawError(LZMACompressor self, long format, long check, Object preset, PNone filters,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MUST_SPECIFY_FILTERS);
         }
 
         protected static boolean badIntegrity(long format, long check) {

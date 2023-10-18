@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.modules.hashlib.Blake2ModuleBuiltinsClin
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -127,9 +128,10 @@ public final class Blake2ModuleBuiltins extends PythonBuiltins {
         Object newDigest(VirtualFrame frame, Object type, Object data, int digestSize,
                         PNone key, PNone salt, PNone person, int fanout, int depth, int leafSize, int nodeOffset, int nodeDepth, int innerSize, boolean lastNode, boolean usedforsecurity,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (fanout != 1 || depth != 1 || leafSize != 0 || nodeOffset != 0 || nodeDepth != 0 || innerSize != 0 || lastNode) {
-                throw fail(frame, type, data, digestSize, key, salt, person, fanout, depth, leafSize, nodeOffset, nodeDepth, innerSize, lastNode, usedforsecurity);
+                throw fail(frame, type, data, digestSize, key, salt, person, fanout, depth, leafSize, nodeOffset, nodeDepth, innerSize, lastNode, usedforsecurity, raiseNode.get(inliningTarget));
             }
             PythonBuiltinClassType resultType = null;
             if (type instanceof PythonBuiltinClass builtinType) {
@@ -137,7 +139,7 @@ public final class Blake2ModuleBuiltins extends PythonBuiltins {
             } else if (type instanceof PythonBuiltinClassType enumType) {
                 resultType = enumType;
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
             String javaName;
             String pythonName;
@@ -159,10 +161,11 @@ public final class Blake2ModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PException fail(VirtualFrame frame, Object type, Object data, Object digestSize,
+        static PException fail(VirtualFrame frame, Object type, Object data, Object digestSize,
                         Object key, Object salt, Object person, Object fanout, Object depth, Object leafSize, Object nodeOffset, Object nodeDepth, Object innerSize, Object lastNode,
-                        Object usedforsecurity) {
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DIGEST_SIZE_BLAKE_ARGUMENT);
+                        Object usedforsecurity,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DIGEST_SIZE_BLAKE_ARGUMENT);
         }
     }
 }

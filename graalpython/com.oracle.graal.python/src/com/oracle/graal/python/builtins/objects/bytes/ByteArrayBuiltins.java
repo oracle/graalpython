@@ -511,10 +511,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class PopNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object popLast(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone none,
-                        @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("createDelete()") @Shared SequenceStorageNodes.DeleteNode deleteNode) {
-            self.checkCanResize(getRaiseNode());
+        static Object popLast(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             SequenceStorage store = self.getSequenceStorage();
             Object ret = getItemNode.execute(store, -1);
             deleteNode.execute(frame, store, -1);
@@ -522,10 +524,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(idx)", "!isPSlice(idx)"})
-        public Object doIndex(VirtualFrame frame, PByteArray self, Object idx,
-                        @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("createDelete()") @Shared SequenceStorageNodes.DeleteNode deleteNode) {
-            self.checkCanResize(getRaiseNode());
+        static Object doIndex(VirtualFrame frame, PByteArray self, Object idx,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             SequenceStorage store = self.getSequenceStorage();
             Object ret = getItemNode.execute(frame, store, idx);
             deleteNode.execute(frame, store, idx);
@@ -533,8 +537,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object doError(@SuppressWarnings("unused") Object self, Object arg) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
+        static Object doError(@SuppressWarnings("unused") Object self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
 
         @NeverDefault
@@ -752,12 +757,14 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(table)")
-        PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
+        static PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
+                        @Bind("this") Node inliningTarget,
                         @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(bTable, isLenTable256Profile);
+            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
             byte[] bSelf = toBytesNode.execute(self);
 
             Result result = translate(bSelf, bTable);
@@ -776,12 +783,14 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
-        PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
+        static PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
+                        @Bind("this") Node inliningTarget,
                         @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(bTable, isLenTable256Profile);
+            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
             byte[] bDelete = toBytesNode.execute(frame, delete);
             byte[] bSelf = toBytesNode.execute(self);
 

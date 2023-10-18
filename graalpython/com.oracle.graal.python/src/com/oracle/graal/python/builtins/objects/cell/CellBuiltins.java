@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -98,7 +99,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean eq(VirtualFrame frame, PCell self, PCell other,
+        static boolean eq(VirtualFrame frame, PCell self, PCell other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -114,11 +115,13 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object eq(Object self, Object other) {
+        static Object eq(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___EQ__, "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___EQ__, "cell", self);
         }
     }
 
@@ -126,7 +129,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBuiltinNode {
         @Specialization
-        public boolean ne(VirtualFrame frame, PCell self, PCell other,
+        static boolean ne(VirtualFrame frame, PCell self, PCell other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.NeNode neNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -142,11 +145,13 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object eq(Object self, Object other) {
+        static Object eq(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___NE__, "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___NE__, "cell", self);
         }
     }
 
@@ -154,7 +159,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LtNode extends PythonBuiltinNode {
         @Specialization
-        public boolean lt(VirtualFrame frame, PCell self, PCell other,
+        static boolean lt(VirtualFrame frame, PCell self, PCell other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.LtNode ltNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -170,11 +175,13 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object notImplemented(Object self, Object other) {
+        static Object notImplemented(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LT__, "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LT__, "cell", self);
         }
     }
 
@@ -182,7 +189,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LeNode extends PythonBuiltinNode {
         @Specialization
-        public boolean le(VirtualFrame frame, PCell self, PCell other,
+        static boolean le(VirtualFrame frame, PCell self, PCell other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.LeNode leNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -198,11 +205,13 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object notImplemented(Object self, Object other) {
+        static Object notImplemented(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LE__, "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LE__, "cell", self);
         }
     }
 
@@ -210,7 +219,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GtNode extends PythonBuiltinNode {
         @Specialization
-        public boolean gt(VirtualFrame frame, PCell self, PCell other,
+        static boolean gt(VirtualFrame frame, PCell self, PCell other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.GtNode gtNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -226,11 +235,13 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object notImplemented(Object self, Object other) {
+        static Object notImplemented(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GT__, "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GT__, "cell", self);
         }
     }
 
@@ -238,7 +249,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GeNode extends PythonBuiltinNode {
         @Specialization
-        public boolean ge(VirtualFrame frame, PCell self, PCell other,
+        static boolean ge(VirtualFrame frame, PCell self, PCell other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.GeNode geNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -254,11 +265,13 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object notImplemented(Object self, Object other) {
+        static Object notImplemented(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GE__, "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GE__, "cell", self);
         }
     }
 
@@ -282,11 +295,13 @@ public final class CellBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object eq(Object self) {
+        static Object eq(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__repr__", "cell", self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__repr__", "cell", self);
         }
     }
 
@@ -294,24 +309,25 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object get(PCell self, @SuppressWarnings("unused") PNone none,
+        static Object get(PCell self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetRefNode getRef) {
+                        @Cached GetRefNode getRef,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object ref = getRef.execute(inliningTarget, self);
             if (ref == null) {
-                throw raise(ValueError, ErrorMessages.IS_EMPTY, "Cell");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IS_EMPTY, "Cell");
             }
             return ref;
         }
 
         @Specialization(guards = "isDeleteMarker(marker)")
-        Object delete(PCell self, @SuppressWarnings("unused") Object marker) {
+        static Object delete(PCell self, @SuppressWarnings("unused") Object marker) {
             self.clearRef();
             return PNone.NONE;
         }
 
         @Specialization(guards = {"!isNoValue(ref)", "!isDeleteMarker(ref)"})
-        Object set(PCell self, Object ref) {
+        static Object set(PCell self, Object ref) {
             self.setRef(ref);
             return PNone.NONE;
         }

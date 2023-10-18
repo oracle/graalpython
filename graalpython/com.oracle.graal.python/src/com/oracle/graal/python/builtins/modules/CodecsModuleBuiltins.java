@@ -1644,8 +1644,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class EncodingMapNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object encodingMap(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "EncodingMap");
+        static Object encodingMap(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "EncodingMap");
         }
     }
 

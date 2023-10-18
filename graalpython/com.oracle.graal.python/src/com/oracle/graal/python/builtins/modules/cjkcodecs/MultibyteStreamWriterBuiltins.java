@@ -100,12 +100,13 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
-        Object mbstreamwriterNew(VirtualFrame frame, Object type, Object stream, Object err,
+        static Object mbstreamwriterNew(VirtualFrame frame, Object type, Object stream, Object err,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory) { // "O|s:StreamWriter"
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamWriter"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
@@ -115,7 +116,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;

@@ -123,17 +123,18 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructSemLockNode extends PythonBuiltinNode {
         @Specialization
-        PSemLock construct(Object cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
+        static PSemLock construct(Object cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castNameNode,
                         @Cached CastToJavaIntExactNode castKindToIntNode,
                         @Cached CastToJavaIntExactNode castValueToIntNode,
                         @Cached CastToJavaIntExactNode castMaxvalueToIntNode,
                         @Cached CastToJavaIntExactNode castUnlinkToIntNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int kind = castKindToIntNode.execute(inliningTarget, kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
             int value = castValueToIntNode.execute(inliningTarget, valueObj);
             castMaxvalueToIntNode.execute(inliningTarget, maxvalueObj); // executed for the
@@ -145,17 +146,17 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
             try {
                 name = castNameNode.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "SemLock", 4, "str", nameObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "SemLock", 4, "str", nameObj);
             }
             if (unlink == 0) {
                 // CPython creates a named semaphore, and if unlink != 0 unlinks
-                // it directly so it cannot be access by other processes. We
+                // it directly, so it cannot be accessed by other processes. We
                 // have to explicitly link it, so we do that here if we
                 // must. CPython always uses O_CREAT | O_EXCL for creating named
                 // semaphores, so a conflict raises.
-                SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+                SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
                 if (multiprocessing.getNamedSemaphore(name) != null) {
-                    throw raise(PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
                 } else {
                     multiprocessing.putNamedSemaphore(name, semaphore);
                 }

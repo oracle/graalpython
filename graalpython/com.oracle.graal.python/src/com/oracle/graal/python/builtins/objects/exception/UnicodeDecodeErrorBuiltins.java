@@ -104,20 +104,21 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args);
 
         @Specialization
-        Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
+        static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached UnicodeErrorBuiltins.GetArgAsBytesNode getArgAsBytesNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
-                            getArgAsString(inliningTarget, args, 0, getRaiseNode(), toStringNode),
-                            getArgAsBytes(frame, args, 1, getRaiseNode(), getArgAsBytesNode),
-                            getArgAsInt(inliningTarget, args, 2, getRaiseNode(), toJavaIntExactNode),
-                            getArgAsInt(inliningTarget, args, 3, getRaiseNode(), toJavaIntExactNode),
-                            getArgAsString(inliningTarget, args, 4, getRaiseNode(), toStringNode)
+                            getArgAsString(inliningTarget, args, 0, raiseNode, toStringNode),
+                            getArgAsBytes(frame, inliningTarget, args, 1, raiseNode, getArgAsBytesNode),
+                            getArgAsInt(inliningTarget, args, 2, raiseNode, toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 3, raiseNode, toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 4, raiseNode, toStringNode)
             });
             return PNone.NONE;
         }

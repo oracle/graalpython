@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -80,8 +81,9 @@ public final class Sha1ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha1Node extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object sha1(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha1.sha1");
+        static Object sha1(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha1.sha1");
         }
     }
 }

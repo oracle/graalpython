@@ -221,11 +221,10 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        protected PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
-                        boolean skipKeys, boolean allowNan,
-                        @Cached PythonObjectFactory factory) {
+        PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
+                        boolean skipKeys, boolean allowNan) {
             if (markers != PNone.NONE && !(markers instanceof PDict)) {
-                throw raise(TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
             }
 
             FastEncode fastEncode = FastEncode.None;
@@ -243,7 +242,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            return factory.createJSONEncoder(cls, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
+            return getContext().factory().createJSONEncoder(cls, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
     }
 }

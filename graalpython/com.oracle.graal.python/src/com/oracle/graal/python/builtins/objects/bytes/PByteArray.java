@@ -94,13 +94,6 @@ public final class PByteArray extends PBytesLike {
         this.exports = exports;
     }
 
-    // TODO replace with the lazy version
-    public void checkCanResize(PRaiseNode node) {
-        if (exports != 0) {
-            throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
-        }
-    }
-
     public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (exports != 0) {
             throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);

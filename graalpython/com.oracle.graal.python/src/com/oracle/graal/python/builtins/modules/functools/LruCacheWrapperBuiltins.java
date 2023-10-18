@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -136,22 +137,19 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             return LruCacheNewNodeClinicProviderGen.INSTANCE;
         }
 
-        Object getKwdMark(ReadAttributeFromObjectNode readAttr) {
-            return readAttr.execute(getContext().lookupBuiltinModule(T_FUNCTOOLS), KWD_MARK);
-        }
-
         @Specialization
-        Object lruCacheNew(VirtualFrame frame, Object type,
+        static Object lruCacheNew(VirtualFrame frame, Object type,
                         Object func, Object maxsize_O, int typed, Object cache_info_type,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readAttr,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyIndexCheckNode indexCheck,
                         @Cached PyNumberAsSizeNode numberAsSize,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             if (!callableCheck.execute(inliningTarget, func)) {
-                throw raise(TypeError, THE_FIRST_ARGUMENT_MUST_BE_CALLABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, THE_FIRST_ARGUMENT_MUST_BE_CALLABLE);
             }
 
             /* select the caching function, and make/inc maxsize_O */
@@ -172,7 +170,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                     wrapper = WrapperType.BOUNDED;
                 }
             } else {
-                throw raise(TypeError, MAXSIZE_SHOULD_BE_INTEGER_OR_NONE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, MAXSIZE_SHOULD_BE_INTEGER_OR_NONE);
             }
 
             LruCacheObject obj = factory.createLruCacheObject(type);
@@ -187,7 +185,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.misses = obj.hits = 0;
             obj.maxsize = maxsize;
 
-            obj.kwdMark = getKwdMark(readAttr);
+            obj.kwdMark = readAttr.execute(PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS), KWD_MARK);
 
             obj.cacheInfoType = cache_info_type;
             // obj.dict = null;

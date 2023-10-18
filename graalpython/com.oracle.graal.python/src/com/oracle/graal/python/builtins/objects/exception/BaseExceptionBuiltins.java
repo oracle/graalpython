@@ -280,23 +280,23 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public static Object getSuppressContext(Object self, @SuppressWarnings("unused") PNone value,
+        static Object getSuppressContext(Object self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode) {
             return getSuppressContextNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(valueObj)")
-        @SuppressWarnings("truffle-static-method")
-        public Object setSuppressContext(Object self, Object valueObj,
+        static Object setSuppressContext(Object self, Object valueObj,
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
+                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean value;
             try {
                 value = castToJavaBooleanNode.execute(inliningTarget, valueObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
             setSuppressContextNode.execute(inliningTarget, self, value);
             return PNone.NONE;
@@ -308,14 +308,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(tb)")
-        public static Object getTraceback(Object self, @SuppressWarnings("unused") Object tb,
+        static Object getTraceback(Object self, @SuppressWarnings("unused") Object tb,
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             return getTracebackNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(tb)")
-        public static Object setTraceback(Object self, @SuppressWarnings("unused") PNone tb,
+        static Object setTraceback(Object self, @SuppressWarnings("unused") PNone tb,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             setTracebackNode.execute(inliningTarget, self, PNone.NONE);
@@ -323,7 +323,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public static Object setTraceback(Object self, PTraceback tb,
+        static Object setTraceback(Object self, PTraceback tb,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             setTracebackNode.execute(inliningTarget, self, tb);
@@ -331,8 +331,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_S_OR_S, "__traceback__", "a traceback", "None");
+        static Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_S_OR_S, "__traceback__", "a traceback", "None");
         }
     }
 

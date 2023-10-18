@@ -3584,7 +3584,7 @@ public abstract class SequenceStorageNodes {
                 int i = 0;
                 try {
                     Object value;
-                    for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                    for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                         if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                             elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                         }
@@ -3604,7 +3604,7 @@ public abstract class SequenceStorageNodes {
                             boolean[] elements = new boolean[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         array = elements;
@@ -3620,7 +3620,7 @@ public abstract class SequenceStorageNodes {
                             byte[] elements = new byte[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
@@ -3641,7 +3641,7 @@ public abstract class SequenceStorageNodes {
                             int[] elements = new int[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3656,7 +3656,7 @@ public abstract class SequenceStorageNodes {
                             long[] elements = new long[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3671,7 +3671,7 @@ public abstract class SequenceStorageNodes {
                             double[] elements = new double[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3685,7 +3685,7 @@ public abstract class SequenceStorageNodes {
                         case Generic: {
                             Object[] elements = new Object[size];
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3716,7 +3716,7 @@ public abstract class SequenceStorageNodes {
             elements[i++] = result;
             Object value;
             try {
-                while ((value = nextNode.execute(frame, iterator)) != STOP_MARKER) {
+                while ((value = nextNode.execute(frame, inliningTarget, iterator)) != STOP_MARKER) {
                     if (i >= elements.length) {
                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                     }

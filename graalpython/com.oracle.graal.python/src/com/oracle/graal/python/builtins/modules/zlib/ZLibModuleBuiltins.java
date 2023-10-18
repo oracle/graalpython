@@ -709,7 +709,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
          * @param memLevel is ignored - it mostly affects performance and compression rate, we trust
          *            that the Deflater implementation will work well
          */
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         @Specialization(guards = {"method == DEFLATED", "!useNative()", "isValidWBitRange(wbits)"})
         static Object doJava(int level, @SuppressWarnings("unused") int method, int wbits, @SuppressWarnings("unused") int memLevel, int strategy, byte[] zdict) {
             // wbits < 0: generate a RAW stream, i.e., no wrapping
@@ -726,14 +726,16 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"method == DEFLATED", "!useNative()", "!isValidWBitRange(wbits)"})
-        Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict) {
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
+        static Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"method != DEFLATED"})
-        Object methodErr(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict) {
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
+        static Object methodErr(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
         }
     }
 
@@ -799,8 +801,9 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!useNative()", "!isValidWBitRange(wbits)"})
-        Object invalid(int wbits, byte[] zdict) {
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
+        static Object invalid(int wbits, byte[] zdict,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
     }
 }

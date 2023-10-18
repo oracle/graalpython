@@ -208,19 +208,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doit(VirtualFrame frame, Object file,
+        static Object doit(VirtualFrame frame, Object file,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.hasBuffer(buffer)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
             }
             try {
                 return Marshal.loadFile(file);
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             }
         }
     }

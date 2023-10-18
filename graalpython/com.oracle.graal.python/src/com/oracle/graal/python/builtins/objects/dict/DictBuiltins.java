@@ -490,8 +490,9 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length > 1")
         @SuppressWarnings("unused")
-        Object error(PDict self, Object[] args, PKeyword[] kwargs) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
+        static Object error(PDict self, Object[] args, PKeyword[] kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
         }
 
         private static void updateKwargs(VirtualFrame frame, Node inliningTarget, PDict self, PKeyword[] kwargs, HashingStorage.InitNode initNode, HashingStorageAddAllToOther addAllToOtherNode) {

@@ -212,7 +212,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static SSLEngine createSSLEngine(PRaiseNode node, PSSLContext context, boolean serverMode, String serverHostname) {
+    static SSLEngine createSSLEngine(Node raisingNode, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException | IOException | CertificateException ex) {
@@ -226,9 +226,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
             } catch (IllegalArgumentException e) {
                 if (serverHostname.contains("\0")) {
-                    throw node.raise(TypeError, ErrorMessages.ARG_MUST_BE_ENCODED_NON_NULL);
+                    throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.ARG_MUST_BE_ENCODED_NON_NULL);
                 }
-                throw node.raise(ValueError, ErrorMessages.INVALID_HOSTNAME);
+                throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INVALID_HOSTNAME);
             }
             if (context.getCheckHostname()) {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
@@ -281,7 +281,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
+        static Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
                         @Bind("this") Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -290,7 +290,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(inliningTarget, serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(getRaiseNode(), context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
+            SSLEngine engine = createSSLEngine(inliningTarget, context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
             PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -301,8 +301,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object wrap(Object context, Object sock, Object serverSide, Object serverHostname, Object owner, Object session) {
-            throw raise(TypeError, ErrorMessages.INVALID_WRAP_SOCKET_CALL);
+        static Object wrap(Object context, Object sock, Object serverSide, Object serverHostname, Object owner, Object session,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_WRAP_SOCKET_CALL);
         }
 
         @Override
@@ -316,7 +317,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapBIONode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner,
+        static Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner,
                         @SuppressWarnings("unused") PNone session,
                         @Bind("this") Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
@@ -326,7 +327,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(inliningTarget, serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(getRaiseNode(), context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
+            SSLEngine engine = createSSLEngine(inliningTarget, context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
             PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming, outgoing);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -337,8 +338,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object wrap(Object context, Object incoming, Object outgoing, Object serverSide, Object serverHostname, Object owner, Object session) {
-            throw raise(TypeError, ErrorMessages.INVALID_WRAP_BIO_CALL);
+        static Object wrap(Object context, Object incoming, Object outgoing, Object serverSide, Object serverHostname, Object owner, Object session,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_WRAP_BIO_CALL);
         }
 
         @Override

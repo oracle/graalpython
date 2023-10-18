@@ -430,8 +430,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
+        static Object doGeneric(@SuppressWarnings("unused") Object left, Object right,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
 

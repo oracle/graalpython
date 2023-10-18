@@ -849,19 +849,19 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.a
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 Object res = lib.instantiate(callee, arguments);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             } finally {
                 gil.acquire();
             }
@@ -869,8 +869,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object doGeneric(Object callee, Object arguments, Object keywords) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+        static Object doGeneric(Object callee, Object arguments, Object keywords,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
     }
 
@@ -889,12 +890,13 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
-        protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PythonLanguage language = getLanguage();
             try {
                 Object state = IndirectCallContext.enter(frame, language, getContext(), this);
@@ -910,14 +912,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     IndirectCallContext.exit(frame, language, getContext(), state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object doGeneric(Object callee, Object arguments, Object keywords) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+        static Object doGeneric(Object callee, Object arguments, Object keywords,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
 
         @NeverDefault

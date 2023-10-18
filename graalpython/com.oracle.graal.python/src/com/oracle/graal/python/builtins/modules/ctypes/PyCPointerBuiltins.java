@@ -157,13 +157,14 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
-        protected Object Pointer_new(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object Pointer_new(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             if (dict.proto == null) {
-                throw raise(TypeError, CANNOT_CREATE_INSTANCE_HAS_NO_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_CREATE_INSTANCE_HAS_NO_TYPE);
             }
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
@@ -174,7 +175,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
     protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
-        Object Pointer_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object Pointer_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PointerSetContentsNode setContentsNode) {
             if (args.length > 0) {

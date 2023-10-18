@@ -228,16 +228,16 @@ public final class PartialBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
+        static Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached InlinedConditionProfile hasKeywordsProfile,
                         @Cached PyCallableCheckNode callableCheckNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object function = args[0];
             if (!callableCheckNode.execute(inliningTarget, function)) {
-                throw raise(PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
             }
 
             final Object[] funcArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
@@ -252,8 +252,9 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!atLeastOneArg(args)")
         @SuppressWarnings("unused")
-        Object noCallable(Object cls, Object[] args, PKeyword[] keywords) {
-            throw raise(PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
+        static Object noCallable(Object cls, Object[] args, PKeyword[] keywords,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
         }
     }
 

@@ -113,11 +113,12 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
-        protected Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
@@ -127,7 +128,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
-        Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
@@ -145,7 +146,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class SimpleValueNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
+        static Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
@@ -155,7 +156,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object set_value(VirtualFrame frame, CDataObject self, Object value,
+        static Object set_value(VirtualFrame frame, CDataObject self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
@@ -171,7 +172,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class CtypesFromOutparamNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object Simple_from_outparm(CDataObject self,
+        static Object Simple_from_outparm(CDataObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
@@ -215,7 +216,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        TruffleString Simple_repr(CDataObject self,
+        static TruffleString Simple_repr(CDataObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
