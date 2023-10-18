@@ -215,10 +215,10 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return value instanceof PythonNativeVoidPtr || longCheckNode.execute(inliningTarget, value); // PyLong_Check
         }
 
-        @Specialization(guards = "isLong(this, value, longCheckNode)")
+        @Specialization(guards = "isLong(this, value, longCheckNode)", limit = "1")
         static Object voidPtr(@SuppressWarnings("unused") Object type, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached SetFuncNode setFuncNode,
                         @Shared @Cached PythonObjectFactory factory) {
             /* int, long */
@@ -259,10 +259,10 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return parg;
         }
 
-        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(this, value, longCheckNode)"})
+        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(this, value, longCheckNode)"}, limit = "1")
         static Object c_void_p_from_param(VirtualFrame frame, Object type, Object value,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,

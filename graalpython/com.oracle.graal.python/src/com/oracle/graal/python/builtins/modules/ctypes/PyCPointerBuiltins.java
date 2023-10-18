@@ -118,15 +118,15 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         static void set(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached IsInstanceNode isInstanceNode,
-                        @Cached KeepRefNode keepRefNode,
+                        @Cached(inline = false) PyTypeCheck pyTypeCheck,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached(inline = false) PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached(inline = false) IsInstanceNode isInstanceNode,
+                        @Cached(inline = false) KeepRefNode keepRefNode,
                         @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) PythonObjectFactory factory) {
             if (value == null) {
-                throw raiseNode.raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
+                throw raiseNode.get(inliningTarget).raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for pointer instances";
@@ -134,7 +134,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             if (!pyTypeCheck.isCDataObject(value)) {
                 boolean res = isInstanceNode.executeWith(frame, value, stgdict.proto);
                 if (!res) {
-                    raiseNode.raise(TypeError, EXPECTED_N_INSTEAD_OF_P, stgdict.proto, value);
+                    raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_N_INSTEAD_OF_P, stgdict.proto, value);
                 }
             }
 
@@ -301,7 +301,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached PythonObjectFactory factory,
@@ -393,7 +393,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (indexCheckNode.execute(inliningTarget, item)) {

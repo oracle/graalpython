@@ -91,6 +91,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -144,8 +145,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(value)")
         static Object Array_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyCDataSetNode pyCDataSetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyCDataSetNode pyCDataSetNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for array object instances";
@@ -166,8 +167,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSint,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyCDataSetNode pyCDataSetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyCDataSetNode pyCDataSetNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (indexCheckNode.execute(inliningTarget, item)) {
                 int i = asSint.executeExact(frame, inliningTarget, item, IndexError);
@@ -192,8 +193,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetItem pySequenceGetItem,
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyCDataSetNode pyCDataSetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyCDataSetNode pyCDataSetNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.b_length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start, stop = sliceInfo.stop, step = sliceInfo.step;
@@ -232,8 +233,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isInvalid(self, index)")
         static Object Array_item(CDataObject self, int index,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for array object instances";
             int size = stgdict.size / stgdict.length;
@@ -246,9 +247,9 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         static Object Array_subscript(CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
@@ -312,8 +313,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!indexCheckNode.execute(inliningTarget, item)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, INDICES_MUST_BE_INTEGERS);

@@ -306,7 +306,7 @@ public class CtypesNodes {
         @Specialization
         static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
                         @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached(inline = false) StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CreateCDataObjectNode createCDataObjectNode,
                         @Cached PyCDataMallocBufferNode mallocBufferNode,
                         @Cached PointerNodes.MemcpyNode memcpyNode) {
@@ -334,8 +334,8 @@ public class CtypesNodes {
 
         @Specialization
         static CDataObject doCreate(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                        @Cached(inline = false) PythonObjectFactory factory) {
             CDataObject result;
             if (isSubtypeNode.execute(type, PyCFuncPtr)) {
                 result = factory.createPyCFuncPtrObject(type, pointer, size, needsfree);

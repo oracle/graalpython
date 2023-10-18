@@ -795,6 +795,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 60 -> 43
     protected abstract static class CtypesDlSymNode extends PNodeWithContext {
 
         protected abstract Object execute(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error);
@@ -1155,6 +1156,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
      * argtypes is amisleading name: This is a tuple of methods, not types: the .from_param class
      * methods of the types
      */
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 88 -> 69
     protected abstract static class CallProcNode extends PNodeWithContext {
 
         abstract Object execute(VirtualFrame frame, NativeFunction pProc, Object[] argtuple, int flags, Object[] argtypes, Object[] converters, Object restype, Object checker);
@@ -1363,6 +1365,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
     abstract static class GetResultNode extends Node {
 
         abstract Object execute(Object restype, FFIType rtype, Object result, Object checker);
@@ -1396,7 +1399,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
-                        @Cached CallNode callNode) {
+                        @Shared @Cached CallNode callNode) {
             try {
                 return callNode.execute(restype, ilib.asInt(result));
             } catch (UnsupportedMessageException e) {
@@ -1410,7 +1413,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
-                        @Cached CallNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
@@ -1473,6 +1476,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     /*
      * Convert a single Python object into a PyCArgObject and return it.
      */
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 124 -> 106
     protected abstract static class ConvParamNode extends Node {
 
         final void execute(VirtualFrame frame, Object obj, int index, argument pa) {
@@ -1786,6 +1790,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 20
     abstract static class FailedCastCheckNode extends Node {
         abstract void execute(Object arg);
 
@@ -1843,6 +1848,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 46
     protected abstract static class CastFunctionNode extends Node {
 
         abstract Object execute(Object ptr, Object src, Object ctype);
@@ -2050,6 +2056,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 22
     protected abstract static class StringAtFunctionNode extends Node {
 
         abstract Object execute(Object ptr, Object size);
@@ -2092,6 +2099,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
     protected abstract static class WStringAtFunctionNode extends Node {
 
         abstract Object execute(Object ptr, Object size);

@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -147,7 +148,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for CDataObject instances";
@@ -160,7 +161,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Simple_set_value(frame, inliningTarget, self, value, raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;

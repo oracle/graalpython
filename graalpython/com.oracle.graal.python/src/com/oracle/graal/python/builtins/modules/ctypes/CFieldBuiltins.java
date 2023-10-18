@@ -401,6 +401,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
     @ImportStatic({FFIType.class, FieldSet.class})
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 112 -> 96
     protected abstract static class SetFuncNode extends Node {
 
         abstract Object execute(VirtualFrame frame, FieldSet setfunc, Pointer ptr, Object value, int size);
@@ -555,7 +556,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
         static Object O_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             writePointerNode.execute(inliningTarget, ptr, Pointer.pythonObject(value));
             return PNone.NONE;
         }
@@ -589,9 +590,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == u_set")
         static Object u_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode toString,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Exclusive @Cached CastToTruffleStringNode toString,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Exclusive @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
@@ -609,9 +610,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == U_set")
         static Object U_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, int size,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode toString,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Exclusive @Cached CastToTruffleStringNode toString,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Exclusive @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
@@ -687,14 +688,14 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == Z_set")
         static Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode toString,
+                        @Exclusive @Cached CastToTruffleStringNode toString,
                         @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached PythonObjectFactory factory) { // CTYPES_UNICODE
+                        @Shared @Cached PythonObjectFactory factory) { // CTYPES_UNICODE
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
@@ -755,6 +756,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
     @ImportStatic(FieldGet.class)
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 100 -> 81
     protected abstract static class GetFuncNode extends Node {
 
         abstract Object execute(FieldGet getfunc, Pointer adr, int size);
@@ -945,8 +947,8 @@ public final class CFieldBuiltins extends PythonBuiltins {
         static Object u_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
             byte[] bytes = readBytesNode.execute(inliningTarget, ptr, WCHAR_T_SIZE);
             return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
         }
@@ -957,8 +959,8 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
             int wcslen = wCsLenNode.execute(inliningTarget, ptr, size / WCHAR_T_SIZE);
             byte[] bytes = readBytesNode.execute(inliningTarget, ptr, wcslen * WCHAR_T_SIZE);
             return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
@@ -995,8 +997,8 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Shared @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // ptr is a char**, we need to deref it to get char*
             Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
             if (valuePtr.isNull()) {

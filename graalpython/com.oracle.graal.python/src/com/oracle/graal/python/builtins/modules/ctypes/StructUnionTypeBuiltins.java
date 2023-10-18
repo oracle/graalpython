@@ -201,6 +201,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StructUnionTypeBuiltins.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 292 -> 275
     protected abstract static class PyCStructUnionTypeUpdateStgDict extends Node {
         abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory);
 
