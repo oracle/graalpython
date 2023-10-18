@@ -233,6 +233,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Unpickler("Unpickler", "_pickle"),
     PickleBuffer("PickleBuffer", "_pickle"),
 
+    // polyglot
+    PHostInteropBehavior("HostInteropBehavior", "polyglot", Flags.PRIVATE_DERIVED_WODICT),
+
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
     BZ2Decompressor("BZ2Decompressor", "_bz2"),

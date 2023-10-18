@@ -60,6 +60,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -120,12 +121,15 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
+import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorValueNode;
+import com.oracle.graal.python.nodes.interop.HostInteropBehaviorArg;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -1752,5 +1756,87 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         } else {
             throw StopIterationException.create();
         }
+    }
+
+    @ExportMessage
+    public boolean isNumber(@Bind("$node") Node inliningTarget,
+                    @Cached GetHostInteropBehaviorValueNode getHostInteropBehaviorValueNode,
+                    @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("this") InteropLibrary ilib) {
+        Object value = getHostInteropBehaviorValueNode.execute(this, HostInteropBehaviorArg.is_number);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.isNumber(this);
+    }
+
+    @ExportMessage
+    public boolean fitsInByte() {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean fitsInShort() {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean fitsInInt() {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean fitsInLong() {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean fitsInFloat() {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean fitsInDouble() {
+        return false;
+    }
+
+    @ExportMessage
+    public byte asByte() throws UnsupportedMessageException {
+        return (byte) 0;
+    }
+
+    @ExportMessage
+    public short asShort() throws UnsupportedMessageException {
+        return (short) 0;
+    }
+
+    @ExportMessage
+    public int asInt() throws UnsupportedMessageException {
+        return 0;
+    }
+
+    @ExportMessage
+    public long asLong() throws UnsupportedMessageException {
+        return 0L;
+    }
+
+    @ExportMessage
+    public float asFloat() throws UnsupportedMessageException {
+        return 0.0F;
+    }
+
+    @ExportMessage
+    public double asDouble() throws UnsupportedMessageException {
+        return 0.0D;
+    }
+
+    @ExportMessage
+    public boolean fitsInBigInteger() {
+        return false;
+    }
+
+    @ExportMessage
+    public BigInteger asBigInteger() throws UnsupportedMessageException {
+        return null;
     }
 }

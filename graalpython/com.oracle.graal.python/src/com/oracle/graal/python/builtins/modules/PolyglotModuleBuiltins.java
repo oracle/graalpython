@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_HOST_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WRITABLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -60,24 +64,32 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.interop.HostInteropBehaviorArg;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -366,6 +378,39 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             UNCACHED_INTEROP = InteropLibrary.getFactory().getUncached();
         }
         return UNCACHED_INTEROP;
+    }
+
+    @Builtin(name = J_REGISTER_HOST_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class RegisterInteropBehaviorNode extends PythonVarargsBuiltinNode {
+        private Object[] getAndValidateArgs(PKeyword[] keywords, CastToJavaStringNode castToJavaStringNode, Node inliningTarget, PyCallableCheckNode callableCheckNode) {
+            final Object[] args = new Object[HostInteropBehaviorArg.values().length];
+            for (PKeyword kw : keywords) {
+                String name = castToJavaStringNode.execute(kw.getName());
+                try {
+                    HostInteropBehaviorArg arg = HostInteropBehaviorArg.valueOf(name);
+                    if (!callableCheckNode.execute(inliningTarget, kw.getValue())) {
+                        throw raise(TypeError, S_ARG_MUST_BE_CALLABLE, kw.getName());
+                    }
+                    args[arg.ordinal()] = kw.getValue();
+                } catch (IllegalArgumentException iae) {
+                    throw raise(PythonBuiltinClassType.ValueError, BAD_ARG_TO_INTERNAL_FUNC_S, kw.getName());
+                }
+            }
+            return args;
+        }
+
+        @Specialization
+        Object register(VirtualFrame frame, PythonAbstractObject receiver, @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Cached(value = "create(T___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__)") SetAttributeNode setAttributeNode,
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PythonObjectFactory factory) {
+            PHostInteropBehavior behavior = factory.createHostInteropBehavior(receiver, getAndValidateArgs(keywords, castToJavaStringNode, inliningTarget, callableCheckNode));
+            setAttributeNode.execute(frame, receiver, behavior);
+            return PNone.NONE;
+        }
     }
 
     @Builtin(name = "__read__", minNumOfPositionalArgs = 2)

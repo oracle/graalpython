@@ -173,9 +173,7 @@ public class GraalHPyMemberAccessNodes {
     static CExtAsPythonObjectNode getReadConverterNode(int type) {
         return switch (type) {
             // no conversion needed
-            case HPY_MEMBER_SHORT, HPY_MEMBER_INT, HPY_MEMBER_LONG, HPY_MEMBER_FLOAT, HPY_MEMBER_DOUBLE, HPY_MEMBER_BYTE, HPY_MEMBER_UBYTE, HPY_MEMBER_USHORT, HPY_MEMBER_STRING,
-                            HPY_MEMBER_STRING_INPLACE, HPY_MEMBER_HPYSSIZET, HPY_MEMBER_NONE, HPY_MEMBER_OBJECT, HPY_MEMBER_OBJECT_EX ->
-                null;
+            case HPY_MEMBER_SHORT, HPY_MEMBER_INT, HPY_MEMBER_LONG, HPY_MEMBER_FLOAT, HPY_MEMBER_DOUBLE, HPY_MEMBER_BYTE, HPY_MEMBER_UBYTE, HPY_MEMBER_USHORT, HPY_MEMBER_STRING, HPY_MEMBER_STRING_INPLACE, HPY_MEMBER_HPYSSIZET, HPY_MEMBER_NONE, HPY_MEMBER_OBJECT, HPY_MEMBER_OBJECT_EX -> null;
             case HPY_MEMBER_BOOL -> NativePrimitiveAsPythonBooleanNodeGen.create();
             case HPY_MEMBER_CHAR -> NativePrimitiveAsPythonCharNodeGen.create();
             case HPY_MEMBER_UINT, HPY_MEMBER_ULONG, HPY_MEMBER_LONGLONG, HPY_MEMBER_ULONGLONG -> NativeUnsignedPrimitiveAsPythonObjectNodeGen.create();

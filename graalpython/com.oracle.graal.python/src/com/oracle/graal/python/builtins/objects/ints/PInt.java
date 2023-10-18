@@ -302,12 +302,12 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    boolean fitsInBigInteger() {
+    public boolean fitsInBigInteger() {
         return true;
     }
 
     @ExportMessage
-    BigInteger asBigInteger() {
+    public BigInteger asBigInteger() {
         return value;
     }
 

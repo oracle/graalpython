@@ -324,6 +324,12 @@ public abstract class BuiltinNames {
     public static final String J___GRAALPYTHON__ = "__graalpython__";
     public static final TruffleString T___GRAALPYTHON__ = tsLiteral(J___GRAALPYTHON__);
 
+    public static final String J_REGISTER_HOST_INTEROP_BEHAVIOR = "register_host_interop_behavior";
+    public static final TruffleString T_REGISTER_HOST_INTEROP_BEHAVIOR = tsLiteral(J_REGISTER_HOST_INTEROP_BEHAVIOR);
+
+    public static final String J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__ = "__graalpython_host_interop_behavior__";
+    public static final TruffleString T___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__ = tsLiteral(J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__);
+
     public static final String J__CODECS = "_codecs";
     public static final TruffleString T__CODECS = tsLiteral(J__CODECS);
 
