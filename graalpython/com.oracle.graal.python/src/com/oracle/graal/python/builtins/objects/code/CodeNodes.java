@@ -119,8 +119,8 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonLanguage language, PythonContext context, @SuppressWarnings("unused") int argcount,
-                        @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
+        private static PCode createCode(PythonLanguage language, PythonContext context, int argCount,
+                        int positionalOnlyArgCount, int kwOnlyArgCount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
@@ -128,17 +128,34 @@ public abstract class CodeNodes {
                         byte[] linetable) {
 
             RootCallTarget ct;
+            Signature signature;
             if (codedata.length == 0) {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
+                /*
+                 * We need to create a proper signature because this code path is used to create
+                 * fake code objects for duck-typed function-like objects, such as Cython functions.
+                 * Even if the code object is not executable, it will be used for introspection when
+                 * you call `inspect.signature()` on such function-like object.
+                 */
+                int posArgCount = argCount + positionalOnlyArgCount;
+                TruffleString[] parameterNames = Arrays.copyOf(varnames, posArgCount);
+                TruffleString[] kwOnlyNames = Arrays.copyOfRange(varnames, posArgCount, posArgCount + kwOnlyArgCount);
+                int varArgsIndex = (flags & PCode.CO_VARARGS) != 0 ? posArgCount : -1;
+                signature = new Signature(positionalOnlyArgCount,
+                                (flags & PCode.CO_VARKEYWORDS) != 0,
+                                varArgsIndex,
+                                positionalOnlyArgCount > 0,
+                                parameterNames,
+                                kwOnlyNames);
             } else {
                 ct = create().deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars);
+                signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
             if (filename != null) {
                 context.setCodeFilename(ct, filename);
             }
             PythonObjectFactory factory = context.factory();
-            return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
-                            firstlineno, linetable);
+            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
         }
 
         @SuppressWarnings("static-method")

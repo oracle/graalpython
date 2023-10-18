@@ -224,8 +224,7 @@ def full_python(args, **kwargs):
     if not any(arg.startswith('--experimental-options') for arg in args):
         args.insert(0, '--experimental-options')
 
-    if mx._opts.java_dbg_port:
-        args.insert(0, f"--vm.agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:{mx._opts.java_dbg_port}")
+    handle_debug_arg(args)
 
     for arg in itertools.chain(
             itertools.chain(*map(shlex.split, reversed(mx._opts.java_args_sfx))),
@@ -241,10 +240,16 @@ def full_python(args, **kwargs):
     graalpy_path = os.path.join(standalone_home, 'bin', _graalpy_launcher())
     if not os.path.exists(graalpy_path):
         mx.abort("GraalPy standalone doesn't seem to be built.\n" +
-                 "To build it: mx --dy /vm build --dep PYTHON_JAVA_STANDALONE_JAVA21\n" +
+                 "To build it: mx python-jvm\n" +
                  "Alternatively use: mx python --hosted")
 
     mx.run([graalpy_path] + args)
+
+
+def handle_debug_arg(args):
+    if mx._opts.java_dbg_port:
+        args.insert(0,
+                    f"--vm.agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:{mx._opts.java_dbg_port}")
 
 
 def python(args, **kwargs):
@@ -438,15 +443,10 @@ def run_cpython_test(raw_args):
     test_args = ['-v']
     parser = ArgumentParser()
     parser.add_argument('--all', action='store_true')
-    parser.add_argument('--gvm', dest='vm', action='store_const', const='gvm')
-    parser.add_argument('--standalone', dest='vm', action='store_const', const='standalone')
-    parser.add_argument('--svm', dest='vm', action='store_const', const='svm')
+    parser.add_argument('--svm', dest='standalone_type', action='store_const', const='native', default='jvm')
     parser.add_argument('-k', dest='tags', action='append')
     parser.add_argument('globs', nargs='+')
     args, rest_args = parser.parse_known_args(raw_args)
-    if args.vm == 'gvm':
-        mx.warn("--gvm is deprecated, use --standalone")
-        args.vm = 'standalone'
 
     testfiles = []
     for g in args.globs:
@@ -464,17 +464,22 @@ def run_cpython_test(raw_args):
     for tag in test_tags or ():
         test_args += ['-k', tag]
 
-    python_args = rest_args + [
+    python_args = [
+        '--vm.ea',
+        *rest_args,
         os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-    ] + test_args + testfiles
-    if args.vm:
-        env = os.environ.copy()
-        delete_bad_env_keys(env)
-        env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
-        vm = python_jvm() if args.vm == 'standalone' else python_svm()
-        mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
-    else:
-        do_run_python(python_args)
+        *test_args,
+        *testfiles,
+    ]
+    handle_debug_arg(python_args)
+    standalone_home = graalpy_standalone_home(args.standalone_type, dev=True, build=False)
+    graalpy_path = os.path.join(standalone_home, 'bin', _graalpy_launcher())
+    if not os.path.exists(graalpy_path):
+        mx.abort("GraalPy standalone is not built")
+    env = os.environ.copy()
+    delete_bad_env_keys(env)
+    env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
+    mx.run([graalpy_path, *python_args], env=env)
 
 
 def get_test_tags(globs):
