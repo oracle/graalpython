@@ -37,23 +37,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# This script parses the output of "gcc -E"
-# (e..g, "gcc -I /Library/Frameworks/Python.framework/Versions/3.10/include/python3.10/ -E incl.c")
-# and generates a list of C API functions that can be stored in CAPIFunctions.txt to automatically check
-# the consistency of the C API implementation in GraalPy.
+# This script parses gcc output on the sibling "incl.c" and generates a list of
+# C API functions that can be stored in CAPIFunctions.txt to automatically
+# check the consistency of the C API implementation in GraalPy.
 #
-# Example contents of incl.c:
-# #include <Python.h>
-# #include <frameobject.h>
-# #include <datetime.h>
-# #include <pystrhex.h>
-# #include <structmember.h>
+# Just run it in this folder e.g python csignature.py > ../graalpython/com.oracle.graal.python.cext/CAPIFunctions.txt
+#
+# Make sure to use the exact same CPython version as we are targeting
 
 from pycparser import c_ast, parse_file, c_generator
+import sysconfig
 import re
+import os
 
+inc = sysconfig.get_config_var("INCLUDEPY")
+# used the fake clib headers from pycparser source tree
+fakeclib = os.path.join(os.path.dirname(__file__), 'pycparser', 'utils', 'fake_libc_include')
+# define some things to avoid code that pycparser cannot parse
+fakedefs = "-D_POSIX_THREADS -D__GNUC__=1"
+os.system(f"gcc -I {inc} -I {fakeclib} {fakedefs} -E incl.c > pysymbols.c")
 gen = c_generator.CGenerator()
-ast = parse_file("/Users/ls/Source/upstream-python/graalpython/symbols.c")
+ast = parse_file("pysymbols.c")
 
 
 def cleanup(str):
