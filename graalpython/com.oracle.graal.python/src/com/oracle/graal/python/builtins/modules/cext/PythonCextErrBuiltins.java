@@ -136,6 +136,9 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextErrBuiltins {
+    private static Object noneToNativeNull(Node node, Object obj) {
+        return obj instanceof PNone ? PythonContext.get(node).getNativeNull() : obj;
+    }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyErr_Restore extends CApiTernaryBuiltinNode {
@@ -428,10 +431,7 @@ public final class PythonCextErrBuiltins {
             }
             assert currentException != PException.NO_EXCEPTION;
             Object exception = currentException.getEscapedException();
-            Object traceback = getTracebackNode.execute(inliningTarget, exception);
-            if (traceback == PNone.NONE) {
-                traceback = getNativeNull();
-            }
+            Object traceback = noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exception));
             return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
     }
@@ -664,7 +664,7 @@ public final class PythonCextErrBuiltins {
         Object getCause(Object exc,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode) {
-            return getAttrNode.execute(inliningTarget, exc, T___CAUSE__);
+            return noneToNativeNull(inliningTarget, getAttrNode.execute(inliningTarget, exc, T___CAUSE__));
         }
     }
 
@@ -674,7 +674,7 @@ public final class PythonCextErrBuiltins {
         Object setCause(Object exc,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode) {
-            return getAttrNode.execute(inliningTarget, exc, T___CONTEXT__);
+            return noneToNativeNull(inliningTarget, getAttrNode.execute(inliningTarget, exc, T___CONTEXT__));
         }
     }
 
@@ -686,6 +686,17 @@ public final class PythonCextErrBuiltins {
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(inliningTarget, exc, T___CONTEXT__, context);
             return PNone.NONE;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyException_GetTraceback extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object getTraceback(Object exc,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetAttr getAttrNode) {
+            return noneToNativeNull(inliningTarget, getAttrNode.execute(inliningTarget, exc, T___TRACEBACK__));
         }
     }
 

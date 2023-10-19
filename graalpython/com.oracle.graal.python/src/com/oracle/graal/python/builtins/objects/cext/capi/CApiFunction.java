@@ -1111,7 +1111,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_ReleaseThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetProfile", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetTrace", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyException_GetTraceback", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyExceptionClass_Name", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_FromFd", ret = PyObject, args = {Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString,
                     ConstCharPtrAsTruffleString, Int}, call = NotImplemented)

@@ -1452,7 +1452,7 @@ PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
 }
 #undef PyException_GetTraceback
 PyAPI_FUNC(PyObject*) PyException_GetTraceback(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
+    return GraalPyException_GetTraceback(a);
 }
 #undef PyException_SetCause
 PyAPI_FUNC(void) PyException_SetCause(PyObject* a, PyObject* b) {
