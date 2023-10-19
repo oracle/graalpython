@@ -1188,13 +1188,13 @@ public class CApiTransitions {
 
         @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
         static PythonNativeWrapper doNonWrapper(Object obj,
-                                                @Bind("this") Node inliningTarget,
-                                                @CachedLibrary("obj") InteropLibrary interopLibrary,
-                                                @Cached InlinedConditionProfile isNullProfile,
-                                                @Cached InlinedConditionProfile isLongProfile,
-                                                @Cached InlinedConditionProfile isNativeProfile,
-                                                @Cached InlinedConditionProfile isNativeWrapperProfile,
-                                                @Cached InlinedConditionProfile isHandleSpaceProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("obj") InteropLibrary interopLibrary,
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached InlinedConditionProfile isLongProfile,
+                        @Cached InlinedConditionProfile isNativeProfile,
+                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedConditionProfile isHandleSpaceProfile) {
             long pointer;
             if (isLongProfile.profile(inliningTarget, obj instanceof Long)) {
                 pointer = (long) obj;
