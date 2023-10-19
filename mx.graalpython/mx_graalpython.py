@@ -1733,6 +1733,7 @@ def dev_tag(arg=None, **kwargs):
 
     rev = SUITE.vc.git_command(SUITE.dir, ['log',
                                            '-1',
+                                           '--format=short',
                                            '--'] + rev_list, abortOnError=True)
 
     return 'dev' + rev.split()[1][:10]
