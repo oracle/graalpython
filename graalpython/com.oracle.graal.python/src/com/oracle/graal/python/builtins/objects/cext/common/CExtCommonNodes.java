@@ -230,28 +230,22 @@ public abstract class CExtCommonNodes {
         public abstract byte[] execute(Charset charset, Object unicodeObject, TruffleString errors);
 
         @Specialization
-        static byte[] doString(Charset charset, TruffleString unicodeObject, TruffleString errors,
-                        @Cached TruffleString.EqualNode eqNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode, eqNode);
-                return BytesBuiltins.doEncode(charset, unicodeObject, action);
-            } catch (CharacterCodingException e) {
-                throw raiseNode.raise(UnicodeEncodeError, ErrorMessages.M, e);
-            }
-        }
-
-        @Specialization
         static byte[] doGeneric(Charset charset, Object unicodeObject, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString str;
             try {
-                TruffleString s = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
-                return doString(charset, s, errors, eqNode, raiseNode);
+                str = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
+            }
+            try {
+                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);
+                return BytesBuiltins.doEncode(charset, str, action);
+            } catch (CharacterCodingException e) {
+                throw raiseNode.get(inliningTarget).raise(UnicodeEncodeError, ErrorMessages.M, e);
             }
         }
     }

@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -139,7 +140,7 @@ public final class PythonCextBytesBuiltins {
         @Fallback
         @TruffleBoundary
         long fallback(Object obj) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
 
@@ -175,13 +176,13 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object fromObject(Object obj,
+        static Object fromObject(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached BytesNode bytesNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode) {
-
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (PGuards.isPBytes(obj)) {
                 return obj;
             } else {
@@ -191,7 +192,7 @@ public final class PythonCextBytesBuiltins {
                 } else if (isAcceptedSubtype(inliningTarget, obj, klass, isSubtypeNode, lookupAttrNode)) {
                     return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
                 } else {
-                    throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+                    throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
                 }
             }
         }
@@ -214,27 +215,31 @@ public final class PythonCextBytesBuiltins {
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(PythonNativeWrapper object, long size,
+        static Object doGeneric(PythonNativeWrapper object, long size,
                         @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
             if (size >= 0 && size < ary.length) {
                 // cast to int is guaranteed because of 'size < ary.length'
-                return factory().createBytes(Arrays.copyOf(ary, (int) size));
+                return factory.createBytes(Arrays.copyOf(ary, (int) size));
             } else {
-                return factory().createBytes(ary);
+                return factory.createBytes(ary);
             }
         }
 
         @Specialization(guards = "!isNativeWrapper(nativePointer)")
-        Object doNativePointer(Object nativePointer, long size,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
+        static Object doNativePointer(Object nativePointer, long size,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory().createBytes(getByteArrayNode.execute(nativePointer, size));
+                return factory.createBytes(getByteArrayNode.execute(nativePointer, size));
             } catch (InteropException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
         }
     }
@@ -243,27 +248,31 @@ public final class PythonCextBytesBuiltins {
     @ImportStatic(CApiGuards.class)
     abstract static class PyTruffleByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doGeneric(PythonNativeWrapper object, long size,
+        static Object doGeneric(PythonNativeWrapper object, long size,
                         @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
             if (size >= 0 && size < ary.length) {
                 // cast to int is guaranteed because of 'size < ary.length'
-                return factory().createByteArray(Arrays.copyOf(ary, (int) size));
+                return factory.createByteArray(Arrays.copyOf(ary, (int) size));
             } else {
-                return factory().createByteArray(ary);
+                return factory.createByteArray(ary);
             }
         }
 
         @Specialization(guards = "!isNativeWrapper(nativePointer)")
-        Object doNativePointer(Object nativePointer, long size,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
+        static Object doNativePointer(Object nativePointer, long size,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory().createByteArray(getByteArrayNode.execute(nativePointer, size));
+                return factory.createByteArray(getByteArrayNode.execute(nativePointer, size));
             } catch (InteropException e) {
-                return raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+                return raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
-                return raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
+                return raiseNode.get(inliningTarget).raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
         }
     }
@@ -291,8 +300,9 @@ public final class PythonCextBytesBuiltins {
         }
 
         @Fallback
-        int fallback(Object self, @SuppressWarnings("unused") Object o) {
-            throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
+        static int fallback(Object self, @SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
     }
 
@@ -300,37 +310,44 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffle_Bytes_EmptyWithCapacity extends CApiUnaryBuiltinNode {
 
         @Specialization
-        PBytes doInt(int size) {
-            return factory().createBytes(new byte[size]);
+        static PBytes doInt(int size,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBytes(new byte[size]);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        PBytes doLong(long size) throws OverflowException {
-            return doInt(PInt.intValueExact(size));
+        static PBytes doLong(long size,
+                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
+            return doInt(PInt.intValueExact(size), factory);
         }
 
         @Specialization(replaces = "doLong")
-        PBytes doLongOvf(long size,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static PBytes doLongOvf(long size,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(PInt.intValueExact(size));
+                return doInt(PInt.intValueExact(size), factory);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        PBytes doPInt(PInt size) throws OverflowException {
-            return doInt(size.intValueExact());
+        static PBytes doPInt(PInt size,
+                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
+            return doInt(size.intValueExact(), factory);
         }
 
         @Specialization(replaces = "doPInt")
-        PBytes doPIntOvf(PInt size,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static PBytes doPIntOvf(PInt size,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(size.intValueExact());
+                return doInt(size.intValueExact(), factory);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
         }
     }
@@ -339,37 +356,44 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffle_ByteArray_EmptyWithCapacity extends CApiUnaryBuiltinNode {
 
         @Specialization
-        PByteArray doInt(int size) {
-            return factory().createByteArray(new byte[size]);
+        static PByteArray doInt(int size,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createByteArray(new byte[size]);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        PByteArray doLong(long size) throws OverflowException {
-            return doInt(PInt.intValueExact(size));
+        static PByteArray doLong(long size,
+                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
+            return doInt(PInt.intValueExact(size), factory);
         }
 
         @Specialization(replaces = "doLong")
-        PByteArray doLongOvf(long size,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static PByteArray doLongOvf(long size,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(PInt.intValueExact(size));
+                return doInt(PInt.intValueExact(size), factory);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        PByteArray doPInt(PInt size) throws OverflowException {
-            return doInt(size.intValueExact());
+        static PByteArray doPInt(PInt size,
+                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
+            return doInt(size.intValueExact(), factory);
         }
 
         @Specialization(replaces = "doPInt")
-        PByteArray doPIntOvf(PInt size,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static PByteArray doPIntOvf(PInt size,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(size.intValueExact());
+                return doInt(size.intValueExact(), factory);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
         }
     }
@@ -405,20 +429,22 @@ public final class PythonCextBytesBuiltins {
         }
 
         @Specialization
-        Object doNative(PythonAbstractNativeObject obj,
+        static Object doNative(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray) {
+                        @Cached CStructAccess.GetElementPtrNode getArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
-            return doError(obj);
+            return doError(obj, raiseNode.get(inliningTarget));
         }
 
         @Fallback
-        Object doError(Object obj) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
+        static Object doError(Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
         }
     }
 }

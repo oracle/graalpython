@@ -75,9 +75,11 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -91,14 +93,15 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PySet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        Object newSet(Object iterable,
+        static Object newSet(Object iterable,
                         @Cached ConstructSetNode constructSetNode) {
             return constructSetNode.executeWith(null, iterable);
         }
 
         @Specialization
-        Object newSet(@SuppressWarnings("unused") PNone iterable) {
-            return factory().createSet();
+        static Object newSet(@SuppressWarnings("unused") PNone iterable,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createSet();
         }
     }
 
@@ -139,8 +142,9 @@ public final class PythonCextSetBuiltins {
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached LoopConditionProfile loopProfile) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
         }
 
         @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)", limit = "3")
@@ -151,32 +155,35 @@ public final class PythonCextSetBuiltins {
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached LoopConditionProfile loopProfile) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
         }
 
         @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"}, limit = "1")
         Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
-                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode) {
             return getNativeNull();
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
-        Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            throw raise(PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
-        Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
+        static Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode) {
-            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+        }
+
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
+        static Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
         }
 
         protected boolean isSetSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -190,7 +197,7 @@ public final class PythonCextSetBuiltins {
 
         private Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
                         HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
-                        LoopConditionProfile loopProfile) {
+                        LoopConditionProfile loopProfile, PythonObjectFactory.Lazy factory) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
             loopProfile.profileCounted(pos);
             for (int i = 0; loopProfile.inject(i <= pos); i++) {
@@ -200,7 +207,7 @@ public final class PythonCextSetBuiltins {
             }
             Object key = itKey.execute(inliningTarget, storage, it);
             long hash = itKeyHash.execute(inliningTarget, storage, it);
-            return factory().createTuple(new Object[]{key, hash});
+            return factory.get(inliningTarget).createTuple(new Object[]{key, hash});
         }
     }
 
@@ -221,15 +228,16 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyFrozenSet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        Object newFrozenSet(Object iterable,
+        static Object newFrozenSet(Object iterable,
                         @Cached FrozenSetNode frozenSetNode) {
             return frozenSetNode.execute(null, PythonBuiltinClassType.PFrozenSet, iterable);
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        Object newFrozenSet(PNone iterable) {
-            return factory().createFrozenSet(PythonBuiltinClassType.PFrozenSet);
+        static Object newFrozenSet(PNone iterable,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createFrozenSet(PythonBuiltinClassType.PFrozenSet);
         }
     }
 
@@ -276,8 +284,9 @@ public final class PythonCextSetBuiltins {
         }
 
         @Specialization(guards = "!isAnySet(self)")
-        int add(Object self, @SuppressWarnings("unused") Object o) {
-            throw raise(SystemError, EXPECTED_S_NOT_P, "a set object", self);
+        static int add(Object self, @SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, EXPECTED_S_NOT_P, "a set object", self);
         }
     }
 

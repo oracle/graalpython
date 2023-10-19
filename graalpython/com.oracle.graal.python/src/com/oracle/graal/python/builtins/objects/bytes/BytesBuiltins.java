@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -217,21 +216,12 @@ public final class BytesBuiltins extends PythonBuiltins {
         return null;
     }
 
-    public static CodingErrorAction toCodingErrorAction(TruffleString errors, PRaiseNode n, TruffleString.EqualNode eqNode) {
+    public static CodingErrorAction toCodingErrorAction(Node inliningTarget, TruffleString errors, PRaiseNode.Lazy raiseNode, TruffleString.EqualNode eqNode) {
         CodingErrorAction action = toCodingErrorAction(errors, eqNode);
         if (action != null) {
             return action;
         }
-        throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
-    }
-
-    public static CodingErrorAction toCodingErrorAction(TruffleString errors, CApiBuiltinNode n, TruffleString.EqualNode eqNode) {
-        // TODO: replace CodingErrorAction with TruffleString api [GR-38105]
-        CodingErrorAction action = toCodingErrorAction(errors, eqNode);
-        if (action != null) {
-            return action;
-        }
-        throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
+        throw raiseNode.get(inliningTarget).raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
     }
 
     @TruffleBoundary

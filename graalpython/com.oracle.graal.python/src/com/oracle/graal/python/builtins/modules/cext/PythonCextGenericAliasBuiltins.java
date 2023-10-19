@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextGenericAliasBuiltins {
@@ -53,8 +55,9 @@ public final class PythonCextGenericAliasBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class Py_GenericAlias extends CApiBinaryBuiltinNode {
         @Specialization
-        Object genericAlias(Object origin, Object args) {
-            return factory().createGenericAlias(origin, args);
+        static Object genericAlias(Object origin, Object args,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(origin, args);
         }
     }
 }

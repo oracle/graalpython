@@ -121,6 +121,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -204,7 +205,8 @@ public final class PythonCextErrBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached MaterializeLazyTracebackNode materializeTraceback) {
+                        @Cached MaterializeLazyTracebackNode materializeTraceback,
+                        @Cached PythonObjectFactory factory) {
             PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
             Object result;
             if (currentException == null) {
@@ -218,7 +220,7 @@ public final class PythonCextErrBuiltins {
                 if (traceback == null) {
                     traceback = getNativeNull();
                 }
-                result = factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
+                result = factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
                 getThreadStateNode.setCurrentException(inliningTarget, null);
             }
             return result;
@@ -306,22 +308,23 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
-        Object create(Object type, @SuppressWarnings("unused") Object value,
+        static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                        @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode) {
-            throw raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
+                        @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
 
         @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
-        Object create(Object type, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static Object create(Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
-            throw PRaiseNode.raiseExceptionObject(this, exception);
+            throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
         }
 
         protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
@@ -335,9 +338,9 @@ public final class PythonCextErrBuiltins {
         @TruffleBoundary
         Object raiseNone(Object filename, int lineno) {
             if (filename == PNone.NONE) {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw PRaiseNode.raiseUncached(this, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             } else {
-                throw raise(SystemError, S_S_BAD_ARG_TO_INTERNAL_FUNC, filename, lineno);
+                throw PRaiseNode.raiseUncached(this, SystemError, S_S_BAD_ARG_TO_INTERNAL_FUNC, filename, lineno);
             }
         }
     }
@@ -346,7 +349,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_NewException extends CApiTernaryBuiltinNode {
 
         @Specialization
-        Object newEx(TruffleString name, Object base, Object dict,
+        static Object newEx(TruffleString name, Object base, Object dict,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
@@ -356,18 +359,20 @@ public final class PythonCextErrBuiltins {
                         @Cached TypeNode typeNode,
                         @Cached BranchProfile notDotProfile,
                         @Cached BranchProfile notModuleProfile,
-                        @Cached ConditionProfile baseProfile) {
+                        @Cached ConditionProfile baseProfile,
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (base == PNone.NO_VALUE) {
                 base = PythonErrorType.Exception;
             }
             if (dict == PNone.NO_VALUE) {
-                dict = factory().createDict();
+                dict = factory.get(inliningTarget).createDict();
             }
             int length = codePointLengthNode.execute(name, TS_ENCODING);
             int dotIdx = indexOfCodepointNode.execute(name, '.', 0, length, TS_ENCODING);
             if (dotIdx < 0) {
                 notDotProfile.enter();
-                throw raise(SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
+                throw raiseNode.get(inliningTarget).raise(SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
             }
             if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
                 notModuleProfile.enter();
@@ -377,7 +382,7 @@ public final class PythonCextErrBuiltins {
             if (baseProfile.profile(base instanceof PTuple)) {
                 bases = (PTuple) base;
             } else {
-                bases = factory().createTuple(new Object[]{base});
+                bases = factory.get(inliningTarget).createTuple(new Object[]{base});
             }
             return typeNode.execute(null, PythonBuiltinClassType.PythonClass, substringNode.execute(name, dotIdx + 1, length - dotIdx - 1, TS_ENCODING, false), bases, dict,
                             PKeyword.EMPTY_KEYWORDS);
@@ -388,14 +393,15 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_NewExceptionWithDoc extends CApiQuaternaryBuiltinNode {
 
         @Specialization
-        Object raise(TruffleString name, Object doc, Object base, Object dict,
+        static Object raise(TruffleString name, Object doc, Object base, Object dict,
                         @Cached PyErr_NewException newExNode,
-                        @Cached WriteAttributeToObjectNode writeAtrrNode) {
+                        @Cached WriteAttributeToObjectNode writeAtrrNode,
+                        @Cached PythonObjectFactory factory) {
             if (base == PNone.NO_VALUE) {
                 base = PythonErrorType.Exception;
             }
             if (dict == PNone.NO_VALUE) {
-                dict = factory().createDict();
+                dict = factory.createDict();
             }
             Object ex = newExNode.execute(name, base, dict);
             if (doc != PNone.NO_VALUE) {
@@ -413,7 +419,8 @@ public final class PythonCextErrBuiltins {
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
-                        @Cached BranchProfile noExceptionProfile) {
+                        @Cached BranchProfile noExceptionProfile,
+                        @Cached PythonObjectFactory factory) {
             PException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
                 noExceptionProfile.enter();
@@ -425,7 +432,7 @@ public final class PythonCextErrBuiltins {
             if (traceback == PNone.NONE) {
                 traceback = getNativeNull();
             }
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
     }
 

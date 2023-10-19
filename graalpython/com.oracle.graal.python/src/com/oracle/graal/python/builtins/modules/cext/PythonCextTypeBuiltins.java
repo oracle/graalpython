@@ -152,9 +152,9 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doIt(PythonNativeClass self, TruffleString className) {
+        static Object doIt(PythonNativeClass self, TruffleString className) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(self);
-            return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
+            return PythonObjectFactory.getUncached().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
     }
 

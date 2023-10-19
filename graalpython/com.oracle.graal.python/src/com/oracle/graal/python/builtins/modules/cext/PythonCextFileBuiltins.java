@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -64,14 +65,15 @@ public final class PythonCextFileBuiltins {
     abstract static class PyFile_WriteObject extends CApiTernaryBuiltinNode {
 
         @Specialization
-        int writeStr(Object obj, Object f, int flags,
+        static int writeStr(Object obj, Object f, int flags,
                         @Bind("this") Node inliningTarget,
                         @Cached StrNode strNode,
                         @Cached ReprNode reprNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached CallNode callNode) {
-            checkNonNullArg(obj);
-            checkNonNullArg(f);
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            checkNonNullArg(inliningTarget, obj, raiseNode);
+            checkNonNullArg(inliningTarget, f, raiseNode);
             Object value;
             if (obj == PNone.NO_VALUE) {
                 value = StringLiterals.T_NULL_RESULT;
