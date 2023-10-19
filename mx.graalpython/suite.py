@@ -861,11 +861,15 @@ suite = {
         # the language jar.
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
-            "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
+            "layout": {
+                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"]
+            },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
-            "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
+            "layout": {
+                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"],
+            },
         },
 
         "GRAALPYTHON-LAUNCHER": {

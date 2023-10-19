@@ -1717,8 +1717,26 @@ def graalpy_ext(llvm_mode, **kwargs):
     # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
+    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "") + dev_tag()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
-    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "")}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
+
+def dev_tag(arg=None, **kwargs):
+    if os.environ.get('GRAALPYTHONDEVMODE', '1') == '0' or 'dev' not in SUITE.release_version():
+        return ''
+
+    rev_list = [
+        os.path.join('graalpython', 'lib-graalpython', 'patches'),
+        os.path.join('graalpython', 'lib-graalpython', 'modules', 'autopatch_capi.py'),
+        os.path.join('graalpython', 'com.oracle.graal.python.cext', 'include'),
+        os.path.join('graalpython', 'com.oracle.graal.python.cext', 'src', 'capi.h'),
+    ]
+
+    rev = SUITE.vc.git_command(SUITE.dir, ['log',
+                                           '-1',
+                                           '--format=short',
+                                           '--'] + rev_list, abortOnError=True)
+
+    return 'dev' + rev.split()[1][:10]
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
@@ -1726,6 +1744,7 @@ mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
 mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
+mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 
 mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
