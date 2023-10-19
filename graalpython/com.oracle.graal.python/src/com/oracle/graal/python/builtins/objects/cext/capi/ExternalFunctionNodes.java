@@ -324,14 +324,6 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class ToPythonWrapperNode extends CExtToJavaNode {
-
-        @Override
-        public PythonNativeWrapper execute(Object object) {
-            return CApiTransitions.nativeToPythonWrapper(object);
-        }
-    }
-
     /**
      * Enum of well-known function and slot signatures. The integer values must stay in sync with
      * the definition in {code capi.h}.

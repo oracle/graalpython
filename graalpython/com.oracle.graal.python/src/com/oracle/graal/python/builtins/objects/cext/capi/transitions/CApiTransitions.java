@@ -1186,50 +1186,67 @@ public class CApiTransitions {
         return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("PointerContainer"));
     }
 
-    @TruffleBoundary
-    public static PythonNativeWrapper nativeToPythonWrapper(Object obj) {
-        if (obj instanceof PythonNativeWrapper) {
-            return (PythonNativeWrapper) obj;
-        } else if (obj instanceof PythonAbstractNativeObject) {
-            throw CompilerDirectives.shouldNotReachHere();
-        } else {
+    @GenerateUncached
+    @GenerateInline(false)
+    @ImportStatic(CApiGuards.class)
+    public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
+
+        @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
+        static PythonNativeWrapper doNonWrapper(Object obj,
+                                                @Bind("this") Node inliningTarget,
+                                                @CachedLibrary("obj") InteropLibrary interopLibrary,
+                                                @Cached InlinedConditionProfile isNullProfile,
+                                                @Cached InlinedConditionProfile isLongProfile,
+                                                @Cached InlinedConditionProfile isNativeProfile,
+                                                @Cached InlinedConditionProfile isNativeWrapperProfile,
+                                                @Cached InlinedConditionProfile isHandleSpaceProfile) {
             long pointer;
-            if (obj instanceof Long) {
+            if (isLongProfile.profile(inliningTarget, obj instanceof Long)) {
                 pointer = (long) obj;
             } else {
-                if (!LIB.isPointer(obj)) {
+                if (!interopLibrary.isPointer(obj)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("not a pointer: " + obj);
                 }
                 try {
-                    pointer = LIB.asPointer(obj);
+                    pointer = interopLibrary.asPointer(obj);
                 } catch (final UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            if (pointer == 0) {
+            if (isNullProfile.profile(inliningTarget, pointer == 0)) {
                 return null;
             }
-            assert PythonContext.get(null).ownsGil();
-            PythonNativeWrapper wrapper;
-            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                PythonObjectReference reference = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext nativeContext = pythonContext.nativeContext;
+            assert pythonContext.ownsGil();
+            if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
+                PythonObjectReference reference = nativeContext.nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
+                PythonNativeWrapper wrapper;
                 if (reference == null || (wrapper = reference.get()) == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
                 return wrapper;
             } else {
-                IdReference<?> lookup = nativeLookupGet(getContext(), pointer);
-                if (lookup != null) {
+                IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
+                if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
                     if (ref == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                     }
-                    if (ref instanceof PythonNativeWrapper) {
+                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         return (PythonNativeWrapper) ref;
                     }
                 }
+                return null;
             }
-            return null;
+        }
+
+        @Specialization
+        static PythonNativeWrapper doWrapper(PythonNativeWrapper wrapper) {
+            return wrapper;
         }
     }
 }
