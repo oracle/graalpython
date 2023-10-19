@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
@@ -100,6 +99,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
@@ -375,7 +375,7 @@ public class CApiTransitions {
         log(pointer);
         IdReference<?> reference = nativeLookupGet(getContext(), pointer);
         if (reference != null) {
-            return logResult(reference.get());
+            return logResultBoundary(reference.get());
         }
         return logResult(null);
     }
@@ -611,7 +611,7 @@ public class CApiTransitions {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             assert !obj.isNative();
             log(obj);
-            obj.setNativePointer(logResult(HandleFactory.create(obj)));
+            obj.setNativePointer(logResultBoundary(HandleFactory.create(obj)));
         }
     }
 
@@ -671,13 +671,21 @@ public class CApiTransitions {
         }
     }
 
-    private static <T> T logResult(T value) {
+    @TruffleBoundary
+    private static <T> T logResultBoundary(T value) {
         if (LOGGER.isLoggable(Level.FINEST)) {
             CompilerAsserts.neverPartOfCompilation();
             StackTraceElement element = new RuntimeException().getStackTrace()[1];
             StringBuilder str = new StringBuilder("    ==> <").append(element.getLineNumber()).append("> ");
             format(str, value);
             LOGGER.finest(str.toString());
+        }
+        return value;
+    }
+
+    private static <T> T logResult(T value) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            logResultBoundary(value);
         }
         return value;
     }
@@ -726,29 +734,27 @@ public class CApiTransitions {
 
         @Specialization
         static Object doForeign(Object value,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                        @Cached InlinedConditionProfile isNullProfile) {
+                        @Cached InlinedExactClassProfile classProfile,
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached FromCharPointerNode fromCharPointerNode) {
+            Object profiledValue = classProfile.profile(inliningTarget, value);
             // this branch is not a shortcut; it actually returns a different object
-            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(value))) {
+            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(profiledValue))) {
                 return PNone.NO_VALUE;
             }
-            return nativeCharToJava(value);
-        }
-
-        @TruffleBoundary
-        public static Object nativeCharToJava(Object value) {
-            log(value);
-            assert !(value instanceof Long);
-            if (value instanceof String) {
-                return logResult(PythonUtils.toTruffleStringUncached((String) value));
-            } else if (value instanceof TruffleString) {
-                return logResult(value);
+            log(profiledValue);
+            assert !(profiledValue instanceof Long);
+            if (profiledValue instanceof String) {
+                return logResult(PythonUtils.toTruffleStringUncached((String) profiledValue));
+            } else if (profiledValue instanceof TruffleString) {
+                return logResult(profiledValue);
             }
-            if (LIB.isPointer(value)) {
+            if (interopLibrary.isPointer(profiledValue)) {
                 long pointer;
                 try {
-                    pointer = LIB.asPointer(value);
+                    pointer = interopLibrary.asPointer(profiledValue);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
@@ -757,20 +763,9 @@ public class CApiTransitions {
                     if (obj != null) {
                         return logResult(obj.getDelegate());
                     }
-                } else {
-                    IdReference<?> lookup = nativeLookupGet(CApiTransitions.getContext(), pointer);
-                    if (lookup != null) {
-                        Object obj = lookup.get();
-                        if (obj instanceof PythonAbstractNativeObject) {
-                            return logResult(obj);
-                        } else {
-                            return logResult(((PythonNativeWrapper) value).getDelegate());
-                        }
-                    }
                 }
             }
-            FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
-            return logResult(fromCharPointerNode.execute(value));
+            return logResult(fromCharPointerNode.execute(profiledValue));
         }
     }
 
