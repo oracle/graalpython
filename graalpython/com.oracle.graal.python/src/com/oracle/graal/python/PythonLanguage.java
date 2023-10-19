@@ -220,7 +220,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
             // see mx.graalpython/mx_graalpython.py:dev_tag
-            byte[] rev = new byte[1 /* ' ' */ + 3 /* 'dev' */ + 5 /* capi rev */ + 5 /*- patches rev */];
+            byte[] rev = new byte[1 /* ' ' */ + 3 /* 'dev' */ + 10 /* revision */];
             if (is.read(rev) == rev.length) {
                 DEV_TAG = new String(rev).strip();
             } else {

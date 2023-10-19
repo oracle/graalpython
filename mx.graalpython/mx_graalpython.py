@@ -1723,11 +1723,19 @@ def graalpy_ext(llvm_mode, **kwargs):
 def dev_tag(arg=None, **kwargs):
     if os.environ.get('GRAALPYTHONDEVMODE', '1') == '0' or 'dev' not in SUITE.release_version():
         return ''
-    rev_capi = SUITE.vc.git_command(SUITE.dir, ['rev-parse', 'HEAD',
-                                            os.path.join('graalpython', 'com.oracle.graal.python.cext', 'src', 'capi.h')])
-    rev_patches = SUITE.vc.git_command(SUITE.dir, ['rev-parse', 'HEAD',
-                                            os.path.join('graalpython', 'lib-graalpython', 'patches')])
-    return 'dev' + rev_capi[:5] + rev_patches[:5]
+
+    rev_list = [
+        os.path.join('graalpython', 'lib-graalpython', 'patches'),
+        os.path.join('graalpython', 'lib-graalpython', 'modules', 'autopatch_capi.py'),
+        os.path.join('graalpython', 'com.oracle.graal.python.cext', 'include'),
+        os.path.join('graalpython', 'com.oracle.graal.python.cext', 'src', 'capi.h'),
+    ]
+
+    rev = SUITE.vc.git_command(SUITE.dir, ['log',
+                                           '-1',
+                                           '--'] + rev_list, abortOnError=True)
+
+    return 'dev' + rev.split()[1][:10]
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
