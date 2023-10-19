@@ -1302,3 +1302,11 @@ PyWeakref_NewRef;PyObject*;PyObject*|PyObject*
 PyWideStringList_Append;PyStatus;PyWideStringList*|const wchar_t*
 PyWideStringList_Insert;PyStatus;PyWideStringList*|Py_ssize_t|const wchar_t*
 PyWrapper_New;PyObject*;PyObject*|PyObject*
+PyMarshal_WriteLongToFile;void;long|FILE*|int
+PyMarshal_WriteObjectToFile;void;PyObject*|FILE*|int
+PyMarshal_WriteObjectToString;PyObject*;PyObject*|int
+PyMarshal_ReadLongFromFile;long;FILE*
+PyMarshal_ReadShortFromFile;int;FILE*
+PyMarshal_ReadObjectFromFile;PyObject*;FILE*
+PyMarshal_ReadLastObjectFromFile;PyObject*;FILE*
+PyMarshal_ReadObjectFromString;PyObject*;const char*|Py_ssize_t
