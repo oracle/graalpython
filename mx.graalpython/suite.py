@@ -309,6 +309,20 @@ suite = {
             "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
+        
+        "com.oracle.graal.python.standalone": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "requires": [
+                "java.management",
+            ],
+            "jacoco": "include",
+            "javaCompliance": "17+",
+            "checkstyle": "com.oracle.graal.python",
+        },
 
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
@@ -868,6 +882,29 @@ suite = {
             "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
         },
 
+        "GRAALPYTHON_STANDALONE" : {
+            "moduleInfo": {
+                "name": "org.graalvm.python.standalone",
+                "exports": [
+                    "com.oracle.graal.python.standalone",
+                ]
+            },
+            "useModulePath": True,
+            "dependencies": [
+                "com.oracle.graal.python.standalone",
+            ],
+            "distDependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "description": "GraalPython Standalone Utils",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-standalone",
+                "tag": ["default", "public"],
+            },
+            
+        },
+            
         "GRAALPYTHON-LAUNCHER": {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
