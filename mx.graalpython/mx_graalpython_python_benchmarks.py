@@ -280,7 +280,8 @@ class AsvJsonRule(mx_benchmark.Rule):
                             "config.run-flags": " ".join(params),
                         }
                     )
-                    if samples_idx >= 0:
+                    # It may be that the samples are missing; so omit this step
+                    if 0 <= samples_idx < len(result):
                         for iteration, value in enumerate(result[samples_idx][run_idx]):
                             r.append(
                                 {
