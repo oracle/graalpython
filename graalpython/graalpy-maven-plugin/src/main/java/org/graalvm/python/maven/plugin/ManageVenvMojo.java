@@ -212,8 +212,10 @@ public class ManageVenvMojo extends AbstractMojo {
                 // on windows, generate a venv launcher that executes our mvn target
                 var script = String.format("""
                                 import os, shutil, struct, venv
+                                from pathlib import Path
                                 vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
                                 tl = os.path.join(r'%s')
+                                os.makedirs(Path(tl).parent.absolute())
                                 shutil.copy(vl, tl)
                                 cmd = r'mvn.cmd -f "%s" graalpy:exec "-Dexec.workingdir=%s"'
                                 with open(tl, 'ab') as f:
