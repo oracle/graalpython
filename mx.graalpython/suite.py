@@ -316,14 +316,22 @@ suite = {
             "dependencies": [
                 "sdk:POLYGLOT",
             ],
-            "requires": [
-                "java.management",
-            ],
             "jacoco": "include",
             "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
 
+        "com.oracle.graal.python.standalone.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "testProject": True,
+            "javaCompliance": "17+",
+            "dependencies": [
+                "com.oracle.graal.python.standalone",
+                "mx:JUNIT",
+            ],
+        },
+        
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -1100,6 +1108,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.test",
                 "com.oracle.graal.python.pegparser.test",
+                "com.oracle.graal.python.standalone.test",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [

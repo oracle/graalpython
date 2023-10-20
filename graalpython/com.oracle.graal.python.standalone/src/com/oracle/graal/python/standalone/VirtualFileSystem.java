@@ -476,6 +476,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return e;
     }
 
+    public String getPrefix() {
+        return this.vfsPrefix;
+    }
+    
+    public String getFileListPath() {
+        return this.filesListPath;
+    }
     /**
      * Uses {@link #extractFilter} to determine if the given platform path should be extracted.
      */
