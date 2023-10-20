@@ -47,12 +47,12 @@ import com.oracle.graal.python.standalone.VirtualFileSystem;
 import org.junit.Test;
 
 public class VirtualFileSystemTest {
- 
+
     @Test
     public void defaultValues() throws Exception {
         VirtualFileSystem vfs = VirtualFileSystem.create();
         VirtualFileSystem vfs2 = VirtualFileSystem.newBuilder().build();
-        
+
         assertEquals(vfs.getPrefix(), vfs2.getPrefix());
         assertEquals(vfs.getFileListPath(), vfs2.getFileListPath());
     }
