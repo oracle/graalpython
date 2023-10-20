@@ -199,6 +199,8 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingGraalPyModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -696,8 +698,11 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
+                        new MultiprocessingModuleBuiltins(),
+                        new SemLockBuiltins(),
                         new MultiprocessingGraalPyModuleBuiltins(),
                         new GraalPySemLockBuiltins(),
+
                         new WarningsModuleBuiltins(),
                         new GraalPythonModuleBuiltins(),
 

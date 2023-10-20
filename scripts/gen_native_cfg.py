@@ -147,6 +147,8 @@ constant_defs = '''
 
 * i PIPE_BUF
 
+* i SEM_VALUE_MAX
+
 [openFlags]
 * x O_ACCMODE
   x O_RDONLY

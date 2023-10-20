@@ -282,6 +282,15 @@ public final class NFIPosixSupport extends PosixSupport {
         call_gai_strerror("(sint32, [sint8], sint32):void"),
         get_addrinfo_members("(sint64, [sint32], [sint64], [sint8]):sint32"),
 
+        call_sem_open("([sint8], sint32, sint32, sint32):sint64"),
+        call_sem_close("(sint64):sint32"),
+        call_sem_unlink("([sint8]):sint32"),
+        call_sem_getvalue("(sint64, [sint32]):sint32"),
+        call_sem_post("(sint64):sint32"),
+        call_sem_wait("(sint64):sint32"),
+        call_sem_trywait("(sint64):sint32"),
+        call_sem_timedwait("(sint64, sint64):sint32"),
+
         call_crypt("([sint8], [sint8], [sint32]):sint64");
 
         private final String signature;
@@ -2180,6 +2189,91 @@ public final class NFIPosixSupport extends PosixSupport {
             this.len[0] = len;
         }
 
+    }
+
+    @ExportMessage
+    long semOpen(Object name, int openFlags, int mode, int value,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long handle = invokeNode.callLong(this, PosixNativeFunction.call_sem_open, pathToCString(name), openFlags, mode, value);
+        if (handle < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return handle;
+    }
+
+    @ExportMessage
+    void semClose(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_close, handle);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    void semUnlink(Object name,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_unlink, pathToCString(name));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    int semGetValue(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] value = new int[1];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_getvalue, handle, wrap(value));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return value[0];
+    }
+
+    @ExportMessage
+    void semPost(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_post, handle);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    void semWait(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_wait, handle);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    boolean semTryWait(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_trywait, handle);
+        if (res < 0) {
+            int errno = getErrno(invokeNode);
+            if (errno == OSErrorEnum.EAGAIN.getNumber()) {
+                return false;
+            }
+            throw newPosixException(invokeNode, errno);
+        }
+        return true;
+    }
+
+    @ExportMessage
+    boolean semTimedWait(long handle, long deadlineNs,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_timedwait, handle, deadlineNs);
+        if (res < 0) {
+            int errno = getErrno(invokeNode);
+            if (errno == OSErrorEnum.ETIMEDOUT.getNumber()) {
+                return false;
+            }
+            throw newPosixException(invokeNode, errno);
+        }
+        return true;
     }
 
     @ExportMessage

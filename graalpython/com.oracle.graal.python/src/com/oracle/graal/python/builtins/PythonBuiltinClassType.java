@@ -216,6 +216,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PThreadLocal("_local", J__THREAD),
     PLock("LockType", J__THREAD),
     PRLock("RLock", J__THREAD),
+    PSemLock("SemLock", "_multiprocessing"),
     PGraalPySemLock("SemLock", "_multiprocessing_graalpy"),
     PSocket("socket", J__SOCKET),
     PStaticmethod("staticmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),

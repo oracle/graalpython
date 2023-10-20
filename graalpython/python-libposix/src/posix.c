@@ -55,6 +55,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <semaphore.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -898,6 +899,47 @@ int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
     }
     *len = strlen(result);
     return (int64_t)(uintptr_t)result;
+}
+
+int64_t call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {
+    sem_t* result = sem_open(name, openFlags, mode, value);
+    if (result == SEM_FAILED) {
+        return -1;
+    }
+    return (int64_t)(uintptr_t)result;
+}
+
+int32_t call_sem_close(int64_t handle) {
+    return sem_close((sem_t*)(uintptr_t)handle);
+}
+
+int32_t call_sem_unlink(const char *name) {
+    return sem_unlink(name);
+}
+
+int32_t call_sem_getvalue(int64_t handle, int32_t *value) {
+    int valueInt;
+    int res = sem_getvalue((sem_t*)(uintptr_t)handle, &valueInt);
+    *value = valueInt;
+    return res;
+}
+
+int32_t call_sem_post(int64_t handle) {
+    return sem_post((sem_t*)(uintptr_t)handle);
+}
+
+int32_t call_sem_wait(int64_t handle) {
+    return sem_wait((sem_t*)(uintptr_t)handle);
+}
+
+int32_t call_sem_trywait(int64_t handle) {
+    return sem_trywait((sem_t*)(uintptr_t)handle);
+}
+
+int32_t call_sem_timedwait(int64_t handle, int64_t deadlineNs) {
+    const int64_t nsInSec = 1000 * 1000 * 1000;
+    struct timespec deadline = {deadlineNs / nsInSec, deadlineNs % nsInSec};
+    return sem_timedwait((sem_t*)(uintptr_t)handle, &deadline);
 }
 
 int32_t get_sysconf_getpw_r_size_max() {
