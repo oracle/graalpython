@@ -390,6 +390,7 @@ class _TestProcess(BaseTestCase):
         self.assertNotIn(p, self.active_children())
         close_queue(q)
 
+    @support.impl_detail("Java threads IDs start from 0 for every process", graalpy=False)
     @unittest.skipUnless(threading._HAVE_THREAD_NATIVE_ID, "needs native_id")
     def test_process_mainthread_native_id(self):
         if self.TYPE == 'threads':
@@ -481,7 +482,9 @@ class _TestProcess(BaseTestCase):
     def test_terminate(self):
         exitcode = self._kill_process(multiprocessing.Process.terminate)
         if os.name != 'nt':
-            self.assertEqual(exitcode, -signal.SIGTERM)
+            # GraalPy change: JVM exits with 143 on SIGTERM
+            exitcodes = [-signal.SIGTERM, 128 + signal.SIGTERM]
+            self.assertIn(exitcode, exitcodes)
 
     def test_kill(self):
         exitcode = self._kill_process(multiprocessing.Process.kill)
@@ -627,6 +630,8 @@ class _TestProcess(BaseTestCase):
             join_process(p)
         if os.name != 'nt':
             exitcodes = [-signal.SIGTERM]
+            # GraalPy change: JVM exits with 143 on SIGTERM
+            exitcodes.append(128 + signal.SIGTERM)
             if sys.platform == 'darwin':
                 # bpo-31510: On macOS, killing a freshly started process with
                 # SIGTERM sometimes kills the process with SIGKILL.
@@ -1622,6 +1627,7 @@ class _TestCondition(BaseTestCase):
         if pid is not None:
             os.kill(pid, signal.SIGINT)
 
+    @support.impl_detail("Interrupt tends to kill the whole process on GraalPy", graalpy=False)
     def test_wait_result(self):
         if isinstance(self, ProcessesMixin) and sys.platform != 'win32':
             pid = os.getpid()
@@ -3038,7 +3044,6 @@ class _TestRemoteManager(BaseTestCase):
         # Make queue finalizer run before the server is stopped
         del queue
 
-@support.impl_detail("multiprocessing manager not supported", graalpy=False)
 @hashlib_helper.requires_hashdigest('md5')
 class _TestManagerRestart(BaseTestCase):
 
@@ -3673,7 +3678,6 @@ class _TestHeap(BaseTestCase):
         multiprocessing.heap.BufferWrapper._heap = self.old_heap
         super().tearDown()
 
-    @support.impl_detail("heap/shared memory not supported", graalpy=False)
     def test_heap(self):
         iterations = 5000
         maxblocks = 50
@@ -5230,6 +5234,7 @@ class TestStartMethod(unittest.TestCase):
         p.join()
         self.assertEqual(child_method, ctx.get_start_method())
 
+    @support.impl_detail("It's not possible to switch between graalpy and spawn context without changing the global default", graalpy=False)
     def test_context(self):
         # Begin Truffle change
         # 'fork' and 'forkserver' not supported
@@ -5246,6 +5251,7 @@ class TestStartMethod(unittest.TestCase):
             self.assertRaises(ValueError, ctx.set_start_method, None)
             self.check_context(ctx)
 
+    @support.impl_detail("It's not possible to switch between graalpy and spawn context without changing the global default", graalpy=False)
     def test_set_get(self):
         multiprocessing.set_forkserver_preload(PRELOAD)
         count = 0

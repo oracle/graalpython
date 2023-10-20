@@ -52,9 +52,10 @@ if os.name == 'posix':
             _CLEANUP_FUNCS.update({
                 'semaphore': _multiprocessing.sem_unlink,
             })
-        _CLEANUP_FUNCS.update({
-            'shared_memory': _posixshmem.shm_unlink,
-        })
+        # GraalPy chagen: comment out until we get shm support
+        # _CLEANUP_FUNCS.update({
+        #    'shared_memory': _posixshmem.shm_unlink,
+        # })
     except ImportError:
         # We don't have _multiprocessing, so we're running graalpy mode
         pass
@@ -156,6 +157,11 @@ class ResourceTracker(object):
 
     def _check_alive(self):
         '''Check that the pipe has not been closed by sending a probe.'''
+        # Begin Truffle change
+        if _default_context._is_graalpy():
+            # No resource_tracker needed in graalpy mode
+            return True
+        # End Truffle change
         try:
             # We cannot use send here as it calls ensure_running, creating
             # a cycle.
