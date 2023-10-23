@@ -153,7 +153,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
 
             StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
 
-            StgDictObject itemdict = pyTypeStgDictNode.execute(type_attr);
+            StgDictObject itemdict = pyTypeStgDictNode.execute(inliningTarget, type_attr);
             if (itemdict == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
             }

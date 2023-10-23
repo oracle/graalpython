@@ -84,6 +84,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -152,6 +153,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         Object doSet(VirtualFrame frame, CDataObject self, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
@@ -219,7 +221,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Cached PointerNodes.ReadBytesNode read,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             byte[] bytes = read.execute(inliningTarget, self.b_ptr, wCsLenNode.execute(inliningTarget, self.b_ptr) * WCHAR_T_SIZE);
             TruffleString s = fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING);
             return switchEncodingNode.execute(s, TS_ENCODING);
@@ -229,7 +231,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         static Object doSet(CDataObject self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached PRaiseNode.Lazy raiseNode) {

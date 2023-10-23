@@ -243,7 +243,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                                 setDict,
                                 addAllToOtherNode,
                                 factory);
-                StgDictObject sw_dict = pyTypeStgDictNode.execute(swapped);
+                StgDictObject sw_dict = pyTypeStgDictNode.execute(inliningTarget, swapped);
                 setAttrString.execute(frame, result, T_CTYPE_BE, swapped);
                 setAttrString.execute(frame, result, T_CTYPE_LE, result);
                 setAttrString.execute(frame, swapped, T_CTYPE_LE, result);

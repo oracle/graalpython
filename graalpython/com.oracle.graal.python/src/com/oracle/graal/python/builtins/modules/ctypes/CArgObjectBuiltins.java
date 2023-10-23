@@ -60,6 +60,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -152,14 +154,16 @@ public final class CArgObjectBuiltins extends PythonBuiltins {
     protected static final int PyCSimpleTypeParamFunc = 8;
     protected static final int StructUnionTypeParamFunc = 16;
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     abstract static class ParamFuncNode extends Node {
-        abstract PyCArgObject execute(CDataObject self, StgDictObject stgDict);
+        abstract PyCArgObject execute(Node inliningTarget, CDataObject self, StgDictObject stgDict);
 
         @Specialization
-        protected static PyCArgObject paramFunc(CDataObject self, StgDictObject stgDict,
-                        @Cached PythonObjectFactory factory,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        static PyCArgObject paramFunc(CDataObject self, StgDictObject stgDict,
+                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             PyCArgObject parg = factory.createCArgObject();
             switch (stgDict.paramfunc) {
                 // Corresponds to PyCArrayType_paramfunc

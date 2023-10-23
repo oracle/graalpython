@@ -147,7 +147,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
             Object proto = getItem.execute(inliningTarget, typedict.getDictStorage(), T__TYPE_);
             if (proto != null) {
                 PyCPointerType_SetProto(inliningTarget, stgdict, proto, isTypeNode, pyTypeStgDictNode, raiseNode);
-                StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
+                StgDictObject itemdict = pyTypeStgDictNode.execute(inliningTarget, proto);
                 /* PyCPointerType_SetProto has verified proto has a stgdict. */
                 /*
                  * If itemdict.format is NULL, then this is a pointer to an incomplete type. We
@@ -187,7 +187,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         PyTypeCheck pyTypeCheck,
                         PythonObjectFactory factory,
                         PRaiseNode.Lazy raiseNode) {
-            if (!pyTypeCheck.isCDataObject(obj)) {
+            if (!pyTypeCheck.isCDataObject(inliningTarget, obj)) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
             }
 
@@ -228,11 +228,11 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                 return byref(inliningTarget, value, pyTypeCheck, factory, raiseNode);
             }
 
-            if (pyTypeCheck.isPointerObject(value) || pyTypeCheck.isArrayObject(value)) {
+            if (pyTypeCheck.isPointerObject(inliningTarget, value) || pyTypeCheck.isArrayObject(inliningTarget, value)) {
                 /*
                  * Array instances are also pointers when the item types are the same.
                  */
-                StgDictObject v = pyObjectStgDictNode.execute(value);
+                StgDictObject v = pyObjectStgDictNode.execute(inliningTarget, value);
                 assert v != null : "Cannot be NULL for pointer or array objects";
                 if (toJavaBooleanNode.execute(inliningTarget, isSubClassNode.execute(frame, v.proto, typedict.proto))) {
                     return value;
@@ -286,7 +286,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         if (proto == null || !isTypeNode.execute(inliningTarget, proto)) {
             throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_BE_A_TYPE);
         }
-        if (pyTypeStgDictNode.execute(proto) == null) {
+        if (pyTypeStgDictNode.execute(inliningTarget, proto) == null) {
             throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
         }
         stgdict.proto = proto;

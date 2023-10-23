@@ -166,7 +166,7 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            StgDictObject stgDict = pyObjectStgDictNode.execute(self);
+            StgDictObject stgDict = pyObjectStgDictNode.execute(inliningTarget, self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }

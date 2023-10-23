@@ -161,7 +161,7 @@ public final class StructureBuiltins extends PythonBuiltins {
             int index = idx;
 
             Object base = getBaseClassNode.execute(inliningTarget, type);
-            if (pyTypeStgDictNode.execute(base) != null) {
+            if (pyTypeStgDictNode.execute(inliningTarget, base) != null) {
                 if (recursionLimit > 0) {
                     index = _init_pos_args(frame, inliningTarget, self, base, args, kwds, index,
                                     setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
@@ -176,7 +176,7 @@ public final class StructureBuiltins extends PythonBuiltins {
                 }
             }
 
-            StgDictObject dict = pyTypeStgDictNode.execute(type);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, type);
             fields = getItem.execute(inliningTarget, dict.getDictStorage(), T__FIELDS_);
             if (fields == null) {
                 return index;

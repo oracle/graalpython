@@ -186,7 +186,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             if (fieldsValue != null) {
                 setFieldsAttributeNode.execute(frame, result, fieldsValue);
             } else {
-                StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(inliningTarget, result));
+                StgDictObject basedict = pyTypeStgDictNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, result));
                 if (basedict == null) {
                     return result;
                 }
@@ -201,6 +201,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StructUnionTypeBuiltins.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 292 -> 275
     protected abstract static class PyCStructUnionTypeUpdateStgDict extends Node {
         abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory);
 
@@ -269,7 +270,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS);
             }
 
-            StgDictObject stgdict = pyTypeStgDictNode.execute(type);
+            StgDictObject stgdict = pyTypeStgDictNode.execute(inliningTarget, type);
             /* If this structure/union is already marked final we cannot assign _fields_ anymore. */
 
             if ((stgdict.flags & DICTFLAG_FINAL) != 0) { /* is final ? */
@@ -281,7 +282,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             stgdict.ffi_type_pointer = new FFIType();
             stgdict.ffi_type_pointer.elements = null;
 
-            StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(inliningTarget, type));
+            StgDictObject basedict = pyTypeStgDictNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, type));
             if (basedict != null) {
                 stgdict.flags |= basedict.flags & (TYPEFLAG_HASUNION | TYPEFLAG_HASBITFIELD);
             }
@@ -354,10 +355,10 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 Object desc = tuple[1];
                 int bitsize = tupleLen >= 3 ? (int) tuple[2] : 0;
 
-                if (pyTypeCheck.isPyCArrayTypeObject(desc)) {
+                if (pyTypeCheck.isPyCArrayTypeObject(inliningTarget, desc)) {
                     arrays_seen = true;
                 }
-                StgDictObject dict = pyTypeStgDictNode.execute(desc);
+                StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, desc);
                 if (dict == null) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                 }
@@ -408,7 +409,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 CFieldObject prop;
                 if (isStruct) {
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
-                    prop = cFieldFromDesc.execute(desc, i, bitsize, pack, big_endian, props, factory);
+                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props, factory);
                     field_size = props[0];
                     bitofs = props[1];
                     size = props[2];
@@ -422,7 +423,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                     offset = 0;
                     align = 0;
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
-                    prop = cFieldFromDesc.execute(desc, i, bitsize, pack, big_endian, props, factory);
+                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props, factory);
                     field_size = props[0];
                     bitofs = props[1];
                     size = props[2];
@@ -561,18 +562,18 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         fieldsError(raiseNode.get(inliningTarget));
                     }
                     Object desc = tuple[1];
-                    StgDictObject dict = pyTypeStgDictNode.execute(desc);
+                    StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, desc);
                     /* Possibly this check could be avoided, but see above comment. */
                     if (dict == null) {
                         throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                     }
                     assert (element_index < (ffi_ofs + len)); /* will be used below */
-                    if (!pyTypeCheck.isPyCArrayTypeObject(desc)) {
+                    if (!pyTypeCheck.isPyCArrayTypeObject(inliningTarget, desc)) {
                         /* Not an array. Just copy over the element ffi_type. */
                         element_types[element_index++] = dict.ffi_type_pointer;
                     } else {
                         int length = dict.length;
-                        StgDictObject edict = pyTypeStgDictNode.execute(dict.proto);
+                        StgDictObject edict = pyTypeStgDictNode.execute(inliningTarget, dict.proto);
                         if (edict == null) {
                             throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                         }

@@ -173,11 +173,11 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (res) {
                 return value;
             }
-            if (pyTypeCheck.isArrayObject(value) || pyTypeCheck.isPointerObject(value)) {
+            if (pyTypeCheck.isArrayObject(inliningTarget, value) || pyTypeCheck.isPointerObject(inliningTarget, value)) {
                 /* c_wchar array instance or pointer(c_wchar(...)) */
-                StgDictObject dt = pyObjectStgDictNode.execute(value);
+                StgDictObject dt = pyObjectStgDictNode.execute(inliningTarget, value);
                 assert dt != null : "Cannot be NULL for pointer or array objects";
-                StgDictObject dict = dt.proto != null ? pyTypeStgDictNode.execute(dt.proto) : null;
+                StgDictObject dict = dt.proto != null ? pyTypeStgDictNode.execute(inliningTarget, dt.proto) : null;
                 if (dict != null && (dict.setfunc == FieldDesc.u.setfunc)) {
                     return value;
                 }
@@ -185,7 +185,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (PGuards.isPyCArg(value)) {
                 /* byref(c_char(...)) */
                 PyCArgObject a = (PyCArgObject) value;
-                StgDictObject dict = pyObjectStgDictNode.execute(a.obj);
+                StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, a.obj);
                 if (dict != null && (dict.setfunc == FieldDesc.u.setfunc)) {
                     return value;
                 }
@@ -215,10 +215,10 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return value instanceof PythonNativeVoidPtr || longCheckNode.execute(inliningTarget, value); // PyLong_Check
         }
 
-        @Specialization(guards = "isLong(this, value, longCheckNode)")
+        @Specialization(guards = "isLong(this, value, longCheckNode)", limit = "1")
         static Object voidPtr(@SuppressWarnings("unused") Object type, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached SetFuncNode setFuncNode,
                         @Shared @Cached PythonObjectFactory factory) {
             /* int, long */
@@ -259,10 +259,10 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return parg;
         }
 
-        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(this, value, longCheckNode)"})
+        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(this, value, longCheckNode)"}, limit = "1")
         static Object c_void_p_from_param(VirtualFrame frame, Object type, Object value,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -278,7 +278,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 return value;
             }
             /* ctypes array or pointer instance */
-            if (pyTypeCheck.isArrayObject(value) || pyTypeCheck.isPointerObject(value)) {
+            if (pyTypeCheck.isArrayObject(inliningTarget, value) || pyTypeCheck.isPointerObject(inliningTarget, value)) {
                 /* Any array or pointer is accepted */
                 return value;
             }
@@ -291,7 +291,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
             /* function pointer */
-            if (value instanceof PyCFuncPtrObject func && pyTypeCheck.isPyCFuncPtrObject(value)) {
+            if (value instanceof PyCFuncPtrObject func && pyTypeCheck.isPyCFuncPtrObject(inliningTarget, value)) {
                 PyCArgObject parg = factory.createCArgObject();
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'P';
@@ -300,8 +300,8 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 return parg;
             }
             /* c_char_p, c_wchar_p */
-            StgDictObject stgd = pyObjectStgDictNode.execute(value);
-            if (stgd != null && pyTypeCheck.isCDataObject(value) && PGuards.isTruffleString(stgd.proto)) { // PyUnicode_Check
+            StgDictObject stgd = pyObjectStgDictNode.execute(inliningTarget, value);
+            if (stgd != null && pyTypeCheck.isCDataObject(inliningTarget, value) && PGuards.isTruffleString(stgd.proto)) { // PyUnicode_Check
                 int code = codePointAtIndexNode.execute((TruffleString) stgd.proto, 0, TS_ENCODING);
                 /* c_char_p, c_wchar_p */
                 if (code == 'z' || code == 'Z') {
@@ -362,11 +362,11 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (res) {
                 return value;
             }
-            if (pyTypeCheck.isArrayObject(value) || pyTypeCheck.isPointerObject(value)) {
+            if (pyTypeCheck.isArrayObject(inliningTarget, value) || pyTypeCheck.isPointerObject(inliningTarget, value)) {
                 /* c_char array instance or pointer(c_char(...)) */
-                StgDictObject dt = pyObjectStgDictNode.execute(value);
+                StgDictObject dt = pyObjectStgDictNode.execute(inliningTarget, value);
                 assert dt != null : "Cannot be NULL for pointer or array objects";
-                StgDictObject dict = dt.proto != null ? pyTypeStgDictNode.execute(dt.proto) : null;
+                StgDictObject dict = dt.proto != null ? pyTypeStgDictNode.execute(inliningTarget, dt.proto) : null;
                 if (dict != null && (dict.setfunc == FieldDesc.c.setfunc)) {
                     return value;
                 }
@@ -374,7 +374,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (PGuards.isPyCArg(value)) {
                 /* byref(c_char(...)) */
                 PyCArgObject a = (PyCArgObject) value;
-                StgDictObject dict = pyObjectStgDictNode.execute(a.obj);
+                StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, a.obj);
                 if (dict != null && (dict.setfunc == FieldDesc.c.setfunc)) {
                     return value;
                 }

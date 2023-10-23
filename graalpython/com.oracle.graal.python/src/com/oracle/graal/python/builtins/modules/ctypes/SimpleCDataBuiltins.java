@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -98,7 +99,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                     PyObjectStgDictNode pyObjectStgDictNode,
                     SetFuncNode setFuncNode,
                     KeepRefNode keepRefNode) {
-        StgDictObject dict = pyObjectStgDictNode.execute(self);
+        StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
         if (value == null) {
             throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
@@ -106,7 +107,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
         assert dict.setfunc != FieldSet.nil;
         Object result = setFuncNode.execute(frame, dict.setfunc, self.b_ptr, value, dict.size);
 
-        keepRefNode.execute(frame, self, 0, result);
+        keepRefNode.execute(frame, inliningTarget, self, 0, result);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -147,9 +148,10 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert dict != null : "Cannot be NULL for CDataObject instances";
             assert dict.getfunc != FieldGet.nil;
             return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size);
@@ -160,7 +162,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Simple_set_value(frame, inliningTarget, self, value, raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;
@@ -178,13 +180,13 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             if (pyTypeCheck.ctypesSimpleInstance(inliningTarget, getClassNode.execute(inliningTarget, self), getBaseClassNode, isSameTypeNode)) {
                 return self;
             }
             /* call stgdict.getfunc */
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size);
         }
     }
@@ -231,7 +233,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)));
             }
 
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             TruffleString val = fromJavaStringNode.execute(toStringBoundary(getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size)), TS_ENCODING);
             return simpleTruffleStringFormatNode.format("%s(%s)", getNameNode.execute(inliningTarget, clazz), val);
         }

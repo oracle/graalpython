@@ -157,7 +157,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                     }
                     FFIType argType = thunk.atypes[i];
                     Pointer value = Pointer.create(argType, argType.size, arg, 0);
-                    StgDictObject dict = pyTypeStgDictNode.execute(converters[i]);
+                    StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, converters[i]);
                     if (dict != null &&
                                     dict.getfunc != FieldGet.nil &&
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
