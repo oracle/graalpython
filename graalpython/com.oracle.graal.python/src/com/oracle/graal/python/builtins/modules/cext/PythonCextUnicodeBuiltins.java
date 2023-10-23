@@ -150,13 +150,13 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -203,24 +203,24 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = "isPStringType(inliningTarget, s, getClassNode)")
         static PString fromObject(PString s,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) {
             return s;
         }
 
         @Specialization(guards = {"!isPStringType(inliningTarget, obj, getClassNode)", "isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object fromObject(Object obj,
+        static Object fromObject(Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached StrNode strNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return strNode.executeWith(obj);
         }
 
         @Specialization(guards = {"!isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object fromObject(Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, obj);
         }
@@ -239,16 +239,16 @@ public final class PythonCextUnicodeBuiltins {
         static Object concat(Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached StringBuiltins.AddNode addNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return addNode.execute(null, left, right);
         }
 
         @Specialization(guards = {"!isString(left)", "!isStringSubtype(inliningTarget, left, getClassNode, isSubtypeNode)"})
         static Object leftNotString(Object left, @SuppressWarnings("unused") Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, left);
         }
@@ -256,8 +256,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"!isString(right)", "!isStringSubtype(inliningTarget, right, getClassNode, isSubtypeNode)"})
         static Object rightNotString(@SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, right);
         }
@@ -301,16 +301,16 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored)
     abstract static class PyTruffleUnicode_LookupAndIntern extends CApiUnaryBuiltinNode {
         @Specialization
-        Object withTS(TruffleString str,
+        static Object withTS(TruffleString str,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached StringNodes.InternStringNode internNode,
                         @Exclusive @Cached HashingStorageGetItem getItem,
                         @Exclusive @Cached HashingStorageSetItem setItem,
                         @Exclusive @Cached PythonObjectFactory.Lazy factory) {
-            PDict dict = getCApiContext().getInternedUnicode();
+            PDict dict = getCApiContext(inliningTarget).getInternedUnicode();
             if (dict == null) {
                 dict = factory.get(inliningTarget).createDict();
-                getCApiContext().setInternedUnicode(dict);
+                getCApiContext(inliningTarget).setInternedUnicode(dict);
             }
             Object interned = getItem.execute(inliningTarget, dict.getDictStorage(), str);
             if (interned == null) {
@@ -321,7 +321,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization
-        Object withPString(PString str,
+        static Object withPString(PString str,
                         @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
@@ -330,7 +330,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Exclusive @Cached HashingStorageSetItem setItem,
                         @Exclusive @Cached PythonObjectFactory.Lazy factory) {
             if (!isBuiltinClassProfile.profileObject(inliningTarget, str, PythonBuiltinClassType.PString)) {
-                return getNativeNull();
+                return getNativeNull(inliningTarget);
             }
             boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;
             if (isInterned) {
@@ -381,29 +381,29 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction > 0"})
         static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached ChrNode chrNode,
+                        @Shared @Cached ChrNode chrNode,
                         @Cached FindNode findNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return findNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction <= 0"})
         static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached ChrNode chrNode,
+                        @Shared @Cached ChrNode chrNode,
                         @Cached RFindNode rFindNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return rFindNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
-        @Specialization(guards = {"!isTruffleString(string)", "isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(string)", "!isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)"})
         static Object find(Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") Object direction,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, string);
         }
@@ -413,15 +413,15 @@ public final class PythonCextUnicodeBuiltins {
     @TypeSystemReference(PythonTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Substring extends CApiTernaryBuiltinNode {
-        @Specialization(guards = {"isString(s) || isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"isString(s) || isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"}, limit = "1")
         static Object doString(Object s, long start, long end,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             if (profile.profile(inliningTarget, start < 0 || end < 0)) {
                 throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
@@ -429,11 +429,11 @@ public final class PythonCextUnicodeBuiltins {
             return callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
         }
 
-        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"}, limit = "1")
         static Object doError(Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, s);
         }
@@ -447,19 +447,19 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Join extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"isString(separator) || isStringSubtype(inliningTarget, separator, getClassNode, isSubtypeNode)"})
-        Object find(Object separator, Object seq,
+        static Object find(Object separator, Object seq,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached StringBuiltins.JoinNode joinNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return joinNode.execute(null, separator, seq);
         }
 
         @Specialization(guards = {"!isTruffleString(separator)", "isStringSubtype(inliningTarget, separator, getClassNode, isSubtypeNode)"})
         static Object find(Object separator, @SuppressWarnings("unused") Object seq,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, separator);
         }
@@ -472,8 +472,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"isAnyString(inliningTarget, left, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
         static Object compare(Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached EqNode eqNode,
                         @Cached PyObjectIsTrueNode isTrue) {
             return PInt.intValue(isTrue.execute(null, inliningTarget, eqNode.execute(null, left, right)));
@@ -482,8 +482,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"!isAnyString(inliningTarget, left, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
         static Object compare(Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.CANT_COMPARE, left, right);
         }
@@ -496,12 +496,12 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"isAnyString(inliningTarget, left, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
         static Object compare(Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached EqNode eqNode,
                         @Cached LtNode ltNode,
-                        @Cached ConditionProfile eqProfile) {
-            if (eqProfile.profile((boolean) eqNode.execute(null, left, right))) {
+                        @Cached InlinedConditionProfile eqProfile) {
+            if (eqProfile.profile(inliningTarget, (boolean) eqNode.execute(null, left, right))) {
                 return 0;
             } else {
                 return (boolean) ltNode.execute(null, left, right) ? -1 : 1;
@@ -511,8 +511,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"!isAnyString(inliningTarget, left, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
         static Object compare(Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.CANT_COMPARE, left, right);
         }
@@ -525,12 +525,12 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction > 0"})
         static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached PySliceNew sliceNode,
-                        @Cached CallNode callNode,
+                        @Shared @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Shared @Cached PySliceNew sliceNode,
+                        @Shared @Cached CallNode callNode,
                         @Cached EndsWithNode endsWith,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
             Object slice = callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
             return (boolean) endsWith.execute(null, slice, substring, start, end) ? 1 : 0;
@@ -539,12 +539,12 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
         static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached PySliceNew sliceNode,
-                        @Cached CallNode callNode,
+                        @Shared @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Shared @Cached PySliceNew sliceNode,
+                        @Shared @Cached CallNode callNode,
                         @Cached StartsWithNode startsWith,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
             Object slice = callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
             return (boolean) startsWith.execute(null, slice, substring, start, end) ? 1 : 0;
@@ -554,8 +554,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"!isAnyString(inliningTarget, string, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
         static Object find(Object string, Object substring, Object start, Object end, Object direction,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, string);
         }
@@ -567,8 +567,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = "isString(obj) || isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)")
         static Object encode(Object obj, Object encoding, Object errors,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached EncodeNode encodeNode) {
             return encodeNode.execute(null, obj, convertEncoding(encoding), convertErrors(errors));
         }
@@ -576,8 +576,8 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object encode(@SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
@@ -588,8 +588,8 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Replace extends CApiQuaternaryBuiltinNode {
         @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
-        Object replace(Object s, Object substr, Object replstr, long count,
-                        @Cached ReplaceNode replaceNode) {
+        static Object replace(Object s, Object substr, Object replstr, long count,
+                        @Shared @Cached ReplaceNode replaceNode) {
             return replaceNode.execute(null, s, substr, replstr, count);
         }
 
@@ -597,11 +597,11 @@ public final class PythonCextUnicodeBuiltins {
                         "isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)",
                         "isStringSubtype(inliningTarget, substr, getClassNode, isSubtypeNode)",
                         "isStringSubtype(inliningTarget, replstr, getClassNode, isSubtypeNode)"})
-        public Object replace(Object s, Object substr, Object replstr, long count,
+        static Object replace(Object s, Object substr, Object replstr, long count,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached ReplaceNode replaceNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @Shared @Cached ReplaceNode replaceNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return replace(s, substr, replstr, count, replaceNode);
         }
 
@@ -610,11 +610,11 @@ public final class PythonCextUnicodeBuiltins {
                         "!isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)",
                         "!isStringSubtype(inliningTarget, substr, getClassNode, isSubtypeNode)",
                         "!isStringSubtype(inliningTarget, replstr, getClassNode, isSubtypeNode)"})
-        public Object replace(Object s, Object substr, Object replstr, long count,
+        static Object replace(Object s, Object substr, Object replstr, long count,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return getNativeNull();
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
+            return getNativeNull(inliningTarget);
         }
     }
 
@@ -623,26 +623,26 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyUnicode_AsUnicodeEscapeString extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isString(s)")
         static Object escape(Object s,
-                        @Cached CodecsEncodeNode encodeNode,
-                        @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode) {
+                        @Shared @Cached CodecsEncodeNode encodeNode,
+                        @Shared @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode) {
             return getItemNode.execute(null, encodeNode.execute(null, s, T_UNICODE_ESCAPE, PNone.NO_VALUE), 0);
         }
 
         @Specialization(guards = {"!isString(s)", "isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)"})
         static Object escape(Object s,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached CodecsEncodeNode encodeNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode) {
+                        @Shared @Cached CodecsEncodeNode encodeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode) {
             return escape(s, encodeNode, getItemNode);
         }
 
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object escape(@SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
@@ -851,7 +851,7 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t}, call = Direct)
     abstract static class PyUnicode_Split extends CApiTernaryBuiltinNode {
         @Specialization
-        Object split(Object string, Object sep, Object maxsplit,
+        static Object split(Object string, Object sep, Object maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode) {
             return splitNode.execute(null, string, sep, maxsplit);
         }
@@ -939,7 +939,7 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyTruffleUnicode_Decode extends CApiTernaryBuiltinNode {
 
         @Specialization
-        Object doDecode(PMemoryView mv, TruffleString encoding, TruffleString errors,
+        static Object doDecode(PMemoryView mv, TruffleString encoding, TruffleString errors,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode) {
             return decodeNode.executeWithStrings(null, mv, encoding, errors);
         }
@@ -1019,6 +1019,7 @@ public final class PythonCextUnicodeBuiltins {
             super(StandardCharsets.UTF_8);
         }
 
+        @NeverDefault
         public static _PyUnicode_AsUTF8String create() {
             return PythonCextUnicodeBuiltinsFactory._PyUnicode_AsUTF8StringNodeGen.create();
         }

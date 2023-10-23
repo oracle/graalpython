@@ -117,7 +117,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -188,12 +188,13 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         @Specialization
         int doIt(PythonNativeClass clazz, TruffleString name, PTuple mroTuple,
-                        @Cached("createClassProfile()") ValueProfile profile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile profile) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") called");
             }
-            SequenceStorage sequenceStorage = profile.profile(mroTuple.getSequenceStorage());
+            SequenceStorage sequenceStorage = profile.profile(inliningTarget, mroTuple.getSequenceStorage());
             if (sequenceStorage instanceof MroSequenceStorage) {
                 ((MroSequenceStorage) sequenceStorage).lookupChanged();
             } else {

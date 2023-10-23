@@ -216,7 +216,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -311,6 +311,10 @@ public final class PythonCextBuiltins {
             return getContext().getNativeNull();
         }
 
+        protected static PythonNativePointer getNativeNull(Node inliningTarget) {
+            return PythonContext.get(inliningTarget).getNativeNull();
+        }
+
         /**
          * Returns the "NULL" pointer retrieved from the native backend, e.g., an LLVMPointer
          * instance. This is not wrapped, i.e., it cannot be passed through a PyObject
@@ -335,6 +339,10 @@ public final class PythonCextBuiltins {
 
         public final Python3Core getCore() {
             return getContext();
+        }
+
+        protected static final CApiContext getCApiContext(Node inliningTarget) {
+            return PythonContext.get(inliningTarget).getCApiContext();
         }
 
         protected final CApiContext getCApiContext() {
@@ -600,7 +608,7 @@ public final class PythonCextBuiltins {
 
         @ExportMessage
         static final class Execute {
-            @Specialization(guards = "self == cachedSelf")
+            @Specialization(guards = "self == cachedSelf", limit = "3")
             public static Object doExecute(@SuppressWarnings("unused") CApiBuiltinExecutable self, Object[] arguments,
                             @Cached("self") CApiBuiltinExecutable cachedSelf,
                             @Cached(parameters = "cachedSelf") ExecuteCApiBuiltinNode call) {
@@ -1069,7 +1077,7 @@ public final class PythonCextBuiltins {
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile zeroDimProfile,
+                        @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached CStructAccess.ReadI64Node readShapeNode,
                         @Cached CStructAccess.ReadI64Node readStridesNode,
                         @Cached CStructAccess.ReadI64Node readSuboffsetsNode,
@@ -1087,7 +1095,7 @@ public final class PythonCextBuiltins {
             int[] shape = null;
             int[] strides = null;
             int[] suboffsets = null;
-            if (zeroDimProfile.profile(ndim > 0)) {
+            if (zeroDimProfile.profile(inliningTarget, ndim > 0)) {
                 if (!lib.isNull(shapePointer)) {
                     shape = readShapeNode.readLongAsIntArray(shapePointer, ndim);
                 } else {
@@ -1166,12 +1174,13 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static int doConvert(Object args, long argCount, Object nativeKwds, TruffleString formatString, Object nativeKwdnames, Object varargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary(limit = "2") InteropLibrary kwdnamesRefLib,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached ConditionProfile kwdsProfile,
-                        @Cached ConditionProfile kwdnamesProfile,
+                        @Cached InlinedConditionProfile kwdsProfile,
+                        @Cached InlinedConditionProfile kwdnamesProfile,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             // force 'format' to be a String
             TruffleString[] split;
@@ -1188,14 +1197,14 @@ public final class PythonCextBuiltins {
 
             // sort out if kwds is native NULL
             Object kwds;
-            if (kwdsProfile.profile(PGuards.isNoValue(nativeKwds))) {
+            if (kwdsProfile.profile(inliningTarget, PGuards.isNoValue(nativeKwds))) {
                 kwds = null;
             } else {
                 kwds = nativeKwds;
             }
 
             // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
+            Object kwdnames = kwdnamesProfile.profile(inliningTarget, kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
 
             PTuple argv = factory.createTuple(readNode.readPyObjectArray(args, (int) argCount));
 
@@ -1208,10 +1217,11 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static int doConvert(Object argv, Object nativeKwds, TruffleString formatString, Object nativeKwdnames, Object varargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary(limit = "2") InteropLibrary kwdnamesRefLib,
-                        @Cached ConditionProfile kwdsProfile,
-                        @Cached ConditionProfile kwdnamesProfile,
+                        @Cached InlinedConditionProfile kwdsProfile,
+                        @Cached InlinedConditionProfile kwdnamesProfile,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             // force 'format' to be a String
             TruffleString[] split;
@@ -1228,14 +1238,14 @@ public final class PythonCextBuiltins {
 
             // sort out if kwds is native NULL
             Object kwds;
-            if (kwdsProfile.profile(PGuards.isNoValue(nativeKwds))) {
+            if (kwdsProfile.profile(inliningTarget, PGuards.isNoValue(nativeKwds))) {
                 kwds = null;
             } else {
                 kwds = nativeKwds;
             }
 
             // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
+            Object kwdnames = kwdnamesProfile.profile(inliningTarget, kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
 
             return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, varargs);
         }
@@ -1348,7 +1358,7 @@ public final class PythonCextBuiltins {
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject, long size,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Shared @Cached GetThreadStateNode getThreadStateNode,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
@@ -1367,10 +1377,11 @@ public final class PythonCextBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         int doGeneric(int domain, Object pointerObject, long size,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
-                        @Cached GetThreadStateNode getThreadStateNode) {
+                        @Shared @Cached GetThreadStateNode getThreadStateNode) {
             return doCachedDomainIdx(domain, pointerObject, size, inliningTarget, getThreadStateNode, lib, domain, lookupDomain(domain));
         }
 

@@ -165,6 +165,7 @@ public class CStructAccess {
             call.call(NativeCAPISymbol.FUN_FREE, pointer);
         }
 
+        @NeverDefault
         public static FreeNode create() {
             return FreeNodeGen.create();
         }

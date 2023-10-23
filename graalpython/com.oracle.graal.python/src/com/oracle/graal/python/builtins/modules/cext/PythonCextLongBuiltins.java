@@ -103,7 +103,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -162,13 +162,14 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static int sign(PInt n,
-                        @Cached BranchProfile zeroProfile,
-                        @Cached BranchProfile negProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile zeroProfile,
+                        @Cached InlinedBranchProfile negProfile) {
             if (n.isNegative()) {
-                negProfile.enter();
+                negProfile.enter(inliningTarget);
                 return -1;
             } else if (n.isZero()) {
-                zeroProfile.enter();
+                zeroProfile.enter(inliningTarget);
                 return 0;
             } else {
                 return 1;
@@ -179,8 +180,8 @@ public final class PythonCextLongBuiltins {
         @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object signNative(Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
             throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
@@ -188,8 +189,8 @@ public final class PythonCextLongBuiltins {
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(inliningTarget, obj,getClassNode,isSubtypeNode)"})
         static Object sign(@SuppressWarnings("unused") Object obj,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -216,13 +217,13 @@ public final class PythonCextLongBuiltins {
 
         @Specialization(guards = "negative == 0")
         Object fromString(Object s, int base, @SuppressWarnings("unused") int negative,
-                        @Cached BuiltinConstructors.IntNode intNode) {
+                        @Shared @Cached BuiltinConstructors.IntNode intNode) {
             return intNode.executeWith(null, s, base);
         }
 
         @Specialization(guards = "negative != 0")
         Object fromString(Object s, int base, @SuppressWarnings("unused") int negative,
-                        @Cached BuiltinConstructors.IntNode intNode,
+                        @Shared @Cached BuiltinConstructors.IntNode intNode,
                         @Cached NegNode negNode) {
             return negNode.execute(null, intNode.executeWith(null, s, base));
         }
@@ -363,12 +364,12 @@ public final class PythonCextLongBuiltins {
         @Specialization
         long doPointer(PInt n,
                         @Bind("this") Node inliningTarget,
-                        @Cached BranchProfile overflowProfile,
+                        @Cached InlinedBranchProfile overflowProfile,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return n.longValueExact();
             } catch (OverflowException e) {
-                overflowProfile.enter();
+                overflowProfile.enter(inliningTarget);
                 try {
                     throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 } catch (PException pe) {

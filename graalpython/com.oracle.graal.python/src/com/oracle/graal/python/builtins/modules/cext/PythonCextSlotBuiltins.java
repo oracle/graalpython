@@ -166,7 +166,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
@@ -206,10 +206,10 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         int get(PString object,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile storageProfile,
+                        @Cached InlinedConditionProfile storageProfile,
                         @Cached StringMaterializeNode materializeNode) {
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(object.isNativeCharSequence())) {
+            if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().isAsciiOnly() ? 1 : 0;
             }
 
@@ -235,9 +235,10 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static int get(PString object,
-                        @Cached ConditionProfile storageProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile storageProfile) {
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(object.isNativeCharSequence())) {
+            if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().getElementSize() & 0b111;
             }
             return CStructs.wchar_t.size() & 0b111;
