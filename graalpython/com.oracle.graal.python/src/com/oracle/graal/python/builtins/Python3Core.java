@@ -698,8 +698,9 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
-                        new MultiprocessingModuleBuiltins(),
-                        new SemLockBuiltins(),
+                        // _multiprocessing
+                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new MultiprocessingModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new SemLockBuiltins(),
                         new MultiprocessingGraalPyModuleBuiltins(),
                         new GraalPySemLockBuiltins(),
 
