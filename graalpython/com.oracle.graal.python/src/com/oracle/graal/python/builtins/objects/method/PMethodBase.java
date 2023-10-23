@@ -53,6 +53,9 @@ public abstract class PMethodBase extends PythonBuiltinObject {
         this.function = function;
     }
 
+    /*
+     * May be PNone.NO_VALUE if created in C with NULL self
+     */
     public final Object getSelf() {
         return self;
     }

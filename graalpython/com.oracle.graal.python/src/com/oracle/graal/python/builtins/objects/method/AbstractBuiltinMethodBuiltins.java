@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -39,13 +38,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -59,7 +56,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -73,62 +69,6 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AbstractBuiltinMethodBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        static boolean isBuiltinFunction(PBuiltinMethod self) {
-            return self.getSelf() instanceof PythonModule;
-        }
-
-        static boolean isBuiltinFunction(PMethod self) {
-            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).isBuiltin();
-        }
-
-        @Specialization(guards = "isBuiltinFunction(self)")
-        static TruffleString reprBuiltinFunction(VirtualFrame frame, PMethod self,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode.GetFixedAttributeNode getNameNode,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            // (tfel): this only happens for builtin modules ... I think
-            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
-        }
-
-        @Specialization(guards = "isBuiltinFunction(self)")
-        static TruffleString reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode.GetFixedAttributeNode getNameNode,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
-        }
-
-        @Specialization(guards = "!isBuiltinFunction(self)")
-        static TruffleString reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode.GetFixedAttributeNode getNameNode,
-                        @Shared @Cached GetNameNode getTypeNameNode,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString typeName = getTypeNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self.getSelf()));
-            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
-                            PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
-        }
-
-        @Specialization(guards = "!isBuiltinFunction(self)")
-        static TruffleString reprBuiltinMethod(VirtualFrame frame, PMethod self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode.GetFixedAttributeNode getNameNode,
-                        @Shared @Cached GetNameNode getTypeNameNode,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString typeName = getTypeNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self.getSelf()));
-            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
-                            PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
-        }
-
-        @NeverDefault
-        protected static GetAttributeNode.GetFixedAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.GetFixedAttributeNode.create(T___NAME__);
-        }
     }
 
     @Builtin(name = J___TEXT_SIGNATURE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
@@ -205,7 +145,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___NAME__);
             }
-            if (isGlobalProfile.profile(inliningTarget, self == null || self instanceof PythonModule)) {
+            if (isGlobalProfile.profile(inliningTarget, self == PNone.NO_VALUE || self instanceof PythonModule)) {
                 return methodName;
             }
 

@@ -206,13 +206,9 @@ public final class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
-        static PMethod doGeneric(@SuppressWarnings("unused") PMethod self, Object obj, @SuppressWarnings("unused") Object cls,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory.Lazy factory) {
-            if (self.getSelf() != null) {
-                return self;
-            }
-            return factory.get(inliningTarget).createMethod(obj, self.getFunction());
+        @SuppressWarnings("unused")
+        static PMethod doGeneric(PMethod self, Object obj, Object cls) {
+            return self;
         }
     }
 }

@@ -138,7 +138,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     public abstract static class SelfNode extends PythonBuiltinNode {
         @Specialization
         protected static Object doIt(PMethod self) {
-            return self.getSelf();
+            return self.getSelf() != PNone.NO_VALUE ? self.getSelf() : PNone.NONE;
         }
 
         @Specialization
@@ -146,7 +146,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
             if (self.getBuiltinFunction().isStatic()) {
                 return PNone.NONE;
             }
-            return self.getSelf();
+            return self.getSelf() != PNone.NO_VALUE ? self.getSelf() : PNone.NONE;
         }
     }
 
@@ -307,11 +307,11 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     public abstract static class QualNameNode extends PythonUnaryBuiltinNode {
 
         protected static boolean isSelfModuleOrNull(PMethod method) {
-            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+            return method.getSelf() == PNone.NO_VALUE || PGuards.isPythonModule(method.getSelf());
         }
 
         protected static boolean isSelfModuleOrNull(PBuiltinMethod method) {
-            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+            return method.getSelf() == PNone.NO_VALUE || PGuards.isPythonModule(method.getSelf());
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
@@ -331,7 +331,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
-        static TruffleString doSelfIsObjet(VirtualFrame frame, PMethod method,
+        static TruffleString doSelfIsObject(VirtualFrame frame, PMethod method,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -345,7 +345,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
-        static TruffleString doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method,
+        static TruffleString doSelfIsObject(VirtualFrame frame, PBuiltinMethod method,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -380,11 +380,11 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonBuiltinNode {
         protected static boolean isSelfModuleOrNull(PMethod method) {
-            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+            return method.getSelf() == PNone.NO_VALUE || PGuards.isPythonModule(method.getSelf());
         }
 
         protected static boolean isSelfModuleOrNull(PBuiltinMethod method) {
-            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+            return method.getSelf() == PNone.NO_VALUE || PGuards.isPythonModule(method.getSelf());
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
@@ -404,7 +404,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
-        PTuple doSelfIsObjet(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+        PTuple doSelfIsObject(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
                         @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
