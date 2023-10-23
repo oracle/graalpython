@@ -99,7 +99,8 @@ def close_queue(queue):
 def join_process(process):
     # Since multiprocessing.Process has the same API than threading.Thread
     # (join() and is_alive(), the support function can be reused
-    threading_helper.join_thread(process)
+    # GraalPy change: increase timeout
+    threading_helper.join_thread(process, timeout=(60.0 * 5))
 
 
 if os.name == "posix":
