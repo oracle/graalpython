@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum PythonOS {
@@ -65,25 +64,31 @@ public enum PythonOS {
         return name;
     }
 
-    @CompilerDirectives.TruffleBoundary
-    public static PythonOS getPythonOS() {
+    private static final PythonOS current;
+
+    static {
         String property = System.getProperty("os.name");
         PythonOS os = PLATFORM_JAVA;
         if (property != null) {
-            if (property.toLowerCase().contains("cygwin")) {
+            property = property.toLowerCase();
+            if (property.contains("cygwin")) {
                 os = PLATFORM_CYGWIN;
-            } else if (property.toLowerCase().contains("linux")) {
+            } else if (property.contains("linux")) {
                 os = PLATFORM_LINUX;
-            } else if (property.toLowerCase().contains("mac")) {
+            } else if (property.contains("mac")) {
                 os = PLATFORM_DARWIN;
-            } else if (property.toLowerCase().contains("windows")) {
+            } else if (property.contains("windows")) {
                 os = PLATFORM_WIN32;
-            } else if (property.toLowerCase().contains("sunos")) {
+            } else if (property.contains("sunos")) {
                 os = PLATFORM_SUNOS;
-            } else if (property.toLowerCase().contains("freebsd")) {
+            } else if (property.contains("freebsd")) {
                 os = PLATFORM_FREEBSD;
             }
         }
-        return os;
+        current = os;
+    }
+
+    public static PythonOS getPythonOS() {
+        return current;
     }
 }
