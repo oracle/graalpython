@@ -1293,6 +1293,7 @@ def graalpython_gate_runner(args, tasks):
             "test_memoryview.py",
             "test_mmap.py", # sys.getwindowsversion
             "test_multiprocessing.py", # import _winapi
+            "test_multiprocessing_graalpy.py", # import _winapi
             "test_patched_pip.py",
             "test_pathlib.py",
             "test_posix.py", # import posix
