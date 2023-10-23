@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.Re
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
@@ -1946,6 +1947,7 @@ public final class PythonContext extends Python3Core {
             if (!cancelling) {
                 // this cleanup calls into Sulong
                 cleanupCApiResources();
+                CApiTransitions.deallocateNativeWeakRefs(this);
             }
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();

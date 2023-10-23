@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
@@ -120,6 +121,7 @@ public class CApiTransitions {
 
         public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
+        public final HashSet<Long> nativeWeakRef = new HashSet<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
         public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>(DEFAULT_CAPACITY);
         public final HandleStack nativeHandlesFreeStack = new HandleStack(DEFAULT_CAPACITY);
@@ -287,6 +289,39 @@ public class CApiTransitions {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * We need to call __dealloc__ for native weakref objects before exit, as some objects might
+     * need to use capi functions.
+     */
+    @TruffleBoundary
+    public static void addNativeWeakRef(PythonContext pythonContext, PythonAbstractNativeObject object) {
+        pythonContext.nativeContext.nativeWeakRef.add(object.ref.pointer);
+    }
+
+    @TruffleBoundary
+    public static void deallocateNativeWeakRefs(PythonContext pythonContext) {
+        if (!pythonContext.isFinalizing()) {
+            // We should avoid deallocation until exit.
+            return;
+        }
+        HandleContext context = pythonContext.nativeContext;
+        int idx = -1;
+        long[] ptrArray = new long[context.nativeWeakRef.size()];
+        for (long ptr : context.nativeWeakRef) {
+            if (context.nativeLookup.containsKey(ptr)) {
+                ptrArray[++idx] = ptr;
+            }
+        }
+        if (idx != -1) {
+            int len = idx + 1;
+            Object array = CStructAccessFactory.AllocateNodeGen.getUncached().alloc((long) len * Long.BYTES);
+            CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, ptrArray, len, 0, 0);
+            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
+            CStructAccessFactory.FreeNodeGen.getUncached().free(array);
+            context.nativeWeakRef.clear();
         }
     }
 

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -462,6 +463,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (allowed) {
+                CApiTransitions.addNativeWeakRef(getContext(), pythonObject);
                 return factory.createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
             } else {
                 return refType(cls, pythonObject, actualCallback, raiseNode.get(inliningTarget));
