@@ -834,13 +834,15 @@ class PandasSuite(PySuite):
                 shutil.copytree(artifact, npdir)
             else:
                 mx.warn("PANDAS_BENCHMARKS_DIR is not set, cloning pandas repository")
+                repo_url = os.environ.get("PANDAS_REPO_URL", "https://github.com/pandas-dev/pandas.git")
+                mx.log("Cloning Pandas from " + repo_url)
                 mx.run(
                     [
                         "git",
                         "clone",
                         "--depth",
                         "1",
-                        "https://github.com/pandas-dev/pandas.git",
+                        repo_url,
                         "--branch",
                         self.VERSION_TAG,
                         "--single-branch",
