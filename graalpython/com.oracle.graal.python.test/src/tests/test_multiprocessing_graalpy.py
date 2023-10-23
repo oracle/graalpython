@@ -36,11 +36,53 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import multiprocessing
+from multiprocessing.connection import wait
 
-def test_SemLock_raises_on_non_string_name():    
-    from _multiprocessing_graalpy import SemLock
-    try :
-        SemLock(kind=1, value=1, name={1:2}, maxvalue=1, unlink=1)
-    except TypeError:
-        raised = True
-    assert raised
+import sys
+import time
+
+if sys.implementation.name == 'graalpy':
+    multiprocessing.set_start_method('graalpy', force=True)
+
+
+    def test_SemLock_raises_on_non_string_name():
+        from _multiprocessing_graalpy import SemLock
+        try:
+            SemLock(kind=1, value=1, name={1: 2}, maxvalue=1, unlink=1)
+        except TypeError:
+            pass
+        else:
+            assert False
+
+
+    def test_wait_timeout():
+        timeout = 3
+        a, b = multiprocessing.Pipe()
+        x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe
+        for fds in [[a, b], [x, y], [a, b, x, y]]:
+            start = time.monotonic()
+            res = wait(fds, timeout)
+            delta = time.monotonic() - start
+            assert not res
+            assert delta < timeout * 2
+            assert delta > timeout / 2
+
+
+    def test_wait():
+        a, b = multiprocessing.Pipe()
+        x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe
+        a.send(42)
+        res = wait([b, y], 3)
+        assert res == [b], "res1"
+        assert b.recv() == 42, "res2"
+        y.send(33)
+        res = wait([b, x], 3)
+        assert res == [x], "res3"
+        assert x.recv() == 33, "res4"
+        a.send(1)
+        y.send(2)
+        res = wait([b, x], 3)
+        assert set(res) == {b, x}
+        assert b.recv() == 1
+        assert x.recv() == 2
