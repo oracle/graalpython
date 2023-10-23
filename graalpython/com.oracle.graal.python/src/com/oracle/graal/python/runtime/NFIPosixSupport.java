@@ -73,6 +73,8 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
@@ -89,6 +91,7 @@ import java.util.logging.Level;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -942,14 +945,14 @@ public final class NFIPosixSupport extends PosixSupport {
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + 1 + nameLen];
             PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            buf[pathLen] = PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+            buf[pathLen] = POSIX_FILENAME_SEPARATOR;
             PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + 1, nameLen);
             return Buffer.wrap(buf);
         }
 
         protected static boolean endsWithSlash(Object path) {
             Buffer b = (Buffer) path;
-            return b.data[b.data.length - 1] == PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+            return b.data[b.data.length - 1] == POSIX_FILENAME_SEPARATOR;
         }
     }
 
@@ -2219,9 +2222,18 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
+    private static final UnsupportedPosixFeatureException NO_SEM_GETVALUE_EXCEPTION = new UnsupportedPosixFeatureException("sem_getvalue is not available on the current platform");
+
     @ExportMessage
     int semGetValue(long handle,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        /*
+         * msimacek: It works on Linux, and it doesn't work on Darwin. It might work on some other
+         * Unix-likes, but it's hard to check, so let's assume it only works on Linux for now
+         */
+        if (PythonOS.getPythonOS() != PythonOS.PLATFORM_LINUX) {
+            throw NO_SEM_GETVALUE_EXCEPTION;
+        }
         int[] value = new int[1];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_getvalue, handle, wrap(value));
         if (res < 0) {

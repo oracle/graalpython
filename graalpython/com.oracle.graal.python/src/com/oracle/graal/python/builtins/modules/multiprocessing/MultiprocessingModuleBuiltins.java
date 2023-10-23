@@ -79,7 +79,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         return MultiprocessingModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "SemLock", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "kind", "value", "maxvalue", "name", "unlink"}, constructsClass = PythonBuiltinClassType.PSemLock)
+    @Builtin(name = "SemLock", parameterNames = {"$cls", "kind", "value", "maxvalue", "name", "unlink"}, constructsClass = PythonBuiltinClassType.PSemLock)
     @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "maxvalue", conversion = ArgumentClinic.ClinicConversion.Int)

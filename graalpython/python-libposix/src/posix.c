@@ -917,12 +917,14 @@ int32_t call_sem_unlink(const char *name) {
     return sem_unlink(name);
 }
 
+#ifdef __linux__
 int32_t call_sem_getvalue(int64_t handle, int32_t *value) {
     int valueInt;
     int res = sem_getvalue((sem_t*)(uintptr_t)handle, &valueInt);
     *value = valueInt;
     return res;
 }
+#endif
 
 int32_t call_sem_post(int64_t handle) {
     return sem_post((sem_t*)(uintptr_t)handle);
