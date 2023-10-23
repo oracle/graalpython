@@ -121,6 +121,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -130,6 +131,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -2276,16 +2278,34 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     boolean semTimedWait(long handle, long deadlineNs,
+                    @Bind("$node") Node node,
+                    @CachedLibrary("this") PosixSupportLibrary thisLib,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_timedwait, handle, deadlineNs);
-        if (res < 0) {
-            int errno = getErrno(invokeNode);
-            if (errno == OSErrorEnum.ETIMEDOUT.getNumber()) {
-                return false;
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_LINUX) {
+            int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_timedwait, handle, deadlineNs);
+            if (res < 0) {
+                int errno = getErrno(invokeNode);
+                if (errno == OSErrorEnum.ETIMEDOUT.getNumber()) {
+                    return false;
+                }
+                throw newPosixException(invokeNode, errno);
             }
-            throw newPosixException(invokeNode, errno);
+            return true;
+        } else {
+            long deadlineMs = deadlineNs / 1_000_000;
+            while (true) {
+                if (thisLib.semTryWait(this, handle)) {
+                    return true;
+                }
+                long currentMs = System.currentTimeMillis();
+                if (currentMs > deadlineMs) {
+                    return false;
+                }
+                long delayMs = Math.min(deadlineMs - currentMs, 20);
+                TruffleSafepoint.setBlockedThreadInterruptible(node, Thread::sleep, delayMs);
+                TruffleSafepoint.poll(node);
+            }
         }
-        return true;
     }
 
     @ExportMessage

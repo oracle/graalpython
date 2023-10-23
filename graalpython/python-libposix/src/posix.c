@@ -938,11 +938,13 @@ int32_t call_sem_trywait(int64_t handle) {
     return sem_trywait((sem_t*)(uintptr_t)handle);
 }
 
+#ifdef __linux__
 int32_t call_sem_timedwait(int64_t handle, int64_t deadlineNs) {
     const int64_t nsInSec = 1000 * 1000 * 1000;
     struct timespec deadline = {deadlineNs / nsInSec, deadlineNs % nsInSec};
     return sem_timedwait((sem_t*)(uintptr_t)handle, &deadline);
 }
+#endif
 
 int32_t get_sysconf_getpw_r_size_max() {
     return sysconf(_SC_GETPW_R_SIZE_MAX);
