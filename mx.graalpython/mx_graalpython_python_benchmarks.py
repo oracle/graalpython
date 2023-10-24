@@ -843,7 +843,7 @@ class PandasSuite(PySuite):
                     cwd=workdir,
                 )
                 shutil.rmtree(join(npdir, ".git"))
-                accepted = ["__init__"] + list(self.benchmarkList())
+                accepted = ["__init__"] + list(self.benchmarkList([]))
                 removed_files = []
                 for f in os.listdir(join(npdir, "asv_bench", "benchmarks")):
                     # Remove any file or directory that is not a benchmark suite we want to run.
