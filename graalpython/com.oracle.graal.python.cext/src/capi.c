@@ -456,6 +456,13 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) 
 
 /** to be used from Java code only and only at exit; calls _Py_Dealloc */
 PyAPI_FUNC(Py_ssize_t) PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
+    /* some objects depends on others which might get deallocated in the process 
+        of an earlier deallocation of the other object. To avoid double deallocations,
+        we incref all objects by the size of the deallocation list */
+	for (int i = 0; i < len; i++) {
+    	PyObject *obj = (PyObject*) ptrArray[i];
+        obj->ob_refcnt += len;
+    }
 	for (int i = 0; i < len; i++) {
     	PyObject *obj = (PyObject*) ptrArray[i];
         if (Py_TYPE(obj)->tp_dealloc != object_dealloc) {
