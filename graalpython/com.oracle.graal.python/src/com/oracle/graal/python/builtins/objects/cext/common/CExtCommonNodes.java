@@ -407,25 +407,25 @@ public abstract class CExtCommonNodes {
         @Specialization
         @SuppressWarnings("unused")
         static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, exact);
         }
 
         @Specialization
         static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization
         static Object doLong(long value, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
         static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
         }
 
