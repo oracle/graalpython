@@ -105,48 +105,50 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME_ZONE;
 
-public enum HostInteropBehaviorArg {
-    is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN, true),
-    is_date(J_IS_DATE, T_IS_DATE, true),
-    is_duration(J_IS_DURATION, T_IS_DURATION, true),
-    is_exception(J_IS_DATE, T_IS_DATE, true),
-    is_instant(J_IS_INSTANT, T_IS_INSTANT, true),
-    is_iterator(J_IS_ITERATOR, T_IS_ITERATOR, true),
-    is_null(J_IS_NULL, T_IS_NULL, true),
-    is_number(J_IS_NUMBER, T_IS_NUMBER, true),
-    is_string(J_IS_STRING, T_IS_STRING, true),
-    is_time(J_IS_TIME, T_IS_TIME, true),
-    is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE, true),
+public enum HostInteropBehaviorMethod {
+    is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN, true, 0),
+    is_date(J_IS_DATE, T_IS_DATE, true, 0),
+    is_duration(J_IS_DURATION, T_IS_DURATION, true, 0),
+    is_exception(J_IS_DATE, T_IS_DATE, true, 0),
+    is_instant(J_IS_INSTANT, T_IS_INSTANT, true, 0),
+    is_iterator(J_IS_ITERATOR, T_IS_ITERATOR, true, 0),
+    is_null(J_IS_NULL, T_IS_NULL, true, 0),
+    is_number(J_IS_NUMBER, T_IS_NUMBER, true, 0),
+    is_string(J_IS_STRING, T_IS_STRING, true, 0),
+    is_time(J_IS_TIME, T_IS_TIME, true, 0),
+    is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE, true, 0),
 
-    fits_in_big_integer(J_FITS_IN_BIG_INTEGER, T_FITS_IN_BIG_INTEGER, false),
-    fits_in_byte(J_FITS_IN_BYTE, T_FITS_IN_BYTE, false),
-    fits_in_double(J_FITS_IN_DOUBLE, T_FITS_IN_DOUBLE, false),
-    fits_in_float(J_FITS_IN_FLOAT, T_FITS_IN_FLOAT, false),
-    fits_in_int(J_FITS_IN_INT, T_FITS_IN_INT, false),
-    fits_in_long(J_FITS_IN_LONG, T_FITS_IN_LONG, false),
-    fits_in_short(J_FITS_IN_SHORT, T_FITS_IN_SHORT, false),
-    as_big_integer(J_AS_BIG_INTEGER, T_AS_BIG_INTEGER, false),
-    as_boolean(J_AS_BOOLEAN, T_AS_BOOLEAN, false),
-    as_byte(J_AS_BYTE, T_AS_BYTE, false),
-    as_date(J_AS_DATE, T_AS_DATE, false),
-    as_double(J_AS_DOUBLE, T_AS_DOUBLE, false),
-    as_duration(J_AS_DURATION, T_AS_DURATION, false),
-    as_float(J_AS_FLOAT, T_AS_FLOAT, false),
-    as_instant(J_AS_INSTANT, T_AS_INSTANT, false),
-    as_int(J_AS_INT, T_AS_INT, false),
-    as_long(J_AS_LONG, T_AS_LONG, false),
-    as_short(J_AS_SHORT, T_AS_SHORT, false),
-    as_string(J_AS_STRING, T_AS_STRING, false),
-    as_time(J_AS_TIME, T_AS_TIME, false),
-    as_time_zone(J_AS_TIME_ZONE, T_AS_TIME_ZONE, false);
+    fits_in_big_integer(J_FITS_IN_BIG_INTEGER, T_FITS_IN_BIG_INTEGER, false, 0),
+    fits_in_byte(J_FITS_IN_BYTE, T_FITS_IN_BYTE, false, 0),
+    fits_in_double(J_FITS_IN_DOUBLE, T_FITS_IN_DOUBLE, false, 0),
+    fits_in_float(J_FITS_IN_FLOAT, T_FITS_IN_FLOAT, false, 0),
+    fits_in_int(J_FITS_IN_INT, T_FITS_IN_INT, false, 0),
+    fits_in_long(J_FITS_IN_LONG, T_FITS_IN_LONG, false, 0),
+    fits_in_short(J_FITS_IN_SHORT, T_FITS_IN_SHORT, false, 0),
+    as_big_integer(J_AS_BIG_INTEGER, T_AS_BIG_INTEGER, false, 0),
+    as_boolean(J_AS_BOOLEAN, T_AS_BOOLEAN, false, 0),
+    as_byte(J_AS_BYTE, T_AS_BYTE, false, 0),
+    as_date(J_AS_DATE, T_AS_DATE, false, 0),
+    as_double(J_AS_DOUBLE, T_AS_DOUBLE, false, 0),
+    as_duration(J_AS_DURATION, T_AS_DURATION, false, 0),
+    as_float(J_AS_FLOAT, T_AS_FLOAT, false, 0),
+    as_instant(J_AS_INSTANT, T_AS_INSTANT, false, 0),
+    as_int(J_AS_INT, T_AS_INT, false, 0),
+    as_long(J_AS_LONG, T_AS_LONG, false, 0),
+    as_short(J_AS_SHORT, T_AS_SHORT, false, 0),
+    as_string(J_AS_STRING, T_AS_STRING, false, 0),
+    as_time(J_AS_TIME, T_AS_TIME, false, 0),
+    as_time_zone(J_AS_TIME_ZONE, T_AS_TIME_ZONE, false, 0);
 
     public final String name;
     public final TruffleString tsName;
     public final boolean isConstant;
+    public final int extraArguments;
 
-    HostInteropBehaviorArg(String name, TruffleString tsName, boolean isConstant) {
+    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean isConstant, int extraArguments) {
         this.name = name;
         this.tsName = tsName;
         this.isConstant = isConstant;
+        this.extraArguments = extraArguments;
     }
 }

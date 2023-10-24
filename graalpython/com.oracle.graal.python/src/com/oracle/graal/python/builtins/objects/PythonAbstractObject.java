@@ -121,15 +121,14 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
-import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorValueNode;
-import com.oracle.graal.python.nodes.interop.HostInteropBehaviorArg;
+import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorBooleanNode;
+import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -1759,45 +1758,52 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isNumber(@Bind("$node") Node inliningTarget,
-                    @Cached GetHostInteropBehaviorValueNode getHostInteropBehaviorValueNode,
-                    @Cached CastToJavaBooleanNode toBooleanNode,
-                    @CachedLibrary("this") InteropLibrary ilib) {
-        Object value = getHostInteropBehaviorValueNode.execute(this, HostInteropBehaviorArg.is_number);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.execute(inliningTarget, value);
-        }
-        return ilib.isNumber(this);
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_number);
     }
 
     @ExportMessage
-    public boolean fitsInByte() {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInByte(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_byte);
     }
 
     @ExportMessage
-    public boolean fitsInShort() {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInShort(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_short);
     }
 
     @ExportMessage
-    public boolean fitsInInt() {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInInt(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_int);
     }
 
     @ExportMessage
-    public boolean fitsInLong() {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInLong(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_long);
     }
 
     @ExportMessage
-    public boolean fitsInFloat() {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInFloat(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_float);
     }
 
     @ExportMessage
-    public boolean fitsInDouble() {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInDouble(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_double);
     }
 
     @ExportMessage

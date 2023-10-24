@@ -166,6 +166,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CAN_ONLY_JOIN_ITERABLE = tsLiteral("can only join an iterable");
     public static final TruffleString CANNOT_BE_INTEPRETED_AS_LONG = tsLiteral("%s cannot be interpreted as long (type %p)");
     public static final TruffleString S_CANNOT_BE_NEGATIVE_INTEGER_D = tsLiteral("%s cannot be negative integer (%d)");
+    public static final TruffleString S_CANNOT_HAVE_S = tsLiteral("%s cannot have %s");
+
     public static final TruffleString CANNOT_CALL_CTOR_OF = tsLiteral("cannot call constructor of %s");
     public static final TruffleString CANNOT_CLOSE_EXPORTED_PTRS_EXIST = tsLiteral("cannot close exported pointers exist");
     public static final TruffleString CANNOT_CONVERT_DICT_UPDATE_SEQ = tsLiteral("cannot convert dictionary update sequence element #%d to a sequence");

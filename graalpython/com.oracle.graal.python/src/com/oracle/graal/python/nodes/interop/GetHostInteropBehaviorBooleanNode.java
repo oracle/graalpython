@@ -38,48 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.polyglot;
+package com.oracle.graal.python.nodes.interop;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
-public class PHostInteropBehavior extends PythonBuiltinObject {
-    private final PythonAbstractObject receiver;
+@GenerateUncached
+@GenerateInline
+public abstract class GetHostInteropBehaviorBooleanNode extends PNodeWithContext {
+    public abstract boolean execute(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method);
 
-    private final CallTarget[] callTargets = new CallTarget[HostInteropBehaviorMethod.values().length];
-    private final PythonObject[] globals = new PythonObject[HostInteropBehaviorMethod.values().length];
-
-    public PHostInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions) {
-        super(cls, instanceShape);
-        this.receiver = receiver;
-        assert functions.length == HostInteropBehaviorMethod.values().length;
-        for (int i = 0; i < functions.length; i++) {
-            PFunction function = functions[i];
-            if (function != null) {
-                callTargets[i] = functions[i].getCode().getRootCallTarget();
-                globals[i] = functions[i].getGlobals();
-            }
+    @Specialization
+    static boolean getValue(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
+                    @Cached GetHostInteropBehaviorValueNode getHostInteropBehaviorValueNode,
+                    @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getHostInteropBehaviorValueNode.execute(inliningTarget, receiver, method);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
         }
+        return ilib.isNumber(receiver);
     }
 
-    public CallTarget getCallTarget(HostInteropBehaviorMethod method) {
-        return callTargets[method.ordinal()];
+    @NeverDefault
+    public static GetHostInteropBehaviorBooleanNode create() {
+        return GetHostInteropBehaviorBooleanNodeGen.create();
     }
 
-    public PythonObject getGlobals(HostInteropBehaviorMethod method) {
-        return globals[method.ordinal()];
-    }
-
-    public boolean isSupported(HostInteropBehaviorMethod method) {
-        return callTargets[method.ordinal()] != null;
-    }
-
-    public PythonAbstractObject getReceiver() {
-        return receiver;
+    public static GetHostInteropBehaviorBooleanNode getUncached() {
+        return GetHostInteropBehaviorBooleanNodeGen.getUncached();
     }
 }

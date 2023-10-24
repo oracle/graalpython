@@ -8,6 +8,9 @@ import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class HostInteropTest extends PythonTests {
     private Context context;
 
@@ -30,7 +33,7 @@ public class HostInteropTest extends PythonTests {
                         import polyglot
 
                         class MyType(object):
-                            data = 10
+                            data = 0x7fffffff + 1
 
                         def is_number(t):
                             return True
@@ -38,13 +41,18 @@ public class HostInteropTest extends PythonTests {
                         def fits_in_int(t):
                             return t.data < 0x7fffffff
 
+                        def fits_in_long(t):
+                            return t.data < 0xffffffffffffffff
+
                         polyglot.register_host_interop_behavior(MyType,
                             is_number=is_number,
-                            fits_in_int=fits_in_int)
+                            fits_in_int=fits_in_int,
+                            fits_in_long=fits_in_long)
 
                         MyType()
                         """);
-        System.out.printf("\n\n>>>> Is number: %s\n\n\n", t.isNumber());
-        System.out.printf("\n\n>>>> FITS In int: %s\n\n\n", t.fitsInInt());
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInInt());
+        assertTrue(t.fitsInLong());
     }
 }
