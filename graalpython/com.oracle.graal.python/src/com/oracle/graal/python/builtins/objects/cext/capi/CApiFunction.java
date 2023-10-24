@@ -1111,7 +1111,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_ReleaseThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetProfile", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetTrace", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyException_GetTraceback", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyExceptionClass_Name", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_FromFd", ret = PyObject, args = {Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString,
                     ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
@@ -1368,6 +1367,14 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyWideStringList_Append", ret = PYSTATUS, args = {PYWIDESTRINGLIST_PTR, CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyWideStringList_Insert", ret = PYSTATUS, args = {PYWIDESTRINGLIST_PTR, Py_ssize_t, CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyWrapper_New", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_WriteLongToFile", ret = Void, args = {Long, FILE_PTR, Int}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_WriteObjectToFile", ret = Void, args = {PyObject, FILE_PTR, Int}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_WriteObjectToString", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadLongFromFile", ret = Long, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadShortFromFile", ret = Int, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadLastObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadObjectFromString", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
 
     private static final class Dummy {
         // only here for the annotations

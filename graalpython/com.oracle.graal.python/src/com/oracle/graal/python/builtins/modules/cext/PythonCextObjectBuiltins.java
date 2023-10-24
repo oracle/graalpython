@@ -56,6 +56,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
 
@@ -95,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNod
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -119,6 +122,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -397,7 +401,19 @@ public class PythonCextObjectBuiltins {
         @Specialization
         static Object asFileDescriptor(Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached TruffleString.EqualNode eqNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode) {
+            if (!longCheckNode.execute(inliningTarget, obj)) {
+                Object posixSupport = PythonContext.get(inliningTarget).getPosixSupport();
+                if (eqNode.execute(T_JAVA, posixLib.getBackend(posixSupport), TS_ENCODING)) {
+                    // For non Python `int' objects, we refuse to hand out the fileno
+                    // field when using the emulated Posix backend, because it is likely
+                    // a fake.
+                    return -1;
+                }
+            }
             return asFileDescriptorNode.execute(null, inliningTarget, obj);
         }
     }

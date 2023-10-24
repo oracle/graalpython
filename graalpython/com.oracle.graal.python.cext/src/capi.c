@@ -1452,7 +1452,7 @@ PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
 }
 #undef PyException_GetTraceback
 PyAPI_FUNC(PyObject*) PyException_GetTraceback(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
+    return GraalPyException_GetTraceback(a);
 }
 #undef PyException_SetCause
 PyAPI_FUNC(void) PyException_SetCause(PyObject* a, PyObject* b) {
@@ -1901,6 +1901,38 @@ PyAPI_FUNC(Py_ssize_t) PyMapping_Size(PyObject* a) {
 #undef PyMapping_Values
 PyAPI_FUNC(PyObject*) PyMapping_Values(PyObject* a) {
     return GraalPyMapping_Values(a);
+}
+#undef PyMarshal_ReadLastObjectFromFile
+PyAPI_FUNC(PyObject*) PyMarshal_ReadLastObjectFromFile(FILE* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_ReadLongFromFile
+PyAPI_FUNC(long) PyMarshal_ReadLongFromFile(FILE* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_ReadObjectFromFile
+PyAPI_FUNC(PyObject*) PyMarshal_ReadObjectFromFile(FILE* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_ReadObjectFromString
+PyAPI_FUNC(PyObject*) PyMarshal_ReadObjectFromString(const char* a, Py_ssize_t b) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_ReadShortFromFile
+PyAPI_FUNC(int) PyMarshal_ReadShortFromFile(FILE* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_WriteLongToFile
+PyAPI_FUNC(void) PyMarshal_WriteLongToFile(long a, FILE* b, int c) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_WriteObjectToFile
+PyAPI_FUNC(void) PyMarshal_WriteObjectToFile(PyObject* a, FILE* b, int c) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyMarshal_WriteObjectToString
+PyAPI_FUNC(PyObject*) PyMarshal_WriteObjectToString(PyObject* a, int b) {
+    FUNC_NOT_IMPLEMENTED
 }
 #undef PyMem_GetAllocator
 PyAPI_FUNC(void) PyMem_GetAllocator(PyMemAllocatorDomain a, PyMemAllocatorEx* b) {
