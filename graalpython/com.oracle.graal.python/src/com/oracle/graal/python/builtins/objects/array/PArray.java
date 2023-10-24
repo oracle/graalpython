@@ -116,7 +116,12 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public int getLength() {
-        return storage.length() / getItemSize();
+        assert PythonUtils.isDivisible(storage.length(), format.shift);
+        return storage.length() >> format.shift;
+    }
+
+    public int getBytesLength() {
+        return storage.length();
     }
 
     public AtomicLong getExports() {
@@ -127,6 +132,10 @@ public final class PArray extends PythonBuiltinObject {
         if (exports.get() != 0) {
             throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
+    }
+
+    public int getItemSizeShift() {
+        return format.shift;
     }
 
     public enum MachineFormat {

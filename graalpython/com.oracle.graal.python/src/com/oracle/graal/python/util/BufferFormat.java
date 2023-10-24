@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,32 +54,35 @@ import com.oracle.truffle.api.strings.TruffleString;
  * string around for error messages.
  */
 public enum BufferFormat {
-    UINT_8(1, "B"),
-    INT_8(1, "b"),
-    UINT_16(2, "H"),
-    INT_16(2, "h"),
-    UINT_32(4, "I"),
-    INT_32(4, "i"),
-    UINT_64(8, "L"),
-    INT_64(8, "l"),
-    FLOAT(4, "f"),
-    DOUBLE(8, "d"),
+    UINT_8(1, 0, "B"),
+    INT_8(1, 0, "b"),
+    UINT_16(2, 1, "H"),
+    INT_16(2, 1, "h"),
+    UINT_32(4, 2, "I"),
+    INT_32(4, 2, "i"),
+    UINT_64(8, 3, "L"),
+    INT_64(8, 3, "l"),
+    FLOAT(4, 2, "f"),
+    DOUBLE(8, 3, "d"),
     // Unicode is array-only and deprecated
-    UNICODE(4, "u"),
+    UNICODE(4, 2, "u"),
     // The following are memoryview-only
-    CHAR(1, "c"),
-    BOOLEAN(1, "?"),
-    OTHER(-1, null);
+    CHAR(1, 0, "c"),
+    BOOLEAN(1, 0, "?"),
+    OTHER(-1, 0, null);
 
     public static final TruffleString T_UINT_8_TYPE_CODE = tsLiteral("B");
     public static final TruffleString T_UNICODE_TYPE_CODE_U = tsLiteral("u");
     public static final TruffleString T_UNICODE_TYPE_CODE_W = tsLiteral("w");
 
     public final int bytesize;
+    public final int shift;
     public final TruffleString baseTypeCode;
 
-    private BufferFormat(int bytesize, String baseTypeCode) {
+    BufferFormat(int bytesize, int shift, String baseTypeCode) {
+        assert bytesize == -1 || bytesize == 1 << shift;
         this.bytesize = bytesize;
+        this.shift = shift;
         this.baseTypeCode = toTruffleStringUncached(baseTypeCode);
     }
 

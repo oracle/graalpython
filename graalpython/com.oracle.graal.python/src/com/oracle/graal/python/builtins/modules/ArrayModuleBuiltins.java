@@ -236,8 +236,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                             @Cached ArrayNodes.GetValueNode getValueNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
                 try {
-                    PArray array = factory.createArray(cls, typeCode, format, initializer.getLength());
-                    for (int i = 0; i < initializer.getLength(); i++) {
+                    int length = initializer.getLength();
+                    PArray array = factory.createArray(cls, typeCode, format, length);
+                    for (int i = 0; i < length; i++) {
                         putValueNode.execute(frame, inliningTarget, array, i, getValueNode.execute(inliningTarget, initializer, i));
                     }
                     return array;

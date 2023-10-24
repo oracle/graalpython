@@ -71,7 +71,7 @@ public abstract class ArrayNodes {
         @Specialization
         static Object get(Node inliningTarget, PArray array, int index,
                         @Cached UnpackValueNode unpackValueNode) {
-            return unpackValueNode.execute(inliningTarget, array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
+            return unpackValueNode.execute(inliningTarget, array.getFormat(), array.getBuffer(), index << array.getItemSizeShift());
         }
     }
 
@@ -84,7 +84,7 @@ public abstract class ArrayNodes {
         @Specialization
         static void put(VirtualFrame frame, Node inliningTarget, PArray array, int index, Object value,
                         @Cached BufferStorageNodes.PackValueNode packValueNode) {
-            packValueNode.execute(frame, inliningTarget, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
+            packValueNode.execute(frame, inliningTarget, array.getFormat(), value, array.getBuffer(), index << array.getItemSizeShift());
         }
     }
 
@@ -151,7 +151,7 @@ public abstract class ArrayNodes {
         static void del(Node inliningTarget, PArray array, int from, int length,
                         @Cached SequenceStorageNodes.DeleteSliceNode deleteSliceNode) {
             assert from + length <= array.getLength();
-            SliceInfo info = new SliceInfo(from * array.getItemSize(), (from + length) * array.getItemSize(), 1);
+            SliceInfo info = new SliceInfo(from << array.getItemSizeShift(), (from + length) << array.getItemSizeShift(), 1);
             deleteSliceNode.execute(inliningTarget, array.getSequenceStorage(), info);
         }
     }
@@ -169,8 +169,9 @@ public abstract class ArrayNodes {
             try {
                 int newLength = PythonUtils.addExact(array.getLength(), by);
                 ensureCapacityNode.execute(inliningTarget, array, newLength);
-                int internalFrom = from * array.getItemSize();
-                int internalBy = by * array.getItemSize();
+                int itemShift = array.getItemSizeShift();
+                int internalFrom = from << itemShift;
+                int internalBy = by << itemShift;
                 int internalLength = array.getSequenceStorage().length();
                 memMoveNode.execute(inliningTarget, array.getSequenceStorage(), internalFrom + internalBy, internalFrom, internalLength - internalFrom);
                 setLengthNode.execute(inliningTarget, array, newLength);

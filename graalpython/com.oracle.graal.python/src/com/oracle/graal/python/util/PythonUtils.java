@@ -477,6 +477,14 @@ public final class PythonUtils {
         return r;
     }
 
+    /**
+     * Fast check whether {@code number % (2^twoExponent) == 0}.
+     */
+    public static boolean isDivisible(int number, int twoExponent) {
+        assert number >= 0;
+        return ((0xffffffff << twoExponent) & number) == number;
+    }
+
     private static final MBeanServer SERVER;
     private static final String OPERATION_NAME = "gcRun";
     private static final Object[] PARAMS = new Object[]{null};
