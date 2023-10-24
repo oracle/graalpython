@@ -201,13 +201,13 @@ public final class PythonCextTupleBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
                         @Cached ListGeneralizationNode generalizationNode,
-                        @Exclusive @Cached SetItemScalarNode setItemNode,
-                        @Exclusive @Cached GetItemScalarNode getItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached SetItemScalarNode setItemNode,
+                        @Shared @Cached GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
-            Object promotedValue = promoteNode.execute(result);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 tuple.setSequenceStorage(sequenceStorage);
@@ -222,13 +222,13 @@ public final class PythonCextTupleBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeTupleStorage asNativeStorage,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
-                        @Exclusive @Cached SetItemScalarNode setItemNode,
-                        @Exclusive @Cached GetItemScalarNode getItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached SetItemScalarNode setItemNode,
+                        @Shared @Cached GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
-            Object promotedValue = promoteNode.execute(result);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;

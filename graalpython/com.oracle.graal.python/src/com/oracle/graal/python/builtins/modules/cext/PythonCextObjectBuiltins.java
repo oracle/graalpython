@@ -144,6 +144,7 @@ public class PythonCextObjectBuiltins {
     abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastArgsNode castArgsNode,
                         @Cached CastKwargsNode castKwargsNode,
                         @Cached CallNode callNode) {
@@ -152,9 +153,9 @@ public class PythonCextObjectBuiltins {
             if (singleArg != 0) {
                 args = new Object[]{argsObj};
             } else {
-                args = castArgsNode.execute(null, argsObj);
+                args = castArgsNode.execute(null, inliningTarget, argsObj);
             }
-            PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
+            PKeyword[] keywords = castKwargsNode.execute(inliningTarget, kwargsObj);
             return callNode.execute(null, callable, args, keywords);
         }
     }
@@ -232,7 +233,7 @@ public class PythonCextObjectBuiltins {
             if (singleArg != 0) {
                 args = new Object[]{argsObj};
             } else {
-                args = castArgsNode.execute(null, argsObj);
+                args = castArgsNode.execute(null, inliningTarget, argsObj);
             }
             return callMethod.execute(null, inliningTarget, receiver, methodName, args);
         }

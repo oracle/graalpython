@@ -194,6 +194,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NonIdempotent;
@@ -232,32 +234,34 @@ public final class PythonCextBuiltins {
      * boxed int, for example, is not referenced from anyhwere). This node promotes these types to
      * full types like {@link PInt} and {@link PString}.
      */
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class PromoteBorrowedValue extends Node {
 
-        public abstract Object execute(Object value);
+        public abstract Object execute(Node inliningTarget, Object value);
 
         @Specialization
-        public static PString doString(TruffleString str,
-                        @Shared @Cached PythonObjectFactory factory) {
+        static PString doString(TruffleString str,
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createString(str);
         }
 
         @Specialization
         static PythonBuiltinObject doInteger(int i,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createInt(i);
         }
 
         @Specialization
         static PythonBuiltinObject doLong(long i,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createInt(i);
         }
 
         @Specialization(guards = "!isNaN(d)")
         static PythonBuiltinObject doDouble(double d,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createFloat(d);
         }
 
@@ -930,29 +934,28 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class PyObjectSetAttrNode extends PNodeWithContext {
 
-        abstract Object execute(Object object, TruffleString key, Object value);
+        abstract void execute(Node inliningTarget, Object object, TruffleString key, Object value);
 
         @Specialization
-        static Object doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
-                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+        static void doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
+                        @Exclusive @Cached(value = "createForceType()", inline = false) WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
-            return PNone.NONE;
         }
 
         @Specialization
-        static Object doNativeClass(PythonNativeClass object, TruffleString key, Object value,
-                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+        static void doNativeClass(PythonNativeClass object, TruffleString key, Object value,
+                        @Exclusive @Cached(value = "createForceType()", inline = false) WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
-            return PNone.NONE;
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        static Object doObject(PythonObject object, TruffleString key, Object value,
-                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
+        static void doObject(PythonObject object, TruffleString key, Object value,
+                        @Exclusive @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
             writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
-            return PNone.NONE;
         }
     }
 
@@ -1132,10 +1135,12 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ReportPolymorphism
     abstract static class CastArgsNode extends PNodeWithContext {
 
-        public abstract Object[] execute(VirtualFrame frame, Object argsObj);
+        public abstract Object[] execute(VirtualFrame frame, Node inliningTarget, Object argsObj);
 
         @Specialization(guards = "isNoValue(args)")
         @SuppressWarnings("unused")
@@ -1145,15 +1150,17 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = "!isNoValue(args)")
         static Object[] doNotNull(VirtualFrame frame, Object args,
-                        @Cached ExecutePositionalStarargsNode expandArgsNode) {
+                        @Cached(inline = false) ExecutePositionalStarargsNode expandArgsNode) {
             return expandArgsNode.executeWith(frame, args);
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ReportPolymorphism
     abstract static class CastKwargsNode extends PNodeWithContext {
 
-        public abstract PKeyword[] execute(Object kwargsObj);
+        public abstract PKeyword[] execute(Node inliningTarget, Object kwargsObj);
 
         @Specialization(guards = "isNoValue(kwargs)")
         @SuppressWarnings("unused")
@@ -1162,8 +1169,7 @@ public final class PythonCextBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(kwargs)")
-        static PKeyword[] doKeywords(Object kwargs,
-                        @Bind("this") Node inliningTarget,
+        static PKeyword[] doKeywords(Node inliningTarget, Object kwargs,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
             return expandKwargsNode.execute(inliningTarget, kwargs);
         }

@@ -156,7 +156,8 @@ public final class PythonCextDictBuiltins {
                         economicMapProfile.enter(inliningTarget);
                         HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                         while (itNext.execute(inliningTarget, storage, it)) {
-                            if (promoteKeyNode.execute(itKey.execute(inliningTarget, storage, it)) != null || promoteValueNode.execute(itValue.execute(inliningTarget, storage, it)) != null) {
+                            if (promoteKeyNode.execute(inliningTarget, itKey.execute(inliningTarget, storage, it)) != null ||
+                                            promoteValueNode.execute(inliningTarget, itValue.execute(inliningTarget, storage, it)) != null) {
                                 needsRewrite = true;
                                 break;
                             }
@@ -175,11 +176,11 @@ public final class PythonCextDictBuiltins {
                         while (itNext.execute(inliningTarget, storage, it)) {
                             Object key = itKey.execute(inliningTarget, storage, it);
                             Object value = itValue.execute(inliningTarget, storage, it);
-                            Object promotedKey = promoteKeyNode.execute(key);
+                            Object promotedKey = promoteKeyNode.execute(inliningTarget, key);
                             if (promotedKey != null) {
                                 key = promotedKey;
                             }
-                            Object promotedValue = promoteValueNode.execute(value);
+                            Object promotedValue = promoteValueNode.execute(inliningTarget, value);
                             if (promotedValue != null) {
                                 value = promotedValue;
                             }
@@ -204,8 +205,8 @@ public final class PythonCextDictBuiltins {
             }
             Object key = itKey.execute(inliningTarget, storage, it);
             Object value = itValue.execute(inliningTarget, storage, it);
-            assert promoteKeyNode.execute(key) == null;
-            assert promoteValueNode.execute(value) == null;
+            assert promoteKeyNode.execute(inliningTarget, key) == null;
+            assert promoteValueNode.execute(inliningTarget, value) == null;
             long hash = itKeyHash.execute(inliningTarget, storage, it);
             int newPos = it.getState() + 1;
             return factory.createTuple(new Object[]{key, value, hash, newPos});
@@ -278,7 +279,7 @@ public final class PythonCextDictBuiltins {
                     noResultProfile.enter(inliningTarget);
                     return getNativeNull(inliningTarget);
                 }
-                Object promotedValue = promoteNode.execute(res);
+                Object promotedValue = promoteNode.execute(inliningTarget, res);
                 if (promotedValue != null) {
                     setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                     return promotedValue;
@@ -316,7 +317,7 @@ public final class PythonCextDictBuiltins {
                 noResultProfile.enter(inliningTarget);
                 return getNativeNull(inliningTarget);
             }
-            Object promotedValue = promoteNode.execute(res);
+            Object promotedValue = promoteNode.execute(inliningTarget, res);
             if (promotedValue != null) {
                 setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                 return promotedValue;

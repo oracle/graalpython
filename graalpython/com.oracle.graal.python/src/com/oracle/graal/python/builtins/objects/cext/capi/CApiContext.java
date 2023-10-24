@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -82,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -154,8 +152,6 @@ public final class CApiContext extends CExtContext {
      */
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
-    private final WeakIdentityHashMap<TruffleString, PString> promotedTruffleStringCache;
-
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
 
@@ -219,7 +215,6 @@ public final class CApiContext extends CExtContext {
             CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
-        promotedTruffleStringCache = new WeakIdentityHashMap<>();
     }
 
     public long getAndIncMaxModuleNumber() {
@@ -340,16 +335,6 @@ public final class CApiContext extends CExtContext {
             return modulesByIndex.get(i);
         }
         return null;
-    }
-
-    @TruffleBoundary
-    public Object getOrInsertPromotedTruffleString(TruffleString obj) {
-        PString pString = promotedTruffleStringCache.get(obj);
-        if (pString == null) {
-            pString = PromoteBorrowedValue.doString(obj, getContext().factory());
-            promotedTruffleStringCache.put(obj, pString);
-        }
-        return pString;
     }
 
     @TruffleBoundary

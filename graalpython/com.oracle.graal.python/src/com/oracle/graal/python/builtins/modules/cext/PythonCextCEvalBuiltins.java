@@ -164,7 +164,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                         @Cached GenericInvokeNode invokeNode) {
             Object[] defaults = readNode.readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
-            PKeyword[] kwdefaults = castKwargsNode.execute(kwdefaultsWrapper);
+            PKeyword[] kwdefaults = castKwargsNode.execute(inliningTarget, kwdefaultsWrapper);
             PCell[] closure = null;
             if (closureObj != PNone.NO_VALUE) {
                 // CPython also just accesses the object as tuple without further checks.

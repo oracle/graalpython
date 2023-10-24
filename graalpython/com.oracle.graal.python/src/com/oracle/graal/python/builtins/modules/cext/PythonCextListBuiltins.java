@@ -139,7 +139,7 @@ public final class PythonCextListBuiltins {
                 throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
             }
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
-            Object promotedValue = promoteNode.execute(result);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 list.setSequenceStorage(sequenceStorage);

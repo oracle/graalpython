@@ -219,12 +219,13 @@ public final class PythonCextModuleBuiltins {
 
         @Specialization
         static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
             Object modName = dylib.getOrDefault(mod.getStorage(), T___NAME__, null);
             assert modName != null : "module name is missing!";
-            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
+            Object func = cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
             setattrNode.execute(null, mod, name, func);
             return 0;
         }
