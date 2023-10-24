@@ -45,7 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -130,7 +130,7 @@ public final class NativeCharSequence implements CharSequence {
         if (!isMaterialized()) {
             LOGGER.warning("uncached materialization of NativeCharSequence");
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            materialized = TruffleString.fromIntArrayUTF32Uncached(ReadUnicodeArrayNodeGen.getUncached().execute(getPtr(), getElements(), getElementSize()));
+            materialized = TruffleString.fromIntArrayUTF32Uncached(ReadUnicodeArrayNode.executeUncached(getPtr(), getElements(), getElementSize()));
         }
         return materialized;
     }

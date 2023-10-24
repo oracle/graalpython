@@ -1191,7 +1191,7 @@ public final class PythonCextBuiltins {
             // force 'format' to be a String
             TruffleString[] split;
             try {
-                split = splitFormatStringNode.execute(formatString);
+                split = splitFormatStringNode.execute(inliningTarget, formatString);
                 assert split.length == 2;
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1232,7 +1232,7 @@ public final class PythonCextBuiltins {
             // force 'format' to be a String
             TruffleString[] split;
             try {
-                split = splitFormatStringNode.execute(formatString);
+                split = splitFormatStringNode.execute(inliningTarget, formatString);
                 assert split.length == 2;
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

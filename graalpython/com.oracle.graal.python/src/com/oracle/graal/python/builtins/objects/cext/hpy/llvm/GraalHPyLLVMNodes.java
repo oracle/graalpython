@@ -220,7 +220,7 @@ abstract class GraalHPyLLVMNodes {
                 typedPointer = pointer;
             }
             try {
-                return getByteArrayNode.execute(typedPointer, n);
+                return getByteArrayNode.execute(inliningTarget, typedPointer, n);
             } catch (OverflowException | InteropException ex) {
                 throw CompilerDirectives.shouldNotReachHere(ex);
             }
@@ -764,6 +764,7 @@ abstract class GraalHPyLLVMNodes {
         static TruffleString doForeignArray(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, @SuppressWarnings("unused") boolean copy,
                         @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elementLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached GraalHPyLLVMCallHelperFunctionNode callHelperFunctionNode,
                         @Cached GetByteArrayNode getByteArrayNode,
                         @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
@@ -800,7 +801,7 @@ abstract class GraalHPyLLVMNodes {
                 }
                 assert lib.hasArrayElements(typedCharPtr);
                 assert length >= 0;
-                byte[] bytes = getByteArrayNode.execute(typedCharPtr, length);
+                byte[] bytes = getByteArrayNode.execute(inliningTarget, typedCharPtr, length);
                 // since we created a fresh byte array, we don't need to copy it
                 return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, encoding, false), TS_ENCODING);
             } catch (InteropException | OverflowException e) {

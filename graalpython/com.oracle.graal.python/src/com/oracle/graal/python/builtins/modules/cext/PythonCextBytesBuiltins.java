@@ -236,7 +236,7 @@ public final class PythonCextBytesBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory.createBytes(getByteArrayNode.execute(nativePointer, size));
+                return factory.createBytes(getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
@@ -269,7 +269,7 @@ public final class PythonCextBytesBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory.createByteArray(getByteArrayNode.execute(nativePointer, size));
+                return factory.createByteArray(getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
                 return raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {

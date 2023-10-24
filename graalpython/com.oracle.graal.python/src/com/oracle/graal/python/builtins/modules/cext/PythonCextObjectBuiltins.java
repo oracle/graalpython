@@ -165,14 +165,15 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         static Object doFunction(Object callable, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached NativeToPythonNode toJavaNode) {
-            return callFunction(callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return callFunction(inliningTarget, callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
 
-        static Object callFunction(Object callable, Object vaList,
+        static Object callFunction(Node inliningTarget, Object callable, Object vaList,
                         GetNextVaArgNode getVaArgs,
                         InteropLibrary argLib,
                         CallNode callNode,
@@ -186,7 +187,7 @@ public class PythonCextObjectBuiltins {
             while (true) {
                 Object object;
                 try {
-                    object = getVaArgs.execute(vaList);
+                    object = getVaArgs.execute(inliningTarget, vaList);
                 } catch (InteropException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -210,6 +211,7 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         static Object doMethod(Object receiver, Object methodName, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
@@ -217,7 +219,7 @@ public class PythonCextObjectBuiltins {
                         @Cached NativeToPythonNode toJavaNode) {
 
             Object method = getAnyAttributeNode.executeObject(null, receiver, methodName);
-            return PyTruffleObject_CallFunctionObjArgs.callFunction(method, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return PyTruffleObject_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
     }
 

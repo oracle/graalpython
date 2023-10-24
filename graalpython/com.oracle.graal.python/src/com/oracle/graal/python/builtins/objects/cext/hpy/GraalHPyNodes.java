@@ -554,7 +554,7 @@ public abstract class GraalHPyNodes {
 
         /**
          * Call the create slot function.
-         * 
+         *
          * TODO(fa): This method shares some logic with
          * {@link com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionInvokeNode}.
          * We should refactor the node such that we can use it here.
@@ -1680,9 +1680,10 @@ public abstract class GraalHPyNodes {
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
         @Specialization
-        Object doGeneric(Object value,
+        static Object doGeneric(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, 1, Long.BYTES);
+            return asNativePrimitiveNode.execute(inliningTarget, value, 1, Long.BYTES);
         }
     }
 
@@ -1920,30 +1921,33 @@ public abstract class GraalHPyNodes {
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
         static void doHandleSsizeT(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(inliningTarget, args[argsOffset + 1], 1, Long.BYTES);
         }
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
         static void doHandleSsizeTSsizeT(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
-            dest[destOffset + 2] = asSsizeTNode.execute(args[argsOffset + 2], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(inliningTarget, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = asSsizeTNode.execute(inliningTarget, args[argsOffset + 2], 1, Long.BYTES);
         }
 
         @Specialization(replaces = {"doHandleSsizeT", "doHandleSsizeTSsizeT"})
         static void doGeneric(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             for (int i = 1; i < args.length - argsOffset; i++) {
-                dest[destOffset + i] = asSsizeTNode.execute(args[argsOffset + i], 1, Long.BYTES);
+                dest[destOffset + i] = asSsizeTNode.execute(inliningTarget, args[argsOffset + i], 1, Long.BYTES);
             }
         }
 
@@ -1965,11 +1969,12 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(inliningTarget, args[argsOffset + 1], 1, Long.BYTES);
             dest[destOffset + 2] = asHandleNode.execute(args[argsOffset + 2]);
         }
 

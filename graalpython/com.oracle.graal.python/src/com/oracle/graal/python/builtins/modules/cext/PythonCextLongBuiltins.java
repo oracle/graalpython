@@ -250,7 +250,7 @@ public final class PythonCextLongBuiltins {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
-                Object coerced = convertPIntToPrimitiveNode.execute(object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
+                Object coerced = convertPIntToPrimitiveNode.execute(inliningTarget, object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
                 return castToNativeLongNode.execute(coerced);
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -394,7 +394,7 @@ public final class PythonCextLongBuiltins {
             }
             try {
                 try {
-                    return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
+                    return asPrimitiveNode.executeLongCached(n, 0, Long.BYTES);
                 } catch (UnexpectedResultException e) {
                     throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 }

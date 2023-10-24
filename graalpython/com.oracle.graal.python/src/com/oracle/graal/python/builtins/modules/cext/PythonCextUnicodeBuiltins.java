@@ -732,7 +732,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
-                byte[] ucsBytes = getByteArrayNode.execute(ptr, byteLength);
+                byte[] ucsBytes = getByteArrayNode.execute(inliningTarget, ptr, byteLength);
                 TruffleString ts = fromByteArrayNode.execute(ucsBytes, srcEncoding);
                 return asPString(ts, switchEncodingNode, factory);
             } catch (InteropException e) {
@@ -792,7 +792,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
-                byte[] ucsBytes = getByteArrayNode.execute(ptr, byteLength);
+                byte[] ucsBytes = getByteArrayNode.execute(inliningTarget, ptr, byteLength);
                 TruffleString ts = fromByteArrayNode.execute(ucsBytes, srcEncoding);
                 return asPString(ts, switchEncodingNode, factory);
             } catch (InteropException e) {
@@ -867,7 +867,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PBytes bytes = factory.createBytes(getByteArrayNode.execute(cByteArray, size));
+                PBytes bytes = factory.createBytes(getByteArrayNode.execute(inliningTarget, cByteArray, size));
                 return decode.call(null, bytes, T_UTF8, errors, reportConsumed == 0);
             } catch (OverflowException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
@@ -888,7 +888,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PBytes bytes = factory.createBytes(getByteArrayNode.execute(cByteArray, size));
+                PBytes bytes = factory.createBytes(getByteArrayNode.execute(inliningTarget, cByteArray, size));
                 TruffleString encoding;
                 if (byteorder == 0) {
                     encoding = T_UTF_16;
@@ -917,7 +917,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PBytes bytes = factory.createBytes(getByteArrayNode.execute(cByteArray, size));
+                PBytes bytes = factory.createBytes(getByteArrayNode.execute(inliningTarget, cByteArray, size));
                 TruffleString encoding;
                 if (byteorder == 0) {
                     encoding = T_UTF_32;
@@ -962,11 +962,12 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyUnicode_FromWideChar extends CApiBinaryBuiltinNode {
         @Specialization
         Object doInt(Object arr, long size,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadUnicodeArrayNode readArray,
                         @Cached TruffleString.FromIntArrayUTF32Node fromArray,
                         @Cached PythonObjectFactory factory) {
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            return factory.createString(fromArray.execute(readArray.execute(arr, castToInt(size), CStructs.wchar_t.size())));
+            return factory.createString(fromArray.execute(readArray.execute(inliningTarget, arr, castToInt(size), CStructs.wchar_t.size())));
         }
     }
 
@@ -1142,7 +1143,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             PBytes bytes;
             try {
-                bytes = factory.createBytes(getByteArrayNode.execute(object, length));
+                bytes = factory.createBytes(getByteArrayNode.execute(inliningTarget, object, length));
             } catch (InteropException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
