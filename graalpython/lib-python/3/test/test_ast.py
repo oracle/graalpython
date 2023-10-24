@@ -355,6 +355,24 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual(alias.col_offset, 16)
         self.assertEqual(alias.end_col_offset, 17)
 
+        im = ast.parse("from bar import y as z").body[0]
+        alias = im.names[0]
+        self.assertEqual(alias.name, "y")
+        self.assertEqual(alias.asname, "z")
+        self.assertEqual(alias.lineno, 1)
+        self.assertEqual(alias.end_lineno, 1)
+        self.assertEqual(alias.col_offset, 16)
+        self.assertEqual(alias.end_col_offset, 22)
+
+        im = ast.parse("import bar as foo").body[0]
+        alias = im.names[0]
+        self.assertEqual(alias.name, "bar")
+        self.assertEqual(alias.asname, "foo")
+        self.assertEqual(alias.lineno, 1)
+        self.assertEqual(alias.end_lineno, 1)
+        self.assertEqual(alias.col_offset, 7)
+        self.assertEqual(alias.end_col_offset, 17)
+
     def test_base_classes(self):
         self.assertTrue(issubclass(ast.For, ast.stmt))
         self.assertTrue(issubclass(ast.Name, ast.expr))
@@ -913,6 +931,18 @@ Module(
         )
         self.assertEqual(ast.increment_lineno(src).lineno, 2)
         self.assertIsNone(ast.increment_lineno(src).end_lineno)
+
+    def test_increment_lineno_on_module(self):
+        src = ast.parse(dedent("""\
+        a = 1
+        b = 2 # type: ignore
+        c = 3
+        d = 4 # type: ignore@tag
+        """), type_comments=True)
+        ast.increment_lineno(src, n=5)
+        self.assertEqual(src.type_ignores[0].lineno, 7)
+        self.assertEqual(src.type_ignores[1].lineno, 9)
+        self.assertEqual(src.type_ignores[1].tag, '@tag')
 
     def test_iter_fields(self):
         node = ast.parse('foo()', mode='eval')

@@ -556,14 +556,27 @@ class BaseCallableTests:
         self.assertEqual(weakref.ref(alias)(), alias)
 
     def test_pickle(self):
+        global T_pickle, P_pickle  # needed for pickling
         Callable = self.Callable
-        alias = Callable[[int, str], float]
-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-            s = pickle.dumps(alias, proto)
-            loaded = pickle.loads(s)
-            self.assertEqual(alias.__origin__, loaded.__origin__)
-            self.assertEqual(alias.__args__, loaded.__args__)
-            self.assertEqual(alias.__parameters__, loaded.__parameters__)
+        T_pickle = TypeVar('T_pickle')
+        P_pickle = ParamSpec('P_pickle')
+
+        samples = [
+            Callable[[int, str], float],
+            Callable[P_pickle, int],
+            Callable[P_pickle, T_pickle],
+            Callable[Concatenate[int, P_pickle], int],
+        ]
+        for alias in samples:
+            for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+                with self.subTest(alias=alias, proto=proto):
+                    s = pickle.dumps(alias, proto)
+                    loaded = pickle.loads(s)
+                    self.assertEqual(alias.__origin__, loaded.__origin__)
+                    self.assertEqual(alias.__args__, loaded.__args__)
+                    self.assertEqual(alias.__parameters__, loaded.__parameters__)
+
+        del T_pickle, P_pickle  # cleaning up global state
 
     def test_var_substitution(self):
         Callable = self.Callable
@@ -589,6 +602,16 @@ class BaseCallableTests:
         C5 = Callable[[typing.List[T], tuple[KT, T], VT], int]
         self.assertEqual(C5[int, str, float],
                          Callable[[typing.List[int], tuple[str, int], float], int])
+
+    def test_type_subst_error(self):
+        Callable = self.Callable
+        P = ParamSpec('P')
+        T = TypeVar('T')
+
+        pat = "Expected a list of types, an ellipsis, ParamSpec, or Concatenate."
+
+        with self.assertRaisesRegex(TypeError, pat):
+            Callable[P, T][0, int]
 
     def test_type_erasure(self):
         Callable = self.Callable
@@ -1142,6 +1165,94 @@ class ProtocolTests(BaseTestCase):
         with self.assertRaises(TypeError):
             isinstance(C(), BadPG)
 
+    def test_protocols_isinstance_properties_and_descriptors(self):
+        class C:
+            @property
+            def attr(self):
+                return 42
+
+        class CustomDescriptor:
+            def __get__(self, obj, objtype=None):
+                return 42
+
+        class D:
+            attr = CustomDescriptor()
+
+        # Check that properties set on superclasses
+        # are still found by the isinstance() logic
+        class E(C): ...
+        class F(D): ...
+
+        class Empty: ...
+
+        T = TypeVar('T')
+
+        @runtime_checkable
+        class P(Protocol):
+            @property
+            def attr(self): ...
+
+        @runtime_checkable
+        class P1(Protocol):
+            attr: int
+
+        @runtime_checkable
+        class PG(Protocol[T]):
+            @property
+            def attr(self): ...
+
+        @runtime_checkable
+        class PG1(Protocol[T]):
+            attr: T
+
+        for protocol_class in P, P1, PG, PG1:
+            for klass in C, D, E, F:
+                with self.subTest(
+                    klass=klass.__name__,
+                    protocol_class=protocol_class.__name__
+                ):
+                    self.assertIsInstance(klass(), protocol_class)
+
+            with self.subTest(klass="Empty", protocol_class=protocol_class.__name__):
+                self.assertNotIsInstance(Empty(), protocol_class)
+
+        class BadP(Protocol):
+            @property
+            def attr(self): ...
+
+        class BadP1(Protocol):
+            attr: int
+
+        class BadPG(Protocol[T]):
+            @property
+            def attr(self): ...
+
+        class BadPG1(Protocol[T]):
+            attr: T
+
+        for obj in PG[T], PG[C], PG1[T], PG1[C], BadP, BadP1, BadPG, BadPG1:
+            for klass in C, D, E, F, Empty:
+                with self.subTest(klass=klass.__name__, obj=obj):
+                    with self.assertRaises(TypeError):
+                        isinstance(klass(), obj)
+
+    def test_protocols_isinstance_not_fooled_by_custom_dir(self):
+        @runtime_checkable
+        class HasX(Protocol):
+            x: int
+
+        class CustomDirWithX:
+            x = 10
+            def __dir__(self):
+                return []
+
+        class CustomDirWithoutX:
+            def __dir__(self):
+                return ["x"]
+
+        self.assertIsInstance(CustomDirWithX(), HasX)
+        self.assertNotIsInstance(CustomDirWithoutX(), HasX)
+
     def test_protocols_isinstance_py36(self):
         class APoint:
             def __init__(self, x, y, label):
@@ -1528,8 +1639,8 @@ class ProtocolTests(BaseTestCase):
             def __init__(self):
                 self.x = None
 
-        self.assertIsInstance(C(), P)
-        self.assertIsInstance(D(), P)
+        self.assertIsInstance(CI(), P)
+        self.assertIsInstance(DI(), P)
 
     def test_protocols_in_unions(self):
         class P(Protocol):
@@ -1560,7 +1671,7 @@ class ProtocolTests(BaseTestCase):
             self.assertEqual(x.bar, 'abc')
             self.assertEqual(x.x, 1)
             self.assertEqual(x.__dict__, {'foo': 42, 'bar': 'abc'})
-            s = pickle.dumps(P)
+            s = pickle.dumps(P, proto)
             D = pickle.loads(s)
 
             class E:
@@ -2405,11 +2516,11 @@ class GenericTests(BaseTestCase):
 
         self.assertEqual(D.__parameters__, ())
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(TypeError):
             D[int]
-        with self.assertRaises(Exception):
+        with self.assertRaises(TypeError):
             D[Any]
-        with self.assertRaises(Exception):
+        with self.assertRaises(TypeError):
             D[T]
 
     def test_new_with_args(self):
@@ -2497,6 +2608,61 @@ class GenericTests(BaseTestCase):
                 ):
                     class Foo(obj):
                         pass
+
+    def test_complex_subclasses(self):
+        T_co = TypeVar("T_co", covariant=True)
+
+        class Base(Generic[T_co]):
+            ...
+
+        T = TypeVar("T")
+
+        # see gh-94607: this fails in that bug
+        class Sub(Base, Generic[T]):
+            ...
+
+    def test_parameter_detection(self):
+        self.assertEqual(List[T].__parameters__, (T,))
+        self.assertEqual(List[List[T]].__parameters__, (T,))
+        class A:
+            __parameters__ = (T,)
+        # Bare classes should be skipped
+        for a in (List, list):
+            for b in (int, TypeVar, ParamSpec, types.GenericAlias, types.UnionType):
+                with self.subTest(generic=a, sub=b):
+                    with self.assertRaisesRegex(TypeError,
+                                                '.* is not a generic class|'
+                                                'no type variables left'):
+                        a[b][str]
+        # Duck-typing anything that looks like it has __parameters__.
+        # C version of GenericAlias
+        self.assertEqual(list[A()].__parameters__, (T,))
+
+    def test_non_generic_subscript(self):
+        T = TypeVar('T')
+        class G(Generic[T]):
+            pass
+
+        for s in (int, G, List, list,
+                  TypeVar, ParamSpec,
+                  types.GenericAlias, types.UnionType):
+
+            for t in Tuple, tuple:
+                with self.subTest(tuple=t, sub=s):
+                    self.assertEqual(t[s, T][int], t[s, int])
+                    self.assertEqual(t[T, s][int], t[int, s])
+                    a = t[s]
+                    with self.assertRaises(TypeError):
+                        a[int]
+
+            for c in Callable, collections.abc.Callable:
+                with self.subTest(callable=c, sub=s):
+                    self.assertEqual(c[[s], T][int], c[[s], int])
+                    self.assertEqual(c[[T], s][int], c[[int], s])
+                    a = c[[s], s]
+                    with self.assertRaises(TypeError):
+                        a[int]
+
 
 class ClassVarTests(BaseTestCase):
 
@@ -4697,16 +4863,6 @@ class AnnotatedTests(BaseTestCase):
         self.assertEqual(get_type_hints(C, globals())['classvar'], ClassVar[int])
         self.assertEqual(get_type_hints(C, globals())['const'], Final[int])
 
-    def test_hash_eq(self):
-        self.assertEqual(len({Annotated[int, 4, 5], Annotated[int, 4, 5]}), 1)
-        self.assertNotEqual(Annotated[int, 4, 5], Annotated[int, 5, 4])
-        self.assertNotEqual(Annotated[int, 4, 5], Annotated[str, 4, 5])
-        self.assertNotEqual(Annotated[int, 4], Annotated[int, 4, 4])
-        self.assertEqual(
-            {Annotated[int, 4, 5], Annotated[int, 4, 5], Annotated[T, 4, 5]},
-            {Annotated[int, 4, 5], Annotated[T, 4, 5]}
-        )
-
     def test_cannot_subclass(self):
         with self.assertRaisesRegex(TypeError, "Cannot subclass .*Annotated"):
             class C(Annotated):
@@ -5254,7 +5410,7 @@ class SpecialAttrsTests(BaseTestCase):
         self.assertEqual(fr.__module__, 'typing')
         # Forward refs are currently unpicklable.
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-            with self.assertRaises(TypeError) as exc:
+            with self.assertRaises(TypeError):
                 pickle.dumps(fr, proto)
 
         self.assertEqual(SpecialAttrsTests.TypeName.__name__, 'TypeName')

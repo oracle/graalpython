@@ -9,7 +9,9 @@
 /* Tuples */
 
 NO_INLINE
-PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
+PyObject *
+PyTuple_Pack(Py_ssize_t n, ...)
+{
     va_list vargs;
     va_start(vargs, n);
     PyObject *result = PyTuple_New(n);
@@ -28,31 +30,30 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
 
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
-PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
-	PyTupleObject* newobj;
-    PyObject *tmp, *item;
+PyObject *
+tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
+{
+    PyObject *tmp, *newobj, *item;
     Py_ssize_t i, n;
 
     assert(PyType_IsSubtype(type, &PyTuple_Type));
     tmp = iterable == NULL ? PyTuple_New(0) : PySequence_Tuple(iterable);
-    if (tmp == NULL) {
+    if (tmp == NULL)
         return NULL;
-    }
     assert(PyTuple_Check(tmp));
     n = PyTuple_GET_SIZE(tmp);
 
     /* GraalPy note: we cannot call type->tp_alloc here because managed subtypes don't inherit tp_alloc but get a generic one.
      * In CPython tuple uses the generic one to begin with, so they don't have this problem
      */
-    newobj = (PyTupleObject*) PyTruffle_Tuple_Alloc(type, n);
+    newobj = PyTruffle_Tuple_Alloc(type, n);
     if (newobj == NULL) {
         return NULL;
     }
-
     for (i = 0; i < n; i++) {
         item = PyTuple_GetItem(tmp, i);
         Py_INCREF(item);
-        newobj->ob_item[i] = item; // PyTuple_SETITEM
+        PyTuple_SetItem(newobj, i, item);
     }
     Py_DECREF(tmp);
     return (PyObject*) newobj;

@@ -5,10 +5,12 @@
 from dataclasses import *
 
 import abc
+import io
 import pickle
 import inspect
 import builtins
 import types
+import traceback
 import unittest
 from unittest.mock import Mock
 from typing import ClassVar, Any, List, Union, Tuple, Dict, Generic, TypeVar, Optional, Protocol
@@ -66,6 +68,24 @@ class TestCase(unittest.TestCase):
                            "_field_type=None)"
 
         self.assertEqual(repr_output, expected_output)
+
+    def test_field_recursive_repr(self):
+        rec_field = field()
+        rec_field.type = rec_field
+        rec_field.name = "id"
+        repr_output = repr(rec_field)
+
+        self.assertIn(",type=...,", repr_output)
+
+    def test_recursive_annotation(self):
+        class C:
+            pass
+
+        @dataclass
+        class D:
+            C: C = field()
+
+        self.assertIn(",type=...,", repr(D.__dataclass_fields__["C"]))
 
     def test_named_init_params(self):
         @dataclass
@@ -229,6 +249,14 @@ class TestCase(unittest.TestCase):
             object: str
         c = C('foo')
         self.assertEqual(c.object, 'foo')
+
+    def test_field_named_BUILTINS_frozen(self):
+        # gh-96151
+        @dataclass(frozen=True)
+        class C:
+            BUILTINS: int
+        c = C(5)
+        self.assertEqual(c.BUILTINS, 5)
 
     def test_field_named_like_builtin(self):
         # Attribute names can shadow built-in names
@@ -1387,6 +1415,16 @@ class TestCase(unittest.TestCase):
             fields(C)
         with self.assertRaisesRegex(TypeError, 'dataclass type or instance'):
             fields(C())
+
+    def test_clean_traceback_from_fields_exception(self):
+        stdout = io.StringIO()
+        try:
+            fields(object)
+        except TypeError as exc:
+            traceback.print_exception(exc, file=stdout)
+        printed_traceback = stdout.getvalue()
+        self.assertNotIn("AttributeError", printed_traceback)
+        self.assertNotIn("__dataclass_fields__", printed_traceback)
 
     def test_helper_asdict(self):
         # Basic tests for asdict(), it should return a new dictionary.
