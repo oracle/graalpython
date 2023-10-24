@@ -786,13 +786,6 @@ class PandasSuite(PySuite):
     platformdirs==2.5.2
     six==1.16.0
     virtualenv==20.16.3
-    odfpy==1.4.1
-    sqlalchemy==2.0.22
-    matplotlib
-    scipy==1.10.1
-    openpyxl
-    xlsxwriter
-    xlrd
     jinja2
     numpy==1.23.5
     pandas=={VERSION}
@@ -850,6 +843,21 @@ class PandasSuite(PySuite):
                     cwd=workdir,
                 )
                 shutil.rmtree(join(npdir, ".git"))
+                accepted = ["__init__"] + list(self.benchmarkList())
+                removed_files = []
+                for f in os.listdir(join(npdir, "asv_bench", "benchmarks")):
+                    # Remove any file or directory that is not a benchmark suite we want to run.
+                    # Keep all files starting with "_"
+                    if os.path.splitext(f)[0] not in accepted:
+                        removed_files.append(f)
+                        f_path = join(npdir, f)
+                        if os.path.isdir(f_path):
+                            shutil.rmtree(f_path)
+                        else:
+                            os.remove(f_path)
+                mx.log("Removed Pandas benchmark files: " + repr(removed_files))
+
+
             mx.run(["git", "init", "."], cwd=npdir)
             mx.run(["git", "config", "user.email", "you@example.com"], cwd=npdir)
             mx.run(["git", "config", "user.name", "YourName"], cwd=npdir)
