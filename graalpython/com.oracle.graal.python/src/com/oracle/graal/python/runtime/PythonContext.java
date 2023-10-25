@@ -112,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -435,13 +434,12 @@ public final class PythonContext extends Python3Core {
 
         public void dispose() {
             // This method may be called twice on the same object.
-            ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
             if (dict != null && dict.getNativeWrapper() != null) {
-                releaseHandleNode.execute(dict.getNativeWrapper());
+                ReleaseHandleNode.executeUncached(dict.getNativeWrapper());
             }
             dict = null;
             if (nativeWrapper != null) {
-                releaseHandleNode.execute(nativeWrapper);
+                ReleaseHandleNode.executeUncached(nativeWrapper);
                 nativeWrapper = null;
             }
         }
@@ -2013,10 +2011,9 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     private void cleanupCApiResources() {
-        ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
         for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
             if (singletonNativeWrapper != null) {
-                releaseHandleNode.execute(singletonNativeWrapper);
+                ReleaseHandleNode.executeUncached(singletonNativeWrapper);
             }
         }
         CApiTransitions.deallocateNativeWeakRefs(this);

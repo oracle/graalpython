@@ -214,9 +214,9 @@ public abstract class GetClassNode extends PNodeWithContext {
 
         @InliningCutoff
         @Specialization
-        static Object getNativeObject(PythonAbstractNativeObject object,
-                        @Cached(inline = false) CExtNodes.GetNativeClassNode getNativeClassNode) {
-            return getNativeClassNode.execute(object);
+        static Object getNativeObject(Node inliningTarget, PythonAbstractNativeObject object,
+                        @Cached CExtNodes.GetNativeClassNode getNativeClassNode) {
+            return getNativeClassNode.execute(inliningTarget, object);
         }
 
         @Idempotent

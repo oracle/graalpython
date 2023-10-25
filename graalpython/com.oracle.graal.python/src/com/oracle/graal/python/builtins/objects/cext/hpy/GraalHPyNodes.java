@@ -513,7 +513,7 @@ public abstract class GraalHPyNodes {
             // process legacy methods
             if (hasLegacyMethods) {
                 for (int i = 0;; i++) {
-                    PBuiltinFunction fun = addLegacyMethodNode.execute(legacyMethods, i);
+                    PBuiltinFunction fun = addLegacyMethodNode.execute(inliningTarget, legacyMethods, i);
                     if (fun == null) {
                         break;
                     }
@@ -1155,6 +1155,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static boolean doIt(GraalHPyContext context, Object enclosingType, Object slotDefArrPtr, int i,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
                         @Cached CreateMethodNode legacyMethodNode,
@@ -1164,7 +1165,7 @@ public abstract class GraalHPyNodes {
                         @Cached ReadAttributeFromObjectNode readAttributeToObjectNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             // computes '&(slotDefArrPtr[i].slot)'
             long slotIdOffset = ReadGenericNode.getElementPtr(context, i, context.getCTypeSize(HPyContextSignatureType.PyType_Slot), GraalHPyCField.PyType_Slot__slot);
@@ -1176,7 +1177,7 @@ public abstract class GraalHPyNodes {
             HPyLegacySlot slot = HPyLegacySlot.fromValue(slotId);
             if (slot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_SLOT_VALUE, slotId);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_SLOT_VALUE, slotId);
             }
 
             // computes '&(slotDefArrPtr[i].pfunc)'
@@ -1196,7 +1197,7 @@ public abstract class GraalHPyNodes {
                     break;
                 case Py_tp_methods:
                     for (int j = 0;; j++) {
-                        PBuiltinFunction method = legacyMethodNode.execute(pfuncPtr, j);
+                        PBuiltinFunction method = legacyMethodNode.execute(inliningTarget, pfuncPtr, j);
                         if (method == null) {
                             break;
                         }
@@ -1909,8 +1910,9 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached SubRefCntNode subRefCntNode) {
-            subRefCntNode.dec(dest[destOffset + 1]);
+            subRefCntNode.dec(inliningTarget, dest[destOffset + 1]);
         }
     }
 

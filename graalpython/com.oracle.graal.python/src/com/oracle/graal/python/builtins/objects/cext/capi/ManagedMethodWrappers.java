@@ -150,7 +150,7 @@ public abstract class ManagedMethodWrappers {
                     throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(callNode).getNativeNull().getPtr();
             } finally {
                 gil.release(mustRelease);
@@ -178,6 +178,7 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached NativeToPythonNode toJavaNode,
                         @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
@@ -197,7 +198,7 @@ public abstract class ManagedMethodWrappers {
                     throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(toJavaNode).getNativeNull().getPtr();
             } finally {
                 gil.release(mustRelease);

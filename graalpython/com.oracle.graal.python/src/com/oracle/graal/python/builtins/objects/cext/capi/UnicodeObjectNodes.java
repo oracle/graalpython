@@ -48,8 +48,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -57,26 +58,27 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class UnicodeObjectNodes {
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends Node {
 
-        public final PBytes executeNativeOrder(Object obj, long elementSize) {
-            return execute(obj, elementSize, ByteOrder.nativeOrder());
+        public final PBytes executeNativeOrder(Node inliningTarget, Object obj, long elementSize) {
+            return execute(inliningTarget, obj, elementSize, ByteOrder.nativeOrder());
         }
 
-        public final PBytes executeLittleEndian(Object obj, long elementSize) {
-            return execute(obj, elementSize, ByteOrder.LITTLE_ENDIAN);
+        public final PBytes executeLittleEndian(Node inliningTarget, Object obj, long elementSize) {
+            return execute(inliningTarget, obj, elementSize, ByteOrder.LITTLE_ENDIAN);
         }
 
-        public final PBytes executeBigEndian(Object obj, long elementSize) {
-            return execute(obj, elementSize, ByteOrder.BIG_ENDIAN);
+        public final PBytes executeBigEndian(Node inliningTarget, Object obj, long elementSize) {
+            return execute(inliningTarget, obj, elementSize, ByteOrder.BIG_ENDIAN);
         }
 
-        public abstract PBytes execute(Object obj, long elementSize, ByteOrder byteOrder);
+        public abstract PBytes execute(Node inliningTarget, Object obj, long elementSize, ByteOrder byteOrder);
 
         @Specialization
-        static PBytes doUnicode(PString s, long elementSize, ByteOrder byteOrder,
-                        @Bind("this") Node inliningTarget,
+        static PBytes doUnicode(Node inliningTarget, PString s, long elementSize, ByteOrder byteOrder,
                         @Cached StringMaterializeNode materializeNode) {
             return doUnicode(materializeNode.execute(inliningTarget, s), elementSize, byteOrder);
         }

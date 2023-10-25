@@ -1708,18 +1708,20 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNativeWrapper(arg)")
         static Object doNative(Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("ref") @Cached AddRefCntNode incRefCntNode) {
-            incRefCntNode.execute(arg, 1 /* that's what this function is for */ + //
+            incRefCntNode.execute(inliningTarget, arg, 1 /* that's what this function is for */ + //
                             1 /* that for returning it */);
             return arg;
         }
 
         @Specialization(guards = "!isNativeWrapper(arg)")
         static Object other(Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("ref") @Cached AddRefCntNode incRefCntNode,
                         @CachedLibrary(limit = "2") InteropLibrary ilib) {
             if (!ilib.isNull(arg) && ilib.isPointer(arg) && ilib.hasMembers(arg)) {
-                return doNative(arg, incRefCntNode);
+                return doNative(arg, inliningTarget, incRefCntNode);
             }
             // do nothing and return object
             return arg;
@@ -1733,20 +1735,22 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNativeWrapper(arg)")
         static Object doNative(Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("dec") @Cached SubRefCntNode decRefCntNode,
                         @Shared("inc") @Cached AddRefCntNode incRefCntNode) {
-            decRefCntNode.execute(arg, 1 /* that's what this function is for */);
-            incRefCntNode.execute(arg, 1 /* that for returning it */);
+            decRefCntNode.execute(inliningTarget, arg, 1 /* that's what this function is for */);
+            incRefCntNode.execute(inliningTarget, arg, 1 /* that for returning it */);
             return arg;
         }
 
         @Specialization(guards = "!isNativeWrapper(arg)")
         static Object other(Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("dec") @Cached SubRefCntNode decRefCntNode,
                         @Shared("inc") @Cached AddRefCntNode incRefCntNode,
                         @CachedLibrary(limit = "2") InteropLibrary ilib) {
             if (!ilib.isNull(arg) && ilib.isPointer(arg) && ilib.hasMembers(arg)) {
-                return doNative(arg, decRefCntNode, incRefCntNode);
+                return doNative(arg, inliningTarget, decRefCntNode, incRefCntNode);
             }
             // do nothing and return object
             return arg;

@@ -133,6 +133,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -197,6 +198,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
      */
+    @GenerateInline(false)
     public abstract static class FromLongNode extends CExtToJavaNode {
 
         @Specialization
@@ -216,6 +218,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    @GenerateInline(false)
     public abstract static class FromUInt32Node extends CExtToJavaNode {
 
         @Specialization
@@ -230,6 +233,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    @GenerateInline(false)
     public abstract static class ToInt64Node extends CExtToNativeNode {
 
         @Specialization
@@ -249,6 +253,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    @GenerateInline(false)
     public abstract static class ToInt32Node extends CExtToNativeNode {
 
         @Specialization
@@ -257,6 +262,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    @GenerateInline(false)
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
 
         @Child private PythonToNativeNode toNative = PythonToNativeNodeGen.create();
@@ -269,6 +275,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ToNativeReplacedNode extends CExtToNativeNode {
 
         @Specialization
@@ -1916,6 +1923,7 @@ public abstract class ExternalFunctionNodes {
      * inflate the primitives and we can then traverse the tuple and reach the wrappers of its
      * arguments after the call returned.
      */
+    @GenerateInline(false)
     abstract static class CreateArgsTupleNode extends Node {
         public abstract PTuple execute(PythonObjectFactory factory, Object[] args);
 
@@ -1955,6 +1963,7 @@ public abstract class ExternalFunctionNodes {
      * reference is owned by managed code only.
      */
     @TypeSystemReference(PythonTypes.class)
+    @GenerateInline(false)
     abstract static class MaterializePrimitiveNode extends Node {
 
         public abstract Object execute(PythonObjectFactory factory, Object object);
@@ -1994,6 +2003,7 @@ public abstract class ExternalFunctionNodes {
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization
@@ -2077,6 +2087,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
      */
+    @GenerateInline(false)
     public abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "3")
@@ -2114,6 +2125,7 @@ public abstract class ExternalFunctionNodes {
      * {@code wrap_delattr}, {@code wrap_setattr}.
      */
     @ImportStatic(PGuards.class)
+    @GenerateInline(false)
     public abstract static class InitCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization(guards = "result >= 0")
@@ -2170,6 +2182,7 @@ public abstract class ExternalFunctionNodes {
      */
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class CheckPrimitiveFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization(guards = "!isMinusOne(result)")
@@ -2220,6 +2233,7 @@ public abstract class ExternalFunctionNodes {
      * equivalent to the result processing part in {@code Object/typeobject.c: wrap_inquirypred} and
      * {@code Object/typeobject.c: wrap_objobjproc}.
      */
+    @GenerateInline(false)
     public abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
 
         @Specialization(guards = "result > 0")

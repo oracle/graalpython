@@ -280,14 +280,16 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean hasBuffer(
+                    @Bind("$node") Node inliningTarget,
                     @Cached CExtNodes.HasNativeBufferNode hasNativeBuffer) {
-        return hasNativeBuffer.execute(this);
+        return hasNativeBuffer.execute(inliningTarget, this);
     }
 
     @ExportMessage
     Object acquire(int flags,
+                    @Bind("$node") Node inliningTarget,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
-        PMemoryView mv = createMemoryView.execute(this, flags);
+        PMemoryView mv = createMemoryView.execute(inliningTarget, this, flags);
         mv.setShouldReleaseImmediately(true);
         return mv;
     }

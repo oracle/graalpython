@@ -85,25 +85,26 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
 
     @Specialization
-    PMemoryView fromMemoryView(PMemoryView object,
+    static PMemoryView fromMemoryView(PMemoryView object,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached PythonObjectFactory factory,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         object.checkReleased(inliningTarget, raiseNode);
-        return factory.createMemoryView(PythonContext.get(this), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
+        return factory.createMemoryView(PythonContext.get(inliningTarget), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
                         object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                         object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                         object.getBufferSuboffsets(), object.getFlags());
     }
 
     @Specialization
-    PMemoryView fromNative(PythonNativeObject object,
+    static PMemoryView fromNative(PythonNativeObject object,
+                    @Bind("this") Node inliningTarget,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
-        return fromNativeNode.execute(object, BufferFlags.PyBUF_FULL_RO);
+        return fromNativeNode.execute(inliningTarget, object, BufferFlags.PyBUF_FULL_RO);
     }
 
     @Specialization
-    PMemoryView fromMMap(PMMap object,
+    static PMemoryView fromMMap(PMMap object,
                     @Shared @Cached PythonObjectFactory factory,
                     @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                     @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {

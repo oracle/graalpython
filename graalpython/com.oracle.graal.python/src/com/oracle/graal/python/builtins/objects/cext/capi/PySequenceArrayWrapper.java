@@ -49,9 +49,10 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -62,20 +63,25 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  */
 public final class PySequenceArrayWrapper {
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class ToNativeStorageNode extends Node {
 
-        public abstract NativeSequenceStorage execute(SequenceStorage object, boolean isBytesLike);
+        public abstract NativeSequenceStorage execute(Node inliningTarget, SequenceStorage object, boolean isBytesLike);
+
+        public static NativeSequenceStorage executeUncached(SequenceStorage object, boolean isBytesLike) {
+            return ToNativeStorageNodeGen.getUncached().execute(null, object, isBytesLike);
+        }
 
         public static boolean isEmptySequenceStorage(SequenceStorage s) {
             return s instanceof EmptySequenceStorage;
         }
 
         @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)"})
-        static NativeSequenceStorage doManaged(SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
-                        @Bind("this") Node inliningTarget,
+        static NativeSequenceStorage doManaged(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
                         @Cached InlinedConditionProfile isObjectArrayProfile,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Shared("storageToNativeNode") @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
             Object array = getInternalArrayNode.execute(inliningTarget, s);
             if (isBytesLike) {
@@ -98,17 +104,13 @@ public final class PySequenceArrayWrapper {
 
         @Specialization
         static NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+                        @Shared("storageToNativeNode") @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
             return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY, 0);
         }
 
         protected static boolean isNative(SequenceStorage s) {
             return s instanceof NativeSequenceStorage;
-        }
-
-        public static ToNativeStorageNode getUncached() {
-            return ToNativeStorageNodeGen.getUncached();
         }
     }
 
@@ -118,7 +120,7 @@ public final class PySequenceArrayWrapper {
         if (sequenceStorage instanceof NativeSequenceStorage nativeStorage) {
             return nativeStorage.getPtr();
         }
-        NativeSequenceStorage nativeStorage = ToNativeStorageNodeGen.getUncached().execute(sequenceStorage, sequence instanceof PBytesLike);
+        NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(sequenceStorage, sequence instanceof PBytesLike);
         sequence.setSequenceStorage(nativeStorage);
         return nativeStorage.getPtr();
     }

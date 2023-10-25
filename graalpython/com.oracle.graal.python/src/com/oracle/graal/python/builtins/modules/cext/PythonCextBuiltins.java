@@ -781,7 +781,7 @@ public final class PythonCextBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
                 }
-                transformExceptionToNativeNode.execute(e);
+                transformExceptionToNativeNode.executeCached(e);
                 if (cachedSelf.getRetDescriptor().isIntType()) {
                     return -1;
                 } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {
@@ -1302,6 +1302,7 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
         static PNone doNativeWrapper(PythonNativeWrapper nativeWrapper,
+                        @Bind("this") Node inliningTarget,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
             // if (nativeWrapper.getRefCount() > 0) {
@@ -1311,7 +1312,7 @@ public final class PythonCextBuiltins {
 
             // clear native wrapper
             Object delegate = nativeWrapper.getDelegate();
-            clearNativeWrapperNode.execute(delegate, nativeWrapper);
+            clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
 
             doNativeWrapper(nativeWrapper, callReleaseHandleNode);
             return PNone.NO_VALUE;
@@ -1645,8 +1646,7 @@ public final class PythonCextBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object set(TruffleString tsName, Object pointer,
-                        @Cached TruffleString.EqualNode eqNode) {
+        Object set(TruffleString tsName, Object pointer) {
             try {
                 LOGGER.fine(() -> "initializing built-in class " + tsName + " at " + PythonUtils.formatPointer(pointer));
                 Python3Core core = getCore();
@@ -1656,7 +1656,7 @@ public final class PythonCextBuiltins {
                 int index = name.indexOf('.');
                 if (index == -1) {
                     for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                        if (eqNode.execute(type.getName(), tsName, TS_ENCODING)) {
+                        if (type.getName().equalsUncached(tsName, TS_ENCODING)) {
                             clazz = core.lookupType(type);
                             break;
                         }
