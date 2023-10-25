@@ -83,7 +83,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
@@ -355,15 +355,16 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected int execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached CallTernaryMethodNode callTernaryMethodNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached ConditionProfile arityProfile,
+                        @Cached InlinedConditionProfile arityProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
             try {
-                if (arityProfile.profile(arguments.length != 3)) {
+                if (arityProfile.profile(inliningTarget, arguments.length != 3)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw ArityException.create(3, 3, arguments.length);
                 }

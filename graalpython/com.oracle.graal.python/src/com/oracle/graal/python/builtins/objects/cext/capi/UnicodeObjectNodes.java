@@ -50,7 +50,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -78,26 +77,20 @@ public abstract class UnicodeObjectNodes {
         @Specialization
         static PBytes doUnicode(PString s, long elementSize, ByteOrder byteOrder,
                         @Bind("this") Node inliningTarget,
-                        @Cached StringMaterializeNode materializeNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return doUnicode(materializeNode.execute(inliningTarget, s), elementSize, byteOrder, switchEncodingNode, copyToByteArrayNode, factory);
+                        @Cached StringMaterializeNode materializeNode) {
+            return doUnicode(materializeNode.execute(inliningTarget, s), elementSize, byteOrder);
         }
 
         @Specialization
         @TruffleBoundary
-        static PBytes doUnicode(TruffleString s, long elementSize, ByteOrder byteOrder,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+        static PBytes doUnicode(TruffleString s, long elementSize, ByteOrder byteOrder) {
             TruffleString.Encoding encoding = byteOrder == ByteOrder.LITTLE_ENDIAN ? TruffleString.Encoding.UTF_32LE : TruffleString.Encoding.UTF_32BE;
 
             // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
             // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
             // MSBs.
             if (elementSize == 2L) {
-                ByteBuffer bytes = ByteBuffer.wrap(getBytes(s, switchEncodingNode, copyToByteArrayNode, encoding));
+                ByteBuffer bytes = ByteBuffer.wrap(getBytes(s, encoding));
                 // FIXME unsafe narrowing
                 int size = bytes.remaining() / 2;
                 ByteBuffer buf = ByteBuffer.allocate(size);
@@ -111,19 +104,19 @@ public abstract class UnicodeObjectNodes {
                 buf.flip();
                 byte[] barr = new byte[buf.remaining()];
                 buf.get(barr);
-                return factory.createBytes(barr);
+                return PythonObjectFactory.getUncached().createBytes(barr);
             } else if (elementSize == 4L) {
-                return factory.createBytes(getBytes(s, switchEncodingNode, copyToByteArrayNode, encoding));
+                return PythonObjectFactory.getUncached().createBytes(getBytes(s, encoding));
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }
         }
 
-        private static byte[] getBytes(TruffleString s, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode, TruffleString.Encoding encoding) {
-            TruffleString utf32String = switchEncodingNode.execute(s, encoding);
+        private static byte[] getBytes(TruffleString s, TruffleString.Encoding encoding) {
+            TruffleString utf32String = s.switchEncodingUncached(encoding);
             int len = utf32String.byteLength(encoding);
             byte[] b = new byte[len];
-            copyToByteArrayNode.execute(utf32String, 0, b, 0, len, encoding);
+            utf32String.copyToByteArrayUncached(0, b, 0, len, encoding);
             return b;
         }
     }

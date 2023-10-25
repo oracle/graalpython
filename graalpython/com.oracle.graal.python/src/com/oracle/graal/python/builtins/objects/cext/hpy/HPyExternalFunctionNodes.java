@@ -123,7 +123,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class HPyExternalFunctionNodes {
@@ -1124,8 +1124,9 @@ public abstract class HPyExternalFunctionNodes {
 
         public abstract Object execute(PythonThreadState pythonThreadState, TruffleString name, Object value);
 
-        protected static void checkFunctionResult(Node node, PythonThreadState pythonThreadState, TruffleString name, boolean indicatesError, boolean strict, ConditionProfile errOccurredProfile) {
-            CheckFunctionResultNode.checkFunctionResult(node, pythonThreadState, name, indicatesError, strict, errOccurredProfile, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION,
+        protected static void checkFunctionResult(Node inliningTarget, PythonThreadState pythonThreadState, TruffleString name, boolean indicatesError, boolean strict,
+                        InlinedConditionProfile errOccurredProfile) {
+            CheckFunctionResultNode.checkFunctionResult(inliningTarget, pythonThreadState, name, indicatesError, strict, errOccurredProfile, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION,
                             ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET);
         }
     }
@@ -1139,10 +1140,10 @@ public abstract class HPyExternalFunctionNodes {
         static Object doLongNull(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
-                        @Cached ConditionProfile isNullProfile,
-                        @Cached ConditionProfile errOccurredProfile) {
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached InlinedConditionProfile errOccurredProfile) {
             Object delegate = closeAndGetHandleNode.execute(value);
-            checkFunctionResult(inliningTarget, pythonThreadState, name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), true, errOccurredProfile);
+            checkFunctionResult(inliningTarget, pythonThreadState, name, isNullProfile.profile(inliningTarget, delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), true, errOccurredProfile);
             return delegate;
         }
     }
@@ -1161,7 +1162,7 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization
         static int doInteger(PythonThreadState pythonThreadState, TruffleString name, int value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached ConditionProfile errOccurredProfile) {
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
             checkFunctionResult(inliningTarget, pythonThreadState, name, value == -1, false, errOccurredProfile);
             return value;
         }
@@ -1169,7 +1170,7 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization(replaces = "doInteger")
         static long doLong(PythonThreadState pythonThreadState, TruffleString name, long value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached ConditionProfile errOccurredProfile) {
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
             checkFunctionResult(inliningTarget, pythonThreadState, name, value == -1, false, errOccurredProfile);
             return value;
         }
@@ -1178,8 +1179,8 @@ public abstract class HPyExternalFunctionNodes {
         static Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary lib,
-                        @Shared @Cached PRaiseNode raiseNode,
-                        @Shared @Cached ConditionProfile errOccurredProfile) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
             if (lib.fitsInLong(value)) {
                 try {
                     long lvalue = lib.asLong(value);
@@ -1189,7 +1190,7 @@ public abstract class HPyExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
+            throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
         }
     }
 
@@ -1204,7 +1205,7 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization
         static Object doGeneric(PythonThreadState threadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile errOccurredProfile) {
+                        @Cached InlinedConditionProfile errOccurredProfile) {
             /*
              * A 'void' function never indicates an error but an error could still happen. So this
              * must also be checked. The actual result value (which will be something like NULL or

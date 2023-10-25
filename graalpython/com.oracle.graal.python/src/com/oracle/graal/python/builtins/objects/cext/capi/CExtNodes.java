@@ -191,8 +191,8 @@ import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -520,11 +520,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, boolean copy,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             CompilerAsserts.partialEvaluationConstant(copy);
             byte[] byteArray = cByteArrayWrapper.getByteArray();
-            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.UTF_8, copy), TS_ENCODING);
+            return switchEncodingNode.execute(fromBytes.execute(byteArray, 0, byteArray.length, Encoding.UTF_8, copy), TS_ENCODING);
         }
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
@@ -532,7 +532,7 @@ public abstract class CExtNodes {
                         @Cached CStructAccess.ReadByteNode read,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
-                        @Cached TruffleString.FromByteArrayNode fromBytes,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int length = 0;
@@ -585,52 +585,53 @@ public abstract class CExtNodes {
         @Specialization(guards = "isEq(opName, equalNode)", limit = "2")
         static boolean doEq(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib,
-                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary bLib,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
             return aLib.isIdentical(a, b, bLib);
         }
 
         @Specialization(guards = "isNe(opName, equalNode)", limit = "2")
         static boolean doNe(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib,
-                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary bLib,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
             return !aLib.isIdentical(a, b, bLib);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)")
+        @Specialization(guards = "areEqual(cachedOpName, opName, equalNode)")
         static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             return executeCFunction(inliningTarget, op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)")
+        @Specialization(guards = "areEqual(cachedOpName, opName, equalNode)")
         static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             return executeCFunction(inliningTarget, op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)")
+        @Specialization(guards = "areEqual(cachedOpName, opName, equalNode)")
         static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             return executeCFunction(inliningTarget, op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
+        @NeverDefault
         static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
                 if (equalNode.execute(SpecialMethodNames.getCompareName(i), specialMethodName, TS_ENCODING)) {
@@ -638,6 +639,10 @@ public abstract class CExtNodes {
                 }
             }
             throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
+        }
+
+        static boolean areEqual(TruffleString cachedOpName, TruffleString opName, TruffleString.EqualNode equalNode) {
+            return equalNode.execute(cachedOpName, opName, TS_ENCODING);
         }
 
         static boolean isEq(TruffleString opName, TruffleString.EqualNode equalNode) {
@@ -815,47 +820,47 @@ public abstract class CExtNodes {
 
         @Specialization
         PComplex doBoolean(boolean value,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(value ? 1.0 : 0.0, 0.0);
         }
 
         @Specialization
         PComplex doInt(int value,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(value, 0.0);
         }
 
         @Specialization
         PComplex doLong(long value,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(value, 0.0);
         }
 
         @Specialization
         PComplex doDouble(double value,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(value, 0.0);
         }
 
         @Specialization
         PComplex doPInt(PInt value,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(value.doubleValue(), 0.0);
         }
 
         @Specialization
         PComplex doPFloat(PFloat value,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(value.getValue(), 0.0);
         }
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
-        PComplex runGeneric(Object value,
+        static PComplex runGeneric(Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached LookupAndCallUnaryDynamicNode callComplex,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = callComplex.executeObject(value, T___COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
@@ -863,7 +868,7 @@ public abstract class CExtNodes {
                 if (result instanceof PComplex) {
                     return (PComplex) result;
                 } else {
-                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
                 }
             } else {
                 return factory.createComplex(asDoubleNode.execute(null, inliningTarget, value), 0.0);
@@ -1096,7 +1101,7 @@ public abstract class CExtNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
                         @Cached CStructAccess.ReadPointerNode getTypeMemberNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
 
@@ -1141,7 +1146,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "isSpecialHeapSlot(cls, managedMemberName)")
         static Object doToAllocOrDelManaged(Object cls, @SuppressWarnings("unused") CFields nativeMemberName, HiddenKey managedMemberName,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
+                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
             Object func = readAttrNode.execute(cls, managedMemberName);
             if (func == PNone.NO_VALUE) {
                 func = createSpecialHeapSlot(cls, managedMemberName, readAttrNode);
@@ -1353,14 +1358,15 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doNativeWrapper(PythonNativeWrapper nativeWrapper, long value,
+                        @Bind("this") Node inliningTarget,
                         @Cached FreeNode freeNode,
-                        @Cached BranchProfile negativeProfile) {
+                        @Cached InlinedBranchProfile negativeProfile) {
             long refCount = CApiTransitions.decRef(nativeWrapper, value);
             if (refCount == 0) {
                 // 'freeNode' acts as a branch profile
                 freeNode.execute(nativeWrapper);
             } else if (refCount < 0) {
-                negativeProfile.enter();
+                negativeProfile.enter(inliningTarget);
                 LOGGER.severe(() -> "native wrapper has negative ref count: " + nativeWrapper);
             }
             return refCount;
@@ -1408,8 +1414,9 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "delegate != null")
         void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, delegate.getNativeWrapper() == nativeWrapper)) {
                 assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(this)) : "clearing primitive native wrapper singleton of small integer";
                 delegate.clearNativeWrapper();
             }
@@ -1840,8 +1847,9 @@ public abstract class CExtNodes {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
-                        @Cached ConditionProfile errOccurredProfile,
+                        @Cached InlinedConditionProfile errOccurredProfile,
                         @Cached CStructAccess.ReadPointerNode readPointer,
                         @Cached CStructAccess.ReadI64Node readI64,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
@@ -1852,7 +1860,7 @@ public abstract class CExtNodes {
                         @Cached NativeToPythonStealingNode toJavaNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.ReadI32Node readI32Node,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // call to type the pointer
             Object moduleDef = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
 
@@ -1874,7 +1882,7 @@ public abstract class CExtNodes {
             mSize = readI64.read(moduleDef, PyModuleDef__m_size);
 
             if (mSize < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
             }
 
             // parse slot definitions
@@ -1889,7 +1897,7 @@ public abstract class CExtNodes {
                             break loop;
                         case SLOT_PY_MOD_CREATE:
                             if (createFunction != null) {
-                                throw raiseNode.raise(SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
+                                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
                             }
                             createFunction = readPointerNode.readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__value);
                             break;
@@ -1897,7 +1905,7 @@ public abstract class CExtNodes {
                             hasExecutionSlots = true;
                             break;
                         default:
-                            throw raiseNode.raise(SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
+                            throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
                     }
                 }
             }
@@ -1913,7 +1921,7 @@ public abstract class CExtNodes {
                     } else {
                         result = interopLib.execute(createFunction, cArguments);
                     }
-                    CheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), capiContext.getContext(), errOccurredProfile,
+                    CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), capiContext.getContext(), errOccurredProfile,
                                     ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -1927,10 +1935,10 @@ public abstract class CExtNodes {
                  */
                 if (!(module instanceof PythonModule)) {
                     if (mSize > 0) {
-                        throw raiseNode.raise(SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
+                        throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
                     }
                     if (hasExecutionSlots) {
-                        throw raiseNode.raise(SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
+                        throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
                     }
                     // otherwise CPython is just fine
                 } else {
@@ -2028,8 +2036,8 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            CheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(raiseNode), capiContext.getContext(), ConditionProfile.getUncached(),
-                                            ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
+                            CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, iResult != 0, true, PythonLanguage.get(raiseNode), capiContext.getContext(),
+                                            InlinedConditionProfile.getUncached(), ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:
                             throw raiseNode.raise(SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
