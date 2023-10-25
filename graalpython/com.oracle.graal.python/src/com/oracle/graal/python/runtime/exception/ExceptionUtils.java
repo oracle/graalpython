@@ -130,7 +130,8 @@ public final class ExceptionUtils {
         printPythonLikeStackTrace(new PrintWriter(context.getEnv().err(), true), e);
     }
 
-    private static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {
+    @TruffleBoundary
+    public static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {
         List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
         if (stackTrace != null) {
             ArrayList<String> stack = new ArrayList<>();

@@ -84,6 +84,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -297,12 +298,22 @@ public final class PythonCextBuiltins {
             throw ExceptionUtils.wrapJavaException(oome, null, newException);
         }
         // everything else: log and convert to PException (SystemError)
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         PNodeWithContext.printStack();
-        PrintStream out = new PrintStream(PythonContext.get(null).getEnv().err());
-        out.println("while executing " + where1 + " " + where2);
+        PythonContext context = PythonContext.get(null);
+        PrintStream out;
+        if (context != null) {
+            out = new PrintStream(context.getEnv().err());
+        } else {
+            out = System.err;
+        }
         out.println("should not throw exceptions apart from PException");
+        out.println("while executing " + where1 + " " + where2);
+        ExceptionUtils.printPythonLikeStackTrace(new PrintWriter(out), t);
         t.printStackTrace(out);
+        if (context == null) {
+            out.println("ERROR: Native API called without Truffle context. This can happen when called from C-level atexit, C++ global destructor or an unregistered native thread");
+        }
         out.flush();
         throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
