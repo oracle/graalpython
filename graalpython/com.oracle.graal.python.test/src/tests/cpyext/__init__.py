@@ -584,7 +584,7 @@ def CPyExtType(name, code='', **kwargs):
 
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
-        "{name}.{name}",
+        "{tp_name}",
         sizeof({name}Object),       /* tp_basicsize */
         {tp_itemsize},              /* tp_itemsize */
         {tp_dealloc},               /* tp_dealloc */
@@ -655,6 +655,7 @@ def CPyExtType(name, code='', **kwargs):
     kwargs["code"] = code
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
+    kwargs.setdefault("tp_name", f"{name}.{name}")
     kwargs.setdefault("tp_itemsize", "0")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
     kwargs.setdefault("tp_alloc", "PyType_GenericAlloc")
