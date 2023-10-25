@@ -1947,7 +1947,6 @@ public final class PythonContext extends Python3Core {
             if (!cancelling) {
                 // this cleanup calls into Sulong
                 cleanupCApiResources();
-                CApiTransitions.deallocateNativeWeakRefs(this);
             }
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
@@ -2020,6 +2019,7 @@ public final class PythonContext extends Python3Core {
                 releaseHandleNode.execute(singletonNativeWrapper);
             }
         }
+        CApiTransitions.deallocateNativeWeakRefs(this);
     }
 
     private void cleanupHPyResources() {

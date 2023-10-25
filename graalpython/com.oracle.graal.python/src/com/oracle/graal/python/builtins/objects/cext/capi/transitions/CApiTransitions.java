@@ -335,10 +335,13 @@ public class CApiTransitions {
         if (idx != -1) {
             int len = idx + 1;
             Object array = CStructAccessFactory.AllocateNodeGen.getUncached().alloc((long) len * Long.BYTES);
-            CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, ptrArray, len, 0, 0);
-            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
-            CStructAccessFactory.FreeNodeGen.getUncached().free(array);
-            context.nativeWeakRef.clear();
+            try {
+                CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, ptrArray, len, 0, 0);
+                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
+            } finally {
+                CStructAccessFactory.FreeNodeGen.getUncached().free(array);
+                context.nativeWeakRef.clear();
+            }
         }
     }
 

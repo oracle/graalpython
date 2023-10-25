@@ -458,15 +458,16 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) 
 PyAPI_FUNC(Py_ssize_t) PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
     /* some objects depends on others which might get deallocated in the process 
         of an earlier deallocation of the other object. To avoid double deallocations,
-        we incref all objects by the size of the deallocation list */
+        we, temporarly, make all objects immortal artificially */
 	for (int i = 0; i < len; i++) {
     	PyObject *obj = (PyObject*) ptrArray[i];
-        obj->ob_refcnt += len;
+        obj->ob_refcnt = 999999999; // object.h:_Py_IMMORTAL_REFCNT
     }
 	for (int i = 0; i < len; i++) {
     	PyObject *obj = (PyObject*) ptrArray[i];
         if (Py_TYPE(obj)->tp_dealloc != object_dealloc) {
             /* we don't need to care about objects with default deallocation process */
+            obj->ob_refcnt = 0;
             _Py_Dealloc(obj);
         }
     }
