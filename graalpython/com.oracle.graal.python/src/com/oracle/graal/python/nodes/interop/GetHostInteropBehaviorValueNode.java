@@ -79,12 +79,8 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior) {
             if (isMethodSupported.profile(inlineTarget, behavior.isSupported(method))) {
-                PythonObject globals = behavior.getGlobals(method);
                 CallTarget callTarget = behavior.getCallTarget(method);
-                Object[] pArguments = PArguments.create(1 + method.extraArguments);
-                PArguments.setGlobals(pArguments, globals);
-                PArguments.setArgument(pArguments, 0, receiver);
-                // TODO: add the extra arguments that the other interop messages may need
+                Object[] pArguments = behavior.createArguments(method, receiver);
                 return invokeNode.execute(callTarget, pArguments);
             }
         }

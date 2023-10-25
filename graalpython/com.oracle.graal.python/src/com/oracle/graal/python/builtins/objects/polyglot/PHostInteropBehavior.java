@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.polyglot;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -77,6 +78,14 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
 
     public boolean isSupported(HostInteropBehaviorMethod method) {
         return callTargets[method.ordinal()] != null;
+    }
+
+    public Object[] createArguments(HostInteropBehaviorMethod method, PythonAbstractObject receiver) {
+        Object[] pArguments = PArguments.create(1 + method.extraArguments);
+        PArguments.setGlobals(pArguments, getGlobals(method));
+        PArguments.setArgument(pArguments, 0, receiver);
+        // TODO: add the extra arguments that the other interop messages may need
+        return pArguments;
     }
 
     public PythonAbstractObject getReceiver() {
