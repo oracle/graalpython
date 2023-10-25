@@ -115,7 +115,7 @@ public final class PythonCextArrayBuiltins {
             Object nativeNull = PythonContext.get(inliningTarget).getNativeNull().getPtr();
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__obj, toNativeNewRefNode.execute(array));
-            writeLongNode.write(pyBufferPtr, CFields.Py_buffer__len, array.getLength() * array.getFormat().bytesize);
+            writeLongNode.write(pyBufferPtr, CFields.Py_buffer__len, array.getBytesLength());
             writeIntNode.write(pyBufferPtr, CFields.Py_buffer__readonly, 0);
             writeIntNode.write(pyBufferPtr, CFields.Py_buffer__ndim, 1);
             writeLongNode.write(pyBufferPtr, CFields.Py_buffer__itemsize, array.getFormat().bytesize);

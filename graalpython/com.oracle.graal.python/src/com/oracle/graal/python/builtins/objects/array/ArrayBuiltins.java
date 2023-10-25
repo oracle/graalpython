@@ -137,6 +137,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedByteValueProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -161,10 +162,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             try {
                 int newLength = PythonUtils.addExact(left.getLength(), right.getLength());
-                int itemsize = left.getFormat().bytesize;
+                int itemShift = left.getItemSizeShift();
                 PArray newArray = factory.createArray(left.getFormatString(), left.getFormat(), newLength);
-                bufferLib.readIntoBuffer(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() * itemsize, bufferLib);
-                bufferLib.readIntoBuffer(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() * itemsize, right.getLength() * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() << itemShift, bufferLib);
+                bufferLib.readIntoBuffer(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() << itemShift, right.getLength() << itemShift, bufferLib);
                 return newArray;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -213,9 +214,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
-                int itemsize = self.getFormat().bytesize;
                 PArray newArray = factory.createArray(self.getFormatString(), self.getFormat(), newLength);
-                int segmentLength = self.getLength() * itemsize;
+                int segmentLength = self.getBytesLength();
                 for (int i = 0; i < value; i++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength, bufferLib);
                 }
@@ -252,8 +252,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 if (newLength != self.getLength()) {
                     self.checkCanResize(inliningTarget, raiseNode);
                 }
-                int itemsize = self.getFormat().bytesize;
-                int segmentLength = self.getLength() * itemsize;
+                int segmentLength = self.getBytesLength();
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 for (int i = 0; i < value; i++) {
@@ -280,11 +279,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "!isFloatingPoint(left.getFormat())"})
         static boolean eqBytes(PArray left, PArray right,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            if (left.getLength() != right.getLength()) {
+            if (left.getBytesLength() != right.getBytesLength()) {
                 return false;
             }
-            int itemsize = left.getFormat().bytesize;
-            for (int i = 0; i < left.getLength() * itemsize; i++) {
+            for (int i = 0; i < left.getBytesLength(); i++) {
                 if (bufferLib.readByte(left.getBuffer(), i) != bufferLib.readByte(right.getBuffer(), i)) {
                     return false;
                 }
@@ -496,14 +494,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
             appendStringNode.execute(sb, self.getFormatString());
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
-            if (isEmptyProfile.profile(inliningTarget, self.getLength() != 0)) {
+            int length = self.getLength();
+            if (isEmptyProfile.profile(inliningTarget, length != 0)) {
                 if (isUnicodeProfile.profile(inliningTarget, self.getFormat() == BufferFormat.UNICODE)) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, cast.execute(inliningTarget, reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, T_LBRACKET);
-                    for (int i = 0; i < self.getLength(); i++) {
+                    for (int i = 0; i < length; i++) {
                         if (i > 0) {
                             appendStringNode.execute(sb, T_COMMA_SPACE);
                         }
@@ -536,12 +535,14 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static Object getitem(PArray self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached PythonObjectFactory factory) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
-            int itemsize = self.getFormat().bytesize;
+            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
+            int itemsize = self.getItemSize();
             PArray newArray;
             try {
                 newArray = factory.createArray(self.getFormatString(), self.getFormat(), sliceInfo.sliceLength);
@@ -551,10 +552,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
 
             if (simpleStepProfile.profile(inliningTarget, sliceInfo.step == 1)) {
-                bufferLib.readIntoBuffer(self.getBuffer(), sliceInfo.start * itemsize, newArray.getBuffer(), 0, sliceInfo.sliceLength * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(self.getBuffer(), sliceInfo.start << itemShift, newArray.getBuffer(), 0, sliceInfo.sliceLength << itemShift, bufferLib);
             } else {
                 for (int i = sliceInfo.start, j = 0; j < sliceInfo.sliceLength; i += sliceInfo.step, j++) {
-                    bufferLib.readIntoBuffer(self.getBuffer(), i * itemsize, newArray.getBuffer(), j * itemsize, itemsize, bufferLib);
+                    bufferLib.readIntoBuffer(self.getBuffer(), i << itemShift, newArray.getBuffer(), j << itemShift, itemsize, bufferLib);
                 }
             }
             return newArray;
@@ -586,6 +587,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile differentLengthProfile,
                         @Cached InlinedConditionProfile growProfile,
                         @Cached InlinedConditionProfile stepAssignProfile,
+                        @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached DeleteArraySliceNode deleteSliceNode,
@@ -597,7 +599,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
             int stop = sliceInfo.stop;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
-            int itemsize = self.getFormat().bytesize;
+            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
+            int itemsize = self.getItemSize();
             Object sourceBuffer = other.getBuffer();
             int needed = other.getLength();
             if (sameArrayProfile.profile(inliningTarget, sourceBuffer == self.getBuffer())) {
@@ -617,12 +620,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         deleteSliceNode.execute(inliningTarget, self, start, sliceLength - needed);
                     }
                 }
-                bufferLib.readIntoBuffer(sourceBuffer, 0, self.getBuffer(), start * itemsize, needed * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(sourceBuffer, 0, self.getBuffer(), start << itemShift, needed << itemShift, bufferLib);
             } else if (complexDeleteProfile.profile(inliningTarget, needed == 0)) {
                 delItemNode.executeSlice(frame, self, slice);
             } else if (stepAssignProfile.profile(inliningTarget, needed == sliceLength)) {
                 for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
-                    bufferLib.readIntoBuffer(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize, bufferLib);
+                    bufferLib.readIntoBuffer(sourceBuffer, i << itemShift, self.getBuffer(), cur << itemShift, itemsize, bufferLib);
                 }
             } else {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
@@ -668,6 +671,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
                         @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
@@ -679,7 +683,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             int start = sliceInfo.start;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
-            int itemsize = self.getFormat().bytesize;
+            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
             if (sliceLength > 0) {
                 if (simpleStepProfile.profile(inliningTarget, step == 1)) {
                     deleteSliceNode.execute(inliningTarget, self, start, sliceLength);
@@ -690,9 +694,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     }
                     int cur, offset;
                     for (cur = start, offset = 0; offset < sliceLength - 1; cur += step, offset++) {
-                        bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (step - 1) * itemsize, bufferLib);
+                        bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (step - 1) << itemShift, bufferLib);
                     }
-                    bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (length - cur - 1) * itemsize, bufferLib);
+                    bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (length - cur - 1) << itemShift, bufferLib);
                     setLengthNode.execute(inliningTarget, self, length - sliceLength);
                 }
             }
@@ -851,9 +855,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 if (newLength != self.getLength()) {
                     self.checkCanResize(inliningTarget, raiseNode);
                 }
-                int itemsize = self.getFormat().bytesize;
+                int itemShift = self.getItemSizeShift();
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
-                bufferLib.readIntoBuffer(value.getBuffer(), 0, self.getBuffer(), self.getLength() * itemsize, value.getLength() * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(value.getBuffer(), 0, self.getBuffer(), self.getLength() << itemShift, value.getLength() << itemShift, bufferLib);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
@@ -1040,18 +1044,18 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                int itemsize = self.getFormat().bytesize;
+                int itemShift = self.getItemSizeShift();
                 int oldSize = self.getLength();
                 try {
                     int bufferLength = bufferLib.getBufferLength(buffer);
-                    if (bufferLength % itemsize != 0) {
+                    if (!PythonUtils.isDivisible(bufferLength, itemShift)) {
                         throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BYTES_ARRAY_NOT_MULTIPLE_OF_ARRAY_SIZE);
                     }
-                    int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
+                    int newLength = PythonUtils.addExact(oldSize, bufferLength >> itemShift);
                     self.checkCanResize(inliningTarget, raiseNode);
                     ensureCapacityNode.execute(inliningTarget, self, newLength);
                     setLengthNode.execute(inliningTarget, self, newLength);
-                    bufferLib.readIntoBuffer(buffer, 0, self.getBuffer(), oldSize * itemsize, bufferLength, bufferLib);
+                    bufferLib.readIntoBuffer(buffer, 0, self.getBuffer(), oldSize << itemShift, bufferLength, bufferLib);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw PRaiseNode.raiseUncached(this, MemoryError);
@@ -1083,8 +1087,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             if (nNegativeProfile.profile(inliningTarget, n < 0)) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
             }
-            int itemsize = self.getFormat().bytesize;
-            int nbytes = n * itemsize;
+            int nbytes = n << self.getItemSizeShift();
             Object readResult = callMethod.execute(frame, inliningTarget, file, T_READ, nbytes);
             if (readResult instanceof PBytes) {
                 int readLength = sizeNode.execute(frame, inliningTarget, readResult);
@@ -1197,7 +1200,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         Object tobytes(PArray self,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
-            byte[] bytes = new byte[self.getLength() * self.getFormat().bytesize];
+            byte[] bytes = new byte[self.getBytesLength()];
             bufferLib.readIntoByteArray(self.getBuffer(), 0, bytes, 0, bytes.length);
             return factory.createBytes(bytes);
         }
@@ -1228,7 +1231,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
             }
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            for (int i = 0; i < self.getLength(); i++) {
+            int length = self.getLength();
+            for (int i = 0; i < length; i++) {
                 appendStringNode.execute(sb, (TruffleString) getValueNode.execute(inliningTarget, self, i));
             }
             return toStringNode.execute(sb);
@@ -1245,7 +1249,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PythonObjectFactory factory) {
             if (self.getLength() > 0) {
-                int remaining = self.getLength() * self.getFormat().bytesize;
+                int remaining = self.getBytesLength();
                 int blocksize = 64 * 1024;
                 int nblocks = (remaining + blocksize - 1) / blocksize;
                 byte[] buffer = null;
@@ -1295,7 +1299,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         private static void doByteSwapExploded(PArray self, int itemsize, Object buffer, PythonBufferAccessLibrary bufferLib) {
-            for (int i = 0; i < self.getLength() * itemsize; i += itemsize) {
+            for (int i = 0; i < self.getBytesLength(); i += itemsize) {
                 doByteSwapExplodedInnerLoop(buffer, itemsize, i, bufferLib);
             }
         }
@@ -1321,16 +1325,17 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
+            int length = self.getLength();
             if (start < 0) {
-                start += self.getLength();
+                start += length;
                 if (start < 0) {
                     start = 0;
                 }
             }
             if (stop < 0) {
-                stop += self.getLength();
+                stop += length;
             }
-            for (int i = start; i < stop && i < self.getLength(); i++) {
+            for (int i = start; i < stop && i < length; i++) {
                 if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
                     return i;
                 }
@@ -1370,12 +1375,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static Object reverse(PArray self,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             int itemsize = self.getFormat().bytesize;
+            int itemShift = self.getItemSizeShift();
             byte[] tmp = new byte[itemsize];
             int length = self.getLength();
             for (int i = 0; i < length / 2; i++) {
-                bufferLib.readIntoByteArray(self.getBuffer(), i * itemsize, tmp, 0, itemsize);
-                bufferLib.readIntoBuffer(self.getBuffer(), (length - i - 1) * itemsize, self.getBuffer(), i * itemsize, itemsize, bufferLib);
-                bufferLib.writeFromByteArray(self.getBuffer(), (length - i - 1) * itemsize, tmp, 0, itemsize);
+                bufferLib.readIntoByteArray(self.getBuffer(), i << itemShift, tmp, 0, itemsize);
+                bufferLib.readIntoBuffer(self.getBuffer(), (length - i - 1) << itemShift, self.getBuffer(), i << itemShift, itemsize, bufferLib);
+                bufferLib.writeFromByteArray(self.getBuffer(), (length - i - 1) << itemShift, tmp, 0, itemsize);
             }
             return PNone.NONE;
         }
