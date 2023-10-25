@@ -53,21 +53,21 @@ tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
     for (i = 0; i < n; i++) {
         item = PyTuple_GetItem(tmp, i);
         Py_INCREF(item);
-        PyTuple_SetItem(newobj, i, item);
+        ((PyTupleObject*) newobj)->ob_item[i] = item; // PyTuple_SETITEM
     }
     Py_DECREF(tmp);
     return (PyObject*) newobj;
 }
 
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
-	/*
-	 * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
-	 * because this additional pointer can then be used as pointer to the element array.
-	 * CPython usually embeds the array in the struct but Sulong doesn't currently support that.
-	 * So we allocate space for the additional array pointer.
-	 * Also consider any 'PyVarObject' (in particular 'PyTupleObject') if this is fixed.
-	 */
-	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems + sizeof(PyObject **);
+    /*
+     * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
+     * because this additional pointer can then be used as pointer to the element array.
+     * CPython usually embeds the array in the struct but Sulong doesn't currently support that.
+     * So we allocate space for the additional array pointer.
+     * Also consider any 'PyVarObject' (in particular 'PyTupleObject') if this is fixed.
+     */
+    Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems + sizeof(PyObject **);
     PyObject* newObj = (PyObject*)PyObject_Malloc(size);
     if(cls->tp_dictoffset) {
     	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
