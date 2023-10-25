@@ -309,8 +309,8 @@ suite = {
             "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
-        
-        "com.oracle.graal.python.standalone": {
+
+        "com.oracle.graal.python.embedding.utils": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
@@ -321,17 +321,17 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
-        "com.oracle.graal.python.standalone.test": {
+        "com.oracle.graal.python.embedding.utils.test": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "testProject": True,
             "javaCompliance": "17+",
             "dependencies": [
-                "com.oracle.graal.python.standalone",
+                "com.oracle.graal.python.embedding.utils",
                 "mx:JUNIT",
             ],
         },
-        
+
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -890,29 +890,29 @@ suite = {
             "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
         },
 
-        "GRAALPYTHON_STANDALONE" : {
+        "GRAALPYTHON_EMBEDDING_UTILS" : {
             "moduleInfo": {
-                "name": "org.graalvm.python.standalone",
+                "name": "org.graalvm.python.embedding.utils",
                 "exports": [
-                    "com.oracle.graal.python.standalone",
+                    "com.oracle.graal.python.embedding.utils",
                 ]
             },
             "useModulePath": True,
             "dependencies": [
-                "com.oracle.graal.python.standalone",
+                "com.oracle.graal.python.embedding.utils",
             ],
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPython Standalone Utils",
+            "description": "GraalPy Embedding Utils",
             "maven": {
                 "groupId": "org.graalvm.python",
-                "artifactId": "python-standalone",
+                "artifactId": "python-embedding-utils",
                 "tag": ["default", "public"],
             },
-            
+
         },
-            
+
         "GRAALPYTHON-LAUNCHER": {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
@@ -1108,7 +1108,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.test",
                 "com.oracle.graal.python.pegparser.test",
-                "com.oracle.graal.python.standalone.test",
+                "com.oracle.graal.python.embedding.utils.test",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
