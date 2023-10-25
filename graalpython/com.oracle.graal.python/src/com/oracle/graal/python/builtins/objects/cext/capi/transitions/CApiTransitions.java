@@ -298,7 +298,24 @@ public class CApiTransitions {
      */
     @TruffleBoundary
     public static void addNativeWeakRef(PythonContext pythonContext, PythonAbstractNativeObject object) {
-        pythonContext.nativeContext.nativeWeakRef.add(object.ref.pointer);
+        pythonContext.nativeContext.nativeWeakRef.add(getNativePointer(object));
+    }
+
+    /**
+     * In case a weakref object is being collected. We must remove it from the list to avoid double
+     * deallocation at exit.
+     */
+    @TruffleBoundary
+    public static void removeNativeWeakRef(PythonContext pythonContext, long pointer) {
+        pythonContext.nativeContext.nativeWeakRef.remove(pointer);
+    }
+
+    public static long getNativePointer(Object obj) {
+        if (obj instanceof PythonAbstractNativeObject object) {
+            return object.ref.pointer;
+        } else {
+            return 0;
+        }
     }
 
     @TruffleBoundary

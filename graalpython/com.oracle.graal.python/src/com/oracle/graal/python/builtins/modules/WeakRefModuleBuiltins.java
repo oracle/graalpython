@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.removeNativeWeakRef;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
@@ -367,8 +368,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             }
             ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
             do {
-                if (reference instanceof PReferenceType.WeakRefStorage) {
-                    refs.add((PReferenceType.WeakRefStorage) reference);
+                if (reference instanceof PReferenceType.WeakRefStorage ref) {
+                    refs.add(ref);
+                    removeNativeWeakRef(ctx, ref.getPointer());
                 }
                 reference = weakRefQueue.poll();
             } while (reference != null);
