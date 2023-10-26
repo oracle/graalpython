@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -224,6 +225,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(false) // footprint reduction 40 -> 22
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
 
@@ -293,17 +295,22 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class ReadUnicodeArrayNode extends PNodeWithContext {
 
-        public abstract int[] execute(Object array, int length, int elementSize);
+        public abstract int[] execute(Node inliningTarget, Object array, int length, int elementSize);
+
+        public static int[] executeUncached(Object array, int length, int elementSize) {
+            return ReadUnicodeArrayNodeGen.getUncached().execute(null, array, length, elementSize);
+        }
 
         @Specialization(guards = "elementSize == 1")
-        static int[] read1(Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Bind("$node") Node inliningTarget,
+        static int[] read1(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
                         @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached CStructAccess.ReadByteNode read) {
+                        @Cached(inline = false) CStructAccess.ReadByteNode read) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
@@ -318,10 +325,9 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "elementSize == 2")
-        static int[] read2(Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Bind("$node") Node inliningTarget,
+        static int[] read2(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
                         @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached CStructAccess.ReadI16Node read) {
+                        @Cached(inline = false) CStructAccess.ReadI16Node read) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
@@ -336,10 +342,9 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "elementSize == 4")
-        static int[] read4(Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Bind("$node") Node inliningTarget,
+        static int[] read4(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
                         @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached CStructAccess.ReadI32Node read) {
+                        @Cached(inline = false) CStructAccess.ReadI32Node read) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
@@ -354,30 +359,32 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Object o, int signed, int targetTypeSize, boolean exact);
+        public abstract Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize, boolean exact);
 
-        public final Object execute(Object o, int signed, int targetTypeSize) {
-            return execute(o, signed, targetTypeSize, true);
+        public final Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize) {
+            return execute(inliningTarget, o, signed, targetTypeSize, true);
         }
 
-        public final long executeLong(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(o, signed, targetTypeSize, exact));
+        public final long executeLongCached(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(this, o, signed, targetTypeSize, exact));
         }
 
-        public final int executeInt(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(o, signed, targetTypeSize, exact));
+        public final int executeIntCached(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, exact));
         }
 
-        public final long executeLong(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(o, signed, targetTypeSize, true));
+        public final long executeLongCached(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(this, o, signed, targetTypeSize, true));
         }
 
-        public final int executeInt(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(o, signed, targetTypeSize, true));
+        public final int executeIntCached(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, true));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
@@ -407,25 +414,25 @@ public abstract class CExtCommonNodes {
         @Specialization
         @SuppressWarnings("unused")
         static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, exact);
         }
 
         @Specialization
         static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization
         static Object doLong(long value, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
         static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
         }
 
@@ -454,6 +461,7 @@ public abstract class CExtCommonNodes {
      * want to use this node if the argument can be an object of type {@link PrimitiveNativeWrapper}
      * .
      */
+    @GenerateInline(false) // footprint reduction 28 -> 10, inherits non-inlineable execute()
     @GenerateUncached
     @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
     public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
@@ -544,10 +552,12 @@ public abstract class CExtCommonNodes {
         public abstract Object execute(PythonContext context, TruffleString name, Object result);
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class GetByteArrayNode extends Node {
 
-        public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
+        public abstract byte[] execute(Node inliningTarget, Object obj, long n) throws InteropException, OverflowException;
 
         @Specialization
         static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n) {
@@ -556,7 +566,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte[] doForeign(Object obj, long n,
-                        @Cached CStructAccess.ReadByteNode readNode) {
+                        @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
             return readNode.readByteArray(obj, (int) n);
         }
 
@@ -580,6 +590,7 @@ public abstract class CExtCommonNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, SpecialMethodSlot.class})
+    @GenerateInline(false) // footprint reduction 32 -> 15, triggers GR-44020
     public abstract static class AsNativePrimitiveNode extends Node {
 
         public final int toInt32(Object value, boolean exact) {
@@ -888,6 +899,7 @@ public abstract class CExtCommonNodes {
      * {@link com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef#HPY_MEMBER_STRING} or
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
      */
+    @GenerateInline(false) // footprint reduction 32 -> 13, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
 
@@ -920,6 +932,7 @@ public abstract class CExtCommonNodes {
     /**
      * This node converts a C Boolean value to Python Boolean.
      */
+    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
@@ -963,6 +976,7 @@ public abstract class CExtCommonNodes {
      * This node converts a native primitive value to an appropriate Python char value (a
      * single-char Python string).
      */
+    @GenerateInline(false) // footprint reduction 36 -> 17
     @GenerateUncached
     public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
 
@@ -1009,6 +1023,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(false) // footprint reduction 20 -> 1, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class NativeUnsignedByteNode extends CExtToJavaNode {
 
@@ -1018,6 +1033,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(false) // footprint reduction 20 -> 1, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class NativeUnsignedShortNode extends CExtToJavaNode {
 
@@ -1032,6 +1048,8 @@ public abstract class CExtCommonNodes {
      * native value as unsigned. For example, a negative {@code int} value will be converted to a
      * positive {@code long} value.
      */
+    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
+
     @GenerateUncached
     public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
 
@@ -1086,6 +1104,7 @@ public abstract class CExtCommonNodes {
      * According to CPython, we need to encode the whole Python string before we access the first
      * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
      */
+    @GenerateInline(false) // footprint reduction 28 -> 9, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class AsNativeCharNode extends CExtToNativeNode {
 
@@ -1093,11 +1112,12 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte doGeneric(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
             if (encoded.length != 1) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             return encoded[0];
         }
@@ -1130,6 +1150,7 @@ public abstract class CExtCommonNodes {
     /**
      * Implements semantics of function {@code typeobject.c: getindex}.
      */
+    @GenerateInline(false) // footprint reduction 60 -> 44
     public abstract static class GetIndexNode extends Node {
         public abstract int execute(Object self, Object indexObj);
 

@@ -2269,6 +2269,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         public static StrNode create() {
             return BuiltinConstructorsFactory.StrNodeFactory.create(null);
         }

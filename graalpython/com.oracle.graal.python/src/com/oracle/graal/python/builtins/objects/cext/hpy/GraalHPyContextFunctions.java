@@ -1852,10 +1852,11 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object wcharPtr, long len,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadUnicodeArrayNode readArray,
                         @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
             try {
-                return fromArray.execute(readArray.execute(wcharPtr, PInt.intValueExact(len), CStructs.wchar_t.size()));
+                return fromArray.execute(readArray.execute(inliningTarget, wcharPtr, PInt.intValueExact(len), CStructs.wchar_t.size()));
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

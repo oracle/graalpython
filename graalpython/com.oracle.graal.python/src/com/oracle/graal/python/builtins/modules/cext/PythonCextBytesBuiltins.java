@@ -127,20 +127,21 @@ public final class PythonCextBytesBuiltins {
         }
 
         @Specialization
-        long doOther(PythonAbstractNativeObject obj,
+        static long doOther(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyBytesCheckNode check,
                         @Cached CStructAccess.ReadI64Node readI64Node) {
             if (check.execute(inliningTarget, obj)) {
                 return readI64Node.readFromObj(obj, PyVarObject__ob_size);
             }
-            return fallback(obj);
+            return fallback(obj, inliningTarget);
         }
 
         @Fallback
         @TruffleBoundary
-        long fallback(Object obj) {
-            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
+        static long fallback(Object obj,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
 
@@ -235,7 +236,7 @@ public final class PythonCextBytesBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory.createBytes(getByteArrayNode.execute(nativePointer, size));
+                return factory.createBytes(getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
@@ -268,7 +269,7 @@ public final class PythonCextBytesBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory.createByteArray(getByteArrayNode.execute(nativePointer, size));
+                return factory.createByteArray(getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
                 return raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {

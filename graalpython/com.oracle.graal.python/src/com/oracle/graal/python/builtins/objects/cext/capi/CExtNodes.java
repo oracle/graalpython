@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -101,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Impo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
-import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -197,7 +197,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 
 public abstract class CExtNodes {
 
@@ -1555,7 +1554,6 @@ public abstract class CExtNodes {
             String format = f.toJavaStringUncached();
 
             // helper nodes
-            GetNextVaArgNode getVaArgsNode = GetNextVaArgNodeGen.getUncached();
             NativeToPythonNode toJavaNode = NativeToPythonNodeGen.getUncached();
             CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
             FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
@@ -1593,7 +1591,7 @@ public abstract class CExtNodes {
                             valid = true;
                             break;
                         case 'c':
-                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList);
+                            int ordinal = getAndCastToInt(interopLibrary, raiseNode, vaList);
                             if (ordinal < 0 || ordinal > 0x110000) {
                                 throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
                             }
@@ -1610,12 +1608,12 @@ public abstract class CExtNodes {
                                     case "l":
                                     case "z":
                                         vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, raiseNode, getVaArgsNode.execute(vaList)));
+                                        result.append(castToLong(interopLibrary, raiseNode, GetNextVaArgNode.executeUncached(vaList)));
                                         valid = true;
                                         break;
                                 }
                             } else {
-                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList));
+                                result.append(getAndCastToInt(interopLibrary, raiseNode, vaList));
                                 vaArgIdx++;
                                 valid = true;
                             }
@@ -1628,25 +1626,25 @@ public abstract class CExtNodes {
                                     case "l":
                                     case "z":
                                         vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, raiseNode, getVaArgsNode.execute(vaList)));
+                                        result.append(castToLong(interopLibrary, raiseNode, GetNextVaArgNode.executeUncached(vaList)));
                                         valid = true;
                                         break;
                                 }
                             } else {
-                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList)));
+                                result.append(Integer.toUnsignedString(getAndCastToInt(interopLibrary, raiseNode, vaList)));
                                 vaArgIdx++;
                                 valid = true;
                             }
                             break;
                         case 'x':
                             // %x
-                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList)));
+                            result.append(Integer.toHexString(getAndCastToInt(interopLibrary, raiseNode, vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 's':
                             // %s
-                            Object charPtr = getVaArgsNode.execute(vaList);
+                            Object charPtr = GetNextVaArgNode.executeUncached(vaList);
                             String sValue;
                             if (interopLibrary.isNull(charPtr)) {
                                 // CPython would segfault. Let's make debugging easier for ourselves
@@ -1672,7 +1670,7 @@ public abstract class CExtNodes {
                             break;
                         case 'p':
                             // %p
-                            Object ptr = getVaArgsNode.execute(vaList);
+                            Object ptr = GetNextVaArgNode.executeUncached(vaList);
                             long value;
                             if (interopLibrary.isPointer(ptr)) {
                                 value = interopLibrary.asPointer(ptr);
@@ -1687,21 +1685,21 @@ public abstract class CExtNodes {
                             break;
                         case 'A':
                             // %A
-                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(getVaArgsNode, vaList)));
+                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'U':
                             // %U
-                            result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList)));
+                            result.append(castToJavaStringNode.execute(getPyObject(vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'V':
                             // %V
-                            Object pyObjectPtr = getVaArgsNode.execute(vaList);
+                            Object pyObjectPtr = GetNextVaArgNode.executeUncached(vaList);
                             if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
-                                unicodeObj = fromCharPointerNode.execute(getVaArgsNode.execute(vaList));
+                                unicodeObj = fromCharPointerNode.execute(GetNextVaArgNode.executeUncached(vaList));
                             } else {
                                 unicodeObj = toJavaNode.execute(pyObjectPtr);
                             }
@@ -1711,13 +1709,13 @@ public abstract class CExtNodes {
                             break;
                         case 'S':
                             // %S
-                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(getVaArgsNode, vaList)));
+                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'R':
                             // %R
-                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(getVaArgsNode, vaList)));
+                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
@@ -1750,8 +1748,8 @@ public abstract class CExtNodes {
          * Read an element from the {@code va_list} with the specified type and cast it to a Java
          * {@code int}. Throws a {@code SystemError} if this is not possible.
          */
-        private static int getAndCastToInt(GetNextVaArgNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList) throws InteropException {
-            Object value = getVaArgsNode.execute(vaList);
+        private static int getAndCastToInt(InteropLibrary lib, PRaiseNode raiseNode, Object vaList) throws InteropException {
+            Object value = GetNextVaArgNode.executeUncached(vaList);
             if (lib.fitsInInt(value)) {
                 try {
                     return lib.asInt(value);
@@ -1797,8 +1795,8 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
-        private static Object getPyObject(GetNextVaArgNode getVaArgsNode, Object vaList) throws InteropException {
-            return NativeToPythonNode.executeUncached(getVaArgsNode.execute(vaList));
+        private static Object getPyObject(Object vaList) throws InteropException {
+            return NativeToPythonNode.executeUncached(GetNextVaArgNode.executeUncached(vaList));
         }
 
         @TruffleBoundary

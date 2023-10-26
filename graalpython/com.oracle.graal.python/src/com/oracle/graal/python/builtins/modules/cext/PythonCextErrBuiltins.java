@@ -130,9 +130,9 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextErrBuiltins {
@@ -313,8 +313,8 @@ public final class PythonCextErrBuiltins {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                        @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
@@ -322,9 +322,8 @@ public final class PythonCextErrBuiltins {
         @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, Object value,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                        @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
-                        @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
             throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
@@ -360,9 +359,9 @@ public final class PythonCextErrBuiltins {
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached SetItemNode setItemNode,
                         @Cached TypeNode typeNode,
-                        @Cached BranchProfile notDotProfile,
-                        @Cached BranchProfile notModuleProfile,
-                        @Cached ConditionProfile baseProfile,
+                        @Cached InlinedBranchProfile notDotProfile,
+                        @Cached InlinedBranchProfile notModuleProfile,
+                        @Cached InlinedConditionProfile baseProfile,
                         @Cached PythonObjectFactory.Lazy factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (base == PNone.NO_VALUE) {
@@ -374,15 +373,15 @@ public final class PythonCextErrBuiltins {
             int length = codePointLengthNode.execute(name, TS_ENCODING);
             int dotIdx = indexOfCodepointNode.execute(name, '.', 0, length, TS_ENCODING);
             if (dotIdx < 0) {
-                notDotProfile.enter();
+                notDotProfile.enter(inliningTarget);
                 throw raiseNode.get(inliningTarget).raise(SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
             }
             if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
-                notModuleProfile.enter();
+                notModuleProfile.enter(inliningTarget);
                 setItemNode.execute(null, dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
             }
             PTuple bases;
-            if (baseProfile.profile(base instanceof PTuple)) {
+            if (baseProfile.profile(inliningTarget, base instanceof PTuple)) {
                 bases = (PTuple) base;
             } else {
                 bases = factory.get(inliningTarget).createTuple(new Object[]{base});
@@ -422,11 +421,11 @@ public final class PythonCextErrBuiltins {
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
-                        @Cached BranchProfile noExceptionProfile,
+                        @Cached InlinedBranchProfile noExceptionProfile,
                         @Cached PythonObjectFactory factory) {
             PException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
-                noExceptionProfile.enter();
+                noExceptionProfile.enter(inliningTarget);
                 return getNativeNull();
             }
             assert currentException != PException.NO_EXCEPTION;
@@ -440,17 +439,18 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_GivenExceptionMatches extends CApiBinaryBuiltinNode {
         public abstract int executeInt(Object err, Object exc);
 
-        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(this, exc, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(this, exc, getClassNode, isSubtypeNode)"}, limit = "1")
         static int matches(Object err, Object exc,
-                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached PyErr_GivenExceptionMatches matchesNode,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             int len = (int) lenNode.execute(null, exc);
-            loopProfile.profileCounted(len);
-            for (int i = 0; loopProfile.profile(i < len); i++) {
+            loopProfile.profileCounted(inliningTarget, len);
+            for (int i = 0; loopProfile.profile(inliningTarget, i < len); i++) {
                 Object e = getItemNode.execute(null, exc, i);
                 if (matchesNode.executeInt(err, e) != 0) {
                     return 1;
@@ -459,27 +459,27 @@ public final class PythonCextErrBuiltins {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"}, limit = "1")
         static int matches(Object errArg, Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached IsSubClassNode isSubClassNode,
                         @Cached IsNode isNode,
-                        @Cached BranchProfile isBaseExceptionProfile,
-                        @Cached ConditionProfile isExceptionProfile) {
+                        @Cached InlinedBranchProfile isBaseExceptionProfile,
+                        @Cached InlinedConditionProfile isExceptionProfile) {
             if (errArg == PNone.NO_VALUE || exc == PNone.NO_VALUE) {
                 // maybe caused by "import exceptions" that failed early on
                 return intValue(false);
             }
             Object err = errArg;
             if (isInstanceNode.executeWith(null, errArg, PythonBuiltinClassType.PBaseException)) {
-                isBaseExceptionProfile.enter();
+                isBaseExceptionProfile.enter(inliningTarget);
                 err = getClassNode.execute(inliningTarget, err);
             }
-            if (isExceptionProfile.profile(isExceptionClass(inliningTarget, err, isTypeNode, isSubClassNode) && isExceptionClass(inliningTarget, exc, isTypeNode, isSubClassNode))) {
+            if (isExceptionProfile.profile(inliningTarget, isExceptionClass(inliningTarget, err, isTypeNode, isSubClassNode) && isExceptionClass(inliningTarget, exc, isTypeNode, isSubClassNode))) {
                 return intValue(isSubClassNode.executeWith(null, err, exc));
             } else {
                 return intValue(isNode.execute(exc, err));
@@ -505,7 +505,7 @@ public final class PythonCextErrBuiltins {
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
-                        @Cached BranchProfile noValProfile) {
+                        @Cached InlinedBranchProfile noValProfile) {
             Object val = null;
             Object tb = null;
             Object fetched = fetchNode.execute(null);
@@ -515,7 +515,7 @@ public final class PythonCextErrBuiltins {
                 tb = getItemNode.execute(null, fetchedTuple, 2);
             }
             if (!(val instanceof PBaseException)) {
-                noValProfile.enter();
+                noValProfile.enter(inliningTarget);
                 // This means an invalid call, but this function is not supposed to raise exceptions
                 return PNone.NONE;
             }

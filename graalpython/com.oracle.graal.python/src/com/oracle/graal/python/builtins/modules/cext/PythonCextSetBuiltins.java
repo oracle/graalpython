@@ -82,11 +82,12 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextSetBuiltins {
 
@@ -110,7 +111,7 @@ public final class PythonCextSetBuiltins {
         @Specialization
         static int contains(PSet anyset, Object item,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetItem getItem) {
+                        @Shared @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
             return PInt.intValue(getItem.hasKey(null, inliningTarget, storage, item));
@@ -119,7 +120,7 @@ public final class PythonCextSetBuiltins {
         @Specialization
         static int contains(PFrozenSet anyset, Object item,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetItem getItem) {
+                        @Shared @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
             return PInt.intValue(getItem.hasKey(null, inliningTarget, storage, item));
@@ -134,55 +135,55 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
     abstract static class _PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
-        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)", limit = "3")
-        Object nextEntry(PSet set, long pos,
+        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
+        static Object nextEntry(PSet set, long pos,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @Cached HashingStorageGetIterator getIterator,
-                        @Cached HashingStorageIteratorNext itNext,
-                        @Cached HashingStorageIteratorKey itKey,
-                        @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode,
+                        @Shared @Cached HashingStorageGetIterator getIterator,
+                        @Shared @Cached HashingStorageIteratorNext itNext,
+                        @Shared @Cached HashingStorageIteratorKey itKey,
+                        @Shared @Cached HashingStorageIteratorKeyHash itKeyHash,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile,
+                        @Shared @Cached PythonObjectFactory.Lazy factory) {
             return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
         }
 
-        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)", limit = "3")
-        Object nextEntry(PFrozenSet set, long pos,
+        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
+        static Object nextEntry(PFrozenSet set, long pos,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @Cached HashingStorageGetIterator getIterator,
-                        @Cached HashingStorageIteratorNext itNext,
-                        @Cached HashingStorageIteratorKey itKey,
-                        @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode,
+                        @Shared @Cached HashingStorageGetIterator getIterator,
+                        @Shared @Cached HashingStorageIteratorNext itNext,
+                        @Shared @Cached HashingStorageIteratorKey itKey,
+                        @Shared @Cached HashingStorageIteratorKeyHash itKeyHash,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile,
+                        @Shared @Cached PythonObjectFactory.Lazy factory) {
             return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
         }
 
-        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"}, limit = "1")
-        Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode) {
-            return getNativeNull();
+        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"})
+        static Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode) {
+            return getNativeNull(inliningTarget);
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
         static Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
         static Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
         }
 
@@ -195,14 +196,14 @@ public final class PythonCextSetBuiltins {
             return sizeNode.execute(null, inliningTarget, set);
         }
 
-        private Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
+        private static Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
                         HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
-                        LoopConditionProfile loopProfile, PythonObjectFactory.Lazy factory) {
+                        InlinedLoopConditionProfile loopProfile, PythonObjectFactory.Lazy factory) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
-            loopProfile.profileCounted(pos);
-            for (int i = 0; loopProfile.inject(i <= pos); i++) {
+            loopProfile.profileCounted(inliningTarget, pos);
+            for (int i = 0; loopProfile.inject(inliningTarget, i <= pos); i++) {
                 if (!itNext.execute(inliningTarget, storage, it)) {
-                    return getNativeNull();
+                    return getNativeNull(inliningTarget);
                 }
             }
             Object key = itKey.execute(inliningTarget, storage, it);

@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
@@ -52,14 +54,20 @@ import com.oracle.truffle.api.nodes.Node;
  * Gets the pointer to the outVar at the given index. This is basically an access to the varargs
  * like {@code va_arg(*valist, void *)}
  */
+@GenerateInline
+@GenerateCached(false)
 @GenerateUncached
 public abstract class GetNextVaArgNode extends Node {
 
-    public abstract Object execute(Object valist) throws InteropException;
+    public abstract Object execute(Node inliningTarget, Object valist) throws InteropException;
+
+    public static Object executeUncached(Object valist) throws InteropException {
+        return GetNextVaArgNodeGen.getUncached().execute(null, valist);
+    }
 
     @Specialization
     static Object doGeneric(Object valist,
-                    @Cached PCallCapiFunction nextNode) {
+                    @Cached(inline = false) PCallCapiFunction nextNode) {
         return nextNode.call(NativeCAPISymbol.FUN_VA_ARG_POINTER, valist);
     }
 }

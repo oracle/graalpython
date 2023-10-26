@@ -126,12 +126,12 @@ public abstract class StringNodes {
 
         @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
         @InliningCutoff
-        static TruffleString doNative(PString x,
-                        @Cached(inline = false) ReadUnicodeArrayNode readArray,
+        static TruffleString doNative(Node inliningTarget, PString x,
+                        @Cached ReadUnicodeArrayNode readArray,
                         @Cached(inline = false) TruffleString.FromIntArrayUTF32Node fromArray) {
             NativeCharSequence sequence = x.getNativeCharSequence();
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            TruffleString materialized = fromArray.execute(readArray.execute(sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
+            TruffleString materialized = fromArray.execute(readArray.execute(inliningTarget, sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
             x.setMaterialized(materialized);
             return materialized;
         }

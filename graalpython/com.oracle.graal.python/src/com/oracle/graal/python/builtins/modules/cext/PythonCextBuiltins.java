@@ -194,6 +194,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NonIdempotent;
@@ -216,7 +218,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -232,32 +234,34 @@ public final class PythonCextBuiltins {
      * boxed int, for example, is not referenced from anyhwere). This node promotes these types to
      * full types like {@link PInt} and {@link PString}.
      */
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class PromoteBorrowedValue extends Node {
 
-        public abstract Object execute(Object value);
+        public abstract Object execute(Node inliningTarget, Object value);
 
         @Specialization
-        public static PString doString(TruffleString str,
-                        @Shared @Cached PythonObjectFactory factory) {
+        static PString doString(TruffleString str,
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createString(str);
         }
 
         @Specialization
         static PythonBuiltinObject doInteger(int i,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createInt(i);
         }
 
         @Specialization
         static PythonBuiltinObject doLong(long i,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createInt(i);
         }
 
         @Specialization(guards = "!isNaN(d)")
         static PythonBuiltinObject doDouble(double d,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createFloat(d);
         }
 
@@ -311,6 +315,10 @@ public final class PythonCextBuiltins {
             return getContext().getNativeNull();
         }
 
+        protected static PythonNativePointer getNativeNull(Node inliningTarget) {
+            return PythonContext.get(inliningTarget).getNativeNull();
+        }
+
         /**
          * Returns the "NULL" pointer retrieved from the native backend, e.g., an LLVMPointer
          * instance. This is not wrapped, i.e., it cannot be passed through a PyObject
@@ -335,6 +343,10 @@ public final class PythonCextBuiltins {
 
         public final Python3Core getCore() {
             return getContext();
+        }
+
+        protected static final CApiContext getCApiContext(Node inliningTarget) {
+            return PythonContext.get(inliningTarget).getCApiContext();
         }
 
         protected final CApiContext getCApiContext() {
@@ -600,7 +612,7 @@ public final class PythonCextBuiltins {
 
         @ExportMessage
         static final class Execute {
-            @Specialization(guards = "self == cachedSelf")
+            @Specialization(guards = "self == cachedSelf", limit = "3")
             public static Object doExecute(@SuppressWarnings("unused") CApiBuiltinExecutable self, Object[] arguments,
                             @Cached("self") CApiBuiltinExecutable cachedSelf,
                             @Cached(parameters = "cachedSelf") ExecuteCApiBuiltinNode call) {
@@ -922,29 +934,28 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class PyObjectSetAttrNode extends PNodeWithContext {
 
-        abstract Object execute(Object object, TruffleString key, Object value);
+        abstract void execute(Node inliningTarget, Object object, TruffleString key, Object value);
 
         @Specialization
-        static Object doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
-                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+        static void doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
+                        @Exclusive @Cached(value = "createForceType()", inline = false) WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
-            return PNone.NONE;
         }
 
         @Specialization
-        static Object doNativeClass(PythonNativeClass object, TruffleString key, Object value,
-                        @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
+        static void doNativeClass(PythonNativeClass object, TruffleString key, Object value,
+                        @Exclusive @Cached(value = "createForceType()", inline = false) WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
-            return PNone.NONE;
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
-        static Object doObject(PythonObject object, TruffleString key, Object value,
-                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
+        static void doObject(PythonObject object, TruffleString key, Object value,
+                        @Exclusive @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
             writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
-            return PNone.NONE;
         }
     }
 
@@ -1069,7 +1080,7 @@ public final class PythonCextBuiltins {
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile zeroDimProfile,
+                        @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached CStructAccess.ReadI64Node readShapeNode,
                         @Cached CStructAccess.ReadI64Node readStridesNode,
                         @Cached CStructAccess.ReadI64Node readSuboffsetsNode,
@@ -1087,7 +1098,7 @@ public final class PythonCextBuiltins {
             int[] shape = null;
             int[] strides = null;
             int[] suboffsets = null;
-            if (zeroDimProfile.profile(ndim > 0)) {
+            if (zeroDimProfile.profile(inliningTarget, ndim > 0)) {
                 if (!lib.isNull(shapePointer)) {
                     shape = readShapeNode.readLongAsIntArray(shapePointer, ndim);
                 } else {
@@ -1124,10 +1135,12 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ReportPolymorphism
     abstract static class CastArgsNode extends PNodeWithContext {
 
-        public abstract Object[] execute(VirtualFrame frame, Object argsObj);
+        public abstract Object[] execute(VirtualFrame frame, Node inliningTarget, Object argsObj);
 
         @Specialization(guards = "isNoValue(args)")
         @SuppressWarnings("unused")
@@ -1137,15 +1150,17 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = "!isNoValue(args)")
         static Object[] doNotNull(VirtualFrame frame, Object args,
-                        @Cached ExecutePositionalStarargsNode expandArgsNode) {
+                        @Cached(inline = false) ExecutePositionalStarargsNode expandArgsNode) {
             return expandArgsNode.executeWith(frame, args);
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ReportPolymorphism
     abstract static class CastKwargsNode extends PNodeWithContext {
 
-        public abstract PKeyword[] execute(Object kwargsObj);
+        public abstract PKeyword[] execute(Node inliningTarget, Object kwargsObj);
 
         @Specialization(guards = "isNoValue(kwargs)")
         @SuppressWarnings("unused")
@@ -1154,8 +1169,7 @@ public final class PythonCextBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(kwargs)")
-        static PKeyword[] doKeywords(Object kwargs,
-                        @Bind("this") Node inliningTarget,
+        static PKeyword[] doKeywords(Node inliningTarget, Object kwargs,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
             return expandKwargsNode.execute(inliningTarget, kwargs);
         }
@@ -1166,17 +1180,18 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static int doConvert(Object args, long argCount, Object nativeKwds, TruffleString formatString, Object nativeKwdnames, Object varargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary(limit = "2") InteropLibrary kwdnamesRefLib,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached ConditionProfile kwdsProfile,
-                        @Cached ConditionProfile kwdnamesProfile,
+                        @Cached InlinedConditionProfile kwdsProfile,
+                        @Cached InlinedConditionProfile kwdnamesProfile,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             // force 'format' to be a String
             TruffleString[] split;
             try {
-                split = splitFormatStringNode.execute(formatString);
+                split = splitFormatStringNode.execute(inliningTarget, formatString);
                 assert split.length == 2;
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1188,14 +1203,14 @@ public final class PythonCextBuiltins {
 
             // sort out if kwds is native NULL
             Object kwds;
-            if (kwdsProfile.profile(PGuards.isNoValue(nativeKwds))) {
+            if (kwdsProfile.profile(inliningTarget, PGuards.isNoValue(nativeKwds))) {
                 kwds = null;
             } else {
                 kwds = nativeKwds;
             }
 
             // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
+            Object kwdnames = kwdnamesProfile.profile(inliningTarget, kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
 
             PTuple argv = factory.createTuple(readNode.readPyObjectArray(args, (int) argCount));
 
@@ -1208,15 +1223,16 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static int doConvert(Object argv, Object nativeKwds, TruffleString formatString, Object nativeKwdnames, Object varargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary(limit = "2") InteropLibrary kwdnamesRefLib,
-                        @Cached ConditionProfile kwdsProfile,
-                        @Cached ConditionProfile kwdnamesProfile,
+                        @Cached InlinedConditionProfile kwdsProfile,
+                        @Cached InlinedConditionProfile kwdnamesProfile,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             // force 'format' to be a String
             TruffleString[] split;
             try {
-                split = splitFormatStringNode.execute(formatString);
+                split = splitFormatStringNode.execute(inliningTarget, formatString);
                 assert split.length == 2;
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1228,14 +1244,14 @@ public final class PythonCextBuiltins {
 
             // sort out if kwds is native NULL
             Object kwds;
-            if (kwdsProfile.profile(PGuards.isNoValue(nativeKwds))) {
+            if (kwdsProfile.profile(inliningTarget, PGuards.isNoValue(nativeKwds))) {
                 kwds = null;
             } else {
                 kwds = nativeKwds;
             }
 
             // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
+            Object kwdnames = kwdnamesProfile.profile(inliningTarget, kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
 
             return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, varargs);
         }
@@ -1348,7 +1364,7 @@ public final class PythonCextBuiltins {
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject, long size,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Shared @Cached GetThreadStateNode getThreadStateNode,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
@@ -1367,10 +1383,11 @@ public final class PythonCextBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         int doGeneric(int domain, Object pointerObject, long size,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
-                        @Cached GetThreadStateNode getThreadStateNode) {
+                        @Shared @Cached GetThreadStateNode getThreadStateNode) {
             return doCachedDomainIdx(domain, pointerObject, size, inliningTarget, getThreadStateNode, lib, domain, lookupDomain(domain));
         }
 

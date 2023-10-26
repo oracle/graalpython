@@ -139,7 +139,7 @@ import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonCextObjectBuiltins {
@@ -148,6 +148,7 @@ public class PythonCextObjectBuiltins {
     abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastArgsNode castArgsNode,
                         @Cached CastKwargsNode castKwargsNode,
                         @Cached CallNode callNode) {
@@ -156,9 +157,9 @@ public class PythonCextObjectBuiltins {
             if (singleArg != 0) {
                 args = new Object[]{argsObj};
             } else {
-                args = castArgsNode.execute(null, argsObj);
+                args = castArgsNode.execute(null, inliningTarget, argsObj);
             }
-            PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
+            PKeyword[] keywords = castKwargsNode.execute(inliningTarget, kwargsObj);
             return callNode.execute(null, callable, args, keywords);
         }
     }
@@ -168,14 +169,15 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         static Object doFunction(Object callable, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached NativeToPythonNode toJavaNode) {
-            return callFunction(callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return callFunction(inliningTarget, callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
 
-        static Object callFunction(Object callable, Object vaList,
+        static Object callFunction(Node inliningTarget, Object callable, Object vaList,
                         GetNextVaArgNode getVaArgs,
                         InteropLibrary argLib,
                         CallNode callNode,
@@ -189,7 +191,7 @@ public class PythonCextObjectBuiltins {
             while (true) {
                 Object object;
                 try {
-                    object = getVaArgs.execute(vaList);
+                    object = getVaArgs.execute(inliningTarget, vaList);
                 } catch (InteropException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -213,6 +215,7 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         static Object doMethod(Object receiver, Object methodName, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
@@ -220,7 +223,7 @@ public class PythonCextObjectBuiltins {
                         @Cached NativeToPythonNode toJavaNode) {
 
             Object method = getAnyAttributeNode.executeObject(null, receiver, methodName);
-            return PyTruffleObject_CallFunctionObjArgs.callFunction(method, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return PyTruffleObject_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
     }
 
@@ -236,7 +239,7 @@ public class PythonCextObjectBuiltins {
             if (singleArg != 0) {
                 args = new Object[]{argsObj};
             } else {
-                args = castArgsNode.execute(null, argsObj);
+                args = castArgsNode.execute(null, inliningTarget, argsObj);
             }
             return callMethod.execute(null, inliningTarget, receiver, methodName, args);
         }
@@ -444,11 +447,11 @@ public class PythonCextObjectBuiltins {
         static int hasAttr(Object obj, Object attr,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached BranchProfile exceptioBranchProfile) {
+                        @Cached InlinedBranchProfile exceptioBranchProfile) {
             try {
                 return lookupAttrNode.execute(null, inliningTarget, obj, attr) != PNone.NO_VALUE ? 1 : 0;
             } catch (PException e) {
-                exceptioBranchProfile.enter();
+                exceptioBranchProfile.enter(inliningTarget);
                 return 0;
             }
         }
@@ -480,30 +483,30 @@ public class PythonCextObjectBuiltins {
             return bytes;
         }
 
-        @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(inliningTarget, bytes, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(inliningTarget, bytes, getClassNode, isSubtypeNode)"}, limit = "1")
         static Object bytes(Object bytes,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtypeNode) {
             return bytes;
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
-        Object bytes(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Exclusive @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+        static Object bytes(Object obj,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached BytesNode bytesNode) {
             return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "!hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
         static Object bytes(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Exclusive @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PyBytes_FromObject fromObjectNode) {
             return fromObjectNode.execute(obj);
         }

@@ -1325,7 +1325,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             try {
-                return new Object[]{self, asSsizeTNode.executeLong(arg, 1, Long.BYTES)};
+                return new Object[]{self, asSsizeTNode.executeLongCached(arg, 1, Long.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1455,7 +1455,7 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelf(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
-                return new Object[]{self, arg1, asSsizeTNode.executeInt(arg2, 1, Integer.BYTES)};
+                return new Object[]{self, arg1, asSsizeTNode.executeIntCached(arg2, 1, Integer.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }

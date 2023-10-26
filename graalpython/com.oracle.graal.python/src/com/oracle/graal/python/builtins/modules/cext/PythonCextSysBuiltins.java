@@ -76,7 +76,7 @@ public final class PythonCextSysBuiltins {
                 if (value == PNone.NO_VALUE) {
                     return getNativeNull();
                 }
-                Object promotedValue = promoteNode.execute(value);
+                Object promotedValue = promoteNode.execute(inliningTarget, value);
                 if (promotedValue != null) {
                     setAttrNode.execute(inliningTarget, sys, name, promotedValue);
                     return promotedValue;

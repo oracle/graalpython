@@ -89,7 +89,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PythonCextListBuiltins {
@@ -140,7 +139,7 @@ public final class PythonCextListBuiltins {
                 throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
             }
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
-            Object promotedValue = promoteNode.execute(result);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 list.setSequenceStorage(sequenceStorage);
@@ -290,10 +289,11 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PList list, Object position, Object element,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode,
-                        @Cached ConditionProfile generalizedProfile) {
+                        @Cached InlinedConditionProfile generalizedProfile) {
             SequenceStorage newStorage = setItemNode.execute(null, list.getSequenceStorage(), position, element);
-            if (generalizedProfile.profile(list.getSequenceStorage() != newStorage)) {
+            if (generalizedProfile.profile(inliningTarget, list.getSequenceStorage() != newStorage)) {
                 list.setSequenceStorage(newStorage);
             }
             return 0;
@@ -329,7 +329,7 @@ public final class PythonCextListBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeListStorage asNativeStorage,
                         @Cached SequenceStorageNodes.InitializeNativeItemScalarNode setItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             NativeSequenceStorage sequenceStorage = asNativeStorage.execute(list);
             checkBounds(inliningTarget, sequenceStorage, index, raiseNode);
             setItemNode.execute(sequenceStorage, (int) index, element);

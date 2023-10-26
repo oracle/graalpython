@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -134,6 +135,7 @@ public final class PythonCextTupleBuiltins {
             }
         }
 
+        @NeverDefault
         protected static SetItemNode createSetItem() {
             return SetItemNode.create(null, ListGeneralizationNode::create);
         }
@@ -147,7 +149,7 @@ public final class PythonCextTupleBuiltins {
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
                         @Cached InlinedConditionProfile generalizedProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // we cannot assume that there is nothing already in the tuple, because the API usage
             // is valid if the tuple has never been visible to Python code so far, and it is up to
             // the extension author to take care of correct decref's for the previously contained
@@ -199,13 +201,13 @@ public final class PythonCextTupleBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
                         @Cached ListGeneralizationNode generalizationNode,
-                        @Exclusive @Cached SetItemScalarNode setItemNode,
-                        @Exclusive @Cached GetItemScalarNode getItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached SetItemScalarNode setItemNode,
+                        @Shared @Cached GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
-            Object promotedValue = promoteNode.execute(result);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 tuple.setSequenceStorage(sequenceStorage);
@@ -220,13 +222,13 @@ public final class PythonCextTupleBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeTupleStorage asNativeStorage,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
-                        @Exclusive @Cached SetItemScalarNode setItemNode,
-                        @Exclusive @Cached GetItemScalarNode getItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached SetItemScalarNode setItemNode,
+                        @Shared @Cached GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
-            Object promotedValue = promoteNode.execute(result);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
