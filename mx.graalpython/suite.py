@@ -1108,7 +1108,6 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.test",
                 "com.oracle.graal.python.pegparser.test",
-                "com.oracle.graal.python.embedding.utils.test",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
