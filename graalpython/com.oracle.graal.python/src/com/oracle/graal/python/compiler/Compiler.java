@@ -3864,9 +3864,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // info is not null guaranteed by parser
     public Void visit(StmtTy.Break node) {
         setLocation(node);
+        SourceRange originLoc = unit.currentLocation;
         BlockInfo.Loop info = unwindBlockStack(UnwindType.BREAK);
         if (info == null) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'break' outside loop");
+            errorCallback.onError(ErrorType.Syntax, originLoc, "'break' outside loop");
         }
         addOp(JUMP_FORWARD, info.after);
         return null;
@@ -3876,9 +3877,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // info is not null guaranteed by parser
     public Void visit(StmtTy.Continue node) {
         setLocation(node);
+        SourceRange originLoc = unit.currentLocation;
         BlockInfo.Loop info = unwindBlockStack(UnwindType.CONTINUE);
         if (info == null) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'continue' not properly in loop");
+            errorCallback.onError(ErrorType.Syntax, originLoc, "'continue' not properly in loop");
         }
         addOp(JUMP_BACKWARD, info.start);
         return null;
