@@ -5,6 +5,13 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 24.0.0
 * Foreign big integers are now supported and work with all `Numeric` operators.
+* Interop `null` values are now treated as *identical*, not only *equal* to Python's `None`. This means that something like `java.type("java.lang.Object[]")(1)[0] is None` will now return `True`.
+* Update to Python 3.10.13. This inlines the security and bugfixes from 3.10.8 to 3.10.13.
+* Include the GraalPy C API revision in the ABI tag for wheels. This avoids accidentally using incompatible binaries when using snapshots.
+* Honor the `allowHostSocketAccess` configuration in embeddings. This means sockets can now be disabled independently of other IO.
+* Avoid eager initialization of the Sulong LLVM runtime. This reduces footprint in the default configuration where C extensions are run natively.
+* Expand support for the following modules: llvmlite, pydantic-core, catboost, ray, tensorflow, tensorflow-io, readme-renderer, safetensors, keras, pybind11, protbuf, grpcio, PyO3, cryptography, bcrypt, cramjam, libcst, orjson, rpds_py.
+* Support installing some packages with native extensions on Windows. Simple packages like `ujson` or `kiwisolver` will now work when installed from a venv inside a Visual Studio command prompt.
 
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
