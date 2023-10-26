@@ -516,6 +516,9 @@ public final class CApiContext extends CExtContext {
     private static AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
     private static AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
+    private Runnable nativeFinalizerRunnable;
+    private Thread nativeFinalizerShutdownHook;
+
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
@@ -558,7 +561,7 @@ public final class CApiContext extends CExtContext {
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
                 if (!U.isExecutable(initFunction)) {
-                    Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
+                    Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
                     U.execute(initFunction, new GetBuiltin());
                 } else {
@@ -568,6 +571,21 @@ public final class CApiContext extends CExtContext {
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
                 PyDateTimeCAPIWrapper.initWrapper(cApiContext);
                 context.runCApiHooks();
+
+                if (useNative) {
+                    /*
+                     * C++ libraries sometimes declare global objects that have destructors that
+                     * call Py_DECREF. Those destructors are then called during native shutdown,
+                     * which is after the JVM/SVM shut down and the upcall would segfault. This
+                     * finalizer code rebinds reference operations to native no-ops that don't
+                     * upcall. In normal scenarios we call it during context exit, but when the VM
+                     * is terminated by a signal, the context exit is skipped. For that case we set
+                     * up the shutdown hook.
+                     */
+                    Object finalizeFunction = U.readMember(capiLibrary, "finalizeCAPI");
+                    Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
+                    cApiContext.addNativeFinalizer(env, finalizeFunction, finalizeSignature);
+                }
 
                 return cApiContext;
             } catch (PException e) {
@@ -588,16 +606,23 @@ public final class CApiContext extends CExtContext {
         return context.getCApiContext();
     }
 
-    @TruffleBoundary
-    public void finalizeCapi() {
-        if (useNativeBackend && getLLVMLibrary() != null) {
+    private void addNativeFinalizer(Env env, Object finalizeFunction, Object finalizeSignature) {
+        nativeFinalizerRunnable = () -> {
             try {
-                Object finalizeFunction = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "finalizeCAPI");
-                Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
-                SignatureLibrary.getUncached().call(signature, finalizeFunction);
+                SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
             } catch (InteropException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
+        };
+        nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
+        Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
+    }
+
+    @TruffleBoundary
+    public void finalizeCapi() {
+        if (nativeFinalizerShutdownHook != null) {
+            Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
+            nativeFinalizerRunnable.run();
         }
     }
 
