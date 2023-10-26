@@ -13,6 +13,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Expand support for the following modules: llvmlite, pydantic-core, catboost, ray, tensorflow, tensorflow-io, readme-renderer, safetensors, keras, pybind11, protbuf, grpcio, PyO3, cryptography, bcrypt, cramjam, libcst, orjson, rpds_py.
 * Support installing some packages with native extensions on Windows. Simple packages like `ujson` or `kiwisolver` will now work when installed from a venv inside a Visual Studio command prompt.
 * Raise `KeyboardInterrupt` exception when the process is interrupted. Enabled only when using the launcher.
+* `multiprocessing` module now uses the `spawn` method (creates new processes) by default. The formerly default method that uses threads and multiple Truffle contexts can be selected using `multiprocessing.set_start_method('graalpy')`.
 
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
