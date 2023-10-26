@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,8 +36,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import signal
+import subprocess
 import unittest
+
+import sys
 
 
 class SignalTests(unittest.TestCase):
@@ -78,3 +81,19 @@ def test_alarm2():
         assert e.args[1].f_code.co_name  # just check that we have access to the frame
     else:
         assert False, "Signal handler didn't trigger or propagate exception"
+
+
+def test_interrupt():
+    proc = subprocess.Popen(
+        [sys.executable, '-c', 'import time; print("s", flush=True); time.sleep(5)'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert proc.stdout.read(2) == b's\n'
+    proc.send_signal(signal.SIGINT)
+    _, stderr = proc.communicate()
+    assert b'KeyboardInterrupt' in stderr
+    assert b'Traceback' in stderr
+    # TODO we should properly make the process exit indicate the signal, but it might not be feasible under JVM/SVM
+    # See CPython's main.c:exit_sigint for how they do it
+    assert proc.wait() != 0

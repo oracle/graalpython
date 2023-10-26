@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_US;
 
 import java.util.List;
@@ -51,6 +52,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -93,11 +96,12 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
-@CoreFunctions(defineModule = "_signal")
+@CoreFunctions(defineModule = "_signal", isEager = true)
 public final class SignalModuleBuiltins extends PythonBuiltins {
     private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
@@ -108,6 +112,9 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     private static final int ITIMER_REAL = 0;
     private static final int ITIMER_VIRTUAL = 1;
     private static final int ITIMER_PROF = 2;
+
+    public static final String J_DEFAULT_INT_HANDLER = "default_int_handler";
+    public static final TruffleString T_DEFAULT_INT_HANDLER = tsLiteral(J_DEFAULT_INT_HANDLER);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -151,6 +158,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             }
             return poll;
         });
+
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            Object defaultSigintHandler = signalModule.getAttribute(T_DEFAULT_INT_HANDLER);
+            assert defaultSigintHandler != PNone.NO_VALUE;
+            SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);
+        }
     }
 
     private static class SignalTriggerAction extends AsyncHandler.AsyncPythonAction {
@@ -268,13 +281,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "default_int_handler", minNumOfPositionalArgs = 0, takesVarArgs = true, takesVarKeywordArgs = false)
+    @Builtin(name = J_DEFAULT_INT_HANDLER, minNumOfPositionalArgs = 0, takesVarArgs = true, takesVarKeywordArgs = false)
     @GenerateNodeFactory
     abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
         @Specialization
         static Object defaultIntHandler(@SuppressWarnings("unused") Object[] args,
                         @Cached PRaiseNode raiseNode) {
-            // TODO should be implemented properly.
             throw raiseNode.raise(PythonErrorType.KeyboardInterrupt);
         }
     }
@@ -324,12 +336,11 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode) {
-            return signal(inliningTarget, self, asSizeNode.executeExact(frame, inliningTarget, signal), handler, readModuleDataNode);
+            return signal(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, signal), handler, getModuleData(self, readModuleDataNode));
         }
 
         @TruffleBoundary
-        private static Object signal(Node raisingNode, PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readModuleDataNode) {
-            ModuleData moduleData = getModuleData(self, readModuleDataNode);
+        static Object signal(Node raisingNode, int signum, Object handler, ModuleData moduleData) {
             SignalHandler oldHandler;
             SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
             try {
