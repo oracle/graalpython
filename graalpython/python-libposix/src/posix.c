@@ -903,7 +903,7 @@ int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
 
 int64_t call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {
     sem_t* result = sem_open(name, openFlags, mode, value);
-    if (result == SEM_FAILED) {
+    if (result == (sem_t*)SEM_FAILED) {
         return -1;
     }
     return (int64_t)(uintptr_t)result;

@@ -225,10 +225,12 @@ public class SemLockBuiltins extends PythonBuiltins {
                         }
                     } catch (UnsupportedPosixFeatureException e) {
                         /* We will only check properly the maxvalue == 1 case */
-                        if (posixLib.semTryWait(posixSupport, self.getHandle())) {
-                            /* it was not locked so undo wait and raise */
-                            posixLib.semPost(posixSupport, self.getHandle());
-                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
+                        if (self.getMaxValue() == 1) {
+                            if (posixLib.semTryWait(posixSupport, self.getHandle())) {
+                                /* it was not locked so undo wait and raise */
+                                posixLib.semPost(posixSupport, self.getHandle());
+                                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
+                            }
                         }
                     }
                 } catch (PosixException e) {
