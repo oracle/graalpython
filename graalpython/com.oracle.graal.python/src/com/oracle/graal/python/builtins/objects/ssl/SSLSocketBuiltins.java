@@ -429,6 +429,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object get(PSSLSocket socket) {
+            if (!socket.isHandshakeComplete()) {
+                return PNone.NONE;
+            }
             List<SSLCipher> ciphers = socket.getContext().computeEnabledCiphers(socket.getEngine());
             Object[] result = new Object[ciphers.size()];
             for (int i = 0; i < ciphers.size(); i++) {
