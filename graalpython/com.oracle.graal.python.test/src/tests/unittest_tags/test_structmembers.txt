@@ -1,9 +1,0 @@
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_bad_assignments
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_bool
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_byte
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_inplace_string
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_int
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_long
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_longlong
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_py_ssize_t
-*graalpython.lib-python.3.test.test_capi.test_structmembers.ReadWriteTests.test_short
