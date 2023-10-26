@@ -901,16 +901,16 @@ int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
     return (int64_t)(uintptr_t)result;
 }
 
-int64_t call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {
+sem_t* call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {
     sem_t* result = sem_open(name, openFlags, mode, value);
     if (result == (sem_t*)SEM_FAILED) {
-        return -1;
+        return NULL;
     }
-    return (int64_t)(uintptr_t)result;
+    return result;
 }
 
-int32_t call_sem_close(int64_t handle) {
-    return sem_close((sem_t*)(uintptr_t)handle);
+int32_t call_sem_close(sem_t* handle) {
+    return sem_close(handle);
 }
 
 int32_t call_sem_unlink(const char *name) {
@@ -918,31 +918,31 @@ int32_t call_sem_unlink(const char *name) {
 }
 
 #ifdef __linux__
-int32_t call_sem_getvalue(int64_t handle, int32_t *value) {
+int32_t call_sem_getvalue(sem_t* handle, int32_t *value) {
     int valueInt;
-    int res = sem_getvalue((sem_t*)(uintptr_t)handle, &valueInt);
+    int res = sem_getvalue(handle, &valueInt);
     *value = valueInt;
     return res;
 }
 #endif
 
-int32_t call_sem_post(int64_t handle) {
-    return sem_post((sem_t*)(uintptr_t)handle);
+int32_t call_sem_post(sem_t* handle) {
+    return sem_post(handle);
 }
 
-int32_t call_sem_wait(int64_t handle) {
-    return sem_wait((sem_t*)(uintptr_t)handle);
+int32_t call_sem_wait(sem_t* handle) {
+    return sem_wait(handle);
 }
 
-int32_t call_sem_trywait(int64_t handle) {
-    return sem_trywait((sem_t*)(uintptr_t)handle);
+int32_t call_sem_trywait(sem_t* handle) {
+    return sem_trywait(handle);
 }
 
 #ifdef __linux__
-int32_t call_sem_timedwait(int64_t handle, int64_t deadlineNs) {
+int32_t call_sem_timedwait(sem_t* handle, int64_t deadlineNs) {
     const int64_t nsInSec = 1000 * 1000 * 1000;
     struct timespec deadline = {deadlineNs / nsInSec, deadlineNs % nsInSec};
-    return sem_timedwait((sem_t*)(uintptr_t)handle, &deadline);
+    return sem_timedwait(handle, &deadline);
 }
 #endif
 

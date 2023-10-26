@@ -287,14 +287,14 @@ public final class NFIPosixSupport extends PosixSupport {
         call_gai_strerror("(sint32, [sint8], sint32):void"),
         get_addrinfo_members("(sint64, [sint32], [sint64], [sint8]):sint32"),
 
-        call_sem_open("([sint8], sint32, sint32, sint32):sint64"),
-        call_sem_close("(sint64):sint32"),
+        call_sem_open("([sint8], sint32, sint32, sint32):pointer"),
+        call_sem_close("(pointer):sint32"),
         call_sem_unlink("([sint8]):sint32"),
-        call_sem_getvalue("(sint64, [sint32]):sint32"),
-        call_sem_post("(sint64):sint32"),
-        call_sem_wait("(sint64):sint32"),
-        call_sem_trywait("(sint64):sint32"),
-        call_sem_timedwait("(sint64, sint64):sint32"),
+        call_sem_getvalue("(pointer, [sint32]):sint32"),
+        call_sem_post("(pointer):sint32"),
+        call_sem_wait("(pointer):sint32"),
+        call_sem_trywait("(pointer):sint32"),
+        call_sem_timedwait("(pointer, sint64):sint32"),
 
         call_crypt("([sint8], [sint8], [sint32]):sint64");
 
@@ -2199,11 +2199,15 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     long semOpen(Object name, int openFlags, int mode, int value,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        long handle = invokeNode.callLong(this, PosixNativeFunction.call_sem_open, pathToCString(name), openFlags, mode, value);
-        if (handle < 0) {
+        Object ptr = invokeNode.call(this, PosixNativeFunction.call_sem_open, pathToCString(name), openFlags, mode, value);
+        if (invokeNode.getResultInterop().isNull(ptr)) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        return handle;
+        try {
+            return invokeNode.getResultInterop().asPointer(ptr);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 
     @ExportMessage
