@@ -75,6 +75,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
@@ -154,14 +155,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean isIdentical(Object other, InteropLibrary otherInterop,
-                    @Cached("createClassProfile()") ValueProfile otherProfile,
-                    @CachedLibrary(limit = "1") InteropLibrary thisLib,
-                    @CachedLibrary(limit = "3") InteropLibrary lib1,
-                    @CachedLibrary(limit = "3") InteropLibrary lib2,
+                    @Bind("$node") Node inliningTarget,
+                    @Cached InlinedExactClassProfile otherProfile,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary thisLib,
+                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib1,
+                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib2,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            Object profiled = otherProfile.profile(other);
+            Object profiled = otherProfile.profile(inliningTarget, other);
             if (profiled instanceof PythonAbstractNativeObject) {
                 Object otherPtr = ((PythonAbstractNativeObject) other).getPtr();
                 if (lib1.isPointer(getPtr())) {
@@ -194,7 +196,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         @Specialization
         static TriState doPythonAbstractNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
                         @CachedLibrary("receiver") InteropLibrary objLib,
-                        @CachedLibrary(limit = "1") InteropLibrary otherObjectLib) {
+                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary otherObjectLib) {
             return TriState.valueOf(objLib.isIdentical(receiver, other, otherObjectLib));
         }
 
