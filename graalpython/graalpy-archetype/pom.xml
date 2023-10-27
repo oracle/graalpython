@@ -47,11 +47,15 @@ SOFTWARE.
   <version>0.0.0</version>
   <packaging>maven-archetype</packaging>
 
+  <properties>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <name>graalpy-archetype</name>
 
   <build>
-    <directory>${project.basedir}/../../mxbuild/${project.artifactId}</directory>
-
     <extensions>
       <extension>
         <groupId>org.apache.maven.archetype</groupId>

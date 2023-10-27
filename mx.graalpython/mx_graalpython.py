@@ -2525,136 +2525,402 @@ def python_build_watch(args):
             mx.log("Build done.")
 
 
-class MavenProject(mx.AbstractDistribution):
-    def __init__(self, suite, name, deps, excludedLibs, platformDependent, theLicense, testDistribution, layout, path, **args):
-        self._sourceDir = os.path.join(SUITE.dir, args.pop('subDir', ''), name)
-        pom = ET.parse(os.path.join(self._sourceDir, 'pom.xml'))
-        maven = args.pop('maven', {})
-        assert 'groupId' not in maven
-        assert 'artifactId' not in maven
-        url = pom.getroot().find("*").tag.split("}")[0]
-        if url:
-            url += "}"
-        maven["groupId"] = pom.find(f"{url}groupId").text
-        maven["artifactId"] = pom.find(f"{url}artifactId").text
-        maven["version"] = pom.find(f"{url}version").text
-        self._target_version = SUITE.release_version()
-        self.description = self._pomGetText(pom, f"{url}description")
-        self.packaging = self.extension = self._pomGetText(pom, f"{url}packaging") or "jar"
-        if self.extension in ["maven-plugin"]:
-            self.extension = "jar"
-        elif self.extension in ["maven-archetype"]:
-            self.packaging = self.extension = "jar"
-        if mvnDeps := pom.find(f"{url}dependencies"):
-            excludedLibs = excludedLibs or []
-            for dependency in mvnDeps.findall(f"{url}dependency"):
-                gid = dependency.find(f"{url}groupId").text
-                aid = dependency.find(f"{url}artifactId").text
-                ver = dependency.find(f"{url}version").text
-                sco = self._pomGetText(dependency, f"{url}scope") or "compile"
-                if sco in ["compile", "runtime"]:
-                    d = mx.Library(suite, name=f"{gid}:{aid}:{ver}", path=None, optional=True, urls=[], digest=None,
-                                   sourcePath="", sourceUrls=[], sourceDigest=None, deps=[], theLicense=None, ignore=False,
-                                   maven={"groupId": gid, "artifactId": aid, "version": ver})
-                    excludedLibs.append(d)
-        args['maven'] = maven
-        build_dir = os.path.join(suite.get_output_root(platformDependent=False, jdkDependent=False), name)
-        self._output = os.path.join(build_dir, f"{maven['artifactId']}-{self._target_version}.{self.extension}")
-        self.sourcesPath = os.path.join(build_dir, f"{maven['artifactId']}-{self._target_version}-sources.{self.extension}")
-        super().__init__(suite, name=name, deps=deps, excludedLibs=excludedLibs, platformDependent=platformDependent,
-                         theLicense=theLicense, testDistribution=testDistribution, layout=layout, path=path, output=self._output, **args)
-        self.definedAnnotationProcessors = []
+class ETMavenPOM:
+    DefaultNamespace = "http://maven.apache.org/POM/4.0.0"
 
-    def _pomGetText(self, pom, path):
-        e = pom.find(path)
-        if e is not None:
-            return e.text
+    def __init__(self, path):
+        self._path = path
+        self._pom = ET.parse(path)
+        self._element = self._pom.getroot()
 
-    def get_ide_project_dir(self):
+    def __getattr__(self, name):
+        no_value = object()
+        value = getattr(self._element, name, no_value)
+        if value is no_value or callable(value):
+            value = getattr(self._pom, name, no_value)
+        if value is no_value:
+            raise AttributeError(f"{type(self).__name__} object has no attribute {name}")
+        return value
+
+    def __setattr__(self, name, value):
+        if not name.startswith("_"):
+            setattr(self._element, name, value)
+        else:
+            super().__setattr__(name, value)
+
+    def copy(self):
+        return ETMavenPOM(self._path)
+
+    def get_text(self, path, default=None):
+        try:
+            return self[path].text
+        except KeyError:
+            return default
+
+    def add(self, path):
+        e = ET.Element(f"{{{self.DefaultNamespace}}}{path}")
+        self._element.append(e)
+        return self._wrap(e)
+
+    def setdefault(self, path):
+        try:
+            return self[path]
+        except KeyError:
+            return self.add(path)
+
+    def get(self, path, default=None):
+        try:
+            return self[path]
+        except KeyError:
+            return default
+
+    def getall(self, path):
+        return [self._wrap(e) for e in self._element.findall(path, namespaces={'': self.DefaultNamespace})]
+
+    def _wrap(self, e):
+        result = self.__class__.__new__(self.__class__)
+        result._pom = self._pom
+        result._element = e
+        return result
+
+    def write(self, path):
+        if hasattr(ET, "indent"):
+            ET.indent(self._pom, space="  ", level=0)
+        self._pom.write(path, default_namespace=self.DefaultNamespace)
+
+    def tostring(self):
+        if hasattr(ET, "indent"):
+            ET.indent(self._pom, space="  ", level=0)
+        return ET.tostring(self._element, encoding="unicode", default_namespace=self.DefaultNamespace)
+
+    def __getitem__(self, path):
+        if (e := self._element.find(path, namespaces={'': self.DefaultNamespace})) is not None:
+            return self._wrap(e)
+        raise KeyError(path)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
         pass
 
+
+class MavenProject(mx.Distribution, mx.ClasspathDependency):
+    def __init__(self, suite, name, deps, excludedLibs, platformDependent, theLicense, **args):
+        self.headOnly = args.pop('headOnly', False)
+        super().__init__(suite, name, deps, excludedLibs, platformDependent, theLicense, **args)
+
+        if buildDeps := args.get("buildDependencies"):
+            self.buildDependencies += [mx.dependency(bd) for bd in buildDeps]
+
+        self.maven_directory = os.path.join(suite.dir, args.get('subDir', ''), name)
+        self.pom = ETMavenPOM(os.path.join(self.maven_directory, "pom.xml"))
+
+        # prepare distribution maven dictionary from actual pom.xml
+        self.maven = getattr(self, 'maven', {})
+        if any(k != "tag" for k in self.maven.keys()):
+            mx.abort("MavenProjects should not repeat properties except tags in suite.py")
+        self.maven["groupId"] = self.pom["groupId"].text
+        self.maven["artifactId"] = self.pom["artifactId"].text
+        if self.maven["artifactId"] != self.name:
+            mx.abort(f"MavenProject {self.name} should match artifactId to project name {self.maven['artifactId']}")
+
+        # self.javaCompliance must be set since this is a kind of JavaProject
+        self.javaCompliance = mx.JavaCompliance(self.pom["properties"]["maven.compiler.target"].text + "+", context=self)
+
+        # localExtension, remoteExtension, description, sourcesPath, and path
+        # must all be set for Jar distributions that can be deployed to maven
+        self._remoteExtension = self.pom.get_text("packaging", "jar")
+        if self._remoteExtension == "maven-plugin":
+            self._localExtension = "jar"
+        elif self._remoteExtension == "maven-archetype":
+            self._localExtension = self._remoteExtension = "jar"
+        else:
+            self._localExtension = self._remoteExtension
+        self.description = self.pom.get("description", "")
+        self.sourcesname = f"{self.name}-sources.{self._localExtension}"
+        self.sourcesPath = os.path.join(self.get_output_root(), self.sourcesname)
+        self.path = self._default_path()
+
+        # right now we don't let maven projects define annotation processors
+        self.definedAnnotationProcessors = []
+
+    def get_ide_project_dir(self):
+        # generate the ide pom here, but don't use mx's support for generating
+        # ide configs besides that
+        self.getBuildTask([]).create_ide_pom()
+
     def classpath_repr(self, resolve=True):
-        return self._output
+        jar = self._default_path()
+        if jar.endswith(".jar"):
+            if resolve and not os.path.exists(jar):
+                mx.abort(f'unbuilt Maven project {self} cannot be on a class path ({jar})')
+            return jar
 
-    def isJARDistribution(self):
-        return self.extension == "jar"
+    def build_pom(self):
+        return os.path.join(self.get_output_root(), "pom.xml")
 
-    def isPOMDistribution(self):
-        return self.extension == "pom"
-
-    def isTARDistribution(self):
-        return self.extension in ["tar", "tar.gz"]
-
-    def isZIPDistribution(self):
-        return self.extension == "zip"
-
-    def localExtension(self):
-        return self.extension
-
-    def remoteExtension(self):
-        return self.packaging
-
-    def getBuildTask(self, args):
-        return MavenArchiveTask(args, self)
+    def maven_group_id(self):
+        # XXX for now we hook into the generation of pomfiles of mx.py extra hacky
+        caller = sys._getframe(1)
+        if caller.f_code.co_name == "_genPom":
+            callercaller = sys._getframe(2)
+            if callercaller.f_code.co_name == "_tmpPomFile":
+                version = caller.f_locals["versionGetter"](self.suite)
+                tmp = callercaller.f_locals["tmp"]
+                generated_pom = self.getBuildTask([]).print_deploy_pom(version)
+                original_class = type(tmp)
+                class WrappedTmpFile:
+                    def close(self):
+                        self.__class__ = original_class
+                        self.truncate(0)
+                        self.seek(0)
+                        self.write(generated_pom)
+                        self.close()
+                    def __getattr__(self, name):
+                        return original_class.__getattr__(self, name)
+                tmp.__class__ = WrappedTmpFile
+        return super().maven_group_id()
 
     def make_archive(self):
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        shutil.copy(self._output, self.path)
-        return self.path
+        shutil.copy(os.path.join(self.get_output_root(), self.default_filename()), self._default_path())
+        return self._default_path()
 
-    def is_stripped(self):
-        return False
+    def exists(self):
+        return os.path.exists(self._default_path())
 
+    def prePush(self, f):
+        return f
 
-class MavenArchiveTask(mx.DefaultArchiveTask):
-    def needsBuild(self, newestInput):
-        needsBuild, reason = super().needsBuild(newestInput)
-        if needsBuild:
-            return needsBuild, reason
-        return self.needsMavenBuild()
+    def isJARDistribution(self):
+        return self.localExtension() == 'jar'
 
-    def needsMavenBuild(self):
-        if not os.path.exists(self.subject._output):
+    def isJavaProject(self):
+        return True
+
+    def remoteExtension(self):
+        return self._remoteExtension
+
+    def localExtension(self):
+        return self._localExtension
+
+    def needsUpdate(self, newestInput):
+        if not os.path.exists(self._default_path()):
             return True, "Maven package does not exist"
-        if not os.path.exists(self.subject.sourcesPath):
+        if not os.path.exists(self.sourcesPath):
             return True, "Maven sources do not exist"
-        newestSource = 0
-        for root, _, files in os.walk(self.subject._sourceDir):
+        newestSource = newestInput or 0
+        for root, _, files in os.walk(self.maven_directory):
             if files:
                 newestSource = max(newestSource, max(mx.getmtime(os.path.join(root, f)) for f in files))
-        if mx.getmtime(self.subject._output) < newestSource:
+        if mx.getmtime(self._default_path()) < newestSource:
             return True, "Maven package out of date"
+        if mx.getmtime(self.sourcesPath) < newestSource:
+            return True, "Maven sources out of date"
         return False, "Maven package is up to date"
 
-    def clean(self, forBuild=False):
-        if not forBuild:
-            mx.run_maven(["clean"], cwd=self.subject._sourceDir)
-        for o in [self.subject._output, self.subject.path]:
-            if os.path.exists(o):
-                os.unlink(o)
+    def getBuildTask(self, args):
+        return MavenBuildTask(self, args)
 
-    def get_output(self):
-        return os.path.join(self.subject.get_output_root(), self.subject.name + '.' + self.subject.localExtension())
+
+class MavenBuildTask(mx.BuildTask):
+    def __init__(self, subject, args):
+        super().__init__(subject, args, 1)
+
+    def needsBuild(self, newestInput):
+        if self.args.force:
+            return (True, 'forced build')
+        return self.subject.needsUpdate(newestInput)
+
+    def clean(self, forBuild=False):
+        shutil.rmtree(self.subject.get_output_root(), ignore_errors=True)
+        if os.path.exists(self.subject._default_path()):
+            os.unlink(self.subject._default_path())
+
+    def __str__(self):
+        return self.subject.name
 
     def build(self):
-        if self.needsMavenBuild():
-            pomfile = os.path.join(self.subject._sourceDir, "pom.xml")
-            atime, mtime = os.stat(pomfile).st_atime_ns, os.stat(pomfile).st_mtime_ns
-            with open(pomfile, 'r') as f:
-                content = f.read()
-            try:
-                with open(pomfile, 'w') as f:
-                    f.write(content.replace(self.subject.maven['version'], self.subject._target_version))
-                mx.run_maven(["package"], cwd=self.subject._sourceDir)
-                mx.run_maven(["source:jar"], cwd=self.subject._sourceDir)
-            finally:
-                with open(pomfile, 'w') as f:
-                    f.write(content)
-                os.utime(pomfile, ns=(atime, mtime))
-        path = self.get_output()
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        shutil.copy(self.subject._output, path)
-        super().build()
+        os.makedirs(self.subject.get_output_root(), exist_ok=True)
+        os.makedirs(os.path.dirname(self.subject._default_path()), exist_ok=True)
+        self.create_build_pom()
+        self.deploy_dependencies()
+        if mx.is_quiet():
+            verbosity = "-q"
+        elif mx.get_opts().very_verbose:
+            verbosity = "-X"
+        else:
+            verbosity = "-e"
+        mx.run_maven([verbosity, "package", "-DskipTests"], cwd=self.subject.get_output_root())
+        mx.run_maven([verbosity, "source:jar", "-DskipTests"], cwd=self.subject.get_output_root())
+        self.subject.make_archive()
+
+    def local_dependency_repo(self):
+        return os.path.join(self.subject.get_output_root(), 'local-maven-repo')
+
+    def local_repo_id(self):
+        return f"{self.subject.name}-dependencies"
+
+    def maven_version(self, dist):
+        ver = dist.suite.release_version()
+        if ver.endswith("-dev"):
+            return f"{ver}-SNAPSHOT"
+        else:
+            return ver
+
+    def deploy_dependencies(self):
+        path = self.local_dependency_repo()
+        mx.rmtree(path, ignore_errors=True)
+        os.mkdir(path)
+        transitive_deps = set(self.subject.deps + self.subject.buildDependencies)
+        sz = 0
+        while True:
+            if sz == len(transitive_deps):
+                break
+            sz = len(transitive_deps)
+            for buildDep in list(transitive_deps):
+                for d in buildDep.deps:
+                    if d.isDistribution() and not d.isLayoutDirDistribution() and not d.suite.internal:
+                        transitive_deps.add(d)
+        for buildDep in transitive_deps:
+            version = self.maven_version(buildDep)
+            licenses = ",".join([l.name for l in buildDep.theLicense])
+            deploy_args = [
+                '--all-suites',
+                '--all-distribution-types',
+                f'--only={buildDep}',
+                f'--version-string={version}',
+                '--validate=none',
+                f'--licenses={licenses}',
+                '--suppress-javadoc',
+                self.local_repo_id(),
+                pathlib.Path(path).as_uri(),
+            ]
+            mx.maven_deploy(deploy_args)
+
+    def create_base_pom(self, version=None, with_repositories=True):
+        pom = self.subject.pom.copy()
+        suite = self.subject.suite
+        pom["version"].text = version or self.maven_version(self.subject)
+        with pom.setdefault("build") as build:
+            for k in [
+                    "sourceDirectory",
+                    "directory",
+                    "finalName",
+                    "scriptSourceDirectory",
+                    "testSourceDirectory",
+                    "resources",
+                    "testResources",
+            ]:
+                if build.get(k):
+                    mx.abort(f"{self.subject.name} should not define {k}")
+        for d in self.subject.deps + self.subject.buildDependencies + self.subject.excludedLibs:
+            if not hasattr(d, "maven"):
+                mx.abort("Maven projects can only depend on distributions with maven spec")
+            if d.isLibrary() and d not in self.subject.excludedLibs:
+                mx.abort(f"MavenProject {self.subject.name} should move maven dependency {d} to 'exclude'")
+            elif not d.isLibrary() and d in self.subject.excludedLibs:
+                mx.abort(f"MavenProject {self.subject.name} should move mx dependency {d} to 'dependencies' or 'buildDependencies'")
+            depId = d.maven_artifact_id()
+            depGrp = d.maven_group_id()
+            version = d.maven["version"] if d.isLibrary() else (version or self.maven_version(d))
+            with pom.setdefault("dependencies") as dependencies:
+                for dependency in dependencies.getall("dependency"):
+                    if depGrp == dependency.get("groupId").text and depId == dependency.get("artifactId").text:
+                        dependency.setdefault("version").text = version
+                        if d in self.subject.buildDependencies:
+                            if dependency.get_text("optional") != "true":
+                                mx.abort(f"MavenProject {self.subject.name} has {d} in 'buildDependencies', but its pom.xml has it not 'optional'. "
+                                         "Either make it optional in the pom or move it to 'dependencies' in the suite definition.")
+                        break
+                else:
+                    with dependencies.add("dependency") as dependency:
+                        dependency.add("groupId").text = depGrp
+                        dependency.add("artifactId").text = depId
+                        dependency.add("version").text = version
+                        if d in self.subject.buildDependencies:
+                            dependency.add("optional").text = "true"
+        if (self.subject.deps + self.subject.buildDependencies) and with_repositories:
+            with pom.setdefault("repositories") as repositories:
+                with repositories.add("repository") as repository:
+                    repository.add("id").text = self.local_repo_id()
+                    repository.add("url").text = pathlib.Path(self.local_dependency_repo()).as_uri()
+                    with repository.add("releases") as releases:
+                        releases.add("enabled").text = "true"
+                    with repository.add("snapshots") as releases:
+                        releases.add("enabled").text = "true"
+                        releases.add("updatePolicy").text = "always"
+        if suite.developer:
+            with pom.setdefault("developers") as developers:
+                with developers.add("developer") as developer:
+                    developer.add("name").text = suite.developer["name"]
+                    developer.add("email").text = suite.developer["email"]
+                    developer.add("organization").text = suite.developer["organization"]
+                    developer.add("organizationUrl").text = suite.developer.get("organizationUrl", suite.url)
+        with pom.setdefault("licenses") as licenses:
+            for distLicense in self.subject.theLicense:
+                with licenses.add("license") as license:
+                    license.add("name").text = distLicense.fullname
+                    license.add("url").text = distLicense.url
+        if suite.vc:
+            scm_metadata = suite.scm_metadata(abortOnError=True)
+            with pom.setdefault("scm") as scm:
+                scm.add("connection").text = f'scm:{suite.vc.kind}:{scm_metadata.read}'
+                scm.add("developerConnection").text = f'scm:{suite.vc.kind}:{scm_metadata.write}'
+                scm.add("url").text = scm_metadata.url
+        return pom
+
+    def create_ide_pom(self):
+        pom = self.create_base_pom()
+        with pom["build"] as build:
+            build.add("finalName").text = os.path.splitext(self.subject.default_filename())[0]
+            build.add("directory").text = os.path.relpath(self.subject.get_output_root(), self.subject.maven_directory)
+        pom.write(os.path.join(self.subject.maven_directory, "pom-mx.xml"))
+
+    def print_deploy_pom(self, version):
+        pom = self.create_base_pom(version=version, with_repositories=False)
+        return pom.tostring()
+
+    def create_build_pom(self):
+        pom = self.create_base_pom()
+        with pom["build"] as build:
+            srcpath = os.path.relpath(self.subject.maven_directory, self.subject.get_output_root())
+            build.add("finalName").text = os.path.splitext(self.subject.default_filename())[0]
+            build.add("directory").text = "${project.basedir}"
+            build.add("sourceDirectory").text = os.path.join(srcpath, "src", "main", "java")
+            build.add("scriptSourceDirectory").text = os.path.join(srcpath, "src", "main", "scripts")
+            build.add("testSourceDirectory").text = os.path.join(srcpath, "src", "test", "java")
+            with build.add("resources") as resources:
+                with resources.add("resource") as resource:
+                    resource.add("directory").text = os.path.join(srcpath, "src", "main", "resources")
+            with build.add("testResources") as resources:
+                with resources.add("testResource") as resource:
+                    resource.add("directory").text = os.path.join(srcpath, "src", "test", "resources")
+        pom.write(self.subject.build_pom())
+
+
+@mx.command("mx", "maventests")
+def mvn_tests(args):
+    parser = ArgumentParser(prog='mx maventests', description="""Run MavenProject tests.""")
+    parser.add_argument('projects', nargs="*", default=[], help='MavenProjects to run tests in (all if omitted)')
+    args = parser.parse_args(args)
+    dists = [d for s in mx.suites() for d in s.dists if isinstance(d, MavenProject)]
+    if args.projects:
+        dists = [d for d in dists if d.name in args.projects]
+    rc = 0
+    for d in dists:
+        needsUpdate, _ = d.needsUpdate(None)
+        if needsUpdate:
+            mx.abort(f"{d.name} is not built, did you run mx build --dep {d.name}?")
+        if mx.is_quiet():
+            verbosity = "-q"
+        elif mx.get_opts().very_verbose:
+            verbosity = "-X"
+        else:
+            verbosity = "-e"
+        rc = mx.run_maven([verbosity, "test"], cwd=d.get_output_root(), nonZeroIsFatal=False) or rc
+    if rc != 0:
+        mx.abort("Failed")
 
 
 class GraalpythonBuildTask(mx.ProjectBuildTask):

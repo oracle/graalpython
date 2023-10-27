@@ -57,8 +57,6 @@ SOFTWARE.
   </properties>
 
   <build>
-    <directory>${project.basedir}/../../mxbuild/${project.artifactId}</directory>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
