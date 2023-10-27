@@ -160,6 +160,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -181,12 +182,10 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -214,6 +213,7 @@ public abstract class GraalHPyNodes {
 
         protected abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
 
+        @NeverDefault
         public static HPyCallHelperFunctionNode create(GraalHPyContext context) {
             return context.getBackend().createCallHelperFunctionNode();
         }
@@ -340,6 +340,7 @@ public abstract class GraalHPyNodes {
 
         public abstract TruffleString execute(GraalHPyContext hpyContext, long charPtr, int n, Encoding encoding, boolean copy);
 
+        @NeverDefault
         public static HPyFromCharPointerNode create(GraalHPyContext hpyContext) {
             return hpyContext.getBackend().createFromCharPointerNode();
         }
@@ -353,6 +354,7 @@ public abstract class GraalHPyNodes {
 
         public abstract Object execute(GraalHPyContext hpyContext, TruffleString string, Encoding encoding);
 
+        @NeverDefault
         public static HPyAsCharPointerNode create(GraalHPyContext hpyContext) {
             return hpyContext.getBackend().createAsCharPointerNode();
         }
@@ -589,8 +591,8 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static void doGeneric(Node node, GraalHPyContext hpyContext, PythonModule module,
-                        @Cached HPyCheckPrimitiveResultNode checkFunctionResultNode,
-                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached(inline = false) HPyCheckPrimitiveResultNode checkFunctionResultNode,
+                        @Cached(inline = false) HPyAsHandleNode asHandleNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             // TODO(fa): once we support HPy module state, we need to allocate it here
             Object execSlotsObj = module.getNativeModuleDef();
@@ -1051,9 +1053,9 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static HPySlotData doIt(Node inliningTarget, GraalHPyContext context, Object slotDef,
-                        @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
-                        @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
-                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode) {
+                        @Cached(parameters = "context", inline = false) GraalHPyCAccess.ReadGenericNode readGenericNode,
+                        @Cached(parameters = "context", inline = false) GraalHPyCAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) HPyAttachFunctionTypeNode attachFunctionTypeNode) {
 
             int slotNr = readGenericNode.readInt(context, slotDef, GraalHPyCField.HPyDef__slot__slot);
             HPySlot slot = HPySlot.fromValue(slotNr);
@@ -1793,7 +1795,7 @@ public abstract class GraalHPyNodes {
         @ExplodeLoop
         static void cachedLoop(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached("args.length") int cachedLength,
-                        @Cached HPyAsHandleNode toSulongNode) {
+                        @Shared @Cached HPyAsHandleNode toSulongNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - argsOffset; i++) {
                 dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
@@ -1802,7 +1804,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
         static void uncached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached HPyAsHandleNode toSulongNode) {
+                        @Shared @Cached HPyAsHandleNode toSulongNode) {
             int len = args.length;
             for (int i = 0; i < len - argsOffset; i++) {
                 dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
@@ -1829,7 +1831,7 @@ public abstract class GraalHPyNodes {
         @ExplodeLoop
         static void cachedLoop(Object[] dest, int destOffset,
                         @Cached("dest.length") int cachedLength,
-                        @Cached HPyCloseHandleNode closeHandleNode) {
+                        @Shared @Cached HPyCloseHandleNode closeHandleNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - destOffset; i++) {
                 closeHandleNode.execute(dest[destOffset + i]);
@@ -1838,7 +1840,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
         static void uncached(Object[] dest, int destOffset,
-                        @Cached HPyCloseHandleNode closeHandleNode) {
+                        @Shared @Cached HPyCloseHandleNode closeHandleNode) {
             int len = dest.length;
             for (int i = 0; i < len - destOffset; i++) {
                 closeHandleNode.execute(dest[destOffset + i]);
@@ -1924,8 +1926,8 @@ public abstract class GraalHPyNodes {
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
         static void doHandleSsizeT(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Bind("this") Node inliningTarget,
-                        @Cached HPyAsHandleNode asHandleNode,
-                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+                        @Shared @Cached HPyAsHandleNode asHandleNode,
+                        @Shared @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = asSsizeTNode.execute(inliningTarget, args[argsOffset + 1], 1, Long.BYTES);
@@ -1934,8 +1936,8 @@ public abstract class GraalHPyNodes {
         @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
         static void doHandleSsizeTSsizeT(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Bind("this") Node inliningTarget,
-                        @Cached HPyAsHandleNode asHandleNode,
-                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+                        @Shared @Cached HPyAsHandleNode asHandleNode,
+                        @Shared @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = asSsizeTNode.execute(inliningTarget, args[argsOffset + 1], 1, Long.BYTES);
@@ -1945,8 +1947,8 @@ public abstract class GraalHPyNodes {
         @Specialization(replaces = {"doHandleSsizeT", "doHandleSsizeTSsizeT"})
         static void doGeneric(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Bind("this") Node inliningTarget,
-                        @Cached HPyAsHandleNode asHandleNode,
-                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+                        @Shared @Cached HPyAsHandleNode asHandleNode,
+                        @Shared @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             for (int i = 1; i < args.length - argsOffset; i++) {
                 dest[destOffset + i] = asSsizeTNode.execute(inliningTarget, args[argsOffset + i], 1, Long.BYTES);
@@ -2114,7 +2116,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization(guards = {"!signed", "n < 0"})
         static Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createInt(convertToBigInteger(n));
         }
 
@@ -2125,7 +2127,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createNativeVoidPtr(n.getPtr());
         }
     }
@@ -2518,10 +2520,10 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static TruffleString[] doGeneric(TruffleString specNameUtf8,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodepointNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleString.CodePointLengthNode lengthNode) {
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached(inline = false) TruffleString.LastIndexOfCodePointNode indexOfCodepointNode,
+                        @Cached(inline = false) TruffleString.SubstringNode substringNode,
+                        @Cached(inline = false) TruffleString.CodePointLengthNode lengthNode) {
             TruffleString specName = switchEncodingNode.execute(specNameUtf8, TS_ENCODING);
             int length = lengthNode.execute(specName, TS_ENCODING);
             int firstDotIdx = indexOfCodepointNode.execute(specName, '.', length, 0, TS_ENCODING);
@@ -2554,7 +2556,7 @@ public abstract class GraalHPyNodes {
         @Specialization(replaces = "doTpName")
         static Object doGeneric(Node inliningTarget, GraalHPyContext ctx, Object type,
                         @Cached GetNameNode getName,
-                        @Cached(parameters = "ctx") HPyAsCharPointerNode asCharPointerNode) {
+                        @Cached(parameters = "ctx", inline = false) HPyAsCharPointerNode asCharPointerNode) {
             if (type instanceof PythonClass pythonClass && pythonClass.getTpName() != null) {
                 return pythonClass.getTpName();
             }
@@ -2642,13 +2644,13 @@ public abstract class GraalHPyNodes {
         static Object doCached(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
                         @Cached("llvmFunctionType") @SuppressWarnings("unused") LLVMType cachedType,
                         @Cached("getNFISignatureCallTarget(hpyContext, llvmFunctionType)") CallTarget nfiSignatureCt,
-                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+                        @Shared @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
             return signatureLibrary.bind(nfiSignatureCt.call(), pointerObject);
         }
 
         @Specialization(replaces = {"doCachedSingleContext", "doCached"})
         static Object doGeneric(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType,
-                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+                        @Shared @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
             return signatureLibrary.bind(getNFISignature(hpyContext, llvmFunctionType), pointerObject);
         }
 
@@ -2794,12 +2796,13 @@ public abstract class GraalHPyNodes {
         abstract int execute(GraalHPyContext context, Object err, Object exc);
 
         @Specialization
-        int tuple(GraalHPyContext context, Object err, PTuple exc,
-                        @Cached RecursiveExceptionMatches recExcMatch,
-                        @Cached PInteropSubscriptNode getItemNode,
-                        @Cached LoopConditionProfile loopProfile) {
+        static int tuple(GraalHPyContext context, Object err, PTuple exc,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached RecursiveExceptionMatches recExcMatch,
+                        @Exclusive @Cached PInteropSubscriptNode getItemNode,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             int len = exc.getSequenceStorage().length();
-            for (int i = 0; loopProfile.profile(i < len); i++) {
+            for (int i = 0; loopProfile.profile(inliningTarget, i < len); i++) {
                 Object e = getItemNode.execute(exc, i);
                 if (recExcMatch.execute(context, err, e) != 0) {
                     return 1;
@@ -2808,19 +2811,19 @@ public abstract class GraalHPyNodes {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
-        int subtuple(GraalHPyContext context, Object err, Object exc,
+        @Specialization(guards = {"!isPTuple(exc)", "isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"}, limit = "1")
+        static int subtuple(GraalHPyContext context, Object err, Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Cached RecursiveExceptionMatches recExcMatch,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ReadAttributeFromObjectNode readAttr,
-                        @Cached CallNode callNode,
+                        @Shared @Cached RecursiveExceptionMatches recExcMatch,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached ReadAttributeFromObjectNode readAttr,
+                        @Shared @Cached CallNode callNode,
                         @Cached CastToJavaIntExactNode cast,
-                        @Cached PInteropSubscriptNode getItemNode,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Exclusive @Cached PInteropSubscriptNode getItemNode,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             int len = cast.execute(inliningTarget, callBuiltinFunction(context, BuiltinNames.T_LEN, new Object[]{exc}, readAttr, callNode));
-            for (int i = 0; loopProfile.profile(i < len); i++) {
+            for (int i = 0; loopProfile.profile(inliningTarget, i < len); i++) {
                 Object e = getItemNode.execute(exc, i);
                 if (recExcMatch.execute(context, err, e) != 0) {
                     return 1;
@@ -2829,28 +2832,28 @@ public abstract class GraalHPyNodes {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
-        int others(GraalHPyContext context, Object err, Object exc,
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"}, limit = "1")
+        static int others(GraalHPyContext context, Object err, Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ReadAttributeFromObjectNode readAttr,
-                        @Cached CallNode callNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached ReadAttributeFromObjectNode readAttr,
+                        @Shared @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached IsNode isNode,
-                        @Cached BranchProfile isBaseExceptionProfile,
-                        @Cached ConditionProfile isExceptionProfile) {
+                        @Cached InlinedBranchProfile isBaseExceptionProfile,
+                        @Cached InlinedConditionProfile isExceptionProfile) {
             Object isInstance = callBuiltinFunction(context,
                             BuiltinNames.T_ISINSTANCE,
                             new Object[]{err, PythonBuiltinClassType.PBaseException},
                             readAttr, callNode);
             Object e = err;
             if (isTrueNode.execute(null, inliningTarget, isInstance)) {
-                isBaseExceptionProfile.enter();
+                isBaseExceptionProfile.enter(inliningTarget);
                 e = getClassNode.execute(inliningTarget, err);
             }
-            if (isExceptionProfile.profile(
+            if (isExceptionProfile.profile(inliningTarget,
                             isExceptionClass(context, inliningTarget, e, isTypeNode, readAttr, callNode, isTrueNode) &&
                                             isExceptionClass(context, inliningTarget, exc, isTypeNode, readAttr, callNode, isTrueNode))) {
                 return isSubClass(context, inliningTarget, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
@@ -3029,9 +3032,9 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static Object doIt(GraalHPyContext context, Object def,
-                        @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
-                        @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
-                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode) {
+                        @Cached(parameters = "context", inline = false) GraalHPyCAccess.ReadPointerNode readPointerNode,
+                        @Cached(parameters = "context", inline = false) GraalHPyCAccess.IsNullNode isNullNode,
+                        @Cached(inline = false) HPyAttachFunctionTypeNode attachFunctionTypeNode) {
             // read and check the function pointer
             Object methodFunctionPointer = readPointerNode.read(context, def, GraalHPyCField.HPyCallFunction__impl);
             if (isNullNode.execute(context, methodFunctionPointer)) {

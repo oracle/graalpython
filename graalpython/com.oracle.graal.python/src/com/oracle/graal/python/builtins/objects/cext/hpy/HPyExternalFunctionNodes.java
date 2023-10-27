@@ -112,6 +112,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1133,6 +1134,7 @@ public abstract class HPyExternalFunctionNodes {
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
@@ -1153,6 +1155,7 @@ public abstract class HPyExternalFunctionNodes {
      * native function. This node guarantees that an {@code int} or {@code long} is returned.
      */
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
         public abstract int executeInt(PythonThreadState context, TruffleString name, int value);
@@ -1199,6 +1202,7 @@ public abstract class HPyExternalFunctionNodes {
      * functions are called) but checks if an error occurred during execution of the function.
      */
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckVoidResultNode extends HPyCheckFunctionResultNode {
 

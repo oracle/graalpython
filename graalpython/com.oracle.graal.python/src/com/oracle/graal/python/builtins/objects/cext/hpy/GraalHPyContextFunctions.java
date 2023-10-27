@@ -386,6 +386,7 @@ import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
+@SuppressWarnings("truffle-inlining")
 public abstract class GraalHPyContextFunctions {
 
     @Retention(RetentionPolicy.RUNTIME)
