@@ -179,6 +179,7 @@ simple_native_module("_sqlite3")
 
 if(NOT WIN32)
     native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")
+    simple_native_module("_testbuffer")
     simple_native_module("_testmultiphase")
     simple_native_module("_ctypes_test")
 

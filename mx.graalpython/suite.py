@@ -655,6 +655,7 @@ suite = {
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
                             "bin/modules/_testcapi<graalpy_ext:native>",
+                            "bin/modules/_testbuffer<graalpy_ext:native>",
                             "bin/modules/_testmultiphase<graalpy_ext:native>",
                             "bin/modules/_ctypes_test<graalpy_ext:native>",
                             "bin/modules/pyexpat<graalpy_ext:native>",
