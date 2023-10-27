@@ -622,6 +622,7 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict',
         'graalpython.lib-python.3.test.test_deque.TestBasic.test_container_iterator',
         'graalpython.lib-python.3.test.test_mmap.MmapTests.test_weakref',
+        'graalpython.lib-python.3.test.test_ast.AST_Tests.test_AST_garbage_collection',
         # Disabled since code object comparison is not stable for us
         'graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule',
         'graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code',

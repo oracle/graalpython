@@ -58,7 +58,6 @@
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_while
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_with
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_yield
-*graalpython.lib-python.3.test.test_ast.AST_Tests.test_AST_garbage_collection
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_AST_objects
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_ast_validation
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_base_classes
