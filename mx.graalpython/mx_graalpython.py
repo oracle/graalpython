@@ -631,7 +631,6 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigbus',
         'graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill',
         # Disabled due to transient failure
-        'graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.*',
         'graalpython.lib-python.3.test.test_multiprocessing_graalpy.TestNoForkBomb.test_noforkbomb',
         'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_active_children',
         'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_error_on_stdio_flush_1',
@@ -678,10 +677,6 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
         # GC-related transients
         'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
-        # Transiently ends up with 2 processes
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_all_completed',
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_first_completed',
         # Flaky buffer capi tests
         '*graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_assign_multidim',
     ]
