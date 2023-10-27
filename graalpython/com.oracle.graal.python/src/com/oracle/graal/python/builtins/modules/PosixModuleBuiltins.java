@@ -1398,10 +1398,18 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static PTuple createStatvfsResult(Node inliningTarget, long[] out, InlinedConditionProfile positiveLongProfile, PythonObjectFactory factory) {
+        Object[] res = new Object[out.length];
+        for (int i = 0; i < out.length; i++) {
+            res[i] = PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, positiveLongProfile, out[i]);
+        }
+        return factory.createStructSeq(STATVFS_RESULT_DESC, res);
+    }
+
     @Builtin(name = "statvfs", minNumOfPositionalArgs = 1, parameterNames = {"path"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @GenerateNodeFactory
-    abstract static class StatvfsNode extends PythonClinicBuiltinNode {
+    abstract static class StatvfsNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1426,13 +1434,35 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, posixFileHandle.originalObject);
             }
-            Object[] res = new Object[out.length];
-            for (int i = 0; i < out.length; i++) {
-                res[i] = PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, positiveLongProfile, out[i]);
+            return createStatvfsResult(inliningTarget, out, positiveLongProfile, factory);
+        }
+    }
+
+    @Builtin(name = "fstatvfs", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class FStatvfsNode extends PythonUnaryClinicBuiltinNode {
+
+        @Specialization
+        PTuple doStatvfs(VirtualFrame frame, int fd,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached InlinedConditionProfile positiveLongProfile,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            long[] out;
+            try {
+                out = posixLib.fstatvfs(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd);
             }
-            return factory.createStructSeq(STATVFS_RESULT_DESC, res);
+            return createStatvfsResult(inliningTarget, out, positiveLongProfile, factory);
         }
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FStatvfsNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "uname", minNumOfPositionalArgs = 0)
