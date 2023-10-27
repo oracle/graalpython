@@ -214,6 +214,12 @@ public final class PException extends AbstractTruffleException {
         return pythonException;
     }
 
+    public void expectUncached(PythonBuiltinClassType error) {
+        if (!IsBuiltinObjectProfile.profileObjectUncached(this.getUnreifiedException(), error)) {
+            throw this;
+        }
+    }
+
     public void expectCached(PythonBuiltinClassType error, IsBuiltinObjectProfile profile) {
         expect(profile, error, profile);
     }
