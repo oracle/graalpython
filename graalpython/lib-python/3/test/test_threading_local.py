@@ -196,7 +196,7 @@ class BaseLocalTest:
         support.gc_collect()  # For PyPy or other GCs.
         self.assertIsNone(wr())
 
-
+    @support.impl_detail("thread locals and GIL", graalpy=False)
     def test_threading_local_clear_race(self):
         # See https://github.com/python/cpython/issues/100892
 
