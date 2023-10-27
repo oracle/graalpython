@@ -87,6 +87,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
@@ -229,30 +231,31 @@ public abstract class GraalHPyNodes {
      * frame using the frame reference and tries to avoid any materialization of the frame. The
      * exception is then registered in the native context as the current exception.
      */
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class HPyTransformExceptionToNativeNode extends Node {
 
-        public abstract void execute(Frame frame, GraalHPyContext nativeContext, PException e);
+        public abstract void execute(Frame frame, Node inliningTarget, GraalHPyContext nativeContext, PException e);
 
-        public final void execute(GraalHPyContext nativeContext, PException e) {
-            execute(null, nativeContext, e);
+        public final void execute(Node inliningTarget, GraalHPyContext nativeContext, PException e) {
+            execute(null, inliningTarget, nativeContext, e);
         }
 
-        public final void execute(PException e) {
-            execute(null, PythonContext.get(this).getHPyContext(), e);
+        public final void execute(Node inliningTarget, PException e) {
+            execute(null, inliningTarget, PythonContext.get(this).getHPyContext(), e);
         }
 
         public static void executeUncached(GraalHPyContext nativeContext, PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(nativeContext, e);
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(null, nativeContext, e);
         }
 
         public static void executeUncached(PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(PythonContext.get(null).getHPyContext(), e);
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(null, PythonContext.get(null).getHPyContext(), e);
         }
 
         @Specialization
-        static void setCurrentException(Frame frame, GraalHPyContext nativeContext, PException e,
-                        @Bind("this") Node inliningTarget,
+        static void setCurrentException(Frame frame, Node inliningTarget, GraalHPyContext nativeContext, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
@@ -262,6 +265,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class HPyRaiseNode extends Node {
 
         public final int raiseInt(Frame frame, GraalHPyContext nativeContext, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
@@ -290,24 +294,26 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static int doInt(Frame frame, GraalHPyContext nativeContext, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 throw raiseNode.execute(raiseNode, errType, PNone.NO_VALUE, format, arguments);
             } catch (PException p) {
-                transformExceptionToNativeNode.execute(frame, nativeContext, p);
+                transformExceptionToNativeNode.execute(frame, inliningTarget, nativeContext, p);
             }
             return errorValue;
         }
 
         @Specialization
         static Object doObject(Frame frame, GraalHPyContext nativeContext, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 throw raiseNode.execute(raiseNode, errType, PNone.NO_VALUE, format, arguments);
             } catch (PException p) {
-                transformExceptionToNativeNode.execute(frame, nativeContext, p);
+                transformExceptionToNativeNode.execute(frame, inliningTarget, nativeContext, p);
             }
             return errorValue;
         }
@@ -378,6 +384,7 @@ public abstract class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 108 -> 89
     public abstract static class GraalHPyModuleCreate extends Node {
 
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyModuleCreate.class);
@@ -644,6 +651,7 @@ public abstract class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 52 -> 33
     public abstract static class HPyCreateFunctionNode extends PNodeWithContext {
 
         public abstract PBuiltinFunction execute(GraalHPyContext context, Object enclosingType, Object methodDef);
@@ -702,6 +710,7 @@ public abstract class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 44 -> 25
     public abstract static class HPyAddLegacyGetSetDefNode extends PNodeWithContext {
 
         public abstract GetSetDescriptor execute(GraalHPyContext context, Object owner, Object legacyGetSetDefArrPtr, int i);
@@ -833,6 +842,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 48 -> 29
     public abstract static class HPyCreateLegacyMemberNode extends PNodeWithContext {
 
         public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object memberDefArrPtr, int i);
@@ -900,6 +910,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 52 -> 33
     public abstract static class HPyAddMemberNode extends PNodeWithContext {
 
         public abstract HPyProperty execute(GraalHPyContext context, PythonClass enclosingType, Object memberDef);
@@ -974,6 +985,7 @@ public abstract class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 44 -> 25
     public abstract static class HPyCreateGetSetDescriptorNode extends PNodeWithContext {
 
         public abstract GetSetDescriptor execute(GraalHPyContext context, Object type, Object memberDef);
@@ -1072,6 +1084,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 44 -> 25
     public abstract static class HPyCreateSlotNode extends PNodeWithContext {
 
         public abstract Object execute(GraalHPyContext context, PythonClass enclosingType, Object slotDef);
@@ -1151,6 +1164,7 @@ public abstract class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 80 -> 61
     public abstract static class HPyCreateLegacySlotNode extends PNodeWithContext {
 
         public abstract boolean execute(GraalHPyContext context, Object enclosingType, Object slotDefArrPtr, int i);
@@ -1240,6 +1254,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class HPyAsContextNode extends CExtToJavaNode {
 
         @Specialization
@@ -1281,11 +1296,13 @@ public abstract class GraalHPyNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyEnsureHandleNode extends HPyWithContextNode {
 
-        public abstract GraalHPyHandle execute(Object object);
+        public abstract GraalHPyHandle execute(Node inliningTarget, Object object);
 
         @Specialization
         static GraalHPyHandle doHandle(GraalHPyHandle handle) {
@@ -1293,10 +1310,10 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        GraalHPyHandle doOtherBoxedHandle(@SuppressWarnings("unused") Object value,
+        static GraalHPyHandle doOtherBoxedHandle(Node inliningTarget, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            return doLong(bits);
+            return doLong(inliningTarget, bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
@@ -1308,10 +1325,10 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits) || isBoxedDouble(bits)"})
-        GraalHPyHandle doOtherBoxedPrimitive(@SuppressWarnings("unused") Object value,
+        static GraalHPyHandle doOtherBoxedPrimitive(Node inliningTarget, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            return doBoxedPrimitive(bits);
+            return doBoxedPrimitive(inliningTarget, bits);
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
@@ -1321,14 +1338,14 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"isBoxedHandle(bits)"}, replaces = "doLongNull")
-        GraalHPyHandle doLong(long bits) {
-            GraalHPyContext context = getContext().getHPyContext();
+        static GraalHPyHandle doLong(Node inliningTarget, long bits) {
+            GraalHPyContext context = PythonContext.get(inliningTarget).getHPyContext();
             return context.createHandle(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
         }
 
         @Specialization(guards = "isBoxedInt(bits) || isBoxedDouble(bits)")
         @SuppressWarnings("unused")
-        GraalHPyHandle doBoxedPrimitive(long bits) {
+        static GraalHPyHandle doBoxedPrimitive(Node inliningTarget, long bits) {
             /*
              * In this case, the long value is a boxed primitive and we cannot resolve it to a
              * GraalHPyHandle instance (because no instance has ever been created). We create a
@@ -1342,15 +1359,21 @@ public abstract class GraalHPyNodes {
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            return getContext().getHPyContext().createHandle(delegate);
+            return PythonContext.get(inliningTarget).getHPyContext().createHandle(delegate);
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyCloseHandleNode extends HPyWithContextNode {
 
-        public abstract void execute(Object object);
+        public abstract void execute(Node inliningTarget, Object object);
+
+        public static void executeUncached(Object object) {
+            HPyCloseHandleNodeGen.getUncached().execute(null, object);
+        }
 
         @Specialization(guards = "!handle.isAllocated()")
         @SuppressWarnings("unused")
@@ -1359,8 +1382,8 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = "handle.isAllocated()")
-        void doHandleAllocated(GraalHPyHandle handle) {
-            handle.closeAndInvalidate(getContext().getHPyContext());
+        static void doHandleAllocated(Node inliningTarget, GraalHPyHandle handle) {
+            handle.closeAndInvalidate(PythonContext.get(inliningTarget).getHPyContext());
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
@@ -1370,14 +1393,14 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        void doLong(long bits) {
+        static void doLong(Node inliningTarget, long bits) {
             /*
              * Since we have a long and it is in the "boxed handle" range, we know that the handle
              * *MUST* be allocated.
              */
             int id = GraalHPyBoxing.unboxHandle(bits);
             assert GraalHPyHandle.isAllocated(id);
-            getContext().getHPyContext().releaseHPyHandleForObject(id);
+            PythonContext.get(inliningTarget).getHPyContext().releaseHPyHandleForObject(id);
         }
 
         @Specialization(guards = "!isBoxedHandle(bits)")
@@ -1395,10 +1418,10 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        void doOther(@SuppressWarnings("unused") Object value,
+        static void doOther(Node inliningTarget, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            doLong(bits);
+            doLong(inliningTarget, bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedHandle(bits)"})
@@ -1410,12 +1433,14 @@ public abstract class GraalHPyNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class HPyCloseAndGetHandleNode extends HPyWithContextNode {
 
-        public abstract Object execute(Object object);
+        public abstract Object execute(Node inliningTarget, Object object);
 
-        public abstract Object execute(long object);
+        public abstract Object execute(Node inliningTarget, long object);
 
         @Specialization(guards = "!handle.isAllocated()")
         static Object doHandle(GraalHPyHandle handle) {
@@ -1423,8 +1448,8 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = "handle.isAllocated()")
-        Object doHandleAllocated(GraalHPyHandle handle) {
-            handle.closeAndInvalidate(getContext().getHPyContext());
+        static Object doHandleAllocated(Node inliningTarget, GraalHPyHandle handle) {
+            handle.closeAndInvalidate(PythonContext.get(inliningTarget).getHPyContext());
             return handle.getDelegate();
         }
 
@@ -1435,14 +1460,14 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        Object doLong(long bits) {
+        static Object doLong(Node inliningTarget, long bits) {
             /*
              * Since we have a long and it is in the "boxed handle" range, we know that the handle
              * *MUST* be allocated.
              */
             int id = GraalHPyBoxing.unboxHandle(bits);
             assert GraalHPyHandle.isAllocated(id);
-            GraalHPyContext context = getContext().getHPyContext();
+            GraalHPyContext context = PythonContext.get(inliningTarget).getHPyContext();
             Object delegate = context.getObjectForHPyHandle(id);
             context.releaseHPyHandleForObject(id);
             return delegate;
@@ -1475,10 +1500,10 @@ public abstract class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        Object doOther(@SuppressWarnings("unused") Object value,
+        static Object doOther(Node inliningTarget, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            return doLong(bits);
+            return doLong(inliningTarget, bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
@@ -1497,6 +1522,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
@@ -1625,6 +1651,7 @@ public abstract class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
         protected static final byte HANDLE = 0;
@@ -1678,6 +1705,7 @@ public abstract class GraalHPyNodes {
      * Converts a Python object to a native {@code int64_t} compatible value.
      */
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class HPyAsNativeInt64Node extends CExtToNativeNode {
 
         // Adding specializations for primitives does not make a lot of sense just to avoid
@@ -1702,6 +1730,7 @@ public abstract class GraalHPyNodes {
         public abstract void executeInto(VirtualFrame frame, Object[] args, int argsOffset);
     }
 
+    @GenerateInline(false)
     public abstract static class HPyVarargsToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -1721,28 +1750,32 @@ public abstract class GraalHPyNodes {
     /**
      * The counter part of {@link HPyVarargsToSulongNode}.
      */
+    @GenerateInline(false)
     public abstract static class HPyVarargsHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
                         @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeHandleNode) {
-            closeHandleNode.execute(dest[destOffset]);
+            closeHandleNode.execute(inliningTarget, dest[destOffset]);
         }
     }
 
     /**
      * Always closes parameter at position {@code destOffset} (assuming that it is a handle).
      */
+    @GenerateInline(false)
     public abstract static class HPySelfHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeHandleNode) {
-            closeHandleNode.execute(dest[destOffset]);
+            closeHandleNode.execute(inliningTarget, dest[destOffset]);
         }
     }
 
+    @GenerateInline(false)
     public abstract static class HPyKeywordsToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -1764,6 +1797,7 @@ public abstract class GraalHPyNodes {
     /**
      * The counter part of {@link HPyKeywordsToSulongNode}.
      */
+    @GenerateInline(false)
     public abstract static class HPyKeywordsHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
@@ -1771,11 +1805,12 @@ public abstract class GraalHPyNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(dest[destOffset]);
-            closeSecondHandleNode.execute(dest[destOffset + 3]);
+            closeFirstHandleNode.execute(inliningTarget, dest[destOffset]);
+            closeSecondHandleNode.execute(inliningTarget, dest[destOffset + 3]);
         }
     }
 
+    @GenerateInline(false)
     public abstract static class HPyAllAsHandleNode extends HPyConvertArgsToSulongNode {
 
         static boolean isArgsOffsetPlus(int len, int off, int plus) {
@@ -1820,6 +1855,7 @@ public abstract class GraalHPyNodes {
     /**
      * The counter part of {@link HPyAllAsHandleNode}.
      */
+    @GenerateInline(false)
     public abstract static class HPyAllHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization(guards = {"dest.length == destOffset"})
@@ -1830,20 +1866,22 @@ public abstract class GraalHPyNodes {
         @Specialization(guards = {"dest.length == cachedLength", "isLeArgsOffsetPlus(cachedLength, destOffset, 8)"}, limit = "1", replaces = "cached0")
         @ExplodeLoop
         static void cachedLoop(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached("dest.length") int cachedLength,
                         @Shared @Cached HPyCloseHandleNode closeHandleNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - destOffset; i++) {
-                closeHandleNode.execute(dest[destOffset + i]);
+                closeHandleNode.execute(inliningTarget, dest[destOffset + i]);
             }
         }
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
         static void uncached(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached HPyCloseHandleNode closeHandleNode) {
             int len = dest.length;
             for (int i = 0; i < len - destOffset; i++) {
-                closeHandleNode.execute(dest[destOffset + i]);
+                closeHandleNode.execute(inliningTarget, dest[destOffset + i]);
             }
         }
 
@@ -1856,6 +1894,7 @@ public abstract class GraalHPyNodes {
      * Argument converter for calling a native get/set descriptor getter function. The native
      * signature is: {@code HPy getter(HPyContext ctx, HPy self, void* closure)}.
      */
+    @GenerateInline(false)
     public abstract static class HPyGetSetGetterToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -1875,6 +1914,7 @@ public abstract class GraalHPyNodes {
      * Argument converter for calling a native get/set descriptor setter function. The native
      * signature is: {@code HPy setter(HPyContext ctx, HPy self, HPy value, void* closure)}.
      */
+    @GenerateInline(false)
     public abstract static class HPyGetSetSetterToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -1894,20 +1934,23 @@ public abstract class GraalHPyNodes {
     /**
      * The counter part of {@link HPyGetSetSetterToSulongNode}.
      */
+    @GenerateInline(false)
     public abstract static class HPyGetSetSetterHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(dest[destOffset]);
-            closeSecondHandleNode.execute(dest[destOffset + 1]);
+            closeFirstHandleNode.execute(inliningTarget, dest[destOffset]);
+            closeSecondHandleNode.execute(inliningTarget, dest[destOffset + 1]);
         }
     }
 
     /**
      * The counter part of {@link HPyGetSetSetterToSulongNode}.
      */
+    @GenerateInline(false)
     public abstract static class HPyLegacyGetSetSetterDecrefNode extends HPyCloseArgHandlesNode {
 
         @Specialization
@@ -1921,6 +1964,7 @@ public abstract class GraalHPyNodes {
     /**
      * Converts {@code self} to an HPy handle and any other argument to {@code HPy_ssize_t}.
      */
+    @GenerateInline(false)
     public abstract static class HPySSizeArgFuncToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
@@ -1969,6 +2013,7 @@ public abstract class GraalHPyNodes {
      * Converts arguments for C function signature
      * {@code int (*HPyFunc_ssizeobjargproc)(HPyContext ctx, HPy, HPy_ssize_t, HPy)}.
      */
+    @GenerateInline(false)
     public abstract static class HPySSizeObjArgProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -1992,14 +2037,16 @@ public abstract class GraalHPyNodes {
      * Always closes handle parameter at position {@code destOffset} and also closes parameter at
      * position {@code destOffset + 2} if it is not a {@code NULL} handle.
      */
+    @GenerateInline(false)
     public abstract static class HPySSizeObjArgProcCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(dest[destOffset]);
-            closeSecondHandleNode.execute(dest[destOffset + 2]);
+            closeFirstHandleNode.execute(inliningTarget, dest[destOffset]);
+            closeSecondHandleNode.execute(inliningTarget, dest[destOffset + 2]);
         }
     }
 
@@ -2007,6 +2054,7 @@ public abstract class GraalHPyNodes {
      * Converts arguments for C function signature
      * {@code HPy (*HPyFunc_richcmpfunc)(HPyContext ctx, HPy, HPy, HPy_RichCmpOp);}.
      */
+    @GenerateInline(false)
     public abstract static class HPyRichcmpFuncArgsToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -2027,14 +2075,16 @@ public abstract class GraalHPyNodes {
     /**
      * Always closes handle parameter at positions {@code destOffset} and {@code destOffset + 1}.
      */
+    @GenerateInline(false)
     public abstract static class HPyRichcmptFuncArgsCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(dest[destOffset]);
-            closeSecondHandleNode.execute(dest[destOffset + 1]);
+            closeFirstHandleNode.execute(inliningTarget, dest[destOffset]);
+            closeSecondHandleNode.execute(inliningTarget, dest[destOffset + 1]);
         }
     }
 
@@ -2043,6 +2093,7 @@ public abstract class GraalHPyNodes {
      * {@code int (*HPyFunc_getbufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer, int flags)}
      * .
      */
+    @GenerateInline(false)
     public abstract static class HPyGetBufferProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -2065,6 +2116,7 @@ public abstract class GraalHPyNodes {
      * Converts for C function signature
      * {@code void (*HPyFunc_releasebufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer)}.
      */
+    @GenerateInline(false)
     public abstract static class HPyReleaseBufferProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
@@ -2155,6 +2207,7 @@ public abstract class GraalHPyNodes {
      */
     @ImportStatic(SpecialMethodSlot.class)
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 196 -> 180
     abstract static class HPyCreateTypeFromSpecNode extends Node {
 
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyCreateTypeFromSpecNode.class);
@@ -2565,11 +2618,21 @@ public abstract class GraalHPyNodes {
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HPyGetNativeSpacePointerNode extends Node {
 
-        public abstract Object execute(Object object);
+        public abstract Object execute(Node inliningTarget, Object object);
+
+        public final Object executeCached(Object object) {
+            return execute(this, object);
+        }
+
+        public static Object executeUncached(Object object) {
+            return HPyGetNativeSpacePointerNodeGen.getUncached().execute(null, object);
+        }
 
         @Specialization
         static Object doPythonObject(PythonObject object) {
@@ -2577,9 +2640,9 @@ public abstract class GraalHPyNodes {
         }
 
         @Fallback
-        Object doOther(@SuppressWarnings("unused") Object object) {
+        static Object doOther(Node inliningTarget, @SuppressWarnings("unused") Object object) {
             // TODO(fa): this should be a backend-specific value
-            return PythonContext.get(this).getNativeNull();
+            return PythonContext.get(inliningTarget).getNativeNull();
         }
     }
 
@@ -2629,6 +2692,7 @@ public abstract class GraalHPyNodes {
      * available. The node will return a typed function pointer that is then executable.
      */
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class HPyAttachNFIFunctionTypeNode extends HPyAttachFunctionTypeNode {
         private static final String J_NFI_LANGUAGE = "nfi";
 
@@ -2735,6 +2799,7 @@ public abstract class GraalHPyNodes {
     /**
      */
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class HPyAttachJNIFunctionTypeNode extends HPyAttachFunctionTypeNode {
 
         @Specialization
@@ -2792,6 +2857,7 @@ public abstract class GraalHPyNodes {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 60 -> 41
     public abstract static class RecursiveExceptionMatches extends Node {
         abstract int execute(GraalHPyContext context, Object err, Object exc);
 

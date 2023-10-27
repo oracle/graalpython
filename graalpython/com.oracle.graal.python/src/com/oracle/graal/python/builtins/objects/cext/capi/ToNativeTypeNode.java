@@ -244,8 +244,8 @@ public abstract class ToNativeTypeNode {
         // writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset,
         // GetWeakListOffsetNode.executeUncached(clazz));
         /*
-         * TODO msimacek: this should use GetWeakListOffsetNode as in the commented out code
-         * above. Unfortunately, it causes memory corruption in several libraries
+         * TODO msimacek: this should use GetWeakListOffsetNode as in the commented out code above.
+         * Unfortunately, it causes memory corruption in several libraries
          */
         long weaklistoffset;
         if (clazz instanceof PythonBuiltinClass builtin) {

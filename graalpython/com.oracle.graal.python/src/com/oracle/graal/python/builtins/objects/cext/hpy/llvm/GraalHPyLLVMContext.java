@@ -1208,7 +1208,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
                     throw checkThrowableBeforeNative(t, "HPy context function", cachedMember.getName());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return getErrorValue(inliningTarget, cachedMember.getSignature().returnType());
             }
         }

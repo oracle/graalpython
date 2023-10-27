@@ -816,8 +816,9 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyClose extends HPyBinaryContextFunction {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object handle,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeHandleNode) {
-            closeHandleNode.execute(handle);
+            closeHandleNode.execute(inliningTarget, handle);
             return 0;
         }
     }
@@ -2368,9 +2369,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode) {
             // we can also just return NO_VALUE since that will be interpreter as NULL
-            return getNativeSpacePointerNode.execute(object);
+            return getNativeSpacePointerNode.execute(inliningTarget, object);
         }
     }
 
@@ -2675,9 +2677,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderHandle,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached PythonObjectFactory factory) {
-            ObjectSequenceStorage builder = cast(closeAndGetHandleNode.execute(builderHandle));
+            ObjectSequenceStorage builder = cast(closeAndGetHandleNode.execute(inliningTarget, builderHandle));
             if (builder == null) {
                 /*
                  * that's really unexpected since the C signature should enforce a valid builder but
@@ -2721,9 +2724,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderHandle,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
             // be pedantic and also check what we are cancelling
-            ObjectSequenceStorage builder = HPyBuilderBuild.cast(closeAndGetHandleNode.execute(builderHandle));
+            ObjectSequenceStorage builder = HPyBuilderBuild.cast(closeAndGetHandleNode.execute(inliningTarget, builderHandle));
             if (builder == null) {
                 /*
                  * that's really unexpected since the C signature should enforce a valid builder but
@@ -2754,6 +2758,7 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyTrackerAdd extends HPyTernaryContextFunction {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderArg, Object item,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             GraalHPyTracker builder = cast(asPythonObjectNode.execute(builderArg));
@@ -2763,7 +2768,7 @@ public abstract class GraalHPyContextFunctions {
                 throw CompilerDirectives.shouldNotReachHere("invalid builder object");
             }
             try {
-                GraalHPyHandle handle = ensureHandleNode.execute(item);
+                GraalHPyHandle handle = ensureHandleNode.execute(inliningTarget, item);
                 if (handle != null) {
                     builder.add(handle);
                 }
@@ -2787,15 +2792,16 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderHandle,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached HPyCloseHandleNode closeHandleNode) {
-            GraalHPyTracker builder = GraalHPyTrackerAdd.cast(closeAndGetHandleNode.execute(builderHandle));
+            GraalHPyTracker builder = GraalHPyTrackerAdd.cast(closeAndGetHandleNode.execute(inliningTarget, builderHandle));
             if (builder == null) {
                 // that's really unexpected since the C signature should enforce a valid builder
                 // but someone could have messed it up
                 throw CompilerDirectives.shouldNotReachHere("invalid builder object");
             }
-            builder.free(closeHandleNode);
+            builder.free(inliningTarget, closeHandleNode);
             return 0;
         }
     }

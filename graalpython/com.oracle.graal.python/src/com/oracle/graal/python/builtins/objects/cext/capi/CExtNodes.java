@@ -614,7 +614,7 @@ public abstract class CExtNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
-                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true, neverDefault = false) int op,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             return executeCFunction(inliningTarget, op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
@@ -625,7 +625,7 @@ public abstract class CExtNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
-                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true, neverDefault = false) int op,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             return executeCFunction(inliningTarget, op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
@@ -636,13 +636,12 @@ public abstract class CExtNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
-                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true, neverDefault = false) int op,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             return executeCFunction(inliningTarget, op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        @NeverDefault
         static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
                 if (equalNode.execute(SpecialMethodNames.getCompareName(i), specialMethodName, TS_ENCODING)) {

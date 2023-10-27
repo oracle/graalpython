@@ -1144,7 +1144,7 @@ public abstract class HPyExternalFunctionNodes {
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached InlinedConditionProfile isNullProfile,
                         @Cached InlinedConditionProfile errOccurredProfile) {
-            Object delegate = closeAndGetHandleNode.execute(value);
+            Object delegate = closeAndGetHandleNode.execute(inliningTarget, value);
             checkFunctionResult(inliningTarget, pythonThreadState, name, isNullProfile.profile(inliningTarget, delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), true, errOccurredProfile);
             return delegate;
         }
@@ -1417,7 +1417,7 @@ public abstract class HPyExternalFunctionNodes {
              * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
-            Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
+            Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_GETTER_NO_NATIVE_SPACE);
@@ -1502,7 +1502,7 @@ public abstract class HPyExternalFunctionNodes {
              * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
-            Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
+            Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_SETTER_NO_NATIVE_SPACE);

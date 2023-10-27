@@ -46,13 +46,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseHandleNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -205,7 +203,7 @@ abstract class HPyArrayWrappers {
         void close() {
             for (int i = 0; i < wrappers.length; i++) {
                 if (wrappers[i] != null) {
-                    HPyCloseHandleNodeGen.getUncached().execute(wrappers[i]);
+                    HPyCloseHandleNode.executeUncached(wrappers[i]);
                     wrappers[i] = null;
                 }
             }
@@ -225,13 +223,13 @@ abstract class HPyArrayWrappers {
         @ExplodeLoop
         static void doCachedLen(Node inliningTarget, HPyArrayWrapper wrapper,
                         @Cached("wrapper.delegate.length") int cachedLen,
-                        @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
+                        @Exclusive @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
                         @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             for (int i = 0; i < cachedLen; i++) {
                 Object element = wrapper.delegate[i];
                 if (profiles[i].profile(element instanceof GraalHPyHandle)) {
-                    closeHandleNode.execute(element);
+                    closeHandleNode.execute(inliningTarget, element);
                 }
             }
             if (isPointerProfile.profile(inliningTarget, wrapper.isPointer())) {
@@ -242,14 +240,14 @@ abstract class HPyArrayWrappers {
 
         @Specialization(replaces = "doCachedLen")
         static void doLoop(Node inliningTarget, HPyArrayWrapper wrapper,
-                        @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
+                        @Exclusive @Cached HPyCloseHandleNode closeHandleNode,
                         @Exclusive @Cached InlinedConditionProfile profile,
                         @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             int n = wrapper.delegate.length;
             for (int i = 0; i < n; i++) {
                 Object element = wrapper.delegate[i];
                 if (profile.profile(inliningTarget, element instanceof GraalHPyHandle)) {
-                    closeHandleNode.execute(element);
+                    closeHandleNode.execute(inliningTarget, element);
                 }
             }
             if (isPointerProfile.profile(inliningTarget, wrapper.isPointer())) {
