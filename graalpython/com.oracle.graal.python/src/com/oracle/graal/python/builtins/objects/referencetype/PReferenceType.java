@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
@@ -52,11 +53,13 @@ public class PReferenceType extends PythonBuiltinObject {
     public static class WeakRefStorage extends WeakReference<Object> {
         private final Object callback;
         private final PReferenceType ref;
+        private final long pointer;
 
         public WeakRefStorage(PReferenceType ref, Object referent, Object callback, ReferenceQueue<Object> queue) {
             super(referent, queue);
             this.callback = callback;
             this.ref = ref;
+            this.pointer = CApiTransitions.getNativePointer(referent);
         }
 
         public Object getCallback() {
@@ -65,6 +68,15 @@ public class PReferenceType extends PythonBuiltinObject {
 
         public PReferenceType getRef() {
             return ref;
+        }
+
+        /**
+         * get the native pointer of the referent.
+         * 
+         * @return the native pointer if referent is a native reference, otherwise, 0.
+         */
+        public long getPointer() {
+            return pointer;
         }
     }
 

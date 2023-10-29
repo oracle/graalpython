@@ -454,6 +454,26 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) 
     return 0;
 }
 
+/** to be used from Java code only and only at exit; calls _Py_Dealloc */
+PyAPI_FUNC(Py_ssize_t) PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
+    /* some objects depends on others which might get deallocated in the process 
+        of an earlier deallocation of the other object. To avoid double deallocations,
+        we, temporarly, make all objects immortal artificially */
+	for (int i = 0; i < len; i++) {
+    	PyObject *obj = (PyObject*) ptrArray[i];
+        obj->ob_refcnt = 999999999; // object.h:_Py_IMMORTAL_REFCNT
+    }
+	for (int i = 0; i < len; i++) {
+    	PyObject *obj = (PyObject*) ptrArray[i];
+        if (Py_TYPE(obj)->tp_dealloc != object_dealloc) {
+            /* we don't need to care about objects with default deallocation process */
+            obj->ob_refcnt = 0;
+            _Py_Dealloc(obj);
+        }
+    }
+    return 0;
+}
+
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
 PyAPI_FUNC(void) PyTruffle_Free(intptr_t val) {
     PyMem_RawFree((void*) val);

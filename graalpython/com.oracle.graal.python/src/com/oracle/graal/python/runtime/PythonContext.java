@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.Re
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
@@ -2018,6 +2019,7 @@ public final class PythonContext extends Python3Core {
                 releaseHandleNode.execute(singletonNativeWrapper);
             }
         }
+        CApiTransitions.deallocateNativeWeakRefs(this);
     }
 
     private void cleanupHPyResources() {

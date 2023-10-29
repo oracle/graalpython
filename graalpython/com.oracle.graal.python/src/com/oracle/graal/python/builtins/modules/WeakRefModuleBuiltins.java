@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.removeNativeWeakRef;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -366,8 +368,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             }
             ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
             do {
-                if (reference instanceof PReferenceType.WeakRefStorage) {
-                    refs.add((PReferenceType.WeakRefStorage) reference);
+                if (reference instanceof PReferenceType.WeakRefStorage ref) {
+                    refs.add(ref);
+                    removeNativeWeakRef(ctx, ref.getPointer());
                 }
                 reference = weakRefQueue.poll();
             } while (reference != null);
@@ -462,6 +465,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (allowed) {
+                CApiTransitions.addNativeWeakRef(getContext(), pythonObject);
                 return factory.createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
             } else {
                 return refType(cls, pythonObject, actualCallback, raiseNode.get(inliningTarget));
