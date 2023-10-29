@@ -206,6 +206,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
     public static final HiddenKey TYPE_DEL = new HiddenKey("__del__");
     public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
+    public static final HiddenKey TYPE_CLEAR = new HiddenKey("__clear__");
     public static final HiddenKey TYPE_AS_BUFFER = new HiddenKey("__tp_as_buffer__");
     public static final HiddenKey TYPE_FLAGS = new HiddenKey(J___FLAGS__);
     public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey(J___VECTORCALLOFFSET__);
@@ -216,7 +217,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     public static final HashMap<String, HiddenKey> INITIAL_HIDDEN_TYPE_KEYS = new HashMap<>();
 
     static {
-        for (HiddenKey key : new HiddenKey[]{TYPE_DICTOFFSET, TYPE_ITEMSIZE, TYPE_BASICSIZE, TYPE_ALLOC, TYPE_DEALLOC, TYPE_DEL, TYPE_FREE, TYPE_FLAGS, TYPE_VECTORCALL_OFFSET, TYPE_DOC}) {
+        for (HiddenKey key : new HiddenKey[]{TYPE_DICTOFFSET, TYPE_ITEMSIZE, TYPE_BASICSIZE, TYPE_ALLOC, TYPE_DEALLOC, TYPE_DEL, TYPE_FREE, TYPE_CLEAR, TYPE_FLAGS, TYPE_VECTORCALL_OFFSET, TYPE_DOC}) {
             INITIAL_HIDDEN_TYPE_KEYS.put(key.getName(), key);
         }
     }

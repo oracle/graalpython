@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyOb
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_alloc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_clear;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dealloc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_del;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
@@ -337,9 +338,8 @@ public abstract class ToNativeTypeNode extends Node {
                 docObj = toNative.execute(docObj);
             }
             writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
-            // TODO: return a proper traverse/clear function, or at least a dummy
+            // TODO: return a proper traverse function, or at least a dummy
             writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
@@ -380,6 +380,7 @@ public abstract class ToNativeTypeNode extends Node {
             }
             writePtrNode.write(mem, CFields.PyTypeObject__tp_new, ManagedMethodWrappers.createKeywords(newFunction));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, TypeBuiltins.TYPE_FREE));
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, TypeBuiltins.TYPE_CLEAR));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
             if (clazz.basesTuple == null) {
                 clazz.basesTuple = factory.createTuple(GetBaseClassesNode.executeUncached(clazz));

@@ -126,6 +126,10 @@ public final class PythonClassNativeWrapper extends PythonReplacingNativeWrapper
         if (!PGuards.isNullOrZero(free_fun, lib)) {
             writeAttr.execute(clazz, TypeBuiltins.TYPE_FREE, free_fun);
         }
+        Object clear_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_clear);
+        if (!PGuards.isNullOrZero(clear_fun, lib)) {
+            writeAttr.execute(clazz, TypeBuiltins.TYPE_CLEAR, clear_fun);
+        }
         Object as_buffer = readPointer.read(pointer, CFields.PyTypeObject__tp_as_buffer);
         if (!PGuards.isNullOrZero(as_buffer, lib)) {
             writeAttr.execute(clazz, TypeBuiltins.TYPE_AS_BUFFER, as_buffer);
