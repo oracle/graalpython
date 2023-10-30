@@ -37,6 +37,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_keys
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_labels
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_len
+*graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_lock_unlock
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_permissions_after_flush
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_pop
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_popitem
@@ -86,6 +87,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_getitem
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_invalid_nonascii_header_as_string
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_issue2625
+*graalpython.lib-python.3.test.test_mailbox.TestMH.test_issue7627
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_items
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_iter
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_iteritems
@@ -94,6 +96,8 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_keys
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_len
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_list_folders
+*graalpython.lib-python.3.test.test_mailbox.TestMH.test_lock_unlock
+*graalpython.lib-python.3.test.test_mailbox.TestMH.test_pack
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_pop
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_popitem
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_popitem_and_flush_twice
@@ -153,11 +157,13 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_keys
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_len
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_lock_conflict
+*graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_lock_unlock
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_open_close_open
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_permissions_after_flush
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_pop
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_popitem
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_popitem_and_flush_twice
+*graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_relock
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_remove
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_set_item
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_update
@@ -291,12 +297,14 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_keys
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_len
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_lock_conflict
+*graalpython.lib-python.3.test.test_mailbox.TestMbox.test_lock_unlock
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_message_separator
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_open_close_open
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_permissions_after_flush
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_pop
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_popitem
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_popitem_and_flush_twice
+*graalpython.lib-python.3.test.test_mailbox.TestMbox.test_relock
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_remove
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_set_item
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_terminating_newline
