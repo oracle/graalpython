@@ -283,7 +283,7 @@ public abstract class ToNativeTypeNode {
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
         // TODO: return a proper traverse function, or at least a dummy
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse,  nullValue);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
