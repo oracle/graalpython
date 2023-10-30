@@ -44,6 +44,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
@@ -52,6 +53,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,16 +63,18 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class PyTruffleObjectFree {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObjectFree.class);
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class FreeNode extends Node {
 
-        public abstract int execute(Object pointerObject);
+        public abstract int execute(Node inliningTarget, Object pointerObject);
 
         @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
-        static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @Cached ClearNativeWrapperNode clearNativeWrapperNode,
-                        @Cached PCallCapiFunction callReleaseHandleNode) {
+        static int doNativeWrapper(Node inliningTarget, PythonNativeWrapper nativeWrapper,
+                        @Cached ReleaseHandleNode releaseHandleNode,
+                        @Cached ClearNativeWrapperNode clearNativeWrapperNode) {
             // if (nativeWrapper.getRefCount() > 0) {
             // CompilerDirectives.transferToInterpreterAndInvalidate();
             // throw new IllegalStateException("deallocating native object with refcnt > 0");
@@ -77,9 +82,8 @@ public abstract class PyTruffleObjectFree {
 
             // clear native wrapper
             Object delegate = nativeWrapper.getDelegate();
-            clearNativeWrapperNode.execute(delegate, nativeWrapper);
-
-            ReleaseHandleNode.doNativeWrapper(nativeWrapper, callReleaseHandleNode);
+            clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
+            releaseHandleNode.execute(inliningTarget, nativeWrapper);
             return 1;
         }
 
@@ -101,15 +105,20 @@ public abstract class PyTruffleObjectFree {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class ReleaseHandleNode extends Node {
 
-        public abstract void execute(PythonNativeWrapper nativeWrapper);
+        public abstract void execute(Node inliningTarget, PythonNativeWrapper nativeWrapper);
+
+        public static void executeUncached(PythonNativeWrapper nativeWrapper) {
+            ReleaseHandleNodeGen.getUncached().execute(null, nativeWrapper);
+        }
 
         @Specialization
         static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @Cached PCallCapiFunction callReleaseHandleNode) {
-
+                        @Cached(inline = false) PCallCapiFunction callReleaseHandleNode) {
             // If wrapper already received toNative, release the handle or free the native memory.
             if (nativeWrapper.isNative()) {
                 long nativePointer = nativeWrapper.getNativePointer();

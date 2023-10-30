@@ -54,10 +54,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.AllocateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.FreeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.GetElementPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
@@ -133,6 +138,10 @@ public class CStructAccess {
                         @Shared @Cached PCallCapiFunction call) {
             assert size >= 0;
             return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, size, 1);
+        }
+
+        public static AllocateNode getUncached() {
+            return AllocateNodeGen.getUncached();
         }
     }
 
@@ -213,6 +222,10 @@ public class CStructAccess {
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             return call.call(NativeCAPISymbol.FUN_PTR_ADD, pointer, offset);
+        }
+
+        public static GetElementPtrNode getUncached() {
+            return GetElementPtrNodeGen.getUncached();
         }
     }
 
@@ -1018,6 +1031,10 @@ public class CStructAccess {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_WRITE_INT_MEMBER, pointer, offset, value);
         }
+
+        public static WriteIntNode getUncached() {
+            return WriteIntNodeGen.getUncached();
+        }
     }
 
     @ImportStatic(PGuards.class)
@@ -1082,6 +1099,10 @@ public class CStructAccess {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_WRITE_LONG_MEMBER, pointer, offset, value);
         }
+
+        public static WriteLongNode getUncached() {
+            return WriteLongNodeGen.getUncached();
+        }
     }
 
     @ImportStatic(PGuards.class)
@@ -1123,6 +1144,10 @@ public class CStructAccess {
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_WRITE_LONG_MEMBER, pointer, offset, value);
+        }
+
+        public static WritePointerNode getUncached() {
+            return WritePointerNodeGen.getUncached();
         }
     }
 

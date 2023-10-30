@@ -112,6 +112,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -123,7 +124,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class HPyExternalFunctionNodes {
@@ -1124,14 +1125,16 @@ public abstract class HPyExternalFunctionNodes {
 
         public abstract Object execute(PythonThreadState pythonThreadState, TruffleString name, Object value);
 
-        protected static void checkFunctionResult(Node node, PythonThreadState pythonThreadState, TruffleString name, boolean indicatesError, boolean strict, ConditionProfile errOccurredProfile) {
-            CheckFunctionResultNode.checkFunctionResult(node, pythonThreadState, name, indicatesError, strict, errOccurredProfile, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION,
+        protected static void checkFunctionResult(Node inliningTarget, PythonThreadState pythonThreadState, TruffleString name, boolean indicatesError, boolean strict,
+                        InlinedConditionProfile errOccurredProfile) {
+            CheckFunctionResultNode.checkFunctionResult(inliningTarget, pythonThreadState, name, indicatesError, strict, errOccurredProfile, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION,
                             ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET);
         }
     }
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
@@ -1139,10 +1142,10 @@ public abstract class HPyExternalFunctionNodes {
         static Object doLongNull(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
-                        @Cached ConditionProfile isNullProfile,
-                        @Cached ConditionProfile errOccurredProfile) {
-            Object delegate = closeAndGetHandleNode.execute(value);
-            checkFunctionResult(inliningTarget, pythonThreadState, name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), true, errOccurredProfile);
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached InlinedConditionProfile errOccurredProfile) {
+            Object delegate = closeAndGetHandleNode.execute(inliningTarget, value);
+            checkFunctionResult(inliningTarget, pythonThreadState, name, isNullProfile.profile(inliningTarget, delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), true, errOccurredProfile);
             return delegate;
         }
     }
@@ -1152,6 +1155,7 @@ public abstract class HPyExternalFunctionNodes {
      * native function. This node guarantees that an {@code int} or {@code long} is returned.
      */
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
         public abstract int executeInt(PythonThreadState context, TruffleString name, int value);
@@ -1161,7 +1165,7 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization
         static int doInteger(PythonThreadState pythonThreadState, TruffleString name, int value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached ConditionProfile errOccurredProfile) {
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
             checkFunctionResult(inliningTarget, pythonThreadState, name, value == -1, false, errOccurredProfile);
             return value;
         }
@@ -1169,7 +1173,7 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization(replaces = "doInteger")
         static long doLong(PythonThreadState pythonThreadState, TruffleString name, long value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached ConditionProfile errOccurredProfile) {
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
             checkFunctionResult(inliningTarget, pythonThreadState, name, value == -1, false, errOccurredProfile);
             return value;
         }
@@ -1178,8 +1182,8 @@ public abstract class HPyExternalFunctionNodes {
         static Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary lib,
-                        @Shared @Cached PRaiseNode raiseNode,
-                        @Shared @Cached ConditionProfile errOccurredProfile) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
             if (lib.fitsInLong(value)) {
                 try {
                     long lvalue = lib.asLong(value);
@@ -1189,7 +1193,7 @@ public abstract class HPyExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
+            throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
         }
     }
 
@@ -1198,13 +1202,14 @@ public abstract class HPyExternalFunctionNodes {
      * functions are called) but checks if an error occurred during execution of the function.
      */
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckVoidResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization
         static Object doGeneric(PythonThreadState threadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile errOccurredProfile) {
+                        @Cached InlinedConditionProfile errOccurredProfile) {
             /*
              * A 'void' function never indicates an error but an error could still happen. So this
              * must also be checked. The actual result value (which will be something like NULL or
@@ -1412,7 +1417,7 @@ public abstract class HPyExternalFunctionNodes {
              * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
-            Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
+            Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_GETTER_NO_NATIVE_SPACE);
@@ -1497,7 +1502,7 @@ public abstract class HPyExternalFunctionNodes {
              * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
-            Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
+            Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_SETTER_NO_NATIVE_SPACE);

@@ -246,7 +246,7 @@ abstract class GraalHPyLLVMNodes {
                         @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Exclusive @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
             Object nativeValue = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
-            return closeAndGetHandleNode.execute(nativeValue);
+            return closeAndGetHandleNode.execute(inliningTarget, nativeValue);
         }
 
         @Specialization(replaces = {"doGet", "doClose"})
@@ -257,7 +257,7 @@ abstract class GraalHPyLLVMNodes {
                         @Exclusive @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
             Object nativeValue = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
             if (close) {
-                return closeAndGetHandleNode.execute(nativeValue);
+                return closeAndGetHandleNode.execute(inliningTarget, nativeValue);
             }
             return asPythonObjectNode.execute(nativeValue);
         }

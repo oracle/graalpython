@@ -104,6 +104,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -922,6 +923,7 @@ public final class GraalHPyContext extends CExtContext {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(PGuards.class)
     public abstract static class GetHPyHandleForSingleton extends Node {
         public abstract int execute(Object delegateObject);

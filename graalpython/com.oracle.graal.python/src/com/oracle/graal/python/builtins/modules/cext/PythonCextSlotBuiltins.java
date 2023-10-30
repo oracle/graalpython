@@ -259,6 +259,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             int elementSize = CStructs.wchar_t.size();
             /*
@@ -266,7 +267,7 @@ public final class PythonCextSlotBuiltins {
              * proper solution needs to differentiate here, and maybe use the "toNative" of
              * TruffleString.
              */
-            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(object, elementSize));
+            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(inliningTarget, object, elementSize));
         }
     }
 
@@ -365,9 +366,10 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             long sizeofWchar = CStructs.wchar_t.size();
-            PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar);
+            PBytes result = asWideCharNode.executeNativeOrder(inliningTarget, object, sizeofWchar);
             return result.getSequenceStorage().length() / sizeofWchar;
         }
     }
@@ -724,12 +726,13 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PString object,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
                 return object.getNativeCharSequence().getPtr();
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(object, CStructs.wchar_t.size()));
+            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(inliningTarget, object, CStructs.wchar_t.size()));
         }
     }
 
@@ -738,8 +741,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObSizeNode obSizeNode) {
-            return obSizeNode.execute(object);
+            return obSizeNode.execute(inliningTarget, object);
         }
     }
 

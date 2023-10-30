@@ -270,7 +270,7 @@ public class GraalHPyMemberAccessNodes {
                         @Cached PRaiseNode.Lazy raiseNode) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
 
-            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
+            Object nativeSpacePtr = ensureReadNativeSpaceNode().executeCached(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_READ_FROM_OFFSET_D, offset, self);
@@ -458,7 +458,7 @@ public class GraalHPyMemberAccessNodes {
             PythonContext context = getContext();
             GraalHPyContext hPyContext = context.getHPyContext();
 
-            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
+            Object nativeSpacePtr = ensureReadNativeSpaceNode().executeCached(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_WRITE_OFFSET_D, offset, self);

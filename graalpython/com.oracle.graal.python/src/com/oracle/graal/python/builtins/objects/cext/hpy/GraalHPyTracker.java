@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseH
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class GraalHPyTracker {
     private static final int HPYTRACKER_INITIAL_SIZE = 5;
@@ -70,10 +71,10 @@ public final class GraalHPyTracker {
         handles = Arrays.copyOf(handles, PythonUtils.multiplyExact(handles.length, 2) - 1);
     }
 
-    public void free(HPyCloseHandleNode closeHandleNode) {
+    public void free(Node inliningTarget, HPyCloseHandleNode closeHandleNode) {
         assert cursor <= handles.length;
         for (int i = 0; i < cursor; i++) {
-            closeHandleNode.execute(handles[i]);
+            closeHandleNode.execute(inliningTarget, handles[i]);
         }
         cursor = 0;
     }

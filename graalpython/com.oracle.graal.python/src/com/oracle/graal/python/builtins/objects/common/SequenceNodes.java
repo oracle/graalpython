@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.CachedGetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.SetSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -177,6 +178,10 @@ public abstract class SequenceNodes {
     public abstract static class SetSequenceStorageNode extends Node {
 
         public abstract void execute(Node inliningTarget, PSequence s, SequenceStorage storage);
+
+        public static void executeUncached(PSequence s, SequenceStorage storage) {
+            SetSequenceStorageNodeGen.getUncached().execute(null, s, storage);
+        }
 
         @Specialization(guards = "s.getClass() == cachedClass", limit = "1")
         static void doSpecial(PSequence s, SequenceStorage storage,

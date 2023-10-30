@@ -46,11 +46,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
@@ -227,9 +229,10 @@ public final class PrimitiveNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
         static long doBoolNotNative(PrimitiveNativeWrapper obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached MaterializeDelegateNode materializeNode) {
             // special case for True and False singletons
-            PInt boxed = (PInt) materializeNode.execute(obj);
+            PInt boxed = (PInt) materializeNode.execute(inliningTarget, obj);
             assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
             return obj.getNativePointer();
         }

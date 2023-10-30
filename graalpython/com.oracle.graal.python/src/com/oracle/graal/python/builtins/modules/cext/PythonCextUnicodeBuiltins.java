@@ -1067,7 +1067,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached InlinedConditionProfile profile,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             if (profile.profile(inliningTarget, s.getWCharBytes() == null)) {
-                PBytes bytes = asWideCharNode.executeNativeOrder(s, CStructs.wchar_t.size());
+                PBytes bytes = asWideCharNode.executeNativeOrder(inliningTarget, s, CStructs.wchar_t.size());
                 s.setWCharBytes(bytes);
             }
             return PySequenceArrayWrapper.ensureNativeSequence(s.getWCharBytes());
@@ -1100,7 +1100,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached CastToTruffleStringNode castStr,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PBytes wchars = asWideCharNode.executeLittleEndian(castStr.execute(inliningTarget, s), elementSize);
+                PBytes wchars = asWideCharNode.executeLittleEndian(inliningTarget, castStr.execute(inliningTarget, s), elementSize);
                 if (wchars != null) {
                     return wchars;
                 } else {
@@ -1116,16 +1116,17 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = CApiCallPath.Ignored)
     abstract static class PyTruffle_Unicode_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doGeneric(TruffleString format, Object vaList,
+        static Object doGeneric(TruffleString format, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeFromFormatNode unicodeFromFormatNode) {
-            return unicodeFromFormatNode.execute(format, vaList);
+            return unicodeFromFormatNode.execute(inliningTarget, format, vaList);
         }
     }
 
     @CApiBuiltin(ret = _PY_ERROR_HANDLER, args = {ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class _Py_GetErrorHandler extends CApiUnaryBuiltinNode {
         @Specialization
-        Object doGeneric(TruffleString errors,
+        static Object doGeneric(TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached GetErrorHandlerNode getErrorHandlerNode) {
             return getErrorHandlerNode.execute(inliningTarget, errors).getNativeValue();

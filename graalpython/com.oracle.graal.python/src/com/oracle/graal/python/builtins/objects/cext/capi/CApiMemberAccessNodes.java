@@ -96,6 +96,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -383,6 +384,7 @@ public class CApiMemberAccessNodes {
         abstract void execute(Object pointer, Object newValue);
     }
 
+    @GenerateInline(false)
     abstract static class WriteByteNode extends WriteTypeNode {
 
         @Specialization
@@ -393,6 +395,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteShortNode extends WriteTypeNode {
 
         @Specialization
@@ -403,6 +406,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteIntNode extends WriteTypeNode {
 
         @Specialization
@@ -413,6 +417,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteLongNode extends WriteTypeNode {
 
         @Specialization
@@ -436,6 +441,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteUIntNode extends WriteTypeNode {
 
         @Specialization
@@ -461,6 +467,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteULongNode extends WriteTypeNode {
 
         @Specialization
@@ -484,6 +491,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteDoubleNode extends WriteTypeNode {
 
         @Specialization
@@ -507,6 +515,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteFloatNode extends WriteTypeNode {
 
         @Specialization
@@ -517,6 +526,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteObjectNode extends WriteTypeNode {
 
         @Specialization
@@ -526,6 +536,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteObjectExNode extends WriteTypeNode {
 
         @Specialization
@@ -541,6 +552,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteCharNode extends WriteTypeNode {
 
         @Specialization

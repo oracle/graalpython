@@ -87,9 +87,10 @@ public final class PythonCextContextBuiltins {
     abstract static class PyTruffleContextVar_Get extends CApiTernaryBuiltinNode {
         @Specialization
         Object doGeneric(Object var, Object def, Object marker,
-                        @Cached PRaiseNativeNode raiseNative) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNativeNode.Lazy raiseNative) {
             if (!(var instanceof PContextVar)) {
-                return raiseNative.raise(null, marker, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+                return raiseNative.get(inliningTarget).raise(null, marker, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
             Object result = ((PContextVar) var).getValue(threadState);

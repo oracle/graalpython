@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.ToNativeTypeNode.InitializeTypeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ToNativeTypeNodeGen.InitializeTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -90,7 +88,6 @@ public final class PythonClassNativeWrapper extends PythonReplacingNativeWrapper
      * Creates a wrapper that uses an existing native object as native replacement object.
      */
     public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
-        InitializeTypeNode initializeNode = InitializeTypeNodeGen.getUncached();
         // important: native wrappers are cached
         assert clazz.getClassNativeWrapper() == null;
         PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name);
@@ -140,7 +137,7 @@ public final class PythonClassNativeWrapper extends PythonReplacingNativeWrapper
         flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
         SetTypeFlagsNode.executeUncached(clazz, flags);
 
-        initializeNode.execute(wrapper, pointer);
+        ToNativeTypeNode.initializeType(wrapper, pointer);
         wrapper.setReplacement(pointer, lib);
     }
 
@@ -152,6 +149,6 @@ public final class PythonClassNativeWrapper extends PythonReplacingNativeWrapper
 
     @Override
     protected Object allocateReplacememtObject() {
-        return ToNativeTypeNodeGen.getUncached().execute(this);
+        return ToNativeTypeNode.executeUncached(this);
     }
 }

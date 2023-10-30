@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
@@ -127,10 +128,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.Gr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyPackKeywordArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
@@ -268,7 +267,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * example, destroy functions will be executed on a different thread some time after the object
      * died. Buffer release functions run on the main thread but like an async action at some
      * unknown point in time after the buffer owner died.
-     * 
+     *
      * Since we have no control over the execution order of those cleaners, we need to ensure that
      * the code is still mapped.
      */
@@ -1204,7 +1203,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             return IsSubtypeNode.getUncached().execute(receiver, type) ? 1 : 0;
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return 0;
         }
     }
@@ -1327,7 +1326,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             return PyObjectSizeNodeGen.executeUncached(receiver);
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return -1;
         }
     }
@@ -1387,7 +1386,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             PList list = slowPathFactory.createList(data);
             return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(list));
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // NULL handle
             return 0;
         }
@@ -1482,7 +1481,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             try {
                 throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             } catch (PException e) {
-                HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+                HPyTransformExceptionToNativeNode.executeUncached(context, e);
             }
             return errBits;
         }
@@ -1502,7 +1501,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return -1;
         }
     }
@@ -1513,7 +1512,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return -1;
         }
     }
@@ -1610,7 +1609,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             try {
                 return PyFloatAsDoubleNode.executeUncached(object);
             } catch (PException e) {
-                HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+                HPyTransformExceptionToNativeNode.executeUncached(context, e);
                 return -1.0;
             }
         }
@@ -1652,7 +1651,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             try {
                 return (long) AsNativePrimitiveNodeGen.getUncached().execute(object, 1, java.lang.Long.BYTES, true);
             } catch (PException e) {
-                HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+                HPyTransformExceptionToNativeNode.executeUncached(context, e);
                 return -1L;
             }
         }
@@ -1678,7 +1677,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             try {
                 return (double) PyLongAsDoubleNode.executeUncached(object);
             } catch (PException e) {
-                HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+                HPyTransformExceptionToNativeNode.executeUncached(context, e);
                 return -1L;
             }
         }
@@ -1716,49 +1715,49 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxAsStructObject(long h) {
         increment(HPyJNIUpcall.HPyAsStructObject);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructLegacy(long h) {
         increment(HPyJNIUpcall.HPyAsStructLegacy);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructType(long h) {
         increment(HPyJNIUpcall.HPyAsStructType);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructLong(long h) {
         increment(HPyJNIUpcall.HPyAsStructLong);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructFloat(long h) {
         increment(HPyJNIUpcall.HPyAsStructFloat);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructUnicode(long h) {
         increment(HPyJNIUpcall.HPyAsStructUnicode);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructTuple(long h) {
         increment(HPyJNIUpcall.HPyAsStructTuple);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     public long ctxAsStructList(long h) {
         increment(HPyJNIUpcall.HPyAsStructList);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
-        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        return expectPointer(HPyGetNativeSpacePointerNode.executeUncached(receiver));
     }
 
     // Note: assumes that receiverHandle is not a boxed primitive value
@@ -1881,7 +1880,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             Object result = PInteropSubscriptNode.getUncached().execute(receiver, lidx);
             return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // NULL handle
             return 0;
         }
@@ -1954,7 +1953,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             Object value = HPyAsPythonObjectNodeGen.getUncached().execute(hValue);
             return setItemGeneric(receiver, clazz, lidx, value);
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // non-null value indicates an error
             return -1;
         }
@@ -2010,7 +2009,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             Object receiverType = GetClassNode.executeUncached(receiver);
             return PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return 0;
         }
     }

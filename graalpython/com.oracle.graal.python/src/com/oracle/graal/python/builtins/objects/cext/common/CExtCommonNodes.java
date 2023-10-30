@@ -114,7 +114,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -488,18 +487,17 @@ public abstract class CExtCommonNodes {
     }
 
     public abstract static class CheckFunctionResultNode extends PNodeWithContext {
-        public static void checkFunctionResult(Node node, TruffleString name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context,
-                        ConditionProfile errOccurredProfile,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+        public static void checkFunctionResult(Node inliningTarget, TruffleString name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context,
+                        InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
             PythonThreadState threadState = context.getThreadState(language);
-            checkFunctionResult(node, threadState, name, indicatesError, strict, errOccurredProfile, nullButNoErrorMessage, resultWithErrorMessage);
+            checkFunctionResult(inliningTarget, threadState, name, indicatesError, strict, errOccurredProfile, nullButNoErrorMessage, resultWithErrorMessage);
         }
 
         /**
          * Check the result of a C extension function.
          *
-         * @param node The processing node (needed for the source location if a {@code SystemError}
-         *            is raised).
+         * @param inliningTarget The processing node (also needed for the source location if a
+         *            {@code SystemError} is raised).
          * @param threadState The Python thread state.
          * @param name The name of the function (used for the error message).
          * @param indicatesError {@code true} if the function results indicates an error (e.g.
@@ -516,10 +514,10 @@ public abstract class CExtCommonNodes {
          * @param resultWithErrorMessage Error message used if an error was set but the value does
          *            not indicate and error.
          */
-        public static void checkFunctionResult(Node node, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict, ConditionProfile errOccurredProfile,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+        public static void checkFunctionResult(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
+                        InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
             PException currentException = threadState.getCurrentException();
-            boolean errOccurred = errOccurredProfile.profile(currentException != null);
+            boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
             if (indicatesError) {
                 // consume exception
                 threadState.setCurrentException(null);
@@ -527,13 +525,13 @@ public abstract class CExtCommonNodes {
                     assert currentException != null;
                     throw currentException.getExceptionForReraise(false);
                 } else if (strict) {
-                    throw raiseNullButNoError(node, name, nullButNoErrorMessage);
+                    throw raiseNullButNoError(inliningTarget, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 assert currentException != null;
                 // consume exception
                 threadState.setCurrentException(null);
-                throw raiseResultWithError(node, name, currentException, resultWithErrorMessage);
+                throw raiseResultWithError(inliningTarget, name, currentException, resultWithErrorMessage);
             }
         }
 

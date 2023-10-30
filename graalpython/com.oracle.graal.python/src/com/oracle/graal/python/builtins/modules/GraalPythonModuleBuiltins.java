@@ -813,7 +813,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object toNative(PBytesLike bytes) {
             ensureCapi();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(bytes.getSequenceStorage(), true);
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(bytes.getSequenceStorage(), true);
             bytes.setSequenceStorage(newStorage);
             return bytes;
         }
@@ -822,7 +822,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object toNative(PArray array) {
             ensureCapi();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(array.getSequenceStorage(), true);
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true);
             array.setSequenceStorage(newStorage);
             return array;
         }
@@ -831,7 +831,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object toNative(PSequence sequence) {
             ensureCapi();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(sequence.getSequenceStorage(), false);
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), false);
             sequence.setSequenceStorage(newStorage);
             return sequence;
         }
