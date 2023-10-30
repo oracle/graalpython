@@ -384,6 +384,7 @@ public abstract class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
+    @GenerateCached(false)
     @GenerateInline(false) // footprint reduction 108 -> 89
     public abstract static class GraalHPyModuleCreate extends Node {
 
