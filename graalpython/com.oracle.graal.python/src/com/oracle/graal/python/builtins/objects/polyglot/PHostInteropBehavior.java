@@ -76,7 +76,7 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
         return globals[method.ordinal()];
     }
 
-    public boolean isSupported(HostInteropBehaviorMethod method) {
+    public boolean isDefined(HostInteropBehaviorMethod method) {
         return callTargets[method.ordinal()] != null;
     }
 

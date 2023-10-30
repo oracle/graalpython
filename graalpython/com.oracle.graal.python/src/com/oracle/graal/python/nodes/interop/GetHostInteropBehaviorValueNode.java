@@ -44,8 +44,6 @@ import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.Re
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -78,7 +76,7 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior) {
-            if (isMethodSupported.profile(inlineTarget, behavior.isSupported(method))) {
+            if (isMethodSupported.profile(inlineTarget, behavior.isDefined(method))) {
                 CallTarget callTarget = behavior.getCallTarget(method);
                 Object[] pArguments = behavior.createArguments(method, receiver);
                 return invokeNode.execute(callTarget, pArguments);
