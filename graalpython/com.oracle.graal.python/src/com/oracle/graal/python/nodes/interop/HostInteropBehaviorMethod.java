@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.interop;
 
-import com.oracle.truffle.api.strings.TruffleString;
-
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_BIG_INTEGER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_BOOLEAN;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_BYTE;
@@ -63,6 +61,21 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_FLO
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_INT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_SHORT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ARRAY_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ARRAY_SIZE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_ENTRIES_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_KEYS_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_SIZE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_VALUE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_VALUES_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_VALUE_OR_DEFAULT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ITERATOR_NEXT_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_ARRAY_ELEMENTS;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_HASH_ENTRIES;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_ITERATOR_NEXT_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_BOOLEAN;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_DATE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_DURATION;
@@ -73,6 +86,9 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_NUMBER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_TIME_ZONE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_PUT_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_REMOVE_ARRAY_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_REMOVE_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_BIG_INTEGER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_BOOLEAN;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_BYTE;
@@ -94,6 +110,21 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_FLO
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_INT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_SHORT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ARRAY_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ARRAY_SIZE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_ENTRIES_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_KEYS_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_SIZE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_VALUE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_VALUES_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_VALUE_OR_DEFAULT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ITERATOR_NEXT_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_ARRAY_ELEMENTS;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_HASH_ENTRIES;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_ITERATOR;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_ITERATOR_NEXT_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_BOOLEAN;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_DATE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_DURATION;
@@ -104,51 +135,90 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_NUMBER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME_ZONE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_PUT_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_REMOVE_ARRAY_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_REMOVE_HASH_ENTRY;
+
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum HostInteropBehaviorMethod {
-    is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN, true, 0),
-    is_date(J_IS_DATE, T_IS_DATE, true, 0),
-    is_duration(J_IS_DURATION, T_IS_DURATION, true, 0),
-    is_exception(J_IS_DATE, T_IS_DATE, true, 0),
-    is_instant(J_IS_INSTANT, T_IS_INSTANT, true, 0),
-    is_iterator(J_IS_ITERATOR, T_IS_ITERATOR, true, 0),
-    is_null(J_IS_NULL, T_IS_NULL, true, 0),
-    is_number(J_IS_NUMBER, T_IS_NUMBER, true, 0),
-    is_string(J_IS_STRING, T_IS_STRING, true, 0),
-    is_time(J_IS_TIME, T_IS_TIME, true, 0),
-    is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE, true, 0),
-
-    fits_in_big_integer(J_FITS_IN_BIG_INTEGER, T_FITS_IN_BIG_INTEGER, false, 0),
-    fits_in_byte(J_FITS_IN_BYTE, T_FITS_IN_BYTE, false, 0),
-    fits_in_double(J_FITS_IN_DOUBLE, T_FITS_IN_DOUBLE, false, 0),
-    fits_in_float(J_FITS_IN_FLOAT, T_FITS_IN_FLOAT, false, 0),
-    fits_in_int(J_FITS_IN_INT, T_FITS_IN_INT, false, 0),
-    fits_in_long(J_FITS_IN_LONG, T_FITS_IN_LONG, false, 0),
-    fits_in_short(J_FITS_IN_SHORT, T_FITS_IN_SHORT, false, 0),
-    as_big_integer(J_AS_BIG_INTEGER, T_AS_BIG_INTEGER, false, 0),
-    as_boolean(J_AS_BOOLEAN, T_AS_BOOLEAN, false, 0),
-    as_byte(J_AS_BYTE, T_AS_BYTE, false, 0),
-    as_date(J_AS_DATE, T_AS_DATE, false, 0),
-    as_double(J_AS_DOUBLE, T_AS_DOUBLE, false, 0),
-    as_duration(J_AS_DURATION, T_AS_DURATION, false, 0),
-    as_float(J_AS_FLOAT, T_AS_FLOAT, false, 0),
-    as_instant(J_AS_INSTANT, T_AS_INSTANT, false, 0),
-    as_int(J_AS_INT, T_AS_INT, false, 0),
-    as_long(J_AS_LONG, T_AS_LONG, false, 0),
-    as_short(J_AS_SHORT, T_AS_SHORT, false, 0),
-    as_string(J_AS_STRING, T_AS_STRING, false, 0),
-    as_time(J_AS_TIME, T_AS_TIME, false, 0),
-    as_time_zone(J_AS_TIME_ZONE, T_AS_TIME_ZONE, false, 0);
-
+    is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN, true),
+    is_date(J_IS_DATE, T_IS_DATE, true),
+    is_duration(J_IS_DURATION, T_IS_DURATION, true),
+    is_exception(J_IS_DATE, T_IS_DATE, true),
+    is_instant(J_IS_INSTANT, T_IS_INSTANT, true),
+    is_iterator(J_IS_ITERATOR, T_IS_ITERATOR, true),
+    is_null(J_IS_NULL, T_IS_NULL, true),
+    is_number(J_IS_NUMBER, T_IS_NUMBER, true),
+    is_string(J_IS_STRING, T_IS_STRING, true),
+    is_time(J_IS_TIME, T_IS_TIME, true),
+    is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE, true),
+    fits_in_big_integer(J_FITS_IN_BIG_INTEGER, T_FITS_IN_BIG_INTEGER),
+    fits_in_byte(J_FITS_IN_BYTE, T_FITS_IN_BYTE),
+    fits_in_double(J_FITS_IN_DOUBLE, T_FITS_IN_DOUBLE),
+    fits_in_float(J_FITS_IN_FLOAT, T_FITS_IN_FLOAT),
+    fits_in_int(J_FITS_IN_INT, T_FITS_IN_INT),
+    fits_in_long(J_FITS_IN_LONG, T_FITS_IN_LONG),
+    fits_in_short(J_FITS_IN_SHORT, T_FITS_IN_SHORT),
+    as_big_integer(J_AS_BIG_INTEGER, T_AS_BIG_INTEGER),
+    as_boolean(J_AS_BOOLEAN, T_AS_BOOLEAN),
+    as_byte(J_AS_BYTE, T_AS_BYTE),
+    as_date(J_AS_DATE, T_AS_DATE),
+    as_double(J_AS_DOUBLE, T_AS_DOUBLE),
+    as_duration(J_AS_DURATION, T_AS_DURATION),
+    as_float(J_AS_FLOAT, T_AS_FLOAT),
+    as_instant(J_AS_INSTANT, T_AS_INSTANT),
+    as_int(J_AS_INT, T_AS_INT),
+    as_long(J_AS_LONG, T_AS_LONG),
+    as_short(J_AS_SHORT, T_AS_SHORT),
+    as_string(J_AS_STRING, T_AS_STRING),
+    as_time(J_AS_TIME, T_AS_TIME),
+    as_time_zone(J_AS_TIME_ZONE, T_AS_TIME_ZONE),
+    // array
+    get_array_element(J_GET_ARRAY_ELEMENT, T_GET_ARRAY_ELEMENT, 1),
+    get_array_size(J_GET_ARRAY_SIZE, T_GET_ARRAY_SIZE),
+    has_array_elements(J_HAS_ARRAY_ELEMENTS, T_HAS_ARRAY_ELEMENTS, true),
+    remove_array_element(J_REMOVE_ARRAY_ELEMENT, T_REMOVE_ARRAY_ELEMENT, 1),
+    set_array_element(J_REMOVE_ARRAY_ELEMENT, T_REMOVE_ARRAY_ELEMENT, 2),
+    // iterator
+    has_iterator(J_HAS_ITERATOR, T_HAS_ITERATOR, true),
+    has_iterator_next_element(J_HAS_ITERATOR_NEXT_ELEMENT, T_HAS_ITERATOR_NEXT_ELEMENT),
+    get_iterator(J_GET_ITERATOR, T_GET_ITERATOR),
+    get_iterator_next_element(J_GET_ITERATOR_NEXT_ELEMENT, T_GET_ITERATOR_NEXT_ELEMENT),
+    // hash
+    get_hash_entries_iterator(J_GET_HASH_ENTRIES_ITERATOR, T_GET_HASH_ENTRIES_ITERATOR),
+    get_hash_keys_iterator(J_GET_HASH_KEYS_ITERATOR, T_GET_HASH_KEYS_ITERATOR),
+    get_hash_size(J_GET_HASH_SIZE, T_GET_HASH_SIZE),
+    get_hash_value(J_GET_HASH_VALUE, T_GET_HASH_VALUE, 1),
+    get_hash_value_or_default(J_GET_HASH_VALUE_OR_DEFAULT, T_GET_HASH_VALUE_OR_DEFAULT, 2),
+    get_hash_values_iterator(J_GET_HASH_VALUES_ITERATOR, T_GET_HASH_VALUES_ITERATOR),
+    has_hash_entries(J_HAS_HASH_ENTRIES, T_HAS_HASH_ENTRIES, true),
+    has_hash_entry(J_HAS_HASH_ENTRY, T_HAS_HASH_ENTRY, 1),
+    put_hash_entry(J_PUT_HASH_ENTRY, T_PUT_HASH_ENTRY, 2),
+    remove_hash_entry(J_REMOVE_HASH_ENTRY, T_REMOVE_HASH_ENTRY, 1),
+    ;
     public final String name;
     public final TruffleString tsName;
     public final boolean isConstant;
     public final int extraArguments;
 
     HostInteropBehaviorMethod(String name, TruffleString tsName, boolean isConstant, int extraArguments) {
+        assert !(isConstant && extraArguments > 0): "constant HostInteropBehaviorMethods cannot have extra arguments!";
         this.name = name;
         this.tsName = tsName;
         this.isConstant = isConstant;
         this.extraArguments = extraArguments;
+    }
+
+    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean isConstant) {
+        this(name, tsName, isConstant, 0);
+    }
+
+    HostInteropBehaviorMethod(String name, TruffleString tsName, int extraArguments) {
+        this(name, tsName, false, extraArguments);
+    }
+
+    HostInteropBehaviorMethod(String name, TruffleString tsName) {
+        this(name, tsName, false, 0);
     }
 }

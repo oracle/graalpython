@@ -1807,6 +1807,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean fitsInBigInteger(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_big_integer);
+    }
+
+    @ExportMessage
     public byte asByte() throws UnsupportedMessageException {
         return (byte) 0;
     }
@@ -1834,11 +1841,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public double asDouble() throws UnsupportedMessageException {
         return 0.0D;
-    }
-
-    @ExportMessage
-    public boolean fitsInBigInteger() {
-        return false;
     }
 
     @ExportMessage
