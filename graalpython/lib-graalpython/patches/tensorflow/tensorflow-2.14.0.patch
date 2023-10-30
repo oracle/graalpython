@@ -1,6 +1,6 @@
-From 3e40415231d65c1dc8017f99790898523b659501 Mon Sep 17 00:00:00 2001
+From d206a167fea7930a0f1909d2c854643e001fe967 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
-Date: Sun, 8 Oct 2023 15:53:04 +0300
+Date: Mon, 30 Oct 2023 17:19:59 +0300
 Subject: [PATCH] patch tensorflow 2.14.0
 
 ---
@@ -13,9 +13,6 @@ Subject: [PATCH] patch tensorflow 2.14.0
  tensorflow/python/eager/pywrap_tfe_src.cc     |  11 +-
  tensorflow/python/framework/dtypes.py         |   2 +-
  .../python_api_dispatcher_wrapper.cc          |   2 +-
- tensorflow/python/keras/engine/training.py    |   2 +-
- tensorflow/python/keras/saving/hdf5_format.py |   2 +-
- tensorflow/python/keras/saving/save.py        |   2 +-
  .../tools/api/generator/create_python_api.py  |   2 +-
  tensorflow/python/util/module_wrapper.py      |  55 +++-
  tensorflow/tools/git/gen_git_source.py        |   3 +-
@@ -26,7 +23,7 @@ Subject: [PATCH] patch tensorflow 2.14.0
  tf_build_backend.py                           |  57 ++++
  third_party/protobuf/protobuf.patch           |   2 +-
  third_party/repo.bzl                          |   8 +-
- 22 files changed, 749 insertions(+), 28 deletions(-)
+ 19 files changed, 746 insertions(+), 25 deletions(-)
  create mode 100644 graalpy_build.py
  create mode 100644 graalpy_patch.py
  create mode 100644 pyproject.toml
@@ -764,45 +761,6 @@ index d3f688578a7..071fadb1e45 100644
        if (!PyType_Check(cls.ptr())) {
          throw py::type_error("`*py_classes` must be a tuple of types.");
        }
-diff --git a/tensorflow/python/keras/engine/training.py b/tensorflow/python/keras/engine/training.py
-index 1e94ca45aef..8adcb4f99c0 100644
---- a/tensorflow/python/keras/engine/training.py
-+++ b/tensorflow/python/keras/engine/training.py
-@@ -83,7 +83,7 @@ from tensorflow.tools.docs import doc_controls
- 
- # pylint: disable=g-import-not-at-top
- try:
--  import h5py
-+  raise ImportError; import h5py
- except ImportError:
-   h5py = None
- # pylint: enable=g-import-not-at-top
-diff --git a/tensorflow/python/keras/saving/hdf5_format.py b/tensorflow/python/keras/saving/hdf5_format.py
-index 1f6bbc43320..61edd5143b9 100644
---- a/tensorflow/python/keras/saving/hdf5_format.py
-+++ b/tensorflow/python/keras/saving/hdf5_format.py
-@@ -34,7 +34,7 @@ from tensorflow.python.platform import tf_logging as logging
- 
- # pylint: disable=g-import-not-at-top
- try:
--  import h5py
-+  raise ImportError; import h5py
-   HDF5_OBJECT_HEADER_LIMIT = 64512
- except ImportError:
-   h5py = None
-diff --git a/tensorflow/python/keras/saving/save.py b/tensorflow/python/keras/saving/save.py
-index eee859233e5..eee6eb3093c 100644
---- a/tensorflow/python/keras/saving/save.py
-+++ b/tensorflow/python/keras/saving/save.py
-@@ -25,7 +25,7 @@ from tensorflow.python.keras.utils.io_utils import path_to_string
- 
- # pylint: disable=g-import-not-at-top
- try:
--  import h5py
-+  raise ImportError; import h5py
- except ImportError:
-   h5py = None
- # pylint: enable=g-import-not-at-top
 diff --git a/tensorflow/python/tools/api/generator/create_python_api.py b/tensorflow/python/tools/api/generator/create_python_api.py
 index 742cc879d0e..cdc65b36473 100644
 --- a/tensorflow/python/tools/api/generator/create_python_api.py
