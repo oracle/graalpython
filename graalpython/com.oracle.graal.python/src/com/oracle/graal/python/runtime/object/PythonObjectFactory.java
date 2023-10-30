@@ -1596,8 +1596,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
     }
 
-    public PHostInteropBehavior createHostInteropBehavior(PythonAbstractObject receiver, PFunction[] functions) {
-        return trace(new PHostInteropBehavior(PythonBuiltinClassType.PHostInteropBehavior, getShape(PythonBuiltinClassType.PHostInteropBehavior), receiver, functions));
+    public PHostInteropBehavior createHostInteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
+        return trace(new PHostInteropBehavior(PythonBuiltinClassType.PHostInteropBehavior, getShape(PythonBuiltinClassType.PHostInteropBehavior), receiver, functions, constants));
     }
 
     @GenerateInline

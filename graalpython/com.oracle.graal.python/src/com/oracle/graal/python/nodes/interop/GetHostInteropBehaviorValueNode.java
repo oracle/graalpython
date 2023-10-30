@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -67,20 +68,31 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     public abstract Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method);
 
-    @Specialization
-    static Object getValue(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GenericInvokeNode invokeNode,
-                    @Cached InlinedConditionProfile isMethodDefined,
-                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+    @Specialization(guards = {"method.constantBoolean == true"})
+    static Object getValueConstantBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached InlinedConditionProfile isMethodDefined,
+                    @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        if (value instanceof PHostInteropBehavior behavior) {
-            if (isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
-                CallTarget callTarget = behavior.getCallTarget(method);
-                Object[] pArguments = behavior.createArguments(method, receiver);
-                return invokeNode.execute(callTarget, pArguments);
-            }
+        if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
+            return behavior.getConstantValue(method);
+        }
+        return PNone.NO_VALUE;
+    }
+
+    @Specialization(guards = {"method.constantBoolean == false"})
+    static Object getValueComputed(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
+                    @Cached GenericInvokeNode invokeNode,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached InlinedConditionProfile isMethodDefined,
+                    @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+        Object klass = getClassNode.execute(inlineTarget, receiver);
+        Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
+        if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
+            CallTarget callTarget = behavior.getCallTarget(method);
+            Object[] pArguments = behavior.createArguments(method, receiver);
+            return invokeNode.execute(callTarget, pArguments);
         }
         return PNone.NO_VALUE;
     }

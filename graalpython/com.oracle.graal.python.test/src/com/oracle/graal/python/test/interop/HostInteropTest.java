@@ -28,29 +28,77 @@ public class HostInteropTest extends PythonTests {
     }
 
     @Test
+    public void testConstantInteropBehavior() {
+        Value t = context.eval("python", """
+            import polyglot
+
+            class MyType(object):
+                pass
+
+            polyglot.register_host_interop_behavior(MyType,
+                is_boolean=False,
+                is_number=True,
+                is_string=False,
+                # is_date=False,
+                # is_duration=False,
+                # is_instant=True,
+                # is_iterator=False,
+                # is_time=True,
+                # is_time_zone=False
+            )
+
+            MyType()
+            """);
+        assertFalse(t.isBoolean());
+        assertTrue(t.isNumber());
+        assertFalse(t.isString());
+        // todo (cbasca): redefining behavior is currently not supported
+        // assertFalse(t.isDate());
+        // assertFalse(t.isDuration());
+        // assertTrue(t.isInstant());
+        // assertFalse(t.isIterator());
+        // assertTrue(t.isTime());
+        // assertFalse(t.isTimeZone());
+    }
+
+    @Test
+    public void testConstantDefaults() {
+        Value t = context.eval("python", """
+            import polyglot
+
+            class MyType(object):
+                pass
+
+            polyglot.register_host_interop_behavior(MyType, is_number=True)
+
+            MyType()
+            """);
+        assertFalse(t.isBoolean());
+        assertTrue(t.isNumber());
+        assertFalse(t.isString());
+    }
+
+    @Test
     public void testCustomTypeRegistryInterop() {
         Value t = context.eval("python", """
-                        import polyglot
+            import polyglot
 
-                        class MyType(object):
-                            data = 0x7fffffff + 1
+            class MyType(object):
+                data = 0x7fffffff + 1
 
-                        def is_number(t):
-                            return True
+            def fits_in_int(t):
+                return t.data < 0x7fffffff
 
-                        def fits_in_int(t):
-                            return t.data < 0x7fffffff
+            def fits_in_long(t):
+                return t.data < 0xffffffffffffffff
 
-                        def fits_in_long(t):
-                            return t.data < 0xffffffffffffffff
+            polyglot.register_host_interop_behavior(MyType,
+                is_number=True,
+                fits_in_int=fits_in_int,
+                fits_in_long=fits_in_long)
 
-                        polyglot.register_host_interop_behavior(MyType,
-                            is_number=is_number,
-                            fits_in_int=fits_in_int,
-                            fits_in_long=fits_in_long)
-
-                        MyType()
-                        """);
+            MyType()
+            """);
         assertTrue(t.isNumber());
         assertFalse(t.fitsInInt());
         assertTrue(t.fitsInLong());

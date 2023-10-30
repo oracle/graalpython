@@ -45,8 +45,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public abstract class HostInteropMethodNames {
-    // -----------------------------------------------------------------------------------------------------------------
-    // IS_XXX messages
     public static final String J_IS_BOOLEAN = "is_boolean";
     public static final TruffleString T_IS_BOOLEAN = tsLiteral(J_IS_BOOLEAN);
     public static final String J_IS_DATE = "is_date";
@@ -69,9 +67,6 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_IS_TIME = tsLiteral(J_IS_TIME);
     public static final String J_IS_TIME_ZONE = "is_time_zone";
     public static final TruffleString T_IS_TIME_ZONE = tsLiteral(J_IS_TIME_ZONE);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // FITS_IN_XXX messages
     public static final String J_FITS_IN_BIG_INTEGER = "fits_in_big_integer";
     public static final TruffleString T_FITS_IN_BIG_INTEGER = tsLiteral(J_FITS_IN_BIG_INTEGER);
     public static final String J_FITS_IN_BYTE = "fits_in_byte";
@@ -86,9 +81,6 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_FITS_IN_LONG = tsLiteral(J_FITS_IN_LONG);
     public static final String J_FITS_IN_SHORT = "fits_in_short";
     public static final TruffleString T_FITS_IN_SHORT = tsLiteral(J_FITS_IN_SHORT);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // AS_XXX messages
     public static final String J_AS_BIG_INTEGER = "as_big_integer";
     public static final TruffleString T_AS_BIG_INTEGER = tsLiteral(J_AS_BIG_INTEGER);
     public static final String J_AS_BOOLEAN = "as_boolean";

@@ -195,23 +195,23 @@ public enum HostInteropBehaviorMethod {
     has_hash_entries(J_HAS_HASH_ENTRIES, T_HAS_HASH_ENTRIES, true),
     has_hash_entry(J_HAS_HASH_ENTRY, T_HAS_HASH_ENTRY, 1),
     put_hash_entry(J_PUT_HASH_ENTRY, T_PUT_HASH_ENTRY, 2),
-    remove_hash_entry(J_REMOVE_HASH_ENTRY, T_REMOVE_HASH_ENTRY, 1),
-    ;
+    remove_hash_entry(J_REMOVE_HASH_ENTRY, T_REMOVE_HASH_ENTRY, 1);
+
     public final String name;
     public final TruffleString tsName;
-    public final boolean isConstant;
+    public final boolean constantBoolean;
     public final int extraArguments;
 
-    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean isConstant, int extraArguments) {
-        assert !(isConstant && extraArguments > 0): "constant HostInteropBehaviorMethods cannot have extra arguments!";
+    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean, int extraArguments) {
+        assert !(constantBoolean && extraArguments > 0) : "constant HostInteropBehaviorMethods cannot have extra arguments!";
         this.name = name;
         this.tsName = tsName;
-        this.isConstant = isConstant;
+        this.constantBoolean = constantBoolean;
         this.extraArguments = extraArguments;
     }
 
-    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean isConstant) {
-        this(name, tsName, isConstant, 0);
+    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean) {
+        this(name, tsName, constantBoolean, 0);
     }
 
     HostInteropBehaviorMethod(String name, TruffleString tsName, int extraArguments) {
@@ -220,5 +220,18 @@ public enum HostInteropBehaviorMethod {
 
     HostInteropBehaviorMethod(String name, TruffleString tsName) {
         this(name, tsName, false, 0);
+    }
+
+    public boolean isConstantBoolean() {
+        return constantBoolean;
+    }
+
+    @Override
+    public String toString() {
+        return "HostInteropBehaviorMethod{" +
+                        "name='" + name + '\'' +
+                        ", constantBoolean=" + constantBoolean +
+                        ", extraArguments=" + extraArguments +
+                        '}';
     }
 }

@@ -53,12 +53,16 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
     private final PythonAbstractObject receiver;
 
     private final CallTarget[] callTargets = new CallTarget[HostInteropBehaviorMethod.values().length];
+    // todo (cbasca) are there cases where globals can be different?
     private final PythonObject[] globals = new PythonObject[HostInteropBehaviorMethod.values().length];
+    private final boolean[] constants;
 
-    public PHostInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions) {
+    public PHostInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
         super(cls, instanceShape);
         this.receiver = receiver;
         assert functions.length == HostInteropBehaviorMethod.values().length;
+        assert constants.length == HostInteropBehaviorMethod.values().length;
+        this.constants = constants;
         for (int i = 0; i < functions.length; i++) {
             PFunction function = functions[i];
             if (function != null) {
@@ -77,7 +81,7 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
     }
 
     public boolean isDefined(HostInteropBehaviorMethod method) {
-        return callTargets[method.ordinal()] != null;
+        return method.constantBoolean || callTargets[method.ordinal()] != null;
     }
 
     public Object[] createArguments(HostInteropBehaviorMethod method, PythonAbstractObject receiver) {
@@ -90,5 +94,10 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
 
     public PythonAbstractObject getReceiver() {
         return receiver;
+    }
+
+    public boolean getConstantValue(HostInteropBehaviorMethod method) {
+        assert method.constantBoolean;
+        return constants[method.ordinal()];
     }
 }

@@ -1759,9 +1759,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
+    public boolean isBoolean(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_boolean);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isNumber(@Bind("$node") Node inliningTarget,
                     @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
         return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_number);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean isString(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_string);
     }
 
     @ExportMessage
@@ -1814,6 +1828,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    public boolean asBoolean() throws UnsupportedMessageException {
+        return false;
+    }
+
+    @ExportMessage
     public byte asByte() throws UnsupportedMessageException {
         return (byte) 0;
     }
@@ -1845,6 +1864,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public BigInteger asBigInteger() throws UnsupportedMessageException {
+        return null;
+    }
+
+    @ExportMessage
+    public String asString() throws UnsupportedMessageException {
         return null;
     }
 }

@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -390,41 +389,40 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterInteropBehaviorNode extends PythonVarargsBuiltinNode {
         public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__);
 
-        private PFunction[] getAndValidateArgs(PKeyword[] keywords, CastToJavaStringNode castToJavaStringNode, Node inliningTarget, PyCallableCheckNode callableCheckNode) {
-            final PFunction[] functions = new PFunction[HostInteropBehaviorMethod.values().length];
-            for (int i = 0; i < keywords.length; i++) {
-                PKeyword kw = keywords[i];
-                String name = castToJavaStringNode.execute(kw.getName());
-                Object value = kw.getValue();
-                HostInteropBehaviorMethod method = HostInteropBehaviorMethod.valueOf(name);
-
-                if (value instanceof PFunction function) {
-                    functions[method.ordinal()] = function;
-                    // validate the function
-                    if (function.getKwDefaults().length != 0) {
-                        throw raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
-                    } else if (function.getCode().getCellVars().length != 0) {
-                        throw raise(ValueError, S_CANNOT_HAVE_S, "function", "cell vars");
-                    } else if (function.getCode().getFreeVars().length != 0) {
-                        throw raise(ValueError, S_CANNOT_HAVE_S, "function", "free vars");
-                    }
-                } else if (callableCheckNode.execute(inliningTarget, value)) {
-                    throw raise(ValueError, ARG_S_MUST_BE_S_NOT_P, i, "a pure function", value);
-                }
-            }
-            return functions;
-        }
-
         @Specialization
         Object register(PythonAbstractObject receiver, @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached PyCallableCheckNode callableCheckNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
-                PHostInteropBehavior behavior = factory.createHostInteropBehavior(receiver, getAndValidateArgs(keywords, castToJavaStringNode, inliningTarget, callableCheckNode));
+                final PFunction[] functions = new PFunction[HostInteropBehaviorMethod.values().length];
+                final boolean[] constants = new boolean[HostInteropBehaviorMethod.values().length];
+
+                for (PKeyword kw : keywords) {
+                    String name = castToJavaStringNode.execute(kw.getName());
+                    Object value = kw.getValue();
+                    HostInteropBehaviorMethod method = HostInteropBehaviorMethod.valueOf(name);
+
+                    if (method.constantBoolean && value instanceof Boolean boolValue) {
+                        constants[method.ordinal()] = boolValue;
+                    } else if (!method.constantBoolean && value instanceof PFunction function) {
+                        functions[method.ordinal()] = function;
+                        // validate the function
+                        if (function.getKwDefaults().length != 0) {
+                            throw raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
+                        } else if (function.getCode().getCellVars().length != 0) {
+                            throw raise(ValueError, S_CANNOT_HAVE_S, "function", "cell vars");
+                        } else if (function.getCode().getFreeVars().length != 0) {
+                            throw raise(ValueError, S_CANNOT_HAVE_S, "function", "free vars");
+                        }
+                    } else {
+                        throw raise(ValueError, ARG_S_MUST_BE_S_NOT_P, method.name, method.constantBoolean ? "a boolean" : "a pure function", value);
+                    }
+                }
+
+                PHostInteropBehavior behavior = factory.createHostInteropBehavior(receiver, functions, constants);
                 dylib.put(receiver, HOST_INTEROP_BEHAVIOR, behavior);
                 return PNone.NONE;
             }
