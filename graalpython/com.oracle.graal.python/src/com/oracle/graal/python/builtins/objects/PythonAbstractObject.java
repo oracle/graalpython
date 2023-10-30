@@ -122,6 +122,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorBooleanNode;
+import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorValueNode;
 import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -1828,8 +1829,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean asBoolean() throws UnsupportedMessageException {
-        return false;
+    @SuppressWarnings("truffle-inlining")
+    public boolean asBoolean(@Bind("$node") Node inliningTarget,
+                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) throws UnsupportedMessageException {
+        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.as_boolean);
     }
 
     @ExportMessage

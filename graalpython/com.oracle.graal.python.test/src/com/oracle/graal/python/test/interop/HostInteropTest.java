@@ -79,6 +79,31 @@ public class HostInteropTest extends PythonTests {
     }
 
     @Test
+    public void testBoolean() {
+        String source = """
+            import polyglot
+
+            class MyType(object):
+                def __init__(self, data):
+                    self._data = data
+
+            def as_boolean(t):
+                return t._data == "x"
+
+            polyglot.register_host_interop_behavior(MyType,
+                is_boolean=True,
+                as_boolean=as_boolean
+            )
+            """;
+        Value t = context.eval("python", source + "\nMyType('x')");
+        assertTrue(t.isBoolean());
+        assertTrue(t.asBoolean());
+        t = context.eval("python", source + "\nMyType('y')");
+        assertTrue(t.isBoolean());
+        assertFalse(t.asBoolean());
+    }
+
+    @Test
     public void testNumbersFitsInBehavior() {
         Value t = context.eval("python", """
             import polyglot
