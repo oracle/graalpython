@@ -116,7 +116,6 @@
 *graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_forkserver_sigkill
 *graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_kill
 *graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_lose_target_ref
-*graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_many_processes
 *graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_parent_process_attributes
 *graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_process
 *graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_process_mainthread_native_id
