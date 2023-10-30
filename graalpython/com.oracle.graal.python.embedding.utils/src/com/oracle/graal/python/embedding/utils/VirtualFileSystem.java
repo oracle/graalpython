@@ -521,6 +521,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     // first create parent dirs
                     Path parent = xPath.getParent();
                     assert parent == null || Files.isDirectory(parent);
+                    if (parent == null) {
+                        throw new NullPointerException("Parent is null during extracting path.");
+                    }
                     Files.createDirectories(parent);
 
                     // write data extracted file
