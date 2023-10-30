@@ -71,12 +71,12 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     static Object getValue(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
                     @Cached GetClassNode getClassNode,
                     @Cached GenericInvokeNode invokeNode,
-                    @Cached InlinedConditionProfile isMethodSupported,
+                    @Cached InlinedConditionProfile isMethodDefined,
                     @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior) {
-            if (isMethodSupported.profile(inlineTarget, behavior.isDefined(method))) {
+            if (isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
                 CallTarget callTarget = behavior.getCallTarget(method);
                 Object[] pArguments = behavior.createArguments(method, receiver);
                 return invokeNode.execute(callTarget, pArguments);
