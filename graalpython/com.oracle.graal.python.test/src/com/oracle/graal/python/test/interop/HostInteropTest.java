@@ -79,7 +79,7 @@ public class HostInteropTest extends PythonTests {
     }
 
     @Test
-    public void testCustomTypeRegistryInterop() {
+    public void testNumbersFitsInBehavior() {
         Value t = context.eval("python", """
             import polyglot
 
@@ -91,16 +91,23 @@ public class HostInteropTest extends PythonTests {
 
             def fits_in_long(t):
                 return t.data < 0xffffffffffffffff
+                
+            def fits_in_big_integer(t):
+                return True
 
             polyglot.register_host_interop_behavior(MyType,
                 is_number=True,
                 fits_in_int=fits_in_int,
-                fits_in_long=fits_in_long)
+                fits_in_long=fits_in_long,
+                fits_in_big_integer=fits_in_big_integer
+            )
 
             MyType()
             """);
         assertTrue(t.isNumber());
+        assertFalse(t.isString());
         assertFalse(t.fitsInInt());
         assertTrue(t.fitsInLong());
+        assertTrue(t.fitsInBigInteger());
     }
 }
