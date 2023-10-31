@@ -146,6 +146,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTESLIKE_OBJ_REQUIRED = tsLiteral("a bytes-like object is required, not '%p'");
     public static final TruffleString BYTE_STRING_OF_LEN_ONE_ONLY = tsLiteral("%s argument 2 must be a byte string of length 1, not %s");
     public static final TruffleString BYTE_MUST_BE_IN_RANGE = tsLiteral("byte must be in range(0, 256)");
+    public static final TruffleString SHORT_MUST_BE_IN_RANGE = tsLiteral("short must be in range(-32768, 32767)");
     public static final TruffleString C_ARG_NOT_IN_RANGE = tsLiteral("%%c arg not in range(0x%s)");
     public static final TruffleString CALL_STACK_NOT_DEEP_ENOUGH = tsLiteral("call stack is not deep enough");
     public static final TruffleString CALLED_MATCH_PAT_MUST_BE_TYPE = tsLiteral("called match pattern must be a type");

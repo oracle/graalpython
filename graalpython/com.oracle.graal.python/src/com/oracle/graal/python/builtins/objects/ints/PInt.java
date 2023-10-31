@@ -544,6 +544,37 @@ public final class PInt extends PythonBuiltinObject {
         return value.byteValueExact();
     }
 
+    public static boolean isShortRange(int val) {
+        return val >= Short.MIN_VALUE && val < Short.MAX_VALUE;
+    }
+
+    public static boolean isShortRange(long val) {
+        return val >= Short.MIN_VALUE && val < Short.MAX_VALUE;
+    }
+
+    public static short shortValueExact(int val) throws OverflowException {
+        if (!isShortRange(val)) {
+            throw OverflowException.INSTANCE;
+        }
+        return (short) val;
+    }
+
+    public static short shortValueExact(long val) throws OverflowException {
+        if (!isShortRange(val)) {
+            throw OverflowException.INSTANCE;
+        }
+        return (short) val;
+    }
+
+    public short shortValueExact() {
+        return shortValueExact(value);
+    }
+
+    @TruffleBoundary(transferToInterpreterOnException = false)
+    private static short shortValueExact(BigInteger value) {
+        return value.shortValueExact();
+    }
+
     public byte[] toByteArray() {
         return toByteArray(value);
     }
