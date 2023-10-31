@@ -319,7 +319,7 @@ public abstract class BufferStorageNodes {
             bufferLib.writeByte(buffer, offset, value);
         }
 
-        @Specialization(guards = {"format == CHAR", "!isBytes(object)"})
+        @Specialization(guards = {"format == CHAR", "!isPBytes(object)"})
         @SuppressWarnings("unused")
         static void packChar(Node inliningTarget, BufferFormat format, Object object, Object buffer, int offset,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {

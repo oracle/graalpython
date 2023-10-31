@@ -511,6 +511,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_FillInfo", ret = Int, args = {PY_BUFFER_PTR, PyObject, Pointer, Py_ssize_t, Int, Int}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_IsContiguous", ret = Int, args = {CONST_PY_BUFFER, CHAR}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_Release", ret = Void, args = {PY_BUFFER_PTR}, call = CImpl)
+    @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = CImpl)
     @CApiBuiltin(name = "_PyThreadState_UncheckedGet", ret = PyThreadState, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_Clear", ret = Void, args = {PyThreadState}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_DeleteCurrent", ret = Void, args = {}, call = CImpl)
@@ -1037,7 +1038,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_FromContiguous", ret = Int, args = {PY_BUFFER_PTR, Pointer, Py_ssize_t, CHAR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_GetPointer", ret = Pointer, args = {PY_BUFFER_PTR, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_SizeFromFormat", ret = Py_ssize_t, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t,

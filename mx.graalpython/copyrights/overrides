@@ -222,6 +222,7 @@ graalpython/com.oracle.graal.python.cext/modules/_sqlite/statement.h,pysqlite.co
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/util.c,pysqlite.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/util.h,pysqlite.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_testbuffer.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testmultiphase.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
@@ -244,6 +245,7 @@ graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/longobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/memoryobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/moduleobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mysnprintf.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mystrtoul.c,python.copyright

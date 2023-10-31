@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__exports;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
@@ -59,6 +60,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.SetSequence
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -82,6 +85,9 @@ public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
 
     @TruffleBoundary
     private static Object allocate(PMemoryView object) {
+        if (object.isReleased()) {
+            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+        }
         GetElementPtrNode getElementNode = GetElementPtrNode.getUncached();
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         CStructAccess.WriteLongNode writeI64Node = CStructAccess.WriteLongNode.getUncached();

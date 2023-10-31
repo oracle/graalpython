@@ -930,10 +930,6 @@ PyAPI_FUNC(void*) PyBuffer_GetPointer(Py_buffer* a, Py_ssize_t* b) {
 PyAPI_FUNC(Py_ssize_t) PyBuffer_SizeFromFormat(const char* a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyBuffer_ToContiguous
-PyAPI_FUNC(int) PyBuffer_ToContiguous(void* a, Py_buffer* b, Py_ssize_t c, char d) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyByteArray_Concat
 PyAPI_FUNC(PyObject*) PyByteArray_Concat(PyObject* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
