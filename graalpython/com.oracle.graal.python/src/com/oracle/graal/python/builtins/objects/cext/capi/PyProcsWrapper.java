@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.c
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -86,7 +87,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
-public abstract class PyProcsWrapper extends PythonNativeWrapper {
+public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
     protected final CApiTiming timing;
 
@@ -134,7 +135,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
@@ -179,7 +180,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
@@ -229,7 +230,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
@@ -271,7 +272,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallUnaryMethodNode executeNode,
@@ -317,7 +318,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached CallUnaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -358,7 +359,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected int execute(Object[] arguments,
+        int execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached CallTernaryMethodNode callTernaryMethodNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -631,7 +632,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached CallTernaryMethodNode callNode,
@@ -679,7 +680,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        protected Object execute(Object[] arguments,
+        Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,

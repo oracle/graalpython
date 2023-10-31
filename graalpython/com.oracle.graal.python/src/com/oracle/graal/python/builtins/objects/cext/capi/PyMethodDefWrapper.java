@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -65,11 +66,17 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wrapper object for {@code PyMethodDef}.
  */
-public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
+@ExportLibrary(InteropLibrary.class)
+public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
+
+    private Object replacement;
 
     public PyMethodDefWrapper(PythonObject delegate) {
         super(delegate);
@@ -125,8 +132,8 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         return 0;
     }
 
-    @Override
-    protected Object allocateReplacememtObject() {
+    @TruffleBoundary
+    private Object allocateReplacementObject() {
         PythonObject obj = (PythonObject) getDelegate();
 
         CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
@@ -166,5 +173,37 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         writePointerNode.write(mem, PyMethodDef__ml_doc, doc);
 
         return mem;
+    }
+
+    @Override
+    public boolean isReplacingWrapper() {
+        return true;
+    }
+
+    @Override
+    public Object getReplacement(InteropLibrary lib) {
+        if (replacement == null) {
+            replacement = registerReplacement(allocateReplacementObject(), lib);
+        }
+        return replacement;
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() {
+        assert getNativePointer() != -1;
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    protected void toNative() {
+        if (!isNative()) {
+            getReplacement(InteropLibrary.getUncached());
+        }
     }
 }

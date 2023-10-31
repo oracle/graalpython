@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -64,7 +65,7 @@ import sun.misc.Unsafe;
  * A native wrapper for Python object arrays to be used like a {@code PyObject *arr[]}.
  */
 @ExportLibrary(InteropLibrary.class)
-public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
+public final class CPyObjectArrayWrapper extends PythonStructNativeWrapper {
 
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 

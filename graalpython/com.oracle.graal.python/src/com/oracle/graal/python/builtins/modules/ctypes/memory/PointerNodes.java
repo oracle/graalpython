@@ -851,7 +851,7 @@ public abstract class PointerNodes {
         @Fallback
         static Object doGeneric(Node inliningTarget, MemoryBlock memory, Storage storage, int offset,
                         @Cached GetPointerValueAsObjectNode getPointerValueAsObjectNode,
-                        @Cached CExtNodes.ResolveHandleNode resolveHandleNode,
+                        @Cached CExtNodes.ResolvePointerNode resolveHandleNode,
                         @Cached(inline = false) CApiTransitions.NativeToPythonNode nativeToPythonNode) {
             /*
              * We might get a pointer to a PyObject as a long when calling Python C API functions

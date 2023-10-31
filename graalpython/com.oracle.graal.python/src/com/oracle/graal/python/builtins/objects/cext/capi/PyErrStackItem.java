@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
@@ -59,7 +60,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  * Emulates {@code _PyErr_StackItem}.
  */
 @ExportLibrary(InteropLibrary.class)
-public final class PyErrStackItem extends PythonNativeWrapper {
+public final class PyErrStackItem extends PythonStructNativeWrapper {
 
     public static final String J_EXC_TYPE = "exc_type";
     public static final String J_EXC_VALUE = "exc_value";

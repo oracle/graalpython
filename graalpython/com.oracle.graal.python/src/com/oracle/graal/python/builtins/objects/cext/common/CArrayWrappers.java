@@ -45,7 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.byteArraySupport;
 
 import java.nio.ByteOrder;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -145,7 +145,7 @@ public abstract class CArrayWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public abstract static class CArrayWrapper extends PythonNativeWrapper {
+    public abstract static class CArrayWrapper extends PythonStructNativeWrapper {
 
         public CArrayWrapper(Object delegate) {
             super(delegate);

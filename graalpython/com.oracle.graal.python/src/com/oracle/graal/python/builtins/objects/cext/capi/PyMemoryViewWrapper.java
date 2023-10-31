@@ -51,6 +51,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -66,11 +67,17 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wrapper object for {@code PMemoryView}.
  */
-public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
+@ExportLibrary(InteropLibrary.class)
+public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper {
+
+    private Object replacement;
 
     public PyMemoryViewWrapper(PythonObject delegate) {
         super(delegate);
@@ -153,7 +160,36 @@ public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
     }
 
     @Override
-    protected Object allocateReplacememtObject() {
-        return allocate((PMemoryView) getDelegate());
+    public boolean isReplacingWrapper() {
+        return true;
+    }
+
+    @Override
+    public Object getReplacement(InteropLibrary lib) {
+        if (replacement == null) {
+            Object pointerObject = allocate((PMemoryView) getDelegate());
+            replacement = registerReplacement(pointerObject, lib);
+        }
+        return replacement;
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() {
+        assert getNativePointer() != -1;
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    void toNative() {
+        if (!isNative()) {
+            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+            getReplacement(InteropLibrary.getUncached());
+        }
     }
 }
