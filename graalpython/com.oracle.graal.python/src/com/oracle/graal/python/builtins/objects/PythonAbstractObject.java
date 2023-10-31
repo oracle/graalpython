@@ -130,6 +130,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1911,8 +1912,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public BigInteger asBigInteger() throws UnsupportedMessageException {
-        return null;
+    @SuppressWarnings("truffle-inlining")
+    public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
+                           @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                           @Cached CastToJavaBigIntegerNode toBigIntegerNode,
+                           @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_big_integer);
+        if (value != PNone.NO_VALUE) {
+            return toBigIntegerNode.execute(inliningTarget, value);
+        }
+        return ilib.asBigInteger(this);
     }
 
     @ExportMessage
