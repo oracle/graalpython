@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -62,10 +63,16 @@ public abstract class GetHostInteropBehaviorBooleanNode extends PNodeWithContext
     static boolean getValue(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
                     @Cached GetHostInteropBehaviorValueNode getHostInteropBehaviorValueNode,
                     @Cached CastToJavaBooleanNode toBooleanNode,
+                    @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) {
-        Object value = getHostInteropBehaviorValueNode.execute(inliningTarget, receiver, method);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.execute(inliningTarget, value);
+        boolean mustRelease = gil.acquire();
+        try {
+            Object value = getHostInteropBehaviorValueNode.execute(inliningTarget, receiver, method);
+            if (value != PNone.NO_VALUE) {
+                return toBooleanNode.execute(inliningTarget, value);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
         return ilib.isNumber(receiver);
     }

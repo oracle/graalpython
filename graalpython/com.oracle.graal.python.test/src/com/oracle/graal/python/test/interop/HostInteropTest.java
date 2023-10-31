@@ -8,6 +8,9 @@ import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
+import java.math.BigInteger;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -52,7 +55,7 @@ public class HostInteropTest extends PythonTests {
         assertFalse(t.isBoolean());
         assertTrue(t.isNumber());
         assertFalse(t.isString());
-        // todo (cbasca): redefining behavior is currently not supported
+        // todo (cbasca): implement redefinition of behavior for the following
         // assertFalse(t.isDate());
         // assertFalse(t.isDuration());
         // assertTrue(t.isInstant());
@@ -104,35 +107,148 @@ public class HostInteropTest extends PythonTests {
     }
 
     @Test
-    public void testNumbersFitsInBehavior() {
-        Value t = context.eval("python", """
+    public void testNumber() {
+        String sourceTemplate = """
                         import polyglot
 
                         class MyType(object):
-                            data = 0x7fffffff + 1
+                            data = %s
+
+                        def fits_in_byte(t):
+                            return t.data >= 0 and t.data < 256
+
+                        def fits_in_short(t):
+                            return t.data >= %s and t.data < %s
+
+                        def _fits_in_int(n):
+                            return n >= %s and n < %s
 
                         def fits_in_int(t):
-                            return t.data < 0x7fffffff
+                            return _fits_in_int(t.data)
+
+                        def _fits_in_long(n):
+                            return n >= %s and n < %s
 
                         def fits_in_long(t):
-                            return t.data < 0xffffffffffffffff
+                            return _fits_in_long(t.data)
 
-                        def fits_in_big_integer(t):
-                            return True
+                        def ieee754_bits(num):
+                            import struct
+                            return struct.unpack('!I', struct.pack('!f', num))[0]
+
+                        def ieee754_bits2(num):
+                            import struct
+                            return struct.unpack('!Q', struct.pack('!d', num))[0]
+
+                        def fits_in_float(t):
+                            if isinstance(t.data, float):
+                                try:
+                                    bits = ieee754_bits(t.data)
+                                    return bits >= 0x00800000 and bits < 0x7f7fffff
+                                except OverflowError:
+                                    return False
+                            return fits_in_int(t)
+
+                        def fits_in_double(t):
+                            if isinstance(t.data, float):
+                                try:
+                                    bits = ieee754_bits2(t.data)
+                                    return bits >= 0x0010000000000000 and bits < 0x7fefffffffffffff
+                                except OverflowError:
+                                    return False
+                            return fits_in_long(t)
+
+                        def get_data(t):
+                            return t.data
 
                         polyglot.register_host_interop_behavior(MyType,
                             is_number=True,
+                            fits_in_byte=fits_in_byte,
+                            fits_in_short=fits_in_short,
                             fits_in_int=fits_in_int,
                             fits_in_long=fits_in_long,
-                            fits_in_big_integer=fits_in_big_integer
+                            fits_in_big_integer=lambda t: True,
+                            fits_in_float=fits_in_float,
+                            fits_in_double=fits_in_double,
+                            as_byte=get_data,
+                            as_short=get_data,
+                            as_int=get_data,
+                            as_long=get_data,
+                            as_big_integer=get_data,
+                            as_float=get_data,
+                            as_double=get_data,
                         )
 
                         MyType()
-                        """);
+                        """;
+        Value t;
+        // byte
+        byte byteValue = (byte) 0x7F;
+        t = context.eval("python", String.format(sourceTemplate, byteValue, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
         assertTrue(t.isNumber());
-        assertFalse(t.isString());
+        assertTrue(t.fitsInByte());
+        assertEquals(byteValue, t.asByte());
+        // short
+        short shortValue = Short.MAX_VALUE - 1;
+        t = context.eval("python", String.format(sourceTemplate, shortValue, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInByte());
+        assertTrue(t.fitsInShort());
+        assertEquals(shortValue, t.asShort());
+        // int
+        int intValue = Integer.MAX_VALUE - 1;
+        t = context.eval("python", String.format(sourceTemplate, intValue, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInByte());
+        assertFalse(t.fitsInShort());
+        assertTrue(t.fitsInInt());
+        assertEquals(intValue, t.asInt());
+        // long
+        long longValue = Long.MAX_VALUE - 1;
+        t = context.eval("python", String.format(sourceTemplate, longValue, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInByte());
+        assertFalse(t.fitsInShort());
         assertFalse(t.fitsInInt());
         assertTrue(t.fitsInLong());
+        assertEquals(longValue, t.asLong());
+        // big integer
+        BigInteger bigInteger = new BigInteger("9223372036854775807123456789", 10);
+        t = context.eval("python", String.format(sourceTemplate, bigInteger, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInByte());
+        assertFalse(t.fitsInShort());
+        assertFalse(t.fitsInInt());
+        assertFalse(t.fitsInLong());
         assertTrue(t.fitsInBigInteger());
+        assertEquals(bigInteger, t.asBigInteger());
+        // float
+        float floatValue = Float.MAX_VALUE / 1000;
+        t = context.eval("python", String.format(sourceTemplate, floatValue, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInByte());
+        assertFalse(t.fitsInShort());
+        assertFalse(t.fitsInInt());
+        assertFalse(t.fitsInLong());
+        assertTrue(t.fitsInFloat());
+        assertEquals(floatValue, t.asFloat(), 0);
+        // double
+        double doubleValue = Double.MAX_VALUE / 1000;
+        t = context.eval("python", String.format(sourceTemplate, doubleValue, Short.MIN_VALUE, Short.MAX_VALUE,
+                        Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE));
+        assertTrue(t.isNumber());
+        assertFalse(t.fitsInByte());
+        assertFalse(t.fitsInShort());
+        assertFalse(t.fitsInInt());
+        assertFalse(t.fitsInLong());
+        assertFalse(t.fitsInFloat());
+        assertTrue(t.fitsInDouble());
+        assertEquals(doubleValue, t.asDouble(), 0);
     }
 }
