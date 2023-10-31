@@ -30,25 +30,25 @@ public class HostInteropTest extends PythonTests {
     @Test
     public void testConstantInteropBehavior() {
         Value t = context.eval("python", """
-            import polyglot
+                        import polyglot
 
-            class MyType(object):
-                pass
+                        class MyType(object):
+                            pass
 
-            polyglot.register_host_interop_behavior(MyType,
-                is_boolean=False,
-                is_number=True,
-                is_string=False,
-                # is_date=False,
-                # is_duration=False,
-                # is_instant=True,
-                # is_iterator=False,
-                # is_time=True,
-                # is_time_zone=False
-            )
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_boolean=False,
+                            is_number=True,
+                            is_string=False,
+                            # is_date=False,
+                            # is_duration=False,
+                            # is_instant=True,
+                            # is_iterator=False,
+                            # is_time=True,
+                            # is_time_zone=False
+                        )
 
-            MyType()
-            """);
+                        MyType()
+                        """);
         assertFalse(t.isBoolean());
         assertTrue(t.isNumber());
         assertFalse(t.isString());
@@ -64,15 +64,15 @@ public class HostInteropTest extends PythonTests {
     @Test
     public void testConstantDefaults() {
         Value t = context.eval("python", """
-            import polyglot
+                        import polyglot
 
-            class MyType(object):
-                pass
+                        class MyType(object):
+                            pass
 
-            polyglot.register_host_interop_behavior(MyType, is_number=True)
+                        polyglot.register_host_interop_behavior(MyType, is_number=True)
 
-            MyType()
-            """);
+                        MyType()
+                        """);
         assertFalse(t.isBoolean());
         assertTrue(t.isNumber());
         assertFalse(t.isString());
@@ -81,20 +81,20 @@ public class HostInteropTest extends PythonTests {
     @Test
     public void testBoolean() {
         String source = """
-            import polyglot
+                        import polyglot
 
-            class MyType(object):
-                def __init__(self, data):
-                    self._data = data
+                        class MyType(object):
+                            def __init__(self, data):
+                                self._data = data
 
-            def as_boolean(t):
-                return t._data == "x"
+                        def as_boolean(t):
+                            return t._data == "x"
 
-            polyglot.register_host_interop_behavior(MyType,
-                is_boolean=True,
-                as_boolean=as_boolean
-            )
-            """;
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_boolean=True,
+                            as_boolean=as_boolean
+                        )
+                        """;
         Value t = context.eval("python", source + "\nMyType('x')");
         assertTrue(t.isBoolean());
         assertTrue(t.asBoolean());
@@ -106,29 +106,29 @@ public class HostInteropTest extends PythonTests {
     @Test
     public void testNumbersFitsInBehavior() {
         Value t = context.eval("python", """
-            import polyglot
+                        import polyglot
 
-            class MyType(object):
-                data = 0x7fffffff + 1
+                        class MyType(object):
+                            data = 0x7fffffff + 1
 
-            def fits_in_int(t):
-                return t.data < 0x7fffffff
+                        def fits_in_int(t):
+                            return t.data < 0x7fffffff
 
-            def fits_in_long(t):
-                return t.data < 0xffffffffffffffff
-                
-            def fits_in_big_integer(t):
-                return True
+                        def fits_in_long(t):
+                            return t.data < 0xffffffffffffffff
 
-            polyglot.register_host_interop_behavior(MyType,
-                is_number=True,
-                fits_in_int=fits_in_int,
-                fits_in_long=fits_in_long,
-                fits_in_big_integer=fits_in_big_integer
-            )
+                        def fits_in_big_integer(t):
+                            return True
 
-            MyType()
-            """);
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_number=True,
+                            fits_in_int=fits_in_int,
+                            fits_in_long=fits_in_long,
+                            fits_in_big_integer=fits_in_big_integer
+                        )
+
+                        MyType()
+                        """);
         assertTrue(t.isNumber());
         assertFalse(t.isString());
         assertFalse(t.fitsInInt());

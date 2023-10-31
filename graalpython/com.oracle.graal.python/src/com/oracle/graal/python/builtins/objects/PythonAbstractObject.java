@@ -1844,9 +1844,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public byte asByte(@Bind("$node") Node inliningTarget,
-                       @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                       @Cached CastToJavaByteNode toByteNode,
-                       @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaByteNode toByteNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_byte);
         if (value != PNone.NO_VALUE) {
             return toByteNode.execute(inliningTarget, value);
@@ -1857,9 +1857,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public short asShort(@Bind("$node") Node inliningTarget,
-                         @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                         @Cached CastToJavaShortNode toShortNode,
-                         @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaShortNode toShortNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_short);
         if (value != PNone.NO_VALUE) {
             return toShortNode.execute(inliningTarget, value);
@@ -1870,10 +1870,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public int asInt(@Bind("$node") Node inliningTarget,
-                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                     // GR-44020: make shared:
-                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_int);
         if (value != PNone.NO_VALUE) {
             return toIntNode.execute(inliningTarget, value);
@@ -1884,9 +1884,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long asLong(@Bind("$node") Node inliningTarget,
-                       @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                       @Cached CastToJavaLongExactNode toLongNode,
-                       @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaLongExactNode toLongNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_long);
         if (value != PNone.NO_VALUE) {
             return toLongNode.execute(inliningTarget, value);
@@ -1897,10 +1897,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public float asFloat(@Bind("$node") Node inliningTarget,
-                         @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                         // GR-44020: make shared:
-                         @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                         @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_float);
         if (value != PNone.NO_VALUE) {
             return (float) toDoubleNode.execute(inliningTarget, value);
@@ -1911,10 +1911,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public double asDouble(@Bind("$node") Node inliningTarget,
-                           @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                           // GR-44020: make shared:
-                           @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                           @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_double);
         if (value != PNone.NO_VALUE) {
             return toDoubleNode.execute(inliningTarget, value);
@@ -1925,9 +1925,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
-                           @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                           @Cached CastToJavaBigIntegerNode toBigIntegerNode,
-                           @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaBigIntegerNode toBigIntegerNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_big_integer);
         if (value != PNone.NO_VALUE) {
             return toBigIntegerNode.execute(inliningTarget, value);
@@ -1938,9 +1938,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public String asString(@Bind("$node") Node inliningTarget,
-                           @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                           @Cached CastToJavaStringNode toStringNode,
-                           @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaStringNode toStringNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_string);
         if (value != PNone.NO_VALUE) {
             return toStringNode.execute(value);
