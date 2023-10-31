@@ -1895,15 +1895,25 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public float asFloat() throws UnsupportedMessageException {
-        return 0.0F;
+    @SuppressWarnings("truffle-inlining")
+    public float asFloat(@Bind("$node") Node inliningTarget,
+                         @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                         @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_float);
+        if (value != PNone.NO_VALUE) {
+            return (float) toDoubleNode.execute(inliningTarget, value);
+        }
+        return ilib.asFloat(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public double asDouble(@Bind("$node") Node inliningTarget,
                            @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                           @Cached CastToJavaDoubleNode toDoubleNode,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
                            @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_double);
         if (value != PNone.NO_VALUE) {
