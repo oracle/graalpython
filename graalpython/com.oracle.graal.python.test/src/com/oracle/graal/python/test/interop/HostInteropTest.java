@@ -251,4 +251,25 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.fitsInDouble());
         assertEquals(doubleValue, t.asDouble(), 0);
     }
+
+    @Test
+    public void testString() {
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            data = 10
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_string=True,
+                            as_string=lambda t: f"MyType({t.data})"
+                        )
+
+                        MyType()
+                        """);
+        assertFalse(t.isBoolean());
+        assertFalse(t.isNumber());
+        assertTrue(t.isString());
+        assertEquals("MyType(10)", t.asString());
+    }
 }
