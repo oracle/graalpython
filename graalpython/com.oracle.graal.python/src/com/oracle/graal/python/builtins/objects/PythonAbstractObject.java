@@ -136,6 +136,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaShortNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1925,7 +1926,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public String asString() throws UnsupportedMessageException {
-        return null;
+    @SuppressWarnings("truffle-inlining")
+    public String asString(@Bind("$node") Node inliningTarget,
+                           @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                           @Cached CastToJavaStringNode toStringNode,
+                           @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_string);
+        if (value != PNone.NO_VALUE) {
+            return toStringNode.execute(value);
+        }
+        return ilib.asString(this);
     }
 }
