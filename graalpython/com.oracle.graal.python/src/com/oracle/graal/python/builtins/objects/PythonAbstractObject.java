@@ -132,6 +132,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaShortNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1839,10 +1840,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public byte asByte(@Bind("$node") Node inliningTarget,
-                       @Cached GetHostInteropBehaviorValueNode getHostInteropBehaviorValueNode,
+                       @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                        @Cached CastToJavaByteNode toByteNode,
                        @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        Object value = getHostInteropBehaviorValueNode.execute(inliningTarget, this, HostInteropBehaviorMethod.as_byte);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_byte);
         if (value != PNone.NO_VALUE) {
             return toByteNode.execute(inliningTarget, value);
         }
@@ -1850,8 +1851,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public short asShort() throws UnsupportedMessageException {
-        return (short) 0;
+    @SuppressWarnings("truffle-inlining")
+    public short asShort(@Bind("$node") Node inliningTarget,
+                         @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                         @Cached CastToJavaShortNode toShortNode,
+                         @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_short);
+        if (value != PNone.NO_VALUE) {
+            return toShortNode.execute(inliningTarget, value);
+        }
+        return ilib.asShort(this);
     }
 
     @ExportMessage
