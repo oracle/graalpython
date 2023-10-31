@@ -1864,8 +1864,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public int asInt() throws UnsupportedMessageException {
-        return 0;
+    @SuppressWarnings("truffle-inlining")
+    public int asInt(@Bind("$node") Node inliningTarget,
+                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                     // GR-44020: make shared:
+                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_int);
+        if (value != PNone.NO_VALUE) {
+            return toIntNode.execute(inliningTarget, value);
+        }
+        return ilib.asInt(this);
     }
 
     @ExportMessage
