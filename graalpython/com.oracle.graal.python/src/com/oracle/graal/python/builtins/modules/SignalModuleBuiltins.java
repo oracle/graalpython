@@ -156,7 +156,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return poll;
         });
 
-        if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!ImageInfo.inImageBuildtimeCode() && core.getContext().getOption(PythonOptions.InstallSignalHandlers)) {
             Object defaultSigintHandler = signalModule.getAttribute(T_DEFAULT_INT_HANDLER);
             assert defaultSigintHandler != PNone.NO_VALUE;
             SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);

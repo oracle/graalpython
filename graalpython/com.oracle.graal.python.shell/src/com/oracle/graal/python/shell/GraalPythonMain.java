@@ -171,6 +171,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         programArgs = new ArrayList<>();
         origArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
+        boolean installSignalHandlersSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
             origArgs.add(arg);
@@ -252,6 +253,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             }
                             if (matchesPythonOption(arg, "PosixModuleBackend")) {
                                 posixBackendSpecified = true;
+                            }
+                            if (matchesPythonOption(arg, "InstallSignalHandlers")) {
+                                installSignalHandlersSpecified = true;
                             }
                             // possibly a polyglot argument
                             unrecognized.add(arg);
@@ -398,6 +402,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!posixBackendSpecified) {
             polyglotOptions.put("python.PosixModuleBackend", "native");
+        }
+        if (!installSignalHandlersSpecified) {
+            polyglotOptions.put("python.InstallSignalHandlers", "true");
         }
         // Never emit warnings that mess up the output
         unrecognized.add("--engine.WarnInterpreterOnly=false");
