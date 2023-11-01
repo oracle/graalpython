@@ -70,7 +70,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
@@ -121,16 +120,10 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
             return PGuards.expectInteger(callIndex.executeObject(frame, indexDescr, object));
         } catch (UnexpectedResultException e) {
             // Implicit CompilerDirectives.transferToInterpreterAndInvalidate()
-            EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
-            Node outerNode = nodeRef.set(inliningTarget);
-            try {
-                Object result = checkResult(frame, object, e.getResult(), null, GetClassNode.getUncached(),
-                                IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.Lazy.getUncached(),
-                                WarningsModuleBuiltins.WarnNode.getUncached(), PythonObjectFactory.getUncached());
-                throw new UnexpectedResultException(result);
-            } finally {
-                nodeRef.set(outerNode);
-            }
+            Object result = checkResult(frame, object, e.getResult(), null, GetClassNode.getUncached(),
+                            IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.Lazy.getUncached(),
+                            WarningsModuleBuiltins.WarnNode.getUncached(), PythonObjectFactory.getUncached());
+            throw new UnexpectedResultException(result);
         }
     }
 

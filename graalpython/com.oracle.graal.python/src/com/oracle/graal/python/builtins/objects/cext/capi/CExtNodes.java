@@ -186,7 +186,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -1429,9 +1428,6 @@ public abstract class CExtNodes {
             InteropLibrary interopLibrary = InteropLibrary.getUncached();
             PRaiseNode raiseNode = PRaiseNode.getUncached();
 
-            // set the encapsulating node reference to get a precise error position
-            EncapsulatingNodeReference current = EncapsulatingNodeReference.getCurrent();
-            current.set(this);
             StringBuilder result = new StringBuilder();
             int vaArgIdx = 0;
             Object unicodeObj;
@@ -1600,8 +1596,6 @@ public abstract class CExtNodes {
                 result.append(format, cur, format.length());
             } catch (InteropException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ERROR_WHEN_ACCESSING_VAR_ARG_AT_POS, vaArgIdx);
-            } finally {
-                current.get();
             }
             return toTruffleStringUncached(result.toString());
         }
