@@ -1846,16 +1846,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public byte asByte(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached CastToJavaByteNode toByteNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_byte);
-            if (value != PNone.NO_VALUE) {
-                return toByteNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_byte);
+        if (value != PNone.NO_VALUE) {
+            return toByteNode.execute(inliningTarget, value);
         }
         return ilib.asByte(this);
     }
@@ -1865,16 +1859,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public short asShort(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached CastToJavaShortNode toShortNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_short);
-            if (value != PNone.NO_VALUE) {
-                return toShortNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_short);
+        if (value != PNone.NO_VALUE) {
+            return toShortNode.execute(inliningTarget, value);
         }
         return ilib.asShort(this);
     }
@@ -1885,16 +1873,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_int);
-            if (value != PNone.NO_VALUE) {
-                return toIntNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_int);
+        if (value != PNone.NO_VALUE) {
+            return toIntNode.execute(inliningTarget, value);
         }
         return ilib.asInt(this);
     }
@@ -1904,16 +1886,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public long asLong(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached CastToJavaLongExactNode toLongNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_long);
-            if (value != PNone.NO_VALUE) {
-                return toLongNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_long);
+        if (value != PNone.NO_VALUE) {
+            return toLongNode.execute(inliningTarget, value);
         }
         return ilib.asLong(this);
     }
@@ -1924,16 +1900,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_float);
-            if (value != PNone.NO_VALUE) {
-                return (float) toDoubleNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_float);
+        if (value != PNone.NO_VALUE) {
+            return (float) toDoubleNode.execute(inliningTarget, value);
         }
         return ilib.asFloat(this);
     }
@@ -1944,16 +1914,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_double);
-            if (value != PNone.NO_VALUE) {
-                return toDoubleNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_double);
+        if (value != PNone.NO_VALUE) {
+            return toDoubleNode.execute(inliningTarget, value);
         }
         return ilib.asDouble(this);
     }
@@ -1963,16 +1927,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached CastToJavaBigIntegerNode toBigIntegerNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_big_integer);
-            if (value != PNone.NO_VALUE) {
-                return toBigIntegerNode.execute(inliningTarget, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_big_integer);
+        if (value != PNone.NO_VALUE) {
+            return toBigIntegerNode.execute(inliningTarget, value);
         }
         return ilib.asBigInteger(this);
     }
@@ -1982,16 +1940,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public String asString(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached CastToJavaStringNode toStringNode,
-                    @Exclusive @Cached GilNode gil,
                     @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_string);
-            if (value != PNone.NO_VALUE) {
-                return toStringNode.execute(value);
-            }
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_string);
+        if (value != PNone.NO_VALUE) {
+            return toStringNode.execute(value);
         }
         return ilib.asString(this);
     }

@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -86,13 +87,19 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
                     @Cached GenericInvokeNode invokeNode,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
+                    @Cached GilNode gil,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
             CallTarget callTarget = behavior.getCallTarget(method);
             Object[] pArguments = behavior.createArguments(method, receiver);
-            return invokeNode.execute(callTarget, pArguments);
+            boolean mustRelease = gil.acquire();
+            try {
+                return invokeNode.execute(callTarget, pArguments);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
         return PNone.NO_VALUE;
     }
