@@ -41,14 +41,18 @@
 package com.oracle.graal.python.nodes.interop;
 
 import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -67,10 +71,15 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @SuppressWarnings("truffle-inlining") // some of the cached nodes in the specialization are not
                                       // inlineable
 public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
-    public abstract Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method);
+    public abstract Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments);
+
+    public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method) {
+        assert method.extraArguments == 0;
+        return execute(inlineTarget, receiver, method, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
 
     @Specialization(guards = {"method.constantBoolean == true"})
-    static Object getValueConstantBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
+    static Object getValueConstantBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, @SuppressWarnings("unused") Object[] extraArguments,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
@@ -83,17 +92,22 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"method.constantBoolean == false"})
-    static Object getValueComputed(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
+    static Object getValueComputed(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
                     @Cached GenericInvokeNode invokeNode,
                     @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached InlinedConditionProfile isMethodDefined,
+                    @Cached PRaiseNode raiseNode,
                     @Cached GilNode gil,
+                    @Cached InlinedConditionProfile arityCheck,
+                    @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+        if (arityCheck.profile(inlineTarget, method.extraArguments != extraArguments.length)) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, FUNC_TAKES_EXACTLY_D_ARGS, method.extraArguments, extraArguments.length);
+        }
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
             CallTarget callTarget = behavior.getCallTarget(method);
-            Object[] pArguments = behavior.createArguments(method, receiver);
+            Object[] pArguments = behavior.createArguments(method, receiver, extraArguments);
             boolean mustRelease = gil.acquire();
             try {
                 return invokeNode.execute(callTarget, pArguments);

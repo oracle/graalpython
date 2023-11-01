@@ -84,11 +84,14 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
         return method.constantBoolean || callTargets[method.ordinal()] != null;
     }
 
-    public Object[] createArguments(HostInteropBehaviorMethod method, PythonAbstractObject receiver) {
+    public Object[] createArguments(HostInteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments) {
+        assert extraArguments.length == method.extraArguments;
         Object[] pArguments = PArguments.create(1 + method.extraArguments);
         PArguments.setGlobals(pArguments, getGlobals(method));
         PArguments.setArgument(pArguments, 0, receiver);
-        // TODO: add the extra arguments that the other interop messages may need
+        for (int i = 0; i < extraArguments.length; i++) {
+            PArguments.setArgument(pArguments, i + 1, extraArguments[i]);
+        }
         return pArguments;
     }
 
