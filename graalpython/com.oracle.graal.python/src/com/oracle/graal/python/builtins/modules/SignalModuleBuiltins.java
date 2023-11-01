@@ -164,12 +164,14 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     public static void resetSignalHandlers(PythonModule mod) {
-        ModuleData data = getModuleData(mod);
-        for (Map.Entry<Integer, SignalHandler> entry : data.defaultSignalHandlers.entrySet()) {
-            Signals.setSignalHandler(entry.getKey(), entry.getValue());
+        Object obj = ReadAttributeFromObjectNode.getUncached().execute(mod, signalModuleDataKey);
+        if (obj instanceof ModuleData data) {
+            for (Map.Entry<Integer, SignalHandler> entry : data.defaultSignalHandlers.entrySet()) {
+                Signals.setSignalHandler(entry.getKey(), entry.getValue());
+            }
+            data.signalHandlers.clear();
+            data.defaultSignalHandlers.clear();
         }
-        data.signalHandlers.clear();
-        data.defaultSignalHandlers.clear();
     }
 
     private static class SignalTriggerAction extends AsyncHandler.AsyncPythonAction {

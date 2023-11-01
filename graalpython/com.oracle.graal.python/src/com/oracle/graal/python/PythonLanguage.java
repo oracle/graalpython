@@ -1017,10 +1017,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (context.getCApiContext() != null) {
             context.getCApiContext().finalizeCapi();
         }
-        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
             // Reset signal handlers back to what they were
             PythonModule signalModule = context.lookupBuiltinModule(T__SIGNAL);
-            SignalModuleBuiltins.resetSignalHandlers(signalModule);
+            if (signalModule != null) {
+                SignalModuleBuiltins.resetSignalHandlers(signalModule);
+            }
         }
     }
 }
