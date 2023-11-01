@@ -85,15 +85,15 @@ def test_alarm2():
 
 def test_interrupt():
     proc = subprocess.Popen(
-        [sys.executable, '-c', 'import time; print("s", flush=True); time.sleep(5)'],
+        [sys.executable, '-c', 'import time; print("s", flush=True); time.sleep(60)'],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
     assert proc.stdout.read(2) == b's\n'
     proc.send_signal(signal.SIGINT)
     _, stderr = proc.communicate()
-    assert b'KeyboardInterrupt' in stderr
-    assert b'Traceback' in stderr
     # TODO we should properly make the process exit indicate the signal, but it might not be feasible under JVM/SVM
     # See CPython's main.c:exit_sigint for how they do it
     assert proc.wait() != 0
+    assert b'KeyboardInterrupt' in stderr, f"Unexpected stderr: {stderr}"
+    assert b'Traceback' in stderr, f"Unexpected stderr: {stderr}"
