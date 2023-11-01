@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_US;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
@@ -89,7 +90,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -103,11 +103,7 @@ import sun.misc.SignalHandler;
 
 @CoreFunctions(defineModule = "_signal", isEager = true)
 public final class SignalModuleBuiltins extends PythonBuiltins {
-    private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
-
     private static final HiddenKey signalModuleDataKey = new HiddenKey("signalModuleData");
-    private final ModuleData moduleData = new ModuleData();
 
     private static final int ITIMER_REAL = 0;
     private static final int ITIMER_VIRTUAL = 1;
@@ -142,6 +138,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
 
         PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
+        ModuleData moduleData = new ModuleData();
         signalModule.setAttribute(signalModuleDataKey, moduleData);
 
         core.getContext().registerAsyncAction(() -> {
@@ -164,6 +161,15 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             assert defaultSigintHandler != PNone.NO_VALUE;
             SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);
         }
+    }
+
+    public static void resetSignalHandlers(PythonModule mod) {
+        ModuleData data = getModuleData(mod);
+        for (Map.Entry<Integer, SignalHandler> entry : data.defaultSignalHandlers.entrySet()) {
+            Signals.setSignalHandler(entry.getKey(), entry.getValue());
+        }
+        data.signalHandlers.clear();
+        data.defaultSignalHandlers.clear();
     }
 
     private static class SignalTriggerAction extends AsyncHandler.AsyncPythonAction {
@@ -226,8 +232,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         int alarm(PythonModule module, int seconds) {
             int remaining = 0;
             Object currentAlarmObj = module.getAttribute(CURRENT_ALARM);
-            if (currentAlarmObj instanceof Signals.Alarm) {
-                Signals.Alarm currentAlarm = (Signals.Alarm) currentAlarmObj;
+            if (currentAlarmObj instanceof Signals.Alarm currentAlarm) {
                 if (currentAlarm.isRunning()) {
                     remaining = currentAlarm.getRemainingSeconds();
                     if (remaining < 0) {
@@ -251,28 +256,32 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static Object handlerToPython(SignalHandler handler, int signum) {
+    private static Object handlerToPython(SignalHandler handler, int signum, ModuleData data) {
+        if (!(handler instanceof Signals.PythonSignalHandler)) {
+            // Save default JVM handlers to be restored later
+            data.defaultSignalHandlers.put(signum, handler);
+        }
         if (handler == sun.misc.SignalHandler.SIG_DFL) {
             return Signals.SIG_DFL;
         } else if (handler == sun.misc.SignalHandler.SIG_IGN) {
             return Signals.SIG_IGN;
         } else if (handler instanceof Signals.PythonSignalHandler) {
-            return signalHandlers.getOrDefault(signum, PNone.NONE);
+            return data.signalHandlers.getOrDefault(signum, PNone.NONE);
         } else {
-            // Save default JVM handlers to be restored later
-            defaultSignalHandlers.put(signum, handler);
+            // Most likely JVM's handler, pretend it's the default
             return Signals.SIG_DFL;
         }
     }
 
-    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1, parameterNames = {"signalnum"})
+    @Builtin(name = "getsignal", declaresExplicitSelf = true, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "signalnum"})
     @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
-    abstract static class GetSignalNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class GetSignalNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static Object getsignal(int signum) {
-            return handlerToPython(Signals.getCurrentSignalHandler(signum), signum);
+        static Object getsignal(PythonModule mod, int signum) {
+            ModuleData data = (ModuleData) mod.getAttribute(signalModuleDataKey);
+            return handlerToPython(Signals.getCurrentSignalHandler(signum), signum, data);
         }
 
         @Override
@@ -295,64 +304,60 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!callableCheck.execute(inliningTarget, idNum)", limit = "1")
-        static Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
-                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached CastToJavaIntExactNode cast) {
-            // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
-            // are instances of Handlers enum
-            // The -1 fallback will be correctly reported as an error later on
-            int id;
-            try {
-                id = cast.execute(inliningTarget, idNum);
-            } catch (CannotCastException | PException e) {
-                id = -1;
+        @Specialization
+        @TruffleBoundary
+        static Object signalHandler(PythonModule self, Object signal, Object handler,
+                        @Bind("this") Node inliningTarget) {
+            ModuleData data = getModuleData(self);
+            int signum = PyNumberAsSizeNode.executeExactUncached(signal);
+            if (PyCallableCheckNode.executeUncached(handler)) {
+                return signal(inliningTarget, signum, handler, data);
+            } else {
+                // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants,
+                // which
+                // are instances of Handlers enum
+                // The -1 fallback will be correctly reported as an error later on
+                int id;
+                try {
+                    id = CastToJavaIntExactNode.executeUncached(handler);
+                } catch (CannotCastException | PException e) {
+                    id = -1;
+                }
+                return signal(inliningTarget, signum, id, data);
             }
-            return signal(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, signal), id);
         }
 
         @TruffleBoundary
-        private static Object signal(Node raisingNode, int signum, int id) {
+        static Object signal(Node raisingNode, int signum, Object handler, ModuleData data) {
+            SignalHandler oldHandler;
+            SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
+            try {
+                oldHandler = Signals.setSignalHandler(signum, () -> {
+                    data.signalQueue.add(signalTrigger);
+                    data.signalSema.release();
+                });
+            } catch (IllegalArgumentException e) {
+                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, e);
+            }
+            Object result = handlerToPython(oldHandler, signum, data);
+            data.signalHandlers.put(signum, handler);
+            return result;
+        }
+
+        @TruffleBoundary
+        private static Object signal(Node raisingNode, int signum, int id, ModuleData data) {
             SignalHandler oldHandler;
             try {
-                if (id == Signals.SIG_DFL && defaultSignalHandlers.containsKey(signum)) {
-                    oldHandler = Signals.setSignalHandler(signum, defaultSignalHandlers.get(signum));
+                if (id == Signals.SIG_DFL && data.defaultSignalHandlers.containsKey(signum)) {
+                    oldHandler = Signals.setSignalHandler(signum, data.defaultSignalHandlers.get(signum));
                 } else {
                     oldHandler = Signals.setSignalHandler(signum, id);
                 }
             } catch (IllegalArgumentException e) {
                 throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
-            Object result = handlerToPython(oldHandler, signum);
-            signalHandlers.remove(signum);
-            return result;
-        }
-
-        @Specialization(guards = "callableCheck.execute(inliningTarget, handler)", limit = "1")
-        static Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
-                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached ReadAttributeFromObjectNode readModuleDataNode) {
-            return signal(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, signal), handler, getModuleData(self, readModuleDataNode));
-        }
-
-        @TruffleBoundary
-        static Object signal(Node raisingNode, int signum, Object handler, ModuleData moduleData) {
-            SignalHandler oldHandler;
-            SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
-            try {
-                oldHandler = Signals.setSignalHandler(signum, () -> {
-                    moduleData.signalQueue.add(signalTrigger);
-                    moduleData.signalSema.release();
-                });
-            } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, e);
-            }
-            Object result = handlerToPython(oldHandler, signum);
-            signalHandlers.put(signum, handler);
+            Object result = handlerToPython(oldHandler, signum, data);
+            data.signalHandlers.remove(signum);
             return result;
         }
     }
@@ -497,8 +502,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static ModuleData getModuleData(PythonModule self, ReadAttributeFromObjectNode readNode) {
-        Object obj = readNode.execute(self, signalModuleDataKey);
+    private static ModuleData getModuleData(PythonModule mod) {
+        return getModuleData(mod, ReadAttributeFromObjectNode.getUncached());
+    }
+
+    private static ModuleData getModuleData(PythonModule mod, ReadAttributeFromObjectNode readNode) {
+        Object obj = readNode.execute(mod, signalModuleDataKey);
         if (obj instanceof ModuleData) {
             return (ModuleData) obj;
         } else {
@@ -507,6 +516,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     private static class ModuleData {
+        final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
         final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
         final Semaphore signalSema = new Semaphore(0);
         ScheduledExecutorService itimerService;
@@ -538,6 +549,7 @@ final class Signals {
                 }
                 SIGNAL_NAMES[number] = signal;
             } catch (IllegalArgumentException e) {
+                // Ignore
             }
         }
     }

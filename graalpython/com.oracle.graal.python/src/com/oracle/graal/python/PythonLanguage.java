@@ -27,6 +27,7 @@ package com.oracle.graal.python;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -54,6 +55,7 @@ import org.graalvm.options.OptionValues;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -61,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -1013,6 +1016,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void exitContext(PythonContext context, ExitMode exitMode, int exitCode) {
         if (context.getCApiContext() != null) {
             context.getCApiContext().finalizeCapi();
+        }
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            // Reset signal handlers back to what they were
+            PythonModule signalModule = context.lookupBuiltinModule(T__SIGNAL);
+            SignalModuleBuiltins.resetSignalHandlers(signalModule);
         }
     }
 }
