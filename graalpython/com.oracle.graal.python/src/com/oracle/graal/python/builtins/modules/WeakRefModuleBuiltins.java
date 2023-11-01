@@ -369,8 +369,16 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
             do {
                 if (reference instanceof PReferenceType.WeakRefStorage ref) {
-                    refs.add(ref);
-                    removeNativeWeakRef(ctx, ref.getPointer());
+                    long ptr = ref.getPointer();
+                    if (ptr > 0) {
+                        if (!ctx.isFinalizing()) {
+                            /* avoid race condition of deallocating an object at exit */
+                            refs.add(ref);
+                            removeNativeWeakRef(ctx, ptr);
+                        }
+                    } else {
+                        refs.add(ref);
+                    }
                 }
                 reference = weakRefQueue.poll();
             } while (reference != null);
