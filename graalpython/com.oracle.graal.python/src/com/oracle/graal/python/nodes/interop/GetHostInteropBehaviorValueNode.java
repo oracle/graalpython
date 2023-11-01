@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -61,6 +60,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -91,18 +92,13 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         return PNone.NO_VALUE;
     }
 
-    @Specialization(guards = {"method.constantBoolean == false"})
+    @Specialization(guards = {"method.constantBoolean == false", "method.extraArguments == extraArguments.length"})
     static Object getValueComputed(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
-                    @Cached GenericInvokeNode invokeNode,
+                    @Cached SimpleInvokeNodeDispatch invokeNode,
                     @Shared @Cached GetClassNode getClassNode,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached GilNode gil,
-                    @Cached InlinedConditionProfile arityCheck,
+                    @Cached(inline = false) GilNode gil,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        if (arityCheck.profile(inlineTarget, method.extraArguments != extraArguments.length)) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, FUNC_TAKES_EXACTLY_D_ARGS, method.extraArguments, extraArguments.length);
-        }
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
@@ -110,12 +106,19 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
             Object[] pArguments = behavior.createArguments(method, receiver, extraArguments);
             boolean mustRelease = gil.acquire();
             try {
-                return invokeNode.execute(callTarget, pArguments);
+                return invokeNode.execute(inlineTarget, callTarget, pArguments);
             } finally {
                 gil.release(mustRelease);
             }
         }
         return PNone.NO_VALUE;
+    }
+
+    @Specialization(guards = {"method.constantBoolean == false", "method.extraArguments != extraArguments.length"})
+    @SuppressWarnings("unused")
+    static Object getValueComputedWrongArity(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(PythonBuiltinClassType.TypeError, FUNC_TAKES_EXACTLY_D_ARGS, method.extraArguments, extraArguments.length);
     }
 
     @NeverDefault
@@ -125,5 +128,24 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
 
     public static GetHostInteropBehaviorValueNode getUncached() {
         return GetHostInteropBehaviorValueNodeGen.getUncached();
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    abstract static class SimpleInvokeNodeDispatch extends Node {
+        public abstract Object execute(Node inlineTarget, CallTarget callTarget, Object[] arguments);
+
+        @Specialization(guards = {"cachedCallTarget == callTarget"}, limit = "3")
+        static Object doDirectCall(Node inlineTarget, CallTarget callTarget, Object[] arguments,
+                        @Cached("callTarget") CallTarget cachedCallTarget,
+                        @Cached("create(callTarget)") DirectCallNode directCallNode) {
+            return directCallNode.call(arguments);
+        }
+
+        @Specialization(replaces = "doDirectCall")
+        static Object doIndirectCall(Node inlineTarget, CallTarget callTarget, Object[] arguments,
+                        @Cached IndirectCallNode indirectCallNode) {
+            return indirectCallNode.call(callTarget, arguments);
+        }
     }
 }

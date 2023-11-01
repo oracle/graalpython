@@ -121,7 +121,6 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
-import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorBooleanNode;
 import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorValueNode;
 import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -131,6 +130,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1767,78 +1767,155 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isBoolean(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_boolean);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_boolean);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.isBoolean(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isNumber(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_number);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_number);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.isNumber(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isString(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.is_string);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_string);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.isString(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInByte(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_byte);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_byte);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInByte(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInShort(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_short);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_short);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInShort(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInInt(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_int);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_int);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInInt(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInLong(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_long);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_long);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInLong(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInFloat(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_float);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_float);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInFloat(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInDouble(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_double);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_double);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInDouble(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInBigInteger(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_big_integer);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.fits_in_big_integer);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.fitsInBigInteger(this);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean asBoolean(@Bind("$node") Node inliningTarget,
-                    @Shared("getBoolean") @Cached GetHostInteropBehaviorBooleanNode getBoolean) throws UnsupportedMessageException {
-        return getBoolean.execute(inliningTarget, this, HostInteropBehaviorMethod.as_boolean);
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @CachedLibrary("$node") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_boolean);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        }
+        return ilib.asBoolean(this);
     }
 
     @ExportMessage
