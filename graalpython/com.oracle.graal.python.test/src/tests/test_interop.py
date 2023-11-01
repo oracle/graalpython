@@ -654,3 +654,14 @@ if sys.implementation.name == "graalpy":
         doctest.Example = Example
 
         assert doctest.testmod(m=polyglot, verbose=getattr(unittest, "verbose"), optionflags=doctest.ELLIPSIS).failed == 0
+
+    def test_host_interop_behavior_register_with_native_object():
+        import polyglot
+        import java
+        import _sqlite3
+        # fake _sqlite3.Connection as a number
+        polyglot.register_host_interop_behavior(_sqlite3.Connection, is_number=True, fits_in_long=lambda t: True, as_long = lambda t: hash(t))
+        c = _sqlite3.Connection("memory")
+        BigInteger = java.type("java.math.BigInteger")
+        bi = BigInteger.valueOf(c)
+        assert int(bi) == hash(c)
