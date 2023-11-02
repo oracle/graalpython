@@ -1326,6 +1326,7 @@ def graalpython_gate_runner(args, tasks):
             "*/cpyext/test_object.py",
             "*/cpyext/test_simple.py",
             "*/cpyext/test_slice.py",
+            "*/cpyext/test_shutdown.py",
             "*/cpyext/test_structseq.py",
             "*/cpyext/test_thread.py",
             "*/cpyext/test_traceback.py",

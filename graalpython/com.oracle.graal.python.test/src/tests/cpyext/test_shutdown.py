@@ -64,4 +64,4 @@ def test_sigterm():
     expected = b'sleeping\n'
     assert proc.stdout.read(len(expected)) == expected
     proc.terminate()
-    assert proc.wait() in [0, -signal.SIGTERM, 128 + signal.SIGTERM]
+    assert proc.wait() in [-signal.SIGTERM, 128 + signal.SIGTERM]
