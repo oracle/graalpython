@@ -42,10 +42,18 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_HOST_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_S_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_BIG_INTEGER;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_BYTE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_DOUBLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_FLOAT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_INT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_LONG;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WRITABLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -71,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -382,6 +391,235 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             UNCACHED_INTEROP = InteropLibrary.getFactory().getUncached();
         }
         return UNCACHED_INTEROP;
+    }
+
+    abstract static class FitsInNumberNode extends PythonUnaryBuiltinNode {
+        static boolean isSupportedNumber(Object number) {
+            return number instanceof Number || number instanceof PInt;
+        }
+
+        static boolean isWhole(double number) {
+            return !(number % 1.0 > 0);
+        }
+
+        @Specialization(guards = {"!isSupportedNumber(number)"})
+        static boolean unsupported(PythonAbstractObject number,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ARG_MUST_BE_NUMBER, "given", number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_BYTE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInByteNode extends FitsInNumberNode {
+        static boolean fits(long number) {
+            return number >= 0 && number < 256;
+        }
+
+        @Specialization
+        static boolean check(int number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            if (isWhole(number)) {
+                return fits((long) number);
+            }
+            return false;
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInByte(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_SHORT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInShortNode extends FitsInNumberNode {
+        static boolean fits(long number) {
+            return number >= Short.MIN_VALUE && number < Short.MAX_VALUE;
+        }
+
+        @Specialization
+        static boolean check(int number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            if (isWhole(number)) {
+                return fits((long) number);
+            }
+            return false;
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInShort(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_INT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInIntNode extends FitsInNumberNode {
+        static boolean fits(long number) {
+            return number >= Integer.MIN_VALUE && number < Integer.MAX_VALUE;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            if (isWhole(number)) {
+                return fits((long) number);
+            }
+            return false;
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInInt(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_LONG, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInLongNode extends FitsInNumberNode {
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") long number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            return isWhole(number);
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInLong(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_BIG_INTEGER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInBigIntegerNode extends FitsInNumberNode {
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") long number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            return isWhole(number);
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") PInt number) {
+            return true;
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInFloatNode extends FitsInNumberNode {
+        static int PRECISION = 24;
+        static long MIN = -(long) Math.pow(2, PRECISION);
+        static long MAX = (long) Math.pow(2, PRECISION) - 1;
+
+        static boolean fits(long number) {
+            return number >= MIN && number <= MAX;
+        }
+
+        @Specialization
+        static boolean check(int number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            return !Double.isFinite(number) || (float) number == number;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInFloat(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_DOUBLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInDoubleNode extends FitsInNumberNode {
+        static int PRECISION = 53;
+        static long MIN = -(long) Math.pow(2, PRECISION);
+        static long MAX = (long) Math.pow(2, PRECISION) - 1;
+
+        static boolean fits(long number) {
+            return number >= MIN && number <= MAX;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("true") double number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInDouble(number);
+        }
     }
 
     @Builtin(name = J_REGISTER_HOST_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
