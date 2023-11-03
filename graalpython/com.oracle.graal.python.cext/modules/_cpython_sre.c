@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1538,7 +1538,7 @@ _sre_compile_impl(PyObject *module, PyObject *pattern, int flags,
 #endif
 
 /* Report failure */
-#define FAIL do { VTRACE(("FAIL: %d\n", __LINE__)); return 0; } while (0)
+#define FAIL do { VTRACE(("FAIL: %d\n", __LINE__)); return -1; } while (0)
 
 /* Extract opcode, argument, or skip count from code array */
 #define GET_OP                                          \
@@ -1562,7 +1562,7 @@ _sre_compile_impl(PyObject *module, PyObject *pattern, int flags,
         skip = *code;                                   \
         VTRACE(("%lu (skip to %p)\n",                   \
                (unsigned long)skip, code+skip));        \
-        if (skip-adj > (uintptr_t)(end - code))      \
+        if (skip-adj > (uintptr_t)(end - code))         \
             FAIL;                                       \
         code++;                                         \
     } while (0)
@@ -1651,9 +1651,10 @@ _validate_charset(SRE_CODE *code, SRE_CODE *end)
         }
     }
 
-    return 1;
+    return 0;
 }
 
+/* Returns 0 on success, -1 on failure, and 1 if the last op is JUMP. */
 static int
 _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
 {
@@ -1731,7 +1732,7 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
         case SRE_OP_IN_LOC_IGNORE:
             GET_SKIP;
             /* Stop 1 before the end; we check the FAILURE below */
-            if (!_validate_charset(code, code+skip-2))
+            if (_validate_charset(code, code+skip-2))
                 FAIL;
             if (code[skip-2] != SRE_OP_FAILURE)
                 FAIL;
@@ -1785,7 +1786,7 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
                 }
                 /* Validate the charset */
                 if (flags & SRE_INFO_CHARSET) {
-                    if (!_validate_charset(code, newcode-1))
+                    if (_validate_charset(code, newcode-1))
                         FAIL;
                     if (newcode[-1] != SRE_OP_FAILURE)
                         FAIL;
@@ -1806,7 +1807,7 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
                     if (skip == 0)
                         break;
                     /* Stop 2 before the end; we check the JUMP below */
-                    if (!_validate_inner(code, code+skip-3, groups))
+                    if (_validate_inner(code, code+skip-3, groups))
                         FAIL;
                     code += skip-3;
                     /* Check that it ends with a JUMP, and that each JUMP
@@ -1820,6 +1821,8 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
                     else if (code+skip-1 != target)
                         FAIL;
                 }
+                if (code != target)
+                    FAIL;
             }
             break;
 
@@ -1834,7 +1837,7 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
                     FAIL;
                 if (max > SRE_MAXREPEAT)
                     FAIL;
-                if (!_validate_inner(code, code+skip-4, groups))
+                if (_validate_inner(code, code+skip-4, groups))
                     FAIL;
                 code += skip-4;
                 GET_OP;
@@ -1853,7 +1856,7 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
                     FAIL;
                 if (max > SRE_MAXREPEAT)
                     FAIL;
-                if (!_validate_inner(code, code+skip-3, groups))
+                if (_validate_inner(code, code+skip-3, groups))
                     FAIL;
                 code += skip-3;
                 GET_OP;
@@ -1905,24 +1908,17 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
                to allow arbitrary jumps anywhere in the code; so we just look
                for a JUMP opcode preceding our skip target.
             */
-            if (skip >= 3 && skip-3 < (uintptr_t)(end - code) &&
-                code[skip-3] == SRE_OP_JUMP)
-            {
-                VTRACE(("both then and else parts present\n"));
-                if (!_validate_inner(code+1, code+skip-3, groups))
-                    FAIL;
+            VTRACE(("then part:\n"));
+            int rc = _validate_inner(code+1, code+skip-1, groups);
+            if (rc == 1) {
+                VTRACE(("else part:\n"));
                 code += skip-2; /* Position after JUMP, at <skipno> */
                 GET_SKIP;
-                if (!_validate_inner(code, code+skip-1, groups))
-                    FAIL;
-                code += skip-1;
+                rc = _validate_inner(code, code+skip-1, groups);
             }
-            else {
-                VTRACE(("only a then part present\n"));
-                if (!_validate_inner(code+1, code+skip-1, groups))
-                    FAIL;
-                code += skip-1;
-            }
+            if (rc)
+                FAIL;
+            code += skip-1;
             break;
 
         case SRE_OP_ASSERT:
@@ -1933,13 +1929,19 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
             if (arg & 0x80000000)
                 FAIL; /* Width too large */
             /* Stop 1 before the end; we check the SUCCESS below */
-            if (!_validate_inner(code+1, code+skip-2, groups))
+            if (_validate_inner(code+1, code+skip-2, groups))
                 FAIL;
             code += skip-2;
             GET_OP;
             if (op != SRE_OP_SUCCESS)
                 FAIL;
             break;
+
+        case SRE_OP_JUMP:
+            if (code + 1 != end)
+                FAIL;
+            VTRACE(("JUMP: %d\n", __LINE__));
+            return 1;
 
         default:
             FAIL;
@@ -1948,7 +1950,7 @@ _validate_inner(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
     }
 
     VTRACE(("okay\n"));
-    return 1;
+    return 0;
 }
 
 static int
@@ -1963,7 +1965,7 @@ _validate_outer(SRE_CODE *code, SRE_CODE *end, Py_ssize_t groups)
 static int
 _validate(PatternObject *self)
 {
-    if (!_validate_outer(self->code, self->code+self->codesize, self->groups))
+    if (_validate_outer(self->code, self->code+self->codesize, self->groups))
     {
         PyErr_SetString(PyExc_RuntimeError, "invalid SRE code");
         return 0;

@@ -8,6 +8,7 @@ package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -19,6 +20,7 @@ import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -192,8 +194,11 @@ abstract class FormatProcessor<T> {
             try {
                 TruffleString magicName = useIndexMagicMethod(specType) ? T___INDEX__ : T___INT__;
                 Object attribute = lookupAttribute(arg, magicName);
-                return call(attribute, arg);
+                if (!(attribute instanceof PNone)) {
+                    return call(attribute, arg);
+                }
             } catch (PException e) {
+                e.expectUncached(AttributeError);
                 // No __int__/__index__ defined (at Python level)
             }
         }

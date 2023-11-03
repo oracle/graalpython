@@ -644,7 +644,7 @@ public abstract class ErrorMessages {
     public static final TruffleString REQUIRES_CODE_OBJ = tsLiteral("%s() requires a code object with %d free vars, not %d");
     public static final TruffleString REQUIRES_INT_OR_CHAR = tsLiteral("%%%c requires int or char");
     public static final TruffleString ROUNDED_VALUE_TOO_LARGE = tsLiteral("rounded value too large to represent");
-    public static final TruffleString S_FORMAT_NUMBER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: a number is required, not %p");
+    public static final TruffleString S_FORMAT_NUMBER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: a real number is required, not %p");
     public static final TruffleString S_FORMAT_INTEGER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: an integer is required, not %p");
     public static final TruffleString C_ARG_NOT_IN_RANGE256_DECIMAL = tsLiteral("%%c arg not in range(256)");
     public static final TruffleString C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = tsLiteral("%%c requires an integer in range(256) or a single byte");

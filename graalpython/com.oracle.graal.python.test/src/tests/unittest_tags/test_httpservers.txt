@@ -18,3 +18,4 @@
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_accept
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_cgi_path_in_sub_directories
 *graalpython.lib-python.3.test.test_httpservers.MiscTestCase.test_all
+*graalpython.lib-python.3.test.test_httpservers.SimpleHTTPServerTestCase.test_undecodable_parameter

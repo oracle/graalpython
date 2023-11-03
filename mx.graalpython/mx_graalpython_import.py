@@ -130,7 +130,9 @@ CPYTHON_SOURCES_MAPPING = {
 
     # C API
     "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
+    "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
+    "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c": CopyFrom("Modules/_sre.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
@@ -155,9 +157,21 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/getversion.c": CopyFrom("Python/getversion.c"),
     "graalpython/com.oracle.graal.python.cext/src/mysnprintf.c": CopyFrom("Python/mysnprintf.c"),
     "graalpython/com.oracle.graal.python.cext/src/mystrtoul.c": CopyFrom("Python/mystrtoul.c"),
+    "graalpython/com.oracle.graal.python.cext/src/longobject.c": CopyFrom("Objects/longobject.c"),
+    "graalpython/com.oracle.graal.python.cext/src/moduleobject.c": CopyFrom("Objects/moduleobject.c"),
+    "graalpython/com.oracle.graal.python.cext/src/object.c": CopyFrom("Objects/object.c"),
+    "graalpython/com.oracle.graal.python.cext/src/pystrcmp.c": CopyFrom("Python/pystrcmp.c"),
+    "graalpython/com.oracle.graal.python.cext/src/pystrtod.c": CopyFrom("Python/pystrtod.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrhex.c": CopyFrom("Python/pystrhex.c"),
+    "graalpython/com.oracle.graal.python.cext/src/thread.c": CopyFrom("Python/thread.c"),
+    "graalpython/com.oracle.graal.python.cext/src/tupleobject.c": CopyFrom("Objects/tupleobject.c"),
+    "graalpython/com.oracle.graal.python.cext/src/typeobject.c": CopyFrom("Objects/typeobject.c"),
+
     # Just few functions are taken from CPython
-    "graalpython/com.oracle.graal.python.cext/posix/fork_exec.c": Ignore(),
+    "graalpython/python-libposix/src/fork_exec.c": Ignore(),
+
+    # Largely rewritten
+    "graalpython/python-venvlauncher/src/venvlauncher.c": Ignore(),
 
     # PEG Parser
     "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen"),

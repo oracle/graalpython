@@ -74,12 +74,6 @@ def arbitrary_address(family):
     if family == 'AF_INET':
         return ('localhost', 0)
     elif family == 'AF_UNIX':
-        # Prefer abstract sockets if possible to avoid problems with the address
-        # size.  When coding portable applications, some implementations have
-        # sun_path as short as 92 bytes in the sockaddr_un struct.
-        if util.abstract_sockets_supported:
-            # GraalVM change: add thread ID, we may be in the same process
-            return f"\0listener-{os.getpid()}-{threading.current_thread().native_id}-{next(_mmap_counter)}"
         return tempfile.mktemp(prefix='listener-', dir=util.get_temp_dir())
     elif family == 'AF_PIPE':
         # GraalVM change: add thread ID, we may be in the same process

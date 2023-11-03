@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1036,6 +1036,12 @@ EXPORT (HRESULT) KeepObject(IUnknown *punk)
 }
 
 #endif
+
+EXPORT(int)
+_testfunc_pylist_append(PyObject *list, PyObject *item)
+{
+    return PyList_Append(list, item);
+}
 
 static struct PyModuleDef_Slot _ctypes_test_slots[] = {
     {0, NULL}

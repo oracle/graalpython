@@ -93,6 +93,7 @@ graalpython/com.oracle.graal.python.cext/include/complexobject.h,python.copyrigh
 graalpython/com.oracle.graal.python.cext/include/context.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/abstract.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/bytearrayobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/cpython/bytesobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/ceval.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/code.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/compile.h,python.copyright
