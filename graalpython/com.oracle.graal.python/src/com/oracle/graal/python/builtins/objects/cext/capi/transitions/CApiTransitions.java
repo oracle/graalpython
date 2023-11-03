@@ -347,7 +347,7 @@ public class CApiTransitions {
             }
         }
         if (context.nativeWeakRef.size() > 0) {
-            LOGGER.warning("Weak references has been added during shutdown!");
+            LOGGER.warning("Weak references have been added during shutdown!");
         }
     }
 
