@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -121,7 +122,7 @@ public class CApiTransitions {
 
         public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
-        public final HashSet<Long> nativeWeakRef = new HashSet<>();
+        public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
         public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>(DEFAULT_CAPACITY);
         public final HandleStack nativeHandlesFreeStack = new HandleStack(DEFAULT_CAPACITY);
@@ -298,7 +299,7 @@ public class CApiTransitions {
      */
     @TruffleBoundary
     public static void addNativeWeakRef(PythonContext pythonContext, PythonAbstractNativeObject object) {
-        pythonContext.nativeContext.nativeWeakRef.add(getNativePointer(object));
+        pythonContext.nativeContext.nativeWeakRef.put(getNativePointer(object), 0L);
     }
 
     /**
@@ -326,10 +327,12 @@ public class CApiTransitions {
         }
         HandleContext context = pythonContext.nativeContext;
         int idx = -1;
-        long[] ptrArray = new long[context.nativeWeakRef.size()];
-        for (long ptr : context.nativeWeakRef) {
+        Object[] list = context.nativeWeakRef.values().toArray();
+        context.nativeWeakRef.clear();
+        long[] ptrArray = new long[list.length];
+        for (Object ptr : list) {
             if (context.nativeLookup.containsKey(ptr)) {
-                ptrArray[++idx] = ptr;
+                ptrArray[++idx] = (Long) ptr;
             }
         }
         if (idx != -1) {
@@ -342,6 +345,9 @@ public class CApiTransitions {
                 CStructAccessFactory.FreeNodeGen.getUncached().free(array);
                 context.nativeWeakRef.clear();
             }
+        }
+        if (context.nativeWeakRef.size() > 0) {
+            LOGGER.warning("Weak references has been added during shutdown!");
         }
     }
 
