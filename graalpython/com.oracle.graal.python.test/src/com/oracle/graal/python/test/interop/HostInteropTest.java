@@ -180,8 +180,7 @@ public class HostInteropTest extends PythonTests {
         assertEquals(bigInteger, t.asBigInteger());
         // float
         float floatValue = 0.5f;
-        String floatAsString = "0.5";
-        t = context.eval("python", String.format(sourceTemplate, floatAsString));
+        t = context.eval("python", String.format(sourceTemplate, floatValue));
         assertTrue(t.isNumber());
         assertFalse(t.fitsInByte());
         assertFalse(t.fitsInShort());
@@ -191,8 +190,7 @@ public class HostInteropTest extends PythonTests {
         assertEquals(floatValue, t.asFloat(), 0);
         // double
         double doubleValue = 123.45678901234;
-        String doubleAsString = "123.45678901234";
-        t = context.eval("python", String.format(sourceTemplate, doubleAsString));
+        t = context.eval("python", String.format(sourceTemplate, doubleValue));
         assertTrue(t.isNumber());
         assertFalse(t.fitsInByte());
         assertFalse(t.fitsInShort());
