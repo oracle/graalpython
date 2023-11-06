@@ -2630,7 +2630,7 @@ class MavenProject(mx.Distribution, mx.ClasspathDependency):
 
         # localExtension, remoteExtension, description, sourcesPath, and path
         # must all be set for Jar distributions that can be deployed to maven
-        self._remoteExtension = self.pom.get_text("packaging", "jar")
+        self._packaging = self._remoteExtension = self.pom.get_text("packaging", "jar")
         if self._remoteExtension == "maven-plugin":
             self._localExtension = "jar"
         elif self._remoteExtension == "maven-archetype":
@@ -2740,11 +2740,11 @@ class MavenBuildTask(mx.BuildTask):
     def __str__(self):
         return self.subject.name
 
-    def build(self):
+    def build(self, version=None):
         os.makedirs(self.subject.get_output_root(), exist_ok=True)
         os.makedirs(os.path.dirname(self.subject._default_path()), exist_ok=True)
-        self.create_build_pom()
-        self.deploy_dependencies()
+        self.create_build_pom(version=version)
+        self.deploy_dependencies(version=version)
         if mx.get_opts().verbose:
             verbosity = "-e"
         elif mx.get_opts().very_verbose:
@@ -2768,7 +2768,7 @@ class MavenBuildTask(mx.BuildTask):
         else:
             return ver
 
-    def deploy_dependencies(self):
+    def deploy_dependencies(self, version=None):
         path = self.local_dependency_repo()
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
@@ -2783,7 +2783,7 @@ class MavenBuildTask(mx.BuildTask):
                     if d.isDistribution() and not d.isLayoutDirDistribution() and not d.suite.internal:
                         transitive_deps.add(d)
         for buildDep in transitive_deps:
-            version = self.maven_version(buildDep)
+            version = version or self.maven_version(buildDep)
             licenses = ",".join([l.name for l in buildDep.theLicense])
             deploy_args = [
                 '--all-suites',
@@ -2881,8 +2881,8 @@ class MavenBuildTask(mx.BuildTask):
         pom = self.create_base_pom(version=version, with_repositories=False)
         return pom.tostring()
 
-    def create_build_pom(self):
-        pom = self.create_base_pom()
+    def create_build_pom(self, version=None):
+        pom = self.create_base_pom(version=version)
         with pom["build"] as build:
             srcpath = os.path.relpath(self.subject.maven_directory, self.subject.get_output_root())
             build.add("finalName").text = os.path.splitext(self.subject.default_filename())[0]
