@@ -2745,12 +2745,12 @@ class MavenBuildTask(mx.BuildTask):
         os.makedirs(os.path.dirname(self.subject._default_path()), exist_ok=True)
         self.create_build_pom()
         self.deploy_dependencies()
-        if mx.is_quiet():
-            verbosity = "-q"
+        if mx.get_opts().verbose:
+            verbosity = "-e"
         elif mx.get_opts().very_verbose:
             verbosity = "-X"
         else:
-            verbosity = "-e"
+            verbosity = "-q"
         mx.run_maven([verbosity, "package", "-DskipTests"], cwd=self.subject.get_output_root())
         mx.run_maven([verbosity, "source:jar", "-DskipTests"], cwd=self.subject.get_output_root())
         self.subject.make_archive()
@@ -2912,12 +2912,12 @@ def mvn_tests(args):
         needsUpdate, _ = d.needsUpdate(None)
         if needsUpdate:
             mx.abort(f"{d.name} is not built, did you run mx build --dep {d.name}?")
-        if mx.is_quiet():
-            verbosity = "-q"
+        if mx.get_opts().verbose:
+            verbosity = "-e"
         elif mx.get_opts().very_verbose:
             verbosity = "-X"
         else:
-            verbosity = "-e"
+            verbosity = "-q"
         rc = mx.run_maven([verbosity, "test"], cwd=d.get_output_root(), nonZeroIsFatal=False) or rc
     if rc != 0:
         mx.abort("Failed")
