@@ -2859,9 +2859,9 @@ class MavenBuildTask(mx.BuildTask):
                     developer.add("organizationUrl").text = suite.developer.get("organizationUrl", suite.url)
         with pom.setdefault("licenses") as licenses:
             for distLicense in self.subject.theLicense:
-                with licenses.add("license") as license:
-                    license.add("name").text = distLicense.fullname
-                    license.add("url").text = distLicense.url
+                with licenses.add("license") as l:
+                    l.add("name").text = distLicense.fullname
+                    l.add("url").text = distLicense.url
         if suite.vc:
             scm_metadata = suite.scm_metadata(abortOnError=True)
             with pom.setdefault("scm") as scm:
