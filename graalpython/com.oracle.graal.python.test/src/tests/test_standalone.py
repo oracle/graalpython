@@ -110,6 +110,8 @@ def test_polyglot_app():
         archetypeArtifactId = "graalpy-archetype"
         pluginArtifactId = "graalpy-maven-plugin"
         graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], env)
+        # when JLine is cannot detect a terminal, it prints logging info
+        graalvmVersion = graalvmVersion.split("\n")[-1]
 
         for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
             url = urllib.parse.urlparse(custom_repo)
