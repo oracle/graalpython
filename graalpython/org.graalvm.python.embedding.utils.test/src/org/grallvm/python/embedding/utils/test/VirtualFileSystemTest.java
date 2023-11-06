@@ -39,11 +39,11 @@
  * SOFTWARE.
  */
 
-package com.oracle.graal.python.embedding.utils.test;
+package org.graalvm.python.embedding.utils.test;
 
 import static org.junit.Assert.assertEquals;
 
-import com.oracle.graal.python.embedding.utils.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 import org.junit.Test;
 
 public class VirtualFileSystemTest {

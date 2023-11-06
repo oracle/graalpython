@@ -310,7 +310,7 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
-        "com.oracle.graal.python.embedding.utils": {
+        "org.graalvm.python.embedding.utils": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
@@ -321,13 +321,13 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
-        "com.oracle.graal.python.embedding.utils.test": {
+        "org.graalvm.python.embedding.utils.test": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "testProject": True,
             "javaCompliance": "17+",
             "dependencies": [
-                "com.oracle.graal.python.embedding.utils",
+                "org.graalvm.python.embedding.utils",
                 "mx:JUNIT",
             ],
         },
@@ -894,12 +894,12 @@ suite = {
             "moduleInfo": {
                 "name": "org.graalvm.python.embedding.utils",
                 "exports": [
-                    "com.oracle.graal.python.embedding.utils",
+                    "org.graalvm.python.embedding.utils",
                 ]
             },
             "useModulePath": True,
             "dependencies": [
-                "com.oracle.graal.python.embedding.utils",
+                "org.graalvm.python.embedding.utils",
             ],
             "distDependencies": [
                 "sdk:POLYGLOT",

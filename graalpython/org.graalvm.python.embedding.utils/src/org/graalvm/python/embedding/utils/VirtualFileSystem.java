@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.embedding.utils;
+package org.graalvm.python.embedding.utils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
