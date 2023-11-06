@@ -310,6 +310,28 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
+        "org.graalvm.python.embedding.utils": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "jacoco": "include",
+            "javaCompliance": "17+",
+            "checkstyle": "com.oracle.graal.python",
+        },
+
+        "org.graalvm.python.embedding.utils.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "testProject": True,
+            "javaCompliance": "17+",
+            "dependencies": [
+                "org.graalvm.python.embedding.utils",
+                "mx:JUNIT",
+            ],
+        },
+
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -871,6 +893,29 @@ suite = {
             "layout": {
                 "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"],
             },
+        },
+
+        "GRAALPYTHON_EMBEDDING_UTILS" : {
+            "moduleInfo": {
+                "name": "org.graalvm.python.embedding.utils",
+                "exports": [
+                    "org.graalvm.python.embedding.utils",
+                ]
+            },
+            "useModulePath": True,
+            "dependencies": [
+                "org.graalvm.python.embedding.utils",
+            ],
+            "distDependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "description": "GraalPy Embedding Utils",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-embedding-utils",
+                "tag": ["default", "public"],
+            },
+
         },
 
         "GRAALPYTHON-LAUNCHER": {
