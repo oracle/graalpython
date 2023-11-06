@@ -2669,6 +2669,10 @@ class MavenProject(mx.Distribution, mx.ClasspathDependency):
                 version = caller.f_locals["versionGetter"](self.suite)
                 tmp = callercaller.f_locals["tmp"]
                 generated_pom = self.getBuildTask([]).print_deploy_pom(version)
+                if self._packaging == "maven-plugin":
+                    # Maven plugins store their version inside the Jar, so we
+                    # need to rebuild with that version
+                    self.getBuildTask([]).build(version=version)
                 original_class = type(tmp)
                 class WrappedTmpFile:
                     def close(self):
