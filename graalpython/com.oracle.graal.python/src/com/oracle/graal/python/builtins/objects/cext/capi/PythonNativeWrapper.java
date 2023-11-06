@@ -168,16 +168,10 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         public static final long IMMORTAL_REFCNT = Long.MAX_VALUE / 2;
 
-        private static final long UNINITIALIZED = -1;
-
-        private long nativePointer = UNINITIALIZED;
-
         /**
          * Equivalent to {@code ob_refcnt}.
          */
         private long refCount = MANAGED_REFCNT;
-
-        public PythonObjectReference ref;
 
         protected PythonAbstractObjectNativeWrapper() {
         }
