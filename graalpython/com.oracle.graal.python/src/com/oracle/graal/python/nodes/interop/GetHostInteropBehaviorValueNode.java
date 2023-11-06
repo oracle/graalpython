@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -89,12 +90,20 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         return execute(inlineTarget, receiver, method, new Object[]{arg1, arg2});
     }
 
+    private static Object getClass(Node inlineTarget, PythonAbstractObject receiver, GetClassNode getClassNode) {
+        Object klass = getClassNode.execute(inlineTarget, receiver);
+        if (klass instanceof PythonBuiltinClassType pythonBuiltinClassType) {
+            klass = PythonContext.get(getClassNode).lookupType(pythonBuiltinClassType);
+        }
+        return klass;
+    }
+
     @Specialization(guards = {"method.constantBoolean == true"})
     static Object getValueConstantBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, @SuppressWarnings("unused") Object[] extraArguments,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        Object klass = getClassNode.execute(inlineTarget, receiver);
+        Object klass = getClass(inlineTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
             return behavior.getConstantValue(method);
@@ -109,7 +118,7 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        Object klass = getClassNode.execute(inlineTarget, receiver);
+        Object klass = getClass(inlineTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
             CallTarget callTarget = behavior.getCallTarget(method);

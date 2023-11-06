@@ -1,5 +1,11 @@
 package com.oracle.graal.python.test.interop;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.math.BigInteger;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -7,12 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
-
-import java.math.BigInteger;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class HostInteropTest extends PythonTests {
     private Context context;
@@ -229,7 +229,7 @@ public class HostInteropTest extends PythonTests {
 
                         class MyType(object):
                             data = [0,1,2,3,4]
-                            
+
                         def write_array_element(t, i, v):
                             if i >= len(t.data):
                                 t.data.insert(i, v)
@@ -265,5 +265,64 @@ public class HostInteropTest extends PythonTests {
         t.setArrayElement(1, 20);
         assertEquals(5, t.getArraySize());
         assertEquals(20, t.getArrayElement(1).asInt());
+    }
+
+    @Test
+    public void testIterator() {
+        // existing iterators
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            data = [0,1,2]
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_iterator=False,
+                            has_iterator=True,
+                            get_iterator=lambda t: iter(t.data)
+                        )
+
+                        MyType()
+                        """);
+        Value iterator = t.getIterator();
+        assertTrue(iterator.isIterator());
+        assertTrue(iterator.hasIteratorNextElement());
+        assertEquals(0, iterator.getIteratorNextElement().asInt());
+        assertEquals(1, iterator.getIteratorNextElement().asInt());
+        assertEquals(2, iterator.getIteratorNextElement().asInt());
+        assertFalse(iterator.hasIteratorNextElement());
+
+        // as iterator behavior
+        t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            data = [0,1,2]
+                            idx = 0
+
+                        def has_next_element(t):
+                            return t.idx < len(t.data)
+
+                        def get_next_element(t):
+                            if t.idx < len(t.data):
+                                v = t.data[t.idx]
+                                t.idx += 1
+                                return v
+                            raise StopIteration
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_iterator=True,
+                            has_iterator_next_element=has_next_element,
+                            get_iterator_next_element=get_next_element
+                        )
+
+                        MyType()
+                        """);
+        assertTrue(t.isIterator());
+        assertTrue(t.hasIteratorNextElement());
+        assertEquals(0, t.getIteratorNextElement().asInt());
+        assertEquals(1, t.getIteratorNextElement().asInt());
+        assertEquals(2, t.getIteratorNextElement().asInt());
+        assertFalse(t.hasIteratorNextElement());
     }
 }
