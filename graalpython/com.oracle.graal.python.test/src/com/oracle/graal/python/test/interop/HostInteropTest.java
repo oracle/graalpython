@@ -221,4 +221,49 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.isString());
         assertEquals("MyType(10)", t.asString());
     }
+
+    @Test
+    public void testArray() {
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            data = [0,1,2,3,4]
+                            
+                        def write_array_element(t, i, v):
+                            if i >= len(t.data):
+                                t.data.insert(i, v)
+                            else:
+                                t.data[i] = v
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            has_array_elements=True,
+                            get_array_size=lambda t: len(t.data),
+                            read_array_element=lambda t, i: t.data[i],
+                            remove_array_element=lambda t, i: t.data.pop(i),
+                            is_array_element_insertable=lambda t, i: True,
+                            write_array_element=write_array_element
+                        )
+
+                        MyType()
+                        """);
+        assertFalse(t.isBoolean());
+        assertFalse(t.isNumber());
+        assertFalse(t.isString());
+        assertTrue(t.hasArrayElements());
+        assertEquals(5, t.getArraySize());
+        assertEquals(1, t.getArrayElement(1).asInt());
+        // remove - [1,2,3,4]
+        t.removeArrayElement(0);
+        assertEquals(4, t.getArraySize());
+        assertEquals(2, t.getArrayElement(1).asInt());
+        // append - [1,2,3,4,5]
+        t.setArrayElement(100, 5);
+        assertEquals(5, t.getArraySize());
+        assertEquals(5, t.getArrayElement(4).asInt());
+        // edit - [1,20,3,4,5]
+        t.setArrayElement(1, 20);
+        assertEquals(5, t.getArraySize());
+        assertEquals(20, t.getArrayElement(1).asInt());
+    }
 }

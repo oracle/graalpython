@@ -61,7 +61,8 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_FLO
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_INT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_SHORT;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ARRAY_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_ARRAY_ELEMENT_INSERTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_READ_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ARRAY_SIZE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_ENTRIES_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_KEYS_ITERATOR;
@@ -89,6 +90,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_TIME_ZON
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_PUT_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_REMOVE_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_REMOVE_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_WRITE_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_BIG_INTEGER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_BOOLEAN;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_BYTE;
@@ -110,7 +112,8 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_FLO
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_INT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_SHORT;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ARRAY_ELEMENT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_ARRAY_ELEMENT_INSERTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_READ_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ARRAY_SIZE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_ENTRIES_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_KEYS_ITERATOR;
@@ -138,6 +141,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME_ZON
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_PUT_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_REMOVE_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_REMOVE_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_WRITE_ARRAY_ELEMENT;
 
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -175,11 +179,12 @@ public enum HostInteropBehaviorMethod {
     as_time(J_AS_TIME, T_AS_TIME),
     as_time_zone(J_AS_TIME_ZONE, T_AS_TIME_ZONE),
     // array
-    get_array_element(J_GET_ARRAY_ELEMENT, T_GET_ARRAY_ELEMENT, 1),
+    read_array_element(J_READ_ARRAY_ELEMENT, T_READ_ARRAY_ELEMENT, 1),
     get_array_size(J_GET_ARRAY_SIZE, T_GET_ARRAY_SIZE),
     has_array_elements(J_HAS_ARRAY_ELEMENTS, T_HAS_ARRAY_ELEMENTS, true),
+    is_array_element_insertable(J_IS_ARRAY_ELEMENT_INSERTABLE, T_IS_ARRAY_ELEMENT_INSERTABLE, 1),
     remove_array_element(J_REMOVE_ARRAY_ELEMENT, T_REMOVE_ARRAY_ELEMENT, 1),
-    set_array_element(J_REMOVE_ARRAY_ELEMENT, T_REMOVE_ARRAY_ELEMENT, 2),
+    write_array_element(J_WRITE_ARRAY_ELEMENT, T_WRITE_ARRAY_ELEMENT, 2),
     // iterator
     has_iterator(J_HAS_ITERATOR, T_HAS_ITERATOR, true),
     has_iterator_next_element(J_HAS_ITERATOR_NEXT_ELEMENT, T_HAS_ITERATOR_NEXT_ELEMENT),

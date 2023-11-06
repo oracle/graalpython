@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.GetHostInteropBehaviorValueNode;
 import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
+import com.oracle.graal.python.nodes.interop.IsHostInteropBehaviorDefinedNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -260,178 +261,242 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean hasArrayElements(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     @Cached PySequenceCheckNode check,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                     @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return check.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.has_array_elements);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        } else {
+            boolean mustRelease = gil.acquire();
+            try {
+                return check.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public Object readArrayElement(long key,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (interopLib.hasArrayElements(this)) {
-                try {
-                    return getItemNode.execute(this, key);
-                } catch (PException e) {
-                    throw InvalidArrayIndexException.create(key);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.read_array_element, key);
+        if (value != PNone.NO_VALUE) {
+            return value;
+        } else {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (interopLib.hasArrayElements(this)) {
+                    try {
+                        return getItemNode.execute(this, key);
+                    } catch (PException e) {
+                        throw InvalidArrayIndexException.create(key);
+                    }
                 }
+                throw UnsupportedMessageException.create();
+            } finally {
+                gil.release(mustRelease);
             }
-            throw UnsupportedMessageException.create();
-        } finally {
-            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public void writeArrayElement(long key, Object value,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (interopLib.hasArrayElements(this)) {
-                try {
-                    setItemNode.execute(this, key, value);
-                } catch (PException e) {
-                    throw InvalidArrayIndexException.create(key);
+        getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.write_array_element, key, value);
+        if (value == PNone.NO_VALUE) {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (interopLib.hasArrayElements(this)) {
+                    try {
+                        setItemNode.execute(this, key, value);
+                    } catch (PException e) {
+                        throw InvalidArrayIndexException.create(key);
+                    }
                 }
+                throw UnsupportedMessageException.create();
+            } finally {
+                gil.release(mustRelease);
             }
-            throw UnsupportedMessageException.create();
-        } finally {
-            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public void removeArrayElement(long key,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (interopLib.hasArrayElements(this)) {
-                try {
-                    deleteItemNode.execute(inliningTarget, this, key);
-                } catch (PException e) {
-                    throw InvalidArrayIndexException.create(key);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.remove_array_element, key);
+        if (value == PNone.NO_VALUE) {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (interopLib.hasArrayElements(this)) {
+                    try {
+                        deleteItemNode.execute(inliningTarget, this, key);
+                    } catch (PException e) {
+                        throw InvalidArrayIndexException.create(key);
+                    }
+                } else {
+                    throw UnsupportedMessageException.create();
                 }
-            } else {
-                throw UnsupportedMessageException.create();
+            } finally {
+                gil.release(mustRelease);
             }
-        } finally {
-            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public long getArraySize(
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        if (!interopLib.hasArrayElements(this)) {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.get_array_size);
+        if (value != PNone.NO_VALUE) {
+            return toIntNode.execute(inliningTarget, value);
+        } else {
+            boolean mustRelease = gil.acquire();
+            if (!interopLib.hasArrayElements(this)) {
+                throw UnsupportedMessageException.create();
+            }
+            try {
+                long len = sizeNode.execute(null, inliningTarget, this);
+                if (len >= 0) {
+                    return len;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+            CompilerDirectives.transferToInterpreter();
             throw UnsupportedMessageException.create();
         }
-        try {
-            long len = sizeNode.execute(null, inliningTarget, this);
-            if (len >= 0) {
-                return len;
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("isDefined") @Cached IsHostInteropBehaviorDefinedNode isDefined,
                     @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        if (!interopLib.hasArrayElements(this)) {
-            return false;
-        }
-        try {
-            return isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-        } finally {
-            gil.release(mustRelease);
+        if (isDefined.execute(inliningTarget, this, HostInteropBehaviorMethod.read_array_element)) {
+            return true;
+        } else {
+            boolean mustRelease = gil.acquire();
+            if (!interopLib.hasArrayElements(this)) {
+                return false;
+            }
+            try {
+                return isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
     @ExportMessage
-    public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
+    @SuppressWarnings("truffle-inlining")
+    public boolean isArrayElementModifiable(long idx,
+                    @Shared("isDefined") @Cached IsHostInteropBehaviorDefinedNode isDefined,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        if (!interopLib.hasArrayElements(this)) {
-            return false;
-        }
-        try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-        } finally {
-            gil.release(mustRelease);
+        if (isDefined.execute(inliningTarget, this, HostInteropBehaviorMethod.write_array_element)) {
+            return true;
+        } else {
+            boolean mustRelease = gil.acquire();
+            if (!interopLib.hasArrayElements(this)) {
+                return false;
+            }
+            try {
+                return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
     @ExportMessage
-    public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
+    @SuppressWarnings("truffle-inlining")
+    public boolean isArrayElementInsertable(long idx,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        if (!interopLib.hasArrayElements(this)) {
-            return false;
-        }
-        try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_array_element_insertable, idx);
+        if (value != PNone.NO_VALUE) {
+            return toBooleanNode.execute(inliningTarget, value);
+        } else {
+            boolean mustRelease = gil.acquire();
+            if (!interopLib.hasArrayElements(this)) {
+                return false;
+            }
+            try {
+                return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("isDefined") @Cached IsHostInteropBehaviorDefinedNode isDefined,
                     @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        if (!interopLib.hasArrayElements(this)) {
-            return false;
-        }
-        try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-        } finally {
-            gil.release(mustRelease);
+        if (isDefined.execute(inliningTarget, this, HostInteropBehaviorMethod.remove_array_element)) {
+            return true;
+        } else {
+            boolean mustRelease = gil.acquire();
+            if (!interopLib.hasArrayElements(this)) {
+                return false;
+            }
+            try {
+                return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 

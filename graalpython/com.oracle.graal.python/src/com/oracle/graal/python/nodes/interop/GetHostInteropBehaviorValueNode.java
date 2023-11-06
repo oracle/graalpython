@@ -75,8 +75,18 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     public abstract Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments);
 
     public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method) {
-        assert method.extraArguments == 0;
+        assert method.extraArguments == 0 : "HostInteropBehaviorMethod called with exactly 0 arguments, expected more";
         return execute(inlineTarget, receiver, method, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object arg1) {
+        assert method.extraArguments == 1 : "HostInteropBehaviorMethod called with exactly 1 argument, expected 0 or more than 1";
+        return execute(inlineTarget, receiver, method, new Object[]{arg1});
+    }
+
+    public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object arg1, Object arg2) {
+        assert method.extraArguments == 2 : "HostInteropBehaviorMethod called with exactly 2 arguments, expected 0, 1 or more than 2";
+        return execute(inlineTarget, receiver, method, new Object[]{arg1, arg2});
     }
 
     @Specialization(guards = {"method.constantBoolean == true"})
