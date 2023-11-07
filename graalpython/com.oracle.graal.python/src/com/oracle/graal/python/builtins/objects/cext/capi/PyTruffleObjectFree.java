@@ -73,7 +73,7 @@ public abstract class PyTruffleObjectFree {
 
         @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
         static int doNativeWrapper(Node inliningTarget, PythonNativeWrapper nativeWrapper,
-                        @Cached PCallCapiFunction callReleaseHandleNode,
+                        @Cached(inline = false) PCallCapiFunction callReleaseHandleNode,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode) {
             // if (nativeWrapper.getRefCount() > 0) {
             // CompilerDirectives.transferToInterpreterAndInvalidate();
