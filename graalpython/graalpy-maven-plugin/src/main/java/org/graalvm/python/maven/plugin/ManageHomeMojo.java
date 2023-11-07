@@ -103,7 +103,7 @@ public class ManageHomeMojo extends AbstractMojo {
             ExecGraalPyMojo.runGraalPy(project,
                             getLog(),
                             "-c",
-                            String.format("__import__('shutil').copytree(__graalpython__.home, '%s', dirs_exist_ok=True)",
+                            String.format("__import__('shutil').copytree(__graalpython__.home, r'%s', dirs_exist_ok=True)",
                                             homeDirectory.toAbsolutePath().toString()));
         }
 
