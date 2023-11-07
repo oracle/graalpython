@@ -325,4 +325,25 @@ public class HostInteropTest extends PythonTests {
         assertEquals(2, t.getIteratorNextElement().asInt());
         assertFalse(t.hasIteratorNextElement());
     }
+
+    @Test
+    public void testExecutable() {
+        // existing iterators
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            def foobar(self, *a):
+                                return ",".join((str(e) for e in a))
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_executable=True,
+                            execute=lambda t, *a: t.foobar(*a)
+                        )
+
+                        MyType()
+                        """);
+        assertTrue(t.canExecute());
+        assertEquals("1,2,3", t.execute(1, 2, 3).asString());
+    }
 }

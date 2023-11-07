@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_SHORT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_AS_TIME_ZONE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_EXECUTE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_BIG_INTEGER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_BYTE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_DOUBLE;
@@ -62,6 +63,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_INT
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_ARRAY_ELEMENT_INSERTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_EXECUTABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_READ_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ARRAY_SIZE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_ENTRIES_ITERATOR;
@@ -105,6 +107,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_SHORT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_AS_TIME_ZONE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_EXECUTE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_BIG_INTEGER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_BYTE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_DOUBLE;
@@ -113,6 +116,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_INT
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_ARRAY_ELEMENT_INSERTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_EXECUTABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_READ_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ARRAY_SIZE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_ENTRIES_ITERATOR;
@@ -157,6 +161,7 @@ public enum HostInteropBehaviorMethod {
     is_string(J_IS_STRING, T_IS_STRING, true),
     is_time(J_IS_TIME, T_IS_TIME, true),
     is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE, true),
+    is_executable(J_IS_EXECUTABLE, T_IS_EXECUTABLE, true),
     fits_in_big_integer(J_FITS_IN_BIG_INTEGER, T_FITS_IN_BIG_INTEGER),
     fits_in_byte(J_FITS_IN_BYTE, T_FITS_IN_BYTE),
     fits_in_double(J_FITS_IN_DOUBLE, T_FITS_IN_DOUBLE),
@@ -178,6 +183,7 @@ public enum HostInteropBehaviorMethod {
     as_string(J_AS_STRING, T_AS_STRING),
     as_time(J_AS_TIME, T_AS_TIME),
     as_time_zone(J_AS_TIME_ZONE, T_AS_TIME_ZONE),
+    execute(J_EXECUTE, T_EXECUTE, 0, true),
     // array
     read_array_element(J_READ_ARRAY_ELEMENT, T_READ_ARRAY_ELEMENT, 1),
     get_array_size(J_GET_ARRAY_SIZE, T_GET_ARRAY_SIZE),
@@ -207,12 +213,23 @@ public enum HostInteropBehaviorMethod {
     public final boolean constantBoolean;
     public final int extraArguments;
 
-    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean, int extraArguments) {
+    public final boolean takesVarArgs;
+
+    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean, int extraArguments, boolean takesVarArgs) {
         assert !(constantBoolean && extraArguments > 0) : "constant HostInteropBehaviorMethods cannot have extra arguments!";
         this.name = name;
         this.tsName = tsName;
         this.constantBoolean = constantBoolean;
         this.extraArguments = extraArguments;
+        this.takesVarArgs = takesVarArgs;
+    }
+
+    HostInteropBehaviorMethod(String name, TruffleString tsName, int extraArguments, boolean takesVarArgs) {
+        this(name, tsName, false, extraArguments, takesVarArgs);
+    }
+
+    HostInteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean, int extraArguments) {
+        this(name, tsName, constantBoolean, extraArguments, false);
     }
 
     HostInteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean) {
@@ -231,12 +248,17 @@ public enum HostInteropBehaviorMethod {
         return constantBoolean;
     }
 
+    public boolean checkArity(Object[] extraArguments) {
+        return this.takesVarArgs || extraArguments.length == this.extraArguments;
+    }
+
     @Override
     public String toString() {
         return "HostInteropBehaviorMethod{" +
                         "name='" + name + '\'' +
                         ", constantBoolean=" + constantBoolean +
                         ", extraArguments=" + extraArguments +
+                        ", takesVarArgs=" + takesVarArgs +
                         '}';
     }
 }

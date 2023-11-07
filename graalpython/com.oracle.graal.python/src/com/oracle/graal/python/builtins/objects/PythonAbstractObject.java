@@ -610,21 +610,37 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isExecutable(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached PyCallableCheckNode callableCheck) {
-        return callableCheck.execute(inliningTarget, this);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_executable);
+        if (value != PNone.NO_VALUE) {
+            assert HostInteropBehaviorMethod.is_executable.isConstantBoolean();
+            return (boolean) value;
+        } else {
+            return callableCheck.execute(inliningTarget, this);
+        }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public Object execute(Object[] arguments,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            return executeNode.execute(this, arguments);
-        } finally {
-            gil.release(mustRelease);
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.execute, arguments);
+        if (value != PNone.NO_VALUE) {
+            return value;
+        } else {
+            boolean mustRelease = gil.acquire();
+            try {
+                return executeNode.execute(this, arguments);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 

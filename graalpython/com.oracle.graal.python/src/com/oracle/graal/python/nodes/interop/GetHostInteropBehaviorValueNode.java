@@ -43,8 +43,6 @@ package com.oracle.graal.python.nodes.interop;
 import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS;
 
-import java.util.function.Supplier;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -75,11 +73,11 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @SuppressWarnings("truffle-inlining") // some of the cached nodes in the specialization are not
                                       // inlineable
 public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
-    public abstract Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments);
+    public abstract Object execute(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments);
 
-    public final boolean executeBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, boolean defaultValue) {
+    public final boolean executeBoolean(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, boolean defaultValue) {
         assert method.isConstantBoolean() : "HostInteropBehaviorMethod must be a constant boolean";
-        Object value = execute(inlineTarget, receiver, method);
+        Object value = execute(inliningTarget, receiver, method);
         if (value != PNone.NO_VALUE) {
             return (boolean) value;
         } else {
@@ -87,23 +85,23 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         }
     }
 
-    public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method) {
+    public final Object execute(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method) {
         assert method.extraArguments == 0 : "HostInteropBehaviorMethod called with exactly 0 arguments, expected more";
-        return execute(inlineTarget, receiver, method, PythonUtils.EMPTY_OBJECT_ARRAY);
+        return execute(inliningTarget, receiver, method, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object arg1) {
+    public final Object execute(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object arg1) {
         assert method.extraArguments == 1 : "HostInteropBehaviorMethod called with exactly 1 argument, expected 0 or more than 1";
-        return execute(inlineTarget, receiver, method, new Object[]{arg1});
+        return execute(inliningTarget, receiver, method, new Object[]{arg1});
     }
 
-    public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object arg1, Object arg2) {
+    public final Object execute(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object arg1, Object arg2) {
         assert method.extraArguments == 2 : "HostInteropBehaviorMethod called with exactly 2 arguments, expected 0, 1 or more than 2";
-        return execute(inlineTarget, receiver, method, new Object[]{arg1, arg2});
+        return execute(inliningTarget, receiver, method, new Object[]{arg1, arg2});
     }
 
-    private static Object getClass(Node inlineTarget, PythonAbstractObject receiver, GetClassNode getClassNode) {
-        Object klass = getClassNode.execute(inlineTarget, receiver);
+    private static Object getClass(Node inliningTarget, PythonAbstractObject receiver, GetClassNode getClassNode) {
+        Object klass = getClassNode.execute(inliningTarget, receiver);
         if (klass instanceof PythonBuiltinClassType pythonBuiltinClassType) {
             klass = PythonContext.get(getClassNode).lookupType(pythonBuiltinClassType);
         }
@@ -111,33 +109,33 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"method.constantBoolean == true"})
-    static Object getValueConstantBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, @SuppressWarnings("unused") Object[] extraArguments,
+    static Object getValueConstantBoolean(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, @SuppressWarnings("unused") Object[] extraArguments,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        Object klass = getClass(inlineTarget, receiver, getClassNode);
+        Object klass = getClass(inliningTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
+        if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
             return behavior.getConstantValue(method);
         }
         return PNone.NO_VALUE;
     }
 
-    @Specialization(guards = {"method.constantBoolean == false", "method.extraArguments == extraArguments.length"})
-    static Object getValueComputed(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
+    @Specialization(guards = {"method.constantBoolean == false", "method.checkArity(extraArguments)"})
+    static Object getValueComputed(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
                     @Cached SimpleInvokeNodeDispatch invokeNode,
                     @Shared @Cached GetClassNode getClassNode,
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        Object klass = getClass(inlineTarget, receiver, getClassNode);
+        Object klass = getClass(inliningTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method))) {
+        if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
             CallTarget callTarget = behavior.getCallTarget(method);
             Object[] pArguments = behavior.createArguments(method, receiver, extraArguments);
             boolean mustRelease = gil.acquire();
             try {
-                return invokeNode.execute(inlineTarget, callTarget, pArguments);
+                return invokeNode.execute(inliningTarget, callTarget, pArguments);
             } finally {
                 gil.release(mustRelease);
             }
@@ -145,9 +143,9 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         return PNone.NO_VALUE;
     }
 
-    @Specialization(guards = {"method.constantBoolean == false", "method.extraArguments != extraArguments.length"})
+    @Specialization(guards = {"method.constantBoolean == false", "!method.checkArity(extraArguments)"})
     @SuppressWarnings("unused")
-    static Object getValueComputedWrongArity(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
+    static Object getValueComputedWrongArity(Node inliningTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.TypeError, FUNC_TAKES_EXACTLY_D_ARGS, method.extraArguments, extraArguments.length);
     }
@@ -164,17 +162,17 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline
     abstract static class SimpleInvokeNodeDispatch extends Node {
-        public abstract Object execute(Node inlineTarget, CallTarget callTarget, Object[] arguments);
+        public abstract Object execute(Node inliningTarget, CallTarget callTarget, Object[] arguments);
 
         @Specialization(guards = {"cachedCallTarget == callTarget"}, limit = "3")
-        static Object doDirectCall(Node inlineTarget, CallTarget callTarget, Object[] arguments,
+        static Object doDirectCall(Node inliningTarget, CallTarget callTarget, Object[] arguments,
                         @Cached("callTarget") CallTarget cachedCallTarget,
                         @Cached("create(callTarget)") DirectCallNode directCallNode) {
             return directCallNode.call(arguments);
         }
 
         @Specialization(replaces = "doDirectCall")
-        static Object doIndirectCall(Node inlineTarget, CallTarget callTarget, Object[] arguments,
+        static Object doIndirectCall(Node inliningTarget, CallTarget callTarget, Object[] arguments,
                         @Cached IndirectCallNode indirectCallNode) {
             return indirectCallNode.call(callTarget, arguments);
         }

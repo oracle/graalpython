@@ -85,12 +85,16 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
     }
 
     public Object[] createArguments(HostInteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments) {
-        assert extraArguments.length == method.extraArguments;
-        Object[] pArguments = PArguments.create(1 + method.extraArguments);
+        assert method.checkArity(extraArguments);
+        Object[] pArguments = PArguments.create(1 + (method.takesVarArgs ? 0 : method.extraArguments));
         PArguments.setGlobals(pArguments, getGlobals(method));
         PArguments.setArgument(pArguments, 0, receiver);
-        for (int i = 0; i < extraArguments.length; i++) {
-            PArguments.setArgument(pArguments, i + 1, extraArguments[i]);
+        if (method.takesVarArgs) {
+            PArguments.setVariableArguments(pArguments, extraArguments);
+        } else {
+            for (int i = 0; i < extraArguments.length; i++) {
+                PArguments.setArgument(pArguments, i + 1, extraArguments[i]);
+            }
         }
         return pArguments;
     }

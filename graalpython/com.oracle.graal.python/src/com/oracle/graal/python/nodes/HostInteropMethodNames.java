@@ -67,6 +67,8 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_IS_TIME = tsLiteral(J_IS_TIME);
     public static final String J_IS_TIME_ZONE = "is_time_zone";
     public static final TruffleString T_IS_TIME_ZONE = tsLiteral(J_IS_TIME_ZONE);
+    public static final String J_IS_EXECUTABLE = "is_executable";
+    public static final TruffleString T_IS_EXECUTABLE = tsLiteral(J_IS_EXECUTABLE);
     public static final String J_FITS_IN_BIG_INTEGER = "fits_in_big_integer";
     public static final TruffleString T_FITS_IN_BIG_INTEGER = tsLiteral(J_FITS_IN_BIG_INTEGER);
     public static final String J_FITS_IN_BYTE = "fits_in_byte";
@@ -109,6 +111,8 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_AS_TIME = tsLiteral(J_AS_TIME);
     public static final String J_AS_TIME_ZONE = "as_time_zone";
     public static final TruffleString T_AS_TIME_ZONE = tsLiteral(J_AS_TIME_ZONE);
+    public static final String J_EXECUTE = "execute";
+    public static final TruffleString T_EXECUTE = tsLiteral(J_EXECUTE);
     public static final String J_READ_ARRAY_ELEMENT = "read_array_element";
     public static final TruffleString T_READ_ARRAY_ELEMENT = tsLiteral(J_READ_ARRAY_ELEMENT);
     public static final String J_GET_ARRAY_SIZE = "get_array_size";
