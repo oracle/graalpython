@@ -670,6 +670,13 @@ public abstract class CApiTransitions {
 
     private static void log(Object... args) {
         if (LOGGER.isLoggable(Level.FINER)) {
+            logBoundary(args);
+        }
+    }
+
+    @TruffleBoundary
+    private static void logBoundary(Object... args) {
+        if (LOGGER.isLoggable(Level.FINER)) {
             CompilerAsserts.neverPartOfCompilation();
             StackTraceElement element = new RuntimeException().getStackTrace()[1];
             StringBuilder str = new StringBuilder();
