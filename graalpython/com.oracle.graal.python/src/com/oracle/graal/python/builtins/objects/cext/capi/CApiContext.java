@@ -532,6 +532,15 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded() {
+        try {
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+        } catch (Exception e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
