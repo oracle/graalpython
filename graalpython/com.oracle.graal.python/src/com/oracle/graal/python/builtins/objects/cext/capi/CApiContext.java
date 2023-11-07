@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -518,6 +519,15 @@ public final class CApiContext extends CExtContext {
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
+
+    @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded() {
+        try {
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+        } catch (Exception e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {

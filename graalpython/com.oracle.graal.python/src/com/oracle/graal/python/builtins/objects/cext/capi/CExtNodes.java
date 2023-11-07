@@ -868,7 +868,14 @@ public abstract class CExtNodes {
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
-                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
+                PythonContext pythonContext = PythonContext.get(inliningTarget);
+                CApiContext cApiContext;
+                if (!pythonContext.hasCApiContext()) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cApiContext = CApiContext.ensureCapiWasLoaded();
+                } else {
+                    cApiContext = pythonContext.getCApiContext();
+                }
                 // TODO review EnsureTruffleStringNode with GR-37896
                 return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
