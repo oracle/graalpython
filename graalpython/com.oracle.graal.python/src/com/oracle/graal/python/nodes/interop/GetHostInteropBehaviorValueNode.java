@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes.interop;
 import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS;
 
+import java.util.function.Supplier;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -74,6 +76,16 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
                                       // inlineable
 public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
     public abstract Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, Object[] extraArguments);
+
+    public final boolean executeBoolean(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method, boolean defaultValue) {
+        assert method.isConstantBoolean() : "HostInteropBehaviorMethod must be a constant boolean";
+        Object value = execute(inlineTarget, receiver, method);
+        if (value != PNone.NO_VALUE) {
+            return (boolean) value;
+        } else {
+            return defaultValue;
+        }
+    }
 
     public final Object execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method) {
         assert method.extraArguments == 0 : "HostInteropBehaviorMethod called with exactly 0 arguments, expected more";

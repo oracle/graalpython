@@ -1801,13 +1801,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public boolean isIterator(
                     @Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_iterator);
         if (value != PNone.NO_VALUE) {
-            return toBooleanNode.execute(inliningTarget, value);
+            assert HostInteropBehaviorMethod.is_iterator.isConstantBoolean();
+            return (boolean) value;
         } else {
             return lookupNext.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
         }
@@ -1876,40 +1875,22 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isBoolean(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode) {
-        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_boolean);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.execute(inliningTarget, value);
-        }
-        return false;
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) {
+        return getValue.executeBoolean(inliningTarget, this, HostInteropBehaviorMethod.is_boolean, false);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isNumber(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode) {
-        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_number);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.execute(inliningTarget, value);
-        }
-        return false;
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) {
+        return getValue.executeBoolean(inliningTarget, this, HostInteropBehaviorMethod.is_number, false);
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isString(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode) {
-        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_string);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.execute(inliningTarget, value);
-        }
-        return false;
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) {
+        return getValue.executeBoolean(inliningTarget, this, HostInteropBehaviorMethod.is_string, false);
     }
 
     @ExportMessage
