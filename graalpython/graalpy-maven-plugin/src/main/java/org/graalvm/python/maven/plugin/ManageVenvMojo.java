@@ -223,7 +223,7 @@ public class ManageVenvMojo extends AbstractMojo {
                                     f.write(struct.pack("@I", sz)) == 4
                                 """,
                                 launcher,
-                                Paths.get(projectPath, "pom.xml").toString(),
+                                Paths.get(projectPath, "..", "pom.xml").toString(),
                                 projectPath);
                 File tmp;
                 try {
