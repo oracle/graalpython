@@ -346,4 +346,31 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.canExecute());
         assertEquals("1,2,3", t.execute(1, 2, 3).asString());
     }
+
+    @Test
+    public void testHash() {
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            data = {'a': 1, 'b': 2, 'c': 3}
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            has_hash_entries=True,
+                            get_hash_size=lambda t: len(t.data),
+                            get_hash_entries_iterator=lambda t: iter(t.data.items())
+                        )
+
+                        MyType()
+                        """);
+        assertTrue(t.hasHashEntries());
+        assertEquals(3, t.getHashSize());
+        Value hashEntriesIter = t.getHashEntriesIterator();
+        assertTrue(hashEntriesIter.isIterator());
+        assertTrue(hashEntriesIter.hasIteratorNextElement());
+        for (int i = 0; i < t.getHashSize(); i++) {
+            hashEntriesIter.getIteratorNextElement();
+        }
+        assertFalse(hashEntriesIter.hasIteratorNextElement());
+    }
 }

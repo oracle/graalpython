@@ -2111,4 +2111,37 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
         throw UnsupportedMessageException.create();
     }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean hasHashEntries(@Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) {
+        return getValue.executeBoolean(inliningTarget, this, HostInteropBehaviorMethod.has_hash_entries, false);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public long getHashSize(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.get_hash_size);
+        if (value != PNone.NO_VALUE) {
+            return toIntNode.execute(inliningTarget, value);
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object getHashEntriesIterator(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.get_hash_entries_iterator);
+        if (value != PNone.NO_VALUE) {
+            return value;
+        }
+        throw UnsupportedMessageException.create();
+    }
 }
