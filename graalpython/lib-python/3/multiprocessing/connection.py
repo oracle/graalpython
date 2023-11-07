@@ -20,6 +20,7 @@ import itertools
 
 # Begin Truffle change
 # import _multiprocessing
+import weakref
 # End Truffle change
 
 from . import util
@@ -116,6 +117,21 @@ def address_type(address):
 # Connection classes
 #
 
+
+# Begin Truffle change
+class _ConnectionFinalizer:
+    def __init__(self, fd):
+        self.fd = fd
+
+    def close(self):
+        if self.fd:
+            try:
+                _default_context._close(self.fd)
+            finally:
+                self.fd = None
+# End Truffle change
+
+
 class _ConnectionBase:
     _handle = None
 
@@ -124,6 +140,9 @@ class _ConnectionBase:
         # Begin Truffle change
         if handle < 0 and not _default_context._is_graalpy():
             raise ValueError("invalid handle")
+        # Use finalize instead of __del__
+        self._finalizer = _ConnectionFinalizer(handle)
+        weakref.finalize(self, self._finalizer.close)
         # End Truffle change
         if not readable and not writable:
             raise ValueError(
@@ -181,7 +200,9 @@ class _ConnectionBase:
         """Close the connection"""
         if self._handle is not None:
             try:
-                self._close()
+                # Begin Truffle change
+                self._finalizer.close()
+                # End Truffle change
             finally:
                 self._handle = None
 

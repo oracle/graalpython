@@ -246,7 +246,7 @@ class BaseContext(object):
         sem_unlink(name)
 
     def _close(self, fd):
-        if self._is_graalpy() and fd < 0:
+        if fd < 0:
             from _multiprocessing_graalpy import _close as close
         else:
             from os import close

@@ -4638,6 +4638,9 @@ class TestInvalidHandle(unittest.TestCase):
             # Hack private attribute _handle to avoid printing an error
             # in conn.__del__
             conn._handle = None
+            # GraalPy change
+            if hasattr(conn, '_finalizer'):
+                conn._finalizer.fd = None
         self.assertRaises((ValueError, OSError),
                           multiprocessing.connection.Connection, -1)
 
