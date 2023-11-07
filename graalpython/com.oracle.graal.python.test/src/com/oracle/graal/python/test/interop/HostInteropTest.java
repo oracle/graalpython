@@ -358,7 +358,9 @@ public class HostInteropTest extends PythonTests {
                         polyglot.register_host_interop_behavior(MyType,
                             has_hash_entries=True,
                             get_hash_size=lambda t: len(t.data),
-                            get_hash_entries_iterator=lambda t: iter(t.data.items())
+                            get_hash_entries_iterator=lambda t: iter(t.data.items()),
+                            get_hash_keys_iterator=lambda t: iter(t.data.keys()),
+                            get_hash_values_iterator=lambda t: iter(t.data.values())
                         )
 
                         MyType()
@@ -372,5 +374,7 @@ public class HostInteropTest extends PythonTests {
             hashEntriesIter.getIteratorNextElement();
         }
         assertFalse(hashEntriesIter.hasIteratorNextElement());
+        assertTrue(t.getHashKeysIterator().isIterator());
+        assertTrue(t.getHashValuesIterator().isIterator());
     }
 }

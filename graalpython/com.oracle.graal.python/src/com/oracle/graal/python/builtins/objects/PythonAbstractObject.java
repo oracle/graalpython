@@ -2144,4 +2144,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
         throw UnsupportedMessageException.create();
     }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object getHashKeysIterator(
+            @Bind("$node") Node inliningTarget,
+            @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.get_hash_keys_iterator);
+        if (value != PNone.NO_VALUE) {
+            return value;
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object getHashValuesIterator(
+            @Bind("$node") Node inliningTarget,
+            @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.get_hash_values_iterator);
+        if (value != PNone.NO_VALUE) {
+            return value;
+        }
+        throw UnsupportedMessageException.create();
+    }
 }
