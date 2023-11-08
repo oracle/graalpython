@@ -238,9 +238,10 @@ public class CDataObject extends PythonBuiltinObject {
         @ExportMessage
         protected void toNative(
                         @Bind("$node") Node inliningTarget,
-                        @Cached InlinedConditionProfile isNativeProfile) {
+                        @Cached InlinedConditionProfile isNativeProfile,
+                        @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
             if (!isNative(inliningTarget, isNativeProfile)) {
-                CApiTransitions.firstToNative(this);
+                setNativePointer(firstToNativeNode.execute(inliningTarget, this));
             }
         }
     }

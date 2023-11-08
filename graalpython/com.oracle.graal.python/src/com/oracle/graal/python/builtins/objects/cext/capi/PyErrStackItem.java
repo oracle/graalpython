@@ -116,10 +116,8 @@ public final class PyErrStackItem extends PythonStructNativeWrapper {
         return toSulongNode.execute(result);
     }
 
-    // TO POINTER / AS POINTER / TO NATIVE
-
     @ExportMessage
-    protected boolean isPointer() {
+    boolean isPointer() {
         return isNative();
     }
 
@@ -129,11 +127,11 @@ public final class PyErrStackItem extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    protected void toNative(
+    void toNative(
                     @Bind("$node") Node inliningTarget,
                     @Cached InlinedConditionProfile isNativeProfile) {
         if (!isNative(inliningTarget, isNativeProfile)) {
-            CApiTransitions.firstToNative(this);
+            setNativePointer(CApiTransitions.FirstToNativeNode.executeUncached(this));
         }
     }
 }

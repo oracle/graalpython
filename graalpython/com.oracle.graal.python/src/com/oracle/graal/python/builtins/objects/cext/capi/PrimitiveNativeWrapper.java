@@ -245,14 +245,16 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
     }
 
     @ExportMessage
-    protected boolean isPointer() {
+    boolean isPointer() {
         return isNative();
     }
 
     @ExportMessage
-    protected void toNative() {
+    void toNative(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
-            CApiTransitions.firstToNative(this);
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this));
         }
     }
 }

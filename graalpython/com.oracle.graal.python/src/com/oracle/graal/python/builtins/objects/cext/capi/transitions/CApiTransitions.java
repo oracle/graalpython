@@ -64,6 +64,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
@@ -72,9 +74,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -169,6 +175,11 @@ public abstract class CApiTransitions {
                 LOGGER.finer(PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strong ? "weak" : "strong"), Long.toHexString(pointer), referent));
             }
             referent.ref = this;
+        }
+
+        public static PythonObjectReference create(PythonAbstractObjectNativeWrapper referent, long pointer) {
+            boolean strong = referent.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+            return new PythonObjectReference(referent, strong, pointer);
         }
 
         public static PythonObjectReference create(PythonNativeWrapper referent, long pointer) {
@@ -642,6 +653,55 @@ public abstract class CApiTransitions {
             assert !obj.isNative();
             log(obj);
             obj.setNativePointer(logResultBoundary(HandleFactory.create(obj)));
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class FirstToNativeNode extends Node {
+
+        public static long executeUncached(PythonNativeWrapper wrapper) {
+            return FirstToNativeNodeGen.getUncached().execute(null, wrapper);
+        }
+
+        public abstract long execute(Node inliningTarget, PythonNativeWrapper wrapper);
+
+        @Specialization
+        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper,
+                        @Cached GilNode gil,
+                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached CStructAccess.WriteObjectNode writeObjectNode,
+                        @Cached GetClassNode getClassNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+
+            boolean acquired = gil.acquire();
+            try {
+                log(wrapper);
+                assert !(wrapper instanceof TruffleObjectNativeWrapper);
+                pollReferenceQueue();
+
+                // allocate a native stub object (C type: PyObject)
+                Object nativeObjectStub = allocateNode.alloc(CStructs.PyObject);
+                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, wrapper.getRefCount());
+                writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, getClassNode.execute(inliningTarget, wrapper.getDelegate()));
+                HandleContext handleContext = getContext();
+                // don't reuse handles in GCALot mode to make debugging easier
+                int idx = GCALot != 0 ? -1 : handleContext.nativeHandlesFreeStack.pop();
+                long pointer = PythonUtils.coerceToLong(nativeObjectStub, lib);
+                PythonObjectReference ref = PythonObjectReference.create(wrapper, pointer);
+                if (idx == -1) {
+                    idx = handleContext.nativeHandles.size();
+                    handleContext.nativeHandles.add(ref);
+                } else {
+                    assert idx >= 0;
+                    handleContext.nativeHandles.set(idx, ref);
+                }
+                return logResult(pointer);
+            } finally {
+                gil.release(acquired);
+            }
         }
     }
 

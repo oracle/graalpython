@@ -47,9 +47,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -95,11 +98,11 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
     }
 
     @ExportMessage
-    void toNative() {
-        if (getDelegate() != PNone.NO_VALUE) {
-            if (!isNative()) {
-                CApiTransitions.firstToNative(this);
-            }
+    void toNative(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
+        if (getDelegate() != PNone.NO_VALUE && !isNative()) {
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this));
         }
     }
 }
