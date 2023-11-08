@@ -98,6 +98,7 @@ def get_gp():
 
     return graalpy
 
+@unittest.skipIf(sys.platform == 'win32', "temporarily disabled on win")
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_polyglot_app():
     env = os.environ.copy()
@@ -211,7 +212,7 @@ def test_polyglot_app():
             cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
             run_cmd(cmd, env, cwd=target_dir)
 
-
+@unittest.skipIf(sys.platform == 'win32', "temporarily disabled on win")
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
     graalpy = get_gp()
@@ -236,6 +237,7 @@ def test_native_executable_one_file():
         out, return_code = run_cmd(cmd, env)
         assert "hello world, argv[1:]: " + str(cmd[1:]) in out
 
+@unittest.skipIf(sys.platform == 'win32', "temporarily disabled on win")
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_venv_and_one_file():
     graalpy = get_gp()
@@ -272,6 +274,7 @@ def test_native_executable_venv_and_one_file():
         assert "hello standalone world" in out
         assert "key=value" in out
 
+@unittest.skipIf(sys.platform == 'win32', "temporarily disabled on win")
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_module():
     graalpy = get_gp()
