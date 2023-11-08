@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
@@ -430,5 +431,27 @@ public class HostInteropTest extends PythonTests {
                         """);
         assertTrue(t.isDate());
         assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
+    }
+
+    @Test
+    public void testTime() {
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            hour = 3
+                            minute = 10
+                            second = 10
+                            microsecond = 10
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_time=True,
+                            as_date=lambda t: t
+                        )
+
+                        MyType()
+                        """);
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
     }
 }

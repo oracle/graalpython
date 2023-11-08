@@ -813,6 +813,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isDate(
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
@@ -856,7 +857,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
+    static LocalDate constructDate(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver) throws UnsupportedMessageException {
+        return constructDate(castToIntNode, inliningTarget, lib, receiver, "year", "month", "day");
+    }
+
+    static LocalDate constructDateStruct(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver) throws UnsupportedMessageException {
+        return constructDate(castToIntNode, inliningTarget, lib, receiver, "tm_year", "tm_mon", "tm_mday");
+    }
+
+    static LocalDate constructDate(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver,
+                    String yearMemberName, String monthMemberName, String dayMemberName) throws UnsupportedMessageException {
+        try {
+            int year = castToIntNode.execute(inliningTarget, lib.readMember(receiver, yearMemberName));
+            int month = castToIntNode.execute(inliningTarget, lib.readMember(receiver, monthMemberName));
+            int day = castToIntNode.execute(inliningTarget, lib.readMember(receiver, dayMemberName));
+            return createLocalDate(year, month, day);
+        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public LocalDate asDate(
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
@@ -875,14 +897,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_date);
         if (value != PNone.NO_VALUE) {
-            try {
-                int year = castToIntNode.execute(inliningTarget, lib.readMember(value, "year"));
-                int month = castToIntNode.execute(inliningTarget, lib.readMember(value, "month"));
-                int day = castToIntNode.execute(inliningTarget, lib.readMember(value, "day"));
-                return createLocalDate(year, month, day);
-            } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                throw UnsupportedMessageException.create();
-            }
+            return constructDate(castToIntNode, inliningTarget, lib, value);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -892,27 +907,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
                     if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
                                     isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATE_TYPE, isTypeNode))) {
-                        try {
-                            int year = castToIntNode.execute(inliningTarget, lib.readMember(this, "year"));
-                            int month = castToIntNode.execute(inliningTarget, lib.readMember(this, "month"));
-                            int day = castToIntNode.execute(inliningTarget, lib.readMember(this, "day"));
-                            return createLocalDate(year, month, day);
-                        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                            throw UnsupportedMessageException.create();
-                        }
+                        return constructDate(castToIntNode, inliningTarget, lib, this);
                     }
                 }
                 module = importedModules.getItem(T_TIME_MODULE_NAME);
                 if (timeModuleLoaded.profile(inliningTarget, module != null)) {
                     if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        try {
-                            int year = castToIntNode.execute(inliningTarget, lib.readMember(this, "tm_year"));
-                            int month = castToIntNode.execute(inliningTarget, lib.readMember(this, "tm_mon"));
-                            int day = castToIntNode.execute(inliningTarget, lib.readMember(this, "tm_mday"));
-                            return createLocalDate(year, month, day);
-                        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                            throw UnsupportedMessageException.create();
-                        }
+                        return constructDateStruct(castToIntNode, inliningTarget, lib, this);
                     }
                 }
                 throw UnsupportedMessageException.create();
@@ -923,7 +924,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public boolean isTime(
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
@@ -936,31 +939,63 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_time);
+        if (value != PNone.NO_VALUE) {
+            assert HostInteropBehaviorMethod.is_time.isConstantBoolean();
+            return (boolean) value;
+        } else {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object objType = getClassNode.executeCached(this);
+                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
+                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
+                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
+                    if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
+                                    isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
+                        return true;
+                    }
+                }
+                module = importedModules.getItem(T_TIME_MODULE_NAME);
+                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
+                    if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
+                        return true;
+                    }
+                }
+                return false;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    static LocalTime constructTime(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver) throws UnsupportedMessageException {
+        return constructTime(castToIntNode, inliningTarget, lib, receiver, "hour", "minute", "second", "microsecond");
+    }
+
+    static LocalTime constructTimeStruct(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver) throws UnsupportedMessageException {
+        return constructTime(castToIntNode, inliningTarget, lib, receiver, "tm_hour", "tm_minute", "tm_sec", null);
+    }
+
+    static LocalTime constructTime(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver,
+                    String hourMemberName, String minuteMemberName, String secondMemberName, String microSecondMemberName) throws UnsupportedMessageException {
         try {
-            Object objType = getClassNode.executeCached(this);
-            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-            if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
-                                isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
-                    return true;
-                }
+            int hour = castToIntNode.execute(inliningTarget, lib.readMember(receiver, hourMemberName));
+            int min = castToIntNode.execute(inliningTarget, lib.readMember(receiver, minuteMemberName));
+            int sec = castToIntNode.execute(inliningTarget, lib.readMember(receiver, secondMemberName));
+            int micro = 0;
+            if (microSecondMemberName != null) {
+                micro = castToIntNode.execute(inliningTarget, lib.readMember(receiver, microSecondMemberName));
             }
-            module = importedModules.getItem(T_TIME_MODULE_NAME);
-            if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                    return true;
-                }
-            }
-            return false;
-        } finally {
-            gil.release(mustRelease);
+            return createLocalTime(hour, min, sec, micro);
+        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+            throw UnsupportedMessageException.create();
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-inlining")
     public LocalTime asTime(
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
@@ -976,41 +1011,31 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object objType = getClassNode.executeCached(this);
-            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-            if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
-                                isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
-                    try {
-                        int hour = castToIntNode.execute(inliningTarget, lib.readMember(this, "hour"));
-                        int min = castToIntNode.execute(inliningTarget, lib.readMember(this, "minute"));
-                        int sec = castToIntNode.execute(inliningTarget, lib.readMember(this, "second"));
-                        int micro = castToIntNode.execute(inliningTarget, lib.readMember(this, "microsecond"));
-                        return createLocalTime(hour, min, sec, micro);
-                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                        throw UnsupportedMessageException.create();
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_date);
+        if (value != PNone.NO_VALUE) {
+            return constructTime(castToIntNode, inliningTarget, lib, value);
+        } else {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object objType = getClassNode.executeCached(this);
+                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
+                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
+                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
+                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
+                                    isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
+                        return constructTime(castToIntNode, inliningTarget, lib, this);
                     }
                 }
-            }
-            module = importedModules.getItem(T_TIME_MODULE_NAME);
-            if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                    try {
-                        int hour = castToIntNode.execute(inliningTarget, lib.readMember(this, "tm_hour"));
-                        int min = castToIntNode.execute(inliningTarget, lib.readMember(this, "tm_min"));
-                        int sec = castToIntNode.execute(inliningTarget, lib.readMember(this, "tm_sec"));
-                        return createLocalTime(hour, min, sec, 0);
-                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                        throw UnsupportedMessageException.create();
+                module = importedModules.getItem(T_TIME_MODULE_NAME);
+                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
+                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
+                        return constructTimeStruct(castToIntNode, inliningTarget, lib, this);
                     }
                 }
+                throw UnsupportedMessageException.create();
+            } finally {
+                gil.release(mustRelease);
             }
-            throw UnsupportedMessageException.create();
-        } finally {
-            gil.release(mustRelease);
         }
     }
 
