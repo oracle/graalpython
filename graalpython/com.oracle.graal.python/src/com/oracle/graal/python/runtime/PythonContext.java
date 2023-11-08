@@ -89,6 +89,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -664,6 +665,10 @@ public final class PythonContext extends Python3Core {
 
     private static final class GlobalInterpreterLock extends ReentrantLock {
         private static final long serialVersionUID = 1L;
+
+        public GlobalInterpreterLock() {
+            super(true);
+        }
 
         @Override
         public Thread getOwner() {
@@ -2237,7 +2242,13 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     boolean tryAcquireGil() {
-        return globalInterpreterLock.tryLock();
+        try {
+            // Using tryLock with empty timeout to ensure fairness
+            return globalInterpreterLock.tryLock(0, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /**
