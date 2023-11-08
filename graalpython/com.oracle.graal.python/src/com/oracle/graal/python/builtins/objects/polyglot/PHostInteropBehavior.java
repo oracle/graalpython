@@ -53,7 +53,6 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
     private final PythonAbstractObject receiver;
 
     private final CallTarget[] callTargets = new CallTarget[HostInteropBehaviorMethod.values().length];
-    // todo (cbasca) are there cases where globals can be different?
     private final PythonObject[] globals = new PythonObject[HostInteropBehaviorMethod.values().length];
     private final boolean[] constants;
 

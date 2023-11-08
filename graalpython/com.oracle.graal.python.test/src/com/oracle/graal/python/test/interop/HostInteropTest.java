@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
+import java.time.LocalDate;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
@@ -408,5 +409,26 @@ public class HostInteropTest extends PythonTests {
         t.putHashEntry("a", 10);
         assertEquals(3, t.getHashSize());
         assertEquals(10, t.getHashValue("a").asInt());
+    }
+
+    @Test
+    public void testDate() {
+        Value t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            year = 2023
+                            month = 12
+                            day = 12
+
+                        polyglot.register_host_interop_behavior(MyType,
+                            is_date=True,
+                            as_date=lambda t: t
+                        )
+
+                        MyType()
+                        """);
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
     }
 }
