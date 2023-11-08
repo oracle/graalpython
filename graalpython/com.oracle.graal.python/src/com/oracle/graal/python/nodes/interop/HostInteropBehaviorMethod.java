@@ -63,20 +63,26 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_INT
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_ARRAY_ELEMENT_INSERTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_ARRAY_ELEMENT_MODIFIABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_ARRAY_ELEMENT_READABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_ARRAY_ELEMENT_REMOVABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_EXECUTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_HASH_ENTRY_MODIFIABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_HASH_ENTRY_REMOVABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_HASH_ENTRY_INSERTABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_READ_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ARRAY_SIZE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_ENTRIES_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_KEYS_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_SIZE;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_VALUE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_READ_HASH_VALUE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_VALUES_ITERATOR;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_HASH_VALUE_OR_DEFAULT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_READ_HASH_VALUE_OR_DEFAULT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_GET_ITERATOR_NEXT_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_ARRAY_ELEMENTS;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_HASH_ENTRIES;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_HASH_ENTRY_READABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_HAS_ITERATOR_NEXT_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_BOOLEAN;
@@ -89,7 +95,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_NUMBER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_IS_TIME_ZONE;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_PUT_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_WRITE_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_REMOVE_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_REMOVE_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_WRITE_ARRAY_ELEMENT;
@@ -116,20 +122,26 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_INT
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_LONG;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_ARRAY_ELEMENT_INSERTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_ARRAY_ELEMENT_MODIFIABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_ARRAY_ELEMENT_READABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_ARRAY_ELEMENT_REMOVABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_EXECUTABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_HASH_ENTRY_MODIFIABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_HASH_ENTRY_REMOVABLE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_HASH_ENTRY_INSERTABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_READ_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ARRAY_SIZE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_ENTRIES_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_KEYS_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_SIZE;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_VALUE;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_READ_HASH_VALUE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_VALUES_ITERATOR;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_HASH_VALUE_OR_DEFAULT;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_READ_HASH_VALUE_OR_DEFAULT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_GET_ITERATOR_NEXT_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_ARRAY_ELEMENTS;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_HASH_ENTRIES;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_HASH_ENTRY_READABLE;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_ITERATOR;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_HAS_ITERATOR_NEXT_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_BOOLEAN;
@@ -142,7 +154,7 @@ import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_NUMBER;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_STRING;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_IS_TIME_ZONE;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_PUT_HASH_ENTRY;
+import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_WRITE_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_REMOVE_ARRAY_ELEMENT;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_REMOVE_HASH_ENTRY;
 import static com.oracle.graal.python.nodes.HostInteropMethodNames.T_WRITE_ARRAY_ELEMENT;
@@ -188,7 +200,10 @@ public enum HostInteropBehaviorMethod {
     read_array_element(J_READ_ARRAY_ELEMENT, T_READ_ARRAY_ELEMENT, 1),
     get_array_size(J_GET_ARRAY_SIZE, T_GET_ARRAY_SIZE),
     has_array_elements(J_HAS_ARRAY_ELEMENTS, T_HAS_ARRAY_ELEMENTS, true),
+    is_array_element_readable(J_IS_ARRAY_ELEMENT_READABLE, T_IS_ARRAY_ELEMENT_READABLE, 1),
+    is_array_element_modifiable(J_IS_ARRAY_ELEMENT_MODIFIABLE, T_IS_ARRAY_ELEMENT_MODIFIABLE, 1),
     is_array_element_insertable(J_IS_ARRAY_ELEMENT_INSERTABLE, T_IS_ARRAY_ELEMENT_INSERTABLE, 1),
+    is_array_element_removable(J_IS_ARRAY_ELEMENT_REMOVABLE, T_IS_ARRAY_ELEMENT_REMOVABLE, 1),
     remove_array_element(J_REMOVE_ARRAY_ELEMENT, T_REMOVE_ARRAY_ELEMENT, 1),
     write_array_element(J_WRITE_ARRAY_ELEMENT, T_WRITE_ARRAY_ELEMENT, 2),
     // iterator
@@ -197,15 +212,18 @@ public enum HostInteropBehaviorMethod {
     get_iterator(J_GET_ITERATOR, T_GET_ITERATOR),
     get_iterator_next_element(J_GET_ITERATOR_NEXT_ELEMENT, T_GET_ITERATOR_NEXT_ELEMENT),
     // hash
+    has_hash_entries(J_HAS_HASH_ENTRIES, T_HAS_HASH_ENTRIES, true),
     get_hash_entries_iterator(J_GET_HASH_ENTRIES_ITERATOR, T_GET_HASH_ENTRIES_ITERATOR),
     get_hash_keys_iterator(J_GET_HASH_KEYS_ITERATOR, T_GET_HASH_KEYS_ITERATOR),
     get_hash_size(J_GET_HASH_SIZE, T_GET_HASH_SIZE),
-    get_hash_value(J_GET_HASH_VALUE, T_GET_HASH_VALUE, 1),
-    get_hash_value_or_default(J_GET_HASH_VALUE_OR_DEFAULT, T_GET_HASH_VALUE_OR_DEFAULT, 2),
     get_hash_values_iterator(J_GET_HASH_VALUES_ITERATOR, T_GET_HASH_VALUES_ITERATOR),
-    has_hash_entries(J_HAS_HASH_ENTRIES, T_HAS_HASH_ENTRIES, true),
-    has_hash_entry(J_HAS_HASH_ENTRY, T_HAS_HASH_ENTRY, 1),
-    put_hash_entry(J_PUT_HASH_ENTRY, T_PUT_HASH_ENTRY, 2),
+    is_hash_entry_readable(J_IS_HASH_ENTRY_READABLE, T_IS_HASH_ENTRY_READABLE, 1),
+    is_hash_entry_modifiable(J_IS_HASH_ENTRY_MODIFIABLE, T_IS_HASH_ENTRY_MODIFIABLE, 1),
+    is_hash_entry_insertable(J_IS_HASH_ENTRY_INSERTABLE, T_IS_HASH_ENTRY_INSERTABLE, 1),
+    is_hash_entry_removable(J_IS_HASH_ENTRY_REMOVABLE, T_IS_HASH_ENTRY_REMOVABLE, 1),
+    read_hash_value(J_READ_HASH_VALUE, T_READ_HASH_VALUE, 1),
+    read_hash_value_or_default(J_READ_HASH_VALUE_OR_DEFAULT, T_READ_HASH_VALUE_OR_DEFAULT, 2),
+    write_hash_entry(J_WRITE_HASH_ENTRY, T_WRITE_HASH_ENTRY, 2),
     remove_hash_entry(J_REMOVE_HASH_ENTRY, T_REMOVE_HASH_ENTRY, 1);
 
     public final String name;

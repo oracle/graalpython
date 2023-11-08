@@ -239,9 +239,12 @@ public class HostInteropTest extends PythonTests {
                         polyglot.register_host_interop_behavior(MyType,
                             has_array_elements=True,
                             get_array_size=lambda t: len(t.data),
+                            is_array_element_readable=lambda t, i: i < len(t.data),
                             read_array_element=lambda t, i: t.data[i],
+                            is_array_element_removable=lambda t, i: i < len(t.data),
                             remove_array_element=lambda t, i: t.data.pop(i),
                             is_array_element_insertable=lambda t, i: True,
+                            is_array_element_modifiable=lambda t, i: i < len(t.data),
                             write_array_element=write_array_element
                         )
 
@@ -355,18 +358,34 @@ public class HostInteropTest extends PythonTests {
                         class MyType(object):
                             data = {'a': 1, 'b': 2, 'c': 3}
 
+                            def remove(self, k):
+                                del self.data[k]
+
+                            def put(self, k, v):
+                                self.data[k] = v
+
                         polyglot.register_host_interop_behavior(MyType,
                             has_hash_entries=True,
                             get_hash_size=lambda t: len(t.data),
                             get_hash_entries_iterator=lambda t: iter(t.data.items()),
                             get_hash_keys_iterator=lambda t: iter(t.data.keys()),
-                            get_hash_values_iterator=lambda t: iter(t.data.values())
+                            get_hash_values_iterator=lambda t: iter(t.data.values()),
+                            is_hash_entry_readable=lambda t, k: k in t.data,
+                            is_hash_entry_modifiable=lambda t, k: k in t.data,
+                            is_hash_entry_removable=lambda t, k: k in t.data,
+                            is_hash_entry_insertable=lambda t, k: k not in t.data,
+                            read_hash_value=lambda t, k: t.data.get(k),
+                            read_hash_value_or_default=lambda t, k, d: t.data.get(k, d),
+                            remove_hash_entry=lambda t, k: t.remove(k),
+                            write_hash_entry=lambda t, k, v: t.put(k, v)
                         )
 
                         MyType()
                         """);
         assertTrue(t.hasHashEntries());
+        // size
         assertEquals(3, t.getHashSize());
+        // iterators
         Value hashEntriesIter = t.getHashEntriesIterator();
         assertTrue(hashEntriesIter.isIterator());
         assertTrue(hashEntriesIter.hasIteratorNextElement());
@@ -376,5 +395,18 @@ public class HostInteropTest extends PythonTests {
         assertFalse(hashEntriesIter.hasIteratorNextElement());
         assertTrue(t.getHashKeysIterator().isIterator());
         assertTrue(t.getHashValuesIterator().isIterator());
+        // read entries
+        assertTrue(t.hasHashEntry("a"));
+        assertFalse(t.hasHashEntry("x"));
+        assertEquals(1, t.getHashValue("a").asInt());
+        assertEquals(3, t.getHashValue("c").asInt());
+        // remove entries
+        t.removeHashEntry("a");
+        assertFalse(t.hasHashEntry("a"));
+        assertEquals(2, t.getHashSize());
+        // write entries
+        t.putHashEntry("a", 10);
+        assertEquals(3, t.getHashSize());
+        assertEquals(10, t.getHashValue("a").asInt());
     }
 }

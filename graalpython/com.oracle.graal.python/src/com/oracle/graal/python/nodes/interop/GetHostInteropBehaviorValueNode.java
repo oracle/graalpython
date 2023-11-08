@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.interop;
 
 import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -127,12 +129,13 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
                     @Shared @Cached GetClassNode getClassNode,
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached InlinedConditionProfile isMethodDefined,
+                    @Cached ConvertJavaStringArguments convertArgs,
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClass(inliningTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
             CallTarget callTarget = behavior.getCallTarget(method);
-            Object[] pArguments = behavior.createArguments(method, receiver, extraArguments);
+            Object[] pArguments = behavior.createArguments(method, receiver, convertArgs.execute(inliningTarget, extraArguments));
             boolean mustRelease = gil.acquire();
             try {
                 return invokeNode.execute(inliningTarget, callTarget, pArguments);
@@ -175,6 +178,41 @@ public abstract class GetHostInteropBehaviorValueNode extends PNodeWithContext {
         static Object doIndirectCall(Node inliningTarget, CallTarget callTarget, Object[] arguments,
                         @Cached IndirectCallNode indirectCallNode) {
             return indirectCallNode.call(callTarget, arguments);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    abstract static class ConvertJavaStringArguments extends Node {
+        public abstract Object[] execute(Node inliningTarget, Object[] arguments);
+
+        static boolean containsJavaString(Object[] arguments) {
+            for (Object arg : arguments) {
+                if (arg instanceof String) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Specialization(guards = {"containsJavaString(arguments)"})
+        @TruffleBoundary
+        static Object[] converted(@SuppressWarnings("unused") Node inliningTarget, Object[] arguments) {
+            Object[] convertedArgs = new Object[arguments.length];
+            for (int i = 0; i < arguments.length; i++) {
+                Object arg = arguments[i];
+                if (arg instanceof String javaString) {
+                    convertedArgs[i] = tsLiteral(javaString);
+                } else {
+                    convertedArgs[i] = arg;
+                }
+            }
+            return convertedArgs;
+        }
+
+        @Specialization(guards = {"!containsJavaString(arguments)"})
+        static Object[] notConverted(@SuppressWarnings("unused") Node inliningTarget, Object[] arguments) {
+            return arguments;
         }
     }
 }
