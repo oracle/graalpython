@@ -731,10 +731,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static TruffleString repr(PComplex self,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO GR-49237 use uncached raise in Formatter
-            ComplexFormatter formatter = new ComplexFormatter(raiseNode, new Spec(-1, Spec.NONE));
+        TruffleString repr(PComplex self) {
+            ComplexFormatter formatter = new ComplexFormatter(new Spec(-1, Spec.NONE), this);
             formatter.format(self);
             return formatter.pad().getResult();
         }
@@ -756,22 +754,22 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString format(PComplex self, TruffleString formatString,
+        static TruffleString format(PComplex self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            InternalFormat.Spec spec = InternalFormat.fromText(formatString, Spec.NONE, '>', this);
+            InternalFormat.Spec spec = InternalFormat.fromText(formatString, Spec.NONE, '>', inliningTarget);
             validateSpec(inliningTarget, spec, raiseNode);
-            return doFormat(raiseNode.get(inliningTarget), self, spec);
+            return doFormat(inliningTarget, self, spec);
         }
 
         @TruffleBoundary
-        private static TruffleString doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
-            ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateForFloat(raiseNode, spec, "complex"));
+        private static TruffleString doFormat(Node raisingNode, PComplex self, Spec spec) {
+            ComplexFormatter formatter = new ComplexFormatter(validateForFloat(spec, "complex", raisingNode), raisingNode);
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
-        private void validateSpec(Node inliningTarget, Spec spec, PRaiseNode.Lazy raiseNode) {
+        private static void validateSpec(Node inliningTarget, Spec spec, PRaiseNode.Lazy raiseNode) {
             if (spec.getFill(' ') == '0') {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
             }

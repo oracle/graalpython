@@ -668,13 +668,12 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PythonObjectFactory factory) {
             Object buffer = acquireLib.acquireReadonly(self, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int bytesLen = bufferLib.getBufferLength(buffer);
-                BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this), raiseNode, getTupleItemNode, bytes, bytesLen);
+                BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this), getTupleItemNode, bytes, bytesLen, this);
                 Object savedState = IndirectCallContext.enter(frame, this);
                 try {
                     byte[] data = formatter.format(right);

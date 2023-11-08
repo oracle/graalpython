@@ -69,14 +69,15 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
     private final int bytesLength;
 
-    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
-        super(core, raiseNode, getTupleItemNode, new BytesFormattingBuffer());
+    public BytesFormatProcessor(Python3Core core, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength, Node raisingNode) {
+        super(core, getTupleItemNode, new BytesFormattingBuffer(), raisingNode);
         this.formatBytes = formatBytes;
         this.bytesLength = bytesLength;
     }
@@ -97,7 +98,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         try {
             return (char) formatBytes[index++];
         } catch (ArrayIndexOutOfBoundsException e) {
-            throw raiseNode.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
+            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -129,7 +130,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             return super.asFloat(arg);
         } catch (PException ex) {
             // exactly like in CPython, all errors are translated to this
-            throw raiseNode.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
+            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
         }
     }
 
@@ -143,7 +144,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         if (arg instanceof PBytesLike) {
             PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().getUncached(arg);
             if (bufferLib.getBufferLength(arg) == 1) {
-                BytesFormatter f = new BytesFormatter(raiseNode, buffer, spec);
+                BytesFormatter f = new BytesFormatter(buffer, spec, raisingNode);
                 f.format(bufferLib.readByte(arg, 0));
                 return f;
             }
@@ -179,16 +180,16 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         }
 
         if (!foundByte) {
-            throw raiseNode.raise(TypeError, ErrorMessages.C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE);
+            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE);
         }
 
-        BytesFormatter f = new BytesFormatter(raiseNode, buffer, spec);
+        BytesFormatter f = new BytesFormatter(buffer, spec, raisingNode);
         f.format(value);
         return f;
     }
 
     private PException raiseOverflow() {
-        throw raiseNode.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE256_DECIMAL);
+        throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE256_DECIMAL);
     }
 
     @Override
@@ -200,14 +201,14 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
                 // According to the spec: if object is Py_buffer, get the bytes directly, otherwise
                 // call __bytes__
                 bytes = asBytes(getArg());
-                BytesFormatter fb = new BytesFormatter(raiseNode, buffer, spec);
+                BytesFormatter fb = new BytesFormatter(buffer, spec, raisingNode);
                 fb.format(bytes);
                 return fb;
 
             case 'r':
             case 'a': // ascii
                 String result = PyObjectAsciiNode.executeUncached(getArg()).toJavaStringUncached();
-                fb = new BytesFormatter(raiseNode, buffer, spec);
+                fb = new BytesFormatter(buffer, spec, raisingNode);
                 fb.formatAsciiString(result);
                 return fb;
             default:
@@ -225,14 +226,14 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         if (attribute != PNone.NO_VALUE) {
             Object bytesResult = call(attribute, arg);
             if (!(bytesResult instanceof PBytes)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, arg);
+                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, arg);
             }
             return toBytes((PBytes) bytesResult);
         }
         // otherwise: use the buffer protocol
         byte[] result = byteBufferAsBytesOrNull(arg);
         if (result == null) {
-            throw raiseNode.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, T___BYTES__, arg);
+            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, T___BYTES__, arg);
         }
         return result;
     }

@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.nodes.Node;
 
 public class BytesFormatter extends InternalFormat.Formatter {
-    BytesFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-        super(raiseNode, result, spec);
+    BytesFormatter(FormattingBuffer result, Spec spec, Node raisingNode) {
+        super(result, spec, raisingNode);
         assert result instanceof BytesFormattingBuffer;
     }
 

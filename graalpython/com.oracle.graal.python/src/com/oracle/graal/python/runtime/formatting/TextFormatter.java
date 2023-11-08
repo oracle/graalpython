@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.StringFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * A class that provides the implementation of <code>str</code> and <code>unicode</code> formatting.
@@ -25,12 +25,12 @@ public class TextFormatter extends InternalFormat.Formatter {
      * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public TextFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-        super(raiseNode, result, spec);
+    public TextFormatter(FormattingBuffer result, Spec spec, Node raisingNode) {
+        super(result, spec, raisingNode);
     }
 
-    public TextFormatter(PRaiseNode raiseNode, Spec spec) {
-        super(raiseNode, new StringFormattingBuffer(32), spec);
+    public TextFormatter(Spec spec, Node raisingNode) {
+        super(new StringFormattingBuffer(32), spec, raisingNode);
     }
 
     /*

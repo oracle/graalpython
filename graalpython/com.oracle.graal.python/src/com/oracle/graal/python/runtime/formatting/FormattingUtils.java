@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,15 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class FormattingUtils {
     private FormattingUtils() {
     }
 
-    public static Spec validateForFloat(PRaiseNode raiseNode, Spec spec, String forType) {
+    public static Spec validateForFloat(Spec spec, String forType, Node raisingNode) {
         switch (spec.type) {
             case InternalFormat.Spec.NONE:
             case 'n':
@@ -61,7 +61,7 @@ public final class FormattingUtils {
             case '%':
                 return spec;
             default:
-                throw Formatter.unknownFormat(raiseNode, spec.type, forType);
+                throw Formatter.unknownFormat(spec.type, forType, raisingNode);
         }
     }
 }

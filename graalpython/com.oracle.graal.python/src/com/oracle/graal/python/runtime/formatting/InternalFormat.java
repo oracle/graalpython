@@ -48,7 +48,7 @@ public class InternalFormat {
      * ephemeral objects that are not, on their own, thread safe.
      */
     public static class Formatter implements Appendable {
-        protected final PRaiseNode raiseNode;
+        protected final Node raisingNode;
 
         /** The specification according to which we format any number supplied to the method. */
         protected final Spec spec;
@@ -83,8 +83,8 @@ public class InternalFormat {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        protected Formatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-            this.raiseNode = raiseNode;
+        protected Formatter(FormattingBuffer result, Spec spec, Node raisingNode) {
+            this.raisingNode = raisingNode;
             this.spec = spec;
             this.result = result;
             this.start = this.mark = result.length();
@@ -507,8 +507,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public static PException unknownFormat(PRaiseNode raiseNode, char code, String forType) {
-            throw raiseNode.raise(ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
+        public static PException unknownFormat(char code, String forType, Node raisingNode) {
+            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
         }
 
         /**
@@ -520,7 +520,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public PException precisionTooLarge(String type) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
+            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -14,9 +14,9 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * A class that provides the implementation of floating-point formatting. In a limited way, it acts
@@ -49,8 +49,8 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * @param addDot0 reflects flag {@code Py_DTSF_ADD_DOT_0} in CPython, applicable only for 'r'
      *            specifier
      */
-    public FloatFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec, boolean addDot0) {
-        super(raiseNode, result, spec);
+    public FloatFormatter(FormattingBuffer result, Spec spec, boolean addDot0, Node raisingNode) {
+        super(result, spec, raisingNode);
         if (!addDot0 && spec.type == 'r') {
             minFracDigits = 0;
         } else if (spec.alternate) {
@@ -69,12 +69,12 @@ public class FloatFormatter extends InternalFormat.Formatter {
         }
     }
 
-    public FloatFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-        this(raiseNode, result, spec, true);
+    public FloatFormatter(FormattingBuffer result, Spec spec, Node raisingNode) {
+        this(result, spec, true, raisingNode);
     }
 
-    public FloatFormatter(PRaiseNode raiseNode, Spec spec) {
-        this(raiseNode, new FormattingBuffer.StringFormattingBuffer(size(spec)), spec);
+    public FloatFormatter(Spec spec, Node raisingNode) {
+        this(new FormattingBuffer.StringFormattingBuffer(size(spec)), spec, raisingNode);
     }
 
     /**
@@ -231,7 +231,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
             default:
                 // Should never get here, since this was checked in PyFloat.
-                throw unknownFormat(raiseNode, spec.type, "float");
+                throw unknownFormat(spec.type, "float", raisingNode);
         }
 
         // If the format type is an upper-case letter, convert the result to upper case.

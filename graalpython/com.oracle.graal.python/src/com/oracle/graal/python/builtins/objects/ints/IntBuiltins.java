@@ -2978,53 +2978,55 @@ public final class IntBuiltins extends PythonBuiltins {
         // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
         // boolean's __str__ and not int's __str__ (that specialization is inherited)
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatB(boolean self, TruffleString formatString,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            return formatI(self ? 1 : 0, formatString, raiseNode);
+        static TruffleString formatB(boolean self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return formatI(self ? 1 : 0, formatString, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatI(int self, TruffleString formatString,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            Spec spec = getSpec(formatString);
+        static TruffleString formatI(int self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Spec spec = getSpec(formatString, inliningTarget);
             if (isDoubleSpec(spec)) {
-                return formatDouble(raiseNode, spec, self);
+                return formatDouble(spec, self, inliningTarget);
             }
-            validateIntegerSpec(raiseNode, spec);
-            return formatInt(self, raiseNode, spec);
+            validateIntegerSpec(inliningTarget, raiseNode, spec);
+            return formatInt(self, spec, inliningTarget);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatL(VirtualFrame frame, long self, TruffleString formatString,
+        static TruffleString formatL(VirtualFrame frame, long self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberFloatNode floatNode,
                         @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return formatPI(frame, factory.createInt(self), formatString, inliningTarget, floatNode, raiseNode);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatPI(VirtualFrame frame, PInt self, TruffleString formatString,
+        static TruffleString formatPI(VirtualFrame frame, PInt self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberFloatNode floatNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            Spec spec = getSpec(formatString);
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Spec spec = getSpec(formatString, inliningTarget);
             if (isDoubleSpec(spec)) {
                 // lazy init of floatNode serves as branch profile
                 double doubleVal = asDouble(frame, inliningTarget, floatNode, self);
-                return formatDouble(raiseNode, spec, doubleVal);
+                return formatDouble(spec, doubleVal, inliningTarget);
             }
-            validateIntegerSpec(raiseNode, spec);
-            return formatPInt(self, raiseNode, spec);
+            validateIntegerSpec(inliningTarget, raiseNode, spec);
+            return formatPInt(self, spec, inliningTarget);
         }
 
-        private double asDouble(VirtualFrame frame, Node inliningTarget, PyNumberFloatNode floatNode, Object self) {
+        private static double asDouble(VirtualFrame frame, Node inliningTarget, PyNumberFloatNode floatNode, Object self) {
             // This should have the semantics of PyNumber_Float
             return floatNode.execute(frame, inliningTarget, self);
         }
 
-        private Spec getSpec(TruffleString formatString) {
-            return InternalFormat.fromText(formatString, 'd', '>', this);
+        private static Spec getSpec(TruffleString formatString, Node raisingNode) {
+            return InternalFormat.fromText(formatString, 'd', '>', raisingNode);
         }
 
         private static boolean isDoubleSpec(Spec spec) {
@@ -3034,35 +3036,35 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString formatDouble(PRaiseNode raiseNode, Spec spec, double value) {
-            FloatFormatter formatter = new FloatFormatter(raiseNode, spec);
+        private static TruffleString formatDouble(Spec spec, double value, Node raisingNode) {
+            FloatFormatter formatter = new FloatFormatter(spec, raisingNode);
             formatter.format(value);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static TruffleString formatInt(int self, PRaiseNode raiseNode, Spec spec) {
-            IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
+        private static TruffleString formatInt(int self, Spec spec, Node raisingNode) {
+            IntegerFormatter formatter = new IntegerFormatter(spec, raisingNode);
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static TruffleString formatPInt(PInt self, PRaiseNode raiseNode, Spec spec) {
-            IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
+        private static TruffleString formatPInt(PInt self, Spec spec, Node raisingNode) {
+            IntegerFormatter formatter = new IntegerFormatter(spec, raisingNode);
             formatter.format(self.getValue());
             return formatter.pad().getResult();
         }
 
-        private static void validateIntegerSpec(PRaiseNode raiseNode, Spec spec) {
+        private static void validateIntegerSpec(Node inliningTarget, PRaiseNode.Lazy raiseNode, Spec spec) {
             if (Spec.specified(spec.precision)) {
-                throw raiseNode.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
             }
             if (spec.type == 'c') {
                 if (Spec.specified(spec.sign)) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
                 } else if (spec.alternate) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
                 }
             }
         }

@@ -219,12 +219,9 @@ public final class FloatBuiltins extends PythonBuiltins {
     public abstract static class StrNode extends AbstractNumericUnaryBuiltin {
         public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
 
-        @Child private PRaiseNode raiseNode = PRaiseNode.create();
-
         @Override
         protected TruffleString op(double self) {
-            // TODO GR-49237 use uncached raise in Formatter
-            FloatFormatter f = new FloatFormatter(raiseNode, spec);
+            FloatFormatter f = new FloatFormatter(spec, this);
             f.setMinFracDigits(1);
             return doFormat(self, f);
         }
@@ -250,17 +247,16 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatPF(Object self, TruffleString formatString,
+        static TruffleString formatPF(Object self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaDoubleNode cast,
-                        @Cached PRaiseNode raiseNode) {
-            return doFormat(castToDoubleChecked(inliningTarget, self, cast), formatString, raiseNode);
+                        @Cached CastToJavaDoubleNode cast) {
+            return doFormat(inliningTarget, castToDoubleChecked(inliningTarget, self, cast), formatString);
         }
 
         @TruffleBoundary
-        private TruffleString doFormat(double self, TruffleString formatString, PRaiseNode raiseNode) {
-            InternalFormat.Spec spec = InternalFormat.fromText(formatString, InternalFormat.Spec.NONE, '>', this);
-            FloatFormatter formatter = new FloatFormatter(raiseNode, validateForFloat(raiseNode, spec, "float"));
+        private static TruffleString doFormat(Node raisingNode, double self, TruffleString formatString) {
+            InternalFormat.Spec spec = InternalFormat.fromText(formatString, InternalFormat.Spec.NONE, '>', raisingNode);
+            FloatFormatter formatter = new FloatFormatter(validateForFloat(spec, "float", raisingNode), raisingNode);
             formatter.format(self);
             return formatter.pad().getResult();
         }

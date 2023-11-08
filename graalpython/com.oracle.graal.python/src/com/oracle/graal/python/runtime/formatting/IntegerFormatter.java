@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -17,6 +17,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.StringFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * A class that provides the implementation of integer formatting. In a limited way, it acts like a
@@ -33,12 +34,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public IntegerFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-        super(raiseNode, result, spec);
+    public IntegerFormatter(FormattingBuffer result, Spec spec, Node raisingNode) {
+        super(result, spec, raisingNode);
     }
 
-    public IntegerFormatter(PRaiseNode raiseNode, Spec spec) {
-        super(raiseNode, new StringFormattingBuffer(32), spec);
+    public IntegerFormatter(Spec spec, Node raisingNode) {
+        super(new StringFormattingBuffer(32), spec, raisingNode);
     }
 
     /*
@@ -123,7 +124,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(raiseNode, spec.type, "integer");
+                    throw unknownFormat(spec.type, "integer", raisingNode);
             }
 
             // If required to, group the whole-part digits.
@@ -143,11 +144,11 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * {@link #format_d(BigInteger)}.
      */
     void format_i(@SuppressWarnings("unused") BigInteger value) {
-        throw unknownFormat(raiseNode, spec.type, "integer");
+        throw unknownFormat(spec.type, "integer", raisingNode);
     }
 
     void format_i(@SuppressWarnings("unused") int value) {
-        throw unknownFormat(raiseNode, spec.type, "integer");
+        throw unknownFormat(spec.type, "integer", raisingNode);
     }
 
     /**
@@ -285,7 +286,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void format_c(BigInteger value) {
         assert !bytes; // for bytes we use directly BytesFormatter
         if (value.signum() < 0 || value.compareTo(LIMIT_UNICODE) >= 0) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
         }
         result.appendCodePoint(value.intValue());
     }
@@ -353,7 +354,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
                     break;
 
                 default:
-                    throw unknownFormat(raiseNode, spec.type, "int");
+                    throw unknownFormat(spec.type, "int", raisingNode);
             }
 
             // If required to, group the whole-part digits.
@@ -465,7 +466,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void format_c(int value) {
         assert !bytes; // for bytes we use directly BytesFormatter
         if (value < 0 || value >= LIMIT_UNICODE.intValue()) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
         }
         result.appendCodePoint(value);
     }
@@ -645,8 +646,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        public Traditional(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-            super(raiseNode, result, spec);
+        public Traditional(FormattingBuffer result, Spec spec, Node raisingNode) {
+            super(result, spec, raisingNode);
         }
 
         @Override
