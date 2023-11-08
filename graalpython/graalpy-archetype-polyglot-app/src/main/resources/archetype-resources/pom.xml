@@ -10,9 +10,7 @@
 
 #set( $symbol_dollar = '$' )
   <properties>
-    <!-- XXX what version? -->
     <graalpy.version>24.0.0-dev</graalpy.version>
-    <!-- XXX python (enterprise) vs python-community -->
     <graalpy.edition>python-community</graalpy.edition>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -33,7 +31,7 @@
       <type>pom</type>
     </dependency>
     <!-- The dependency on python-launcher is only required if the graalpy
-         plugin is used with packages and the prepare-venv goal -->
+         plugin is used with packages -->
     <dependency>
       <groupId>org.graalvm.python</groupId>
       <artifactId>python-launcher</artifactId>

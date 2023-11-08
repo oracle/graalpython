@@ -43,8 +43,8 @@ SOFTWARE.
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.graalvm.python</groupId>
-  <artifactId>graalpy-archetype</artifactId>
-  <version>0.0.0</version>
+  <artifactId>graalpy-archetype-polyglot-app</artifactId>
+  <version>24.0.0-dev</version>
   <packaging>maven-archetype</packaging>
 
   <properties>
@@ -53,7 +53,7 @@ SOFTWARE.
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <name>graalpy-archetype</name>
+  <name>graalpy-archetype-polyglot-app</name>
 
   <build>
     <extensions>

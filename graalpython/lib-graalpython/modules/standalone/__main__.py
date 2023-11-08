@@ -127,7 +127,7 @@ def create_polyglot_app(parsed_args):
     if parsed_args.verbose:
         print(f"Creating polyglot java python application in directory {target_dir}")
 
-    cmd = ["mvn", "archetype:generate", "-DarchetypeGroupId=org.graalvm.python", "-DarchetypeArtifactId=graalpy-archetype"]
+    cmd = ["mvn", "archetype:generate", "-DarchetypeGroupId=org.graalvm.python", "-DarchetypeArtifactId=graalpy-archetype-polyglot-app"]
     cmd += [f"-DgroupId={parsed_args.group_id}"]
     cmd += [f"-DartifactId={parsed_args.artifact_id}"]
     cmd += ["-Dversion=1.0-SNAPSHOT" if parsed_args.version else f"-Dversion={parsed_args.version}"]

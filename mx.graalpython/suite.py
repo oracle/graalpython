@@ -1350,7 +1350,7 @@ suite = {
             "maven": False,
         },
 
-        "graalpy-archetype": {
+        "graalpy-archetype-polyglot-app": {
             "class": "MavenProject",
             "subDir": "graalpython",
             "noMavenJavadoc": True,

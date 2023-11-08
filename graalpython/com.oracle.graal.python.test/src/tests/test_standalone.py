@@ -108,7 +108,7 @@ def test_polyglot_app():
         target_dir = os.path.join(tmpdir, target_name)
 
         archetypeGroupId = "org.graalvm.python"
-        archetypeArtifactId = "graalpy-archetype"
+        archetypeArtifactId = "graalpy-archetype-polyglot-app"
         pluginArtifactId = "graalpy-maven-plugin"
         graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], env)
         # when JLine is cannot detect a terminal, it prints logging info
