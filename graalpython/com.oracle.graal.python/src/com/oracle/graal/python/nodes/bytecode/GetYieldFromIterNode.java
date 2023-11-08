@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -67,7 +67,7 @@ public abstract class GetYieldFromIterNode extends Node {
     public Object getGeneric(Frame frame, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
-                    @Cached IsBuiltinObjectProfile isCoro) {
+                    @Cached IsBuiltinObjectExactProfile isCoro) {
         if (isCoro.profileObject(inliningTarget, arg, PythonBuiltinClassType.PCoroutine)) {
             return arg;
         } else {

@@ -95,10 +95,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -146,7 +146,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
@@ -807,34 +806,25 @@ public final class PythonCextSlotBuiltins {
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
-                        @Cached HashingStorageIteratorValue itValue,
-                        @Cached IsBuiltinObjectProfile isPrimitiveDictProfile1,
-                        @Cached IsBuiltinObjectProfile isPrimitiveDictProfile2) {
-            if (isBuiltinDict(inliningTarget, isPrimitiveDictProfile1, isPrimitiveDictProfile2, value)) {
+                        @Cached HashingStorageIteratorValue itValue) {
+            if (value instanceof PDict dict && (PGuards.isBuiltinDict(dict) || value instanceof StgDictObject)) {
                 // special and fast case: commit items and change store
-                PDict d = (PDict) value;
-                HashingStorage storage = d.getDictStorage();
+                HashingStorage storage = dict.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                 while (itNext.execute(inliningTarget, storage, it)) {
                     writeAttrNode.execute(object, itKey.execute(inliningTarget, storage, it), itValue.execute(inliningTarget, storage, it));
                 }
                 PDict existing = getDict.execute(object);
                 if (existing != null) {
-                    d.setDictStorage(existing.getDictStorage());
+                    dict.setDictStorage(existing.getDictStorage());
                 } else {
-                    d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
+                    dict.setDictStorage(new DynamicObjectStorage(object.getStorage()));
                 }
-                setDict.execute(inliningTarget, object, d);
+                setDict.execute(inliningTarget, object, dict);
             } else {
                 // TODO custom mapping object
             }
             return PNone.NO_VALUE;
-        }
-
-        private static boolean isBuiltinDict(Node inliningTarget, IsBuiltinObjectProfile isPrimitiveDictProfile1, IsBuiltinObjectProfile isPrimitiveDictProfile2, Object value) {
-            return value instanceof PDict &&
-                            (isPrimitiveDictProfile1.profileObject(inliningTarget, value, PythonBuiltinClassType.PDict) ||
-                                            isPrimitiveDictProfile2.profileObject(inliningTarget, value, PythonBuiltinClassType.StgDict));
         }
     }
 

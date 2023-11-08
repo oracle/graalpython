@@ -41,7 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 
 /**
@@ -50,6 +50,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 @GenerateUncached
 public abstract class PyFrozenSetCheckExactNode {
     public static boolean executeUncached(Object object) {
-        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PFrozenSet);
+        return IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PFrozenSet);
     }
 }

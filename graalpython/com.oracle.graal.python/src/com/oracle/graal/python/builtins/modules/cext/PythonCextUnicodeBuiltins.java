@@ -126,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -134,7 +135,6 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -323,13 +323,13 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object withPString(PString str,
                         @Bind("this") Node inliningTarget,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached PyUnicodeCheckExactNode unicodeCheckExactNode,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Exclusive @Cached StringNodes.InternStringNode internNode,
                         @Exclusive @Cached HashingStorageGetItem getItem,
                         @Exclusive @Cached HashingStorageSetItem setItem,
                         @Exclusive @Cached PythonObjectFactory.Lazy factory) {
-            if (!isBuiltinClassProfile.profileObject(inliningTarget, str, PythonBuiltinClassType.PString)) {
+            if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
                 return getNativeNull(inliningTarget);
             }
             boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;

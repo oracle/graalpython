@@ -179,9 +179,11 @@ import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -195,6 +197,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -392,10 +395,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory.createComplex(cls, real, imaginary);
         }
 
-        private static PComplex createComplex(Object cls, PComplex value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile, IsBuiltinObjectProfile isBuiltinObjectProfile,
+        private static PComplex createComplex(Object cls, PComplex value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile, PyComplexCheckExactNode complexCheckExact,
                         PythonObjectFactory factory) {
             if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
-                if (isBuiltinObjectProfile.profileObject(inliningTarget, value, PythonBuiltinClassType.PComplex)) {
+                if (complexCheckExact.execute(inliningTarget, value)) {
                     return value;
                 }
                 return factory.createComplex(value.getReal(), value.getImag());
@@ -458,10 +461,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile,
+                        @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode isBuiltinObjectProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile, factory,
@@ -489,13 +492,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile,
+                        @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile, factory,
+            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck, factory,
                             raiseNode);
         }
 
@@ -504,10 +507,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile,
+                        @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, isResultComplexType, raiseNode);
@@ -518,7 +521,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raiseFirstArgError(number, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value, inliningTarget, isPrimitiveProfile, isBuiltinObjectProfile, factory);
+            return createComplex(cls, value, inliningTarget, isPrimitiveProfile, complexCheck, factory);
         }
 
         @Specialization
@@ -550,8 +553,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -571,8 +574,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -592,8 +595,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -613,8 +616,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -635,8 +638,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -703,13 +706,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, Node inliningTarget,
-                        IsBuiltinObjectProfile isComplexType, IsBuiltinObjectProfile isResultComplexType, PRaiseNode.Lazy raiseNode) {
-            if (isComplexType.profileObject(inliningTarget, object, PythonBuiltinClassType.PComplex)) {
+                        PyComplexCheckExactNode isComplexType, PyComplexCheckExactNode isResultComplexType, PRaiseNode.Lazy raiseNode) {
+            if (isComplexType.execute(inliningTarget, object)) {
                 return (PComplex) object;
             } else {
                 Object result = callComplex(frame, object);
                 if (result instanceof PComplex) {
-                    if (!isResultComplexType.profileObject(inliningTarget, result, PythonBuiltinClassType.PComplex)) {
+                    if (!isResultComplexType.execute(inliningTarget, result)) {
                         getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                         ErrorMessages.WARN_P_RETURNED_NON_P,
                                         object, "__complex__", "complex", result, "complex");
@@ -1087,10 +1090,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Fallback
             @InliningCutoff
             static double floatFromObject(VirtualFrame frame, Node inliningTarget, Object obj,
-                            @Cached IsBuiltinObjectProfile stringProfile,
+                            @Cached PyUnicodeCheckNode stringCheck,
                             @Cached PyFloatFromString fromString,
                             @Cached PyNumberFloatNode pyNumberFloat) {
-                if (stringProfile.profileObject(inliningTarget, obj, PythonBuiltinClassType.PString)) {
+                if (stringCheck.execute(inliningTarget, obj)) {
                     return fromString.execute(frame, inliningTarget, obj);
                 }
                 return pyNumberFloat.execute(frame, inliningTarget, obj);
@@ -1651,7 +1654,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached IsBuiltinObjectProfile isPrimitiveIntObjectProfile,
+                        @Cached PyLongCheckExactNode longCheckExact,
                         @Exclusive @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -1709,7 +1712,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             // If a subclass of int is returned by __int__ or __index__, a conversion to int is
             // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
-            if (!isPrimitiveIntObjectProfile.profileObject(inliningTarget, result, PythonBuiltinClassType.PInt)) {
+            if (!longCheckExact.execute(inliningTarget, result)) {
                 getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.WARN_P_RETURNED_NON_P,
                                 obj, "__int__/__index__", "int", result, "int");

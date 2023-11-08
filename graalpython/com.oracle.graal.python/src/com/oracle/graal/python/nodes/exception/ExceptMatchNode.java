@@ -130,10 +130,6 @@ public abstract class ExceptMatchNode extends Node {
         return false;
     }
 
-    public static boolean isPException(AbstractTruffleException exception) {
-        return exception instanceof PException;
-    }
-
     @NeverDefault
     public static ExceptMatchNode create() {
         return ExceptMatchNodeGen.create();
