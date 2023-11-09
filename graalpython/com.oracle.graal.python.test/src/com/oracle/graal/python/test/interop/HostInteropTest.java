@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
@@ -413,45 +414,40 @@ public class HostInteropTest extends PythonTests {
     }
 
     @Test
-    public void testDate() {
+    public void testDateTime() {
         Value t = context.eval("python", """
                         import polyglot
 
                         class MyType(object):
+                            # timezone
+                            tm_zone = "UTC"
+                            tm_gmtoff = 3600
+                            # date
                             year = 2023
                             month = 12
                             day = 12
-
-                        polyglot.register_host_interop_behavior(MyType,
-                            is_date=True,
-                            as_date=lambda t: t
-                        )
-
-                        MyType()
-                        """);
-        assertTrue(t.isDate());
-        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
-    }
-
-    @Test
-    public void testTime() {
-        Value t = context.eval("python", """
-                        import polyglot
-
-                        class MyType(object):
+                            # time
                             hour = 3
                             minute = 10
                             second = 10
                             microsecond = 10
 
                         polyglot.register_host_interop_behavior(MyType,
+                            is_date=True,
+                            as_date=lambda t: t,
                             is_time=True,
-                            as_date=lambda t: t
+                            as_time=lambda t: t,
+                            is_time_zone=True,
+                            as_time_zone=lambda t: t
                         )
 
                         MyType()
                         """);
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
         assertTrue(t.isTime());
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
+        assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
     }
 }
