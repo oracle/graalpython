@@ -815,8 +815,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isDate(
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     // GR-44020: use inlined:
@@ -880,8 +880,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public LocalDate asDate(
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
@@ -889,12 +889,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    @CachedLibrary("this") InteropLibrary lib,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached GilNode gil,
+                    @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_date);
         if (value != PNone.NO_VALUE) {
             return constructDate(castToIntNode, inliningTarget, lib, value);
@@ -926,8 +926,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isTime(
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     // GR-44020: use inlined:
@@ -997,8 +997,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public LocalTime asTime(
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     // GR-44020: use inlined:
@@ -1007,12 +1007,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    @CachedLibrary("this") InteropLibrary lib,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached GilNode gil,
+                    @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_time);
         if (value != PNone.NO_VALUE) {
             return constructTime(value, castToIntNode, inliningTarget, lib);
@@ -1044,19 +1044,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isTimeZone(
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
-                    @CachedLibrary(limit = "2") InteropLibrary lib,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
-                    @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached GilNode gil,
+                    @CachedLibrary(limit = "2") InteropLibrary lib) {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_time_zone);
         if (value != PNone.NO_VALUE) {
             assert HostInteropBehaviorMethod.is_time_zone.isConstantBoolean();
@@ -1140,8 +1140,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public ZoneId asTimeZone(
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
@@ -1149,13 +1149,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached GilNode gil,
+                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_time_zone);
         if (value != PNone.NO_VALUE) {
             return constructZoneId(value, castToIntNode, toJavaStringNode, inliningTarget, lib);
@@ -1866,11 +1866,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getIterator(
-                    @CachedLibrary("this") InteropLibrary lib,
                     @Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     @Cached PyObjectGetIter getIter,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached GilNode gil,
+                    @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
         if (lib.hasIterator(this)) {
             Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.get_iterator);
             if (value != PNone.NO_VALUE) {
@@ -1913,11 +1913,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    @CachedLibrary("this") InteropLibrary ilib,
-                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                     @Cached GetNextNode getNextNode,
                     @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached GilNode gil,
+                    @CachedLibrary("this") InteropLibrary ilib,
+                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws UnsupportedMessageException {
         if (ilib.isIterator(this)) {
             Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.has_iterator_next_element);
             if (value != PNone.NO_VALUE) {
