@@ -86,7 +86,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -268,7 +268,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         public static Object repr(PSimpleNamespace ns,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached InlineIsBuiltinClassProfile clsProfile,
+                        @Cached IsBuiltinClassExactProfile clsProfile,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached("create(3)") ForEachNSRepr consumerNode,

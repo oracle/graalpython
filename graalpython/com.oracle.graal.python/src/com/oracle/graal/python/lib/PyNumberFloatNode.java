@@ -54,7 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -113,7 +113,7 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
                     @Cached(parameters = "Float", inline = false) LookupSpecialMethodSlotNode lookup,
                     @Cached(inline = false) CallUnaryMethodNode call,
                     @Cached GetClassNode resultClassNode,
-                    @Cached InlineIsBuiltinClassProfile resultProfile,
+                    @Cached IsBuiltinClassExactProfile resultProfile,
                     @Cached(inline = false) IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,

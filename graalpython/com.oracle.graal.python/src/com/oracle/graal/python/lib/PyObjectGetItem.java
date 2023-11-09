@@ -58,7 +58,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -155,7 +155,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupClassGetItem,
-                        @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached CallNode callClassGetItem) {
             if (isTypeNode.execute(inliningTarget, type)) {

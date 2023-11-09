@@ -124,7 +124,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsOtherBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -642,8 +642,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
 
-        protected static boolean isExactObject(Node inliningTarget, InlineIsBuiltinClassProfile profile, Object clazz) {
-            return profile.profileIsBuiltinClass(inliningTarget, clazz, PythonBuiltinClassType.PythonObject);
+        protected static boolean isExactObject(Node inliningTarget, IsBuiltinClassExactProfile profile, Object clazz) {
+            return profile.profileClass(inliningTarget, clazz, PythonBuiltinClassType.PythonObject);
         }
 
         protected static boolean isAnyBuiltinButModule(Node inliningTarget, IsOtherBuiltinClassProfile profile, Object clazz) {
@@ -656,7 +656,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         static Object dict(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        @SuppressWarnings("unused") @Exclusive @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @Bind("getClassNode.execute(inliningTarget, self)") Object selfClass,
                         @Exclusive @Cached GetBaseClassNode getBaseNode,
@@ -679,7 +679,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         static Object dict(VirtualFrame frame, Object self, PDict dict,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        @SuppressWarnings("unused") @Exclusive @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Bind("getClassNode.execute(inliningTarget, self)") Object selfClass,
                         @Exclusive @Cached GetBaseClassNode getBaseNode,
@@ -747,7 +747,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         static Object raise(Object self, Object mapping,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
@@ -756,7 +756,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         static boolean isFallback(Object self, Object mapping, Node inliningTarget,
                         GetClassNode getClassNode,
                         IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        InlineIsBuiltinClassProfile isBuiltinClassProfile) {
+                        IsBuiltinClassExactProfile isBuiltinClassProfile) {
             Object selfClass = getClassNode.execute(inliningTarget, self);
             boolean classFilter = !isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass) && !isExactObject(inliningTarget, isBuiltinClassProfile, selfClass);
             return !((classFilter && isNoValue(mapping)) ||

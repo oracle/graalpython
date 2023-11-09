@@ -42,44 +42,33 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline
 @GenerateCached(false)
-@GenerateUncached
-public abstract class PyFloatCheckNode extends Node {
-    public abstract boolean execute(Node inliningTarget, Object obj);
-
-    public static boolean executeUncached(Object obj) {
-        return PyFloatCheckNodeGen.getUncached().execute(null, obj);
-    }
+public abstract class PyListCheckNode extends Node {
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
-    static boolean doDouble(@SuppressWarnings("unused") Double obj) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doPFloat(@SuppressWarnings("unused") PFloat obj) {
+    static boolean managed(@SuppressWarnings("unused") PList object) {
         return true;
     }
 
     @Specialization
     static boolean doNative(PythonAbstractNativeObject object,
                     @Cached(inline = false) IsBuiltinObjectProfile check) {
-        return check.profileObjectCached(object, PythonBuiltinClassType.PFloat);
+        return check.profileObjectCached(object, PythonBuiltinClassType.PList);
     }
 
     @Fallback
-    static boolean doOther(@SuppressWarnings("unused") Object obj) {
+    static boolean other(@SuppressWarnings("unused") Object object) {
         return false;
     }
 }
