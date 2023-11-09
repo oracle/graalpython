@@ -590,7 +590,7 @@ public final class CApiContext extends CExtContext {
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
-                PyDateTimeCAPIWrapper.initWrapper(cApiContext);
+                PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
 
                 if (useNative) {

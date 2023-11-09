@@ -115,28 +115,27 @@ public final class PyDateTimeCAPIWrapper extends PythonStructNativeWrapper {
 
     private Object replacement;
 
-    public PyDateTimeCAPIWrapper(Object datetimeModule) {
-        super(PythonObjectFactory.getUncached().createPythonObject(PythonBuiltinClassType.PythonObject));
+    private PyDateTimeCAPIWrapper(PythonContext context, Object datetimeModule) {
+        // create some dummy delegate
+        super(context.factory().createPythonObject(PythonBuiltinClassType.PythonObject));
         this.datetimeModule = datetimeModule;
     }
 
-    public static void initWrapper(CApiContext capiContext) {
+    public static void initWrapper(PythonContext context, CApiContext capiContext) {
+        CompilerAsserts.neverPartOfCompilation();
 
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
         callCapiFunction.call(FUN_SET_PY_DATETIME_TYPES);
 
-        PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
-        PyObjectSetAttr setAttr = PyObjectSetAttr.getUncached();
-
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
-        capiContext.timezoneType = getAttr.execute(null, datetimeModule, T_TIMEZONE);
+        capiContext.timezoneType = PyObjectGetAttr.executeUncached(datetimeModule, T_TIMEZONE);
 
-        PyDateTimeCAPIWrapper wrapper = new PyDateTimeCAPIWrapper(datetimeModule);
+        PyDateTimeCAPIWrapper wrapper = new PyDateTimeCAPIWrapper(context, datetimeModule);
         InteropLibrary.getUncached().toNative(wrapper);
         Object replacement = wrapper.getReplacement(InteropLibrary.getUncached());
 
-        setAttr.execute(null, datetimeModule, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(replacement, T_PYDATETIME_CAPSULE_NAME, null));
-        assert getAttr.execute(null, datetimeModule, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
+        PyObjectSetAttr.getUncached().execute(null, datetimeModule, T_DATETIME_CAPI, context.factory().createCapsule(replacement, T_PYDATETIME_CAPSULE_NAME, null));
+        assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
     }
 
     private Object allocateReplacememtObject() {
