@@ -96,20 +96,10 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ToNativeTypeNode {
-
-    @TruffleBoundary
-    public static Object executeUncached(PythonClassNativeWrapper obj) {
-        assert !obj.isNative();
-
-        Object ptr = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
-        initializeType(obj, ptr);
-        return ptr;
-    }
 
     private static Object getValue(PythonManagedClass obj, SlotMethodDef slot) {
         return LookupNativeSlotNode.executeUncached(obj, slot);

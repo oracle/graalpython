@@ -44,6 +44,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -145,9 +147,14 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
         SetTypeFlagsNode.executeUncached(clazz, flags);
 
-        ToNativeTypeNode.initializeType(wrapper, pointer);
+        /*
+         * It's important that we first register the pointer before initializing the type (see
+         * 'getReplacement' for more explanation).
+         */
         wrapper.replacement = pointer;
         wrapper.registerReplacement(pointer, lib);
+
+        ToNativeTypeNode.initializeType(wrapper, pointer);
     }
 
     @Override
@@ -166,8 +173,19 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
             setRefCount(IMMORTAL_REFCNT); // make this object immortal
-            Object pointerObject = ToNativeTypeNode.executeUncached(this);
+            /*
+             * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it
+             * to the wrapper before we do the type's initialization. Otherwise, we will run into an
+             * infinite recursion because, e.g., some type uses 'None', so the 'NoneType' will be
+             * transformed to native but 'NoneType' may have some field that is initialized with
+             * 'None' and so on.
+             *
+             * If we first set the empty struct and initialize it afterward, everything is fine.
+             */
+            Object pointerObject = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
             replacement = registerReplacement(pointerObject, lib);
+
+            ToNativeTypeNode.initializeType(this, pointerObject);
         }
         return replacement;
     }
