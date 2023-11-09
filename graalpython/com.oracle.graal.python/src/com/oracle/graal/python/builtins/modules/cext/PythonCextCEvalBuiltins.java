@@ -116,13 +116,17 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
         @Specialization
-        static PThreadState restore(@SuppressWarnings("unused") Object ptr,
+        static Object restore(@SuppressWarnings("unused") Object ptr,
                         @Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
-            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            /*
+             * The thread state is not really used but fetching it checks if we are shutting down
+             * and will handle that properly.
+             */
+            context.getThreadState(PythonLanguage.get(gil));
             LOGGER.fine("C extension acquires GIL");
             gil.acquire(context);
-            return threadState;
+            return PNone.NO_VALUE;
         }
     }
 
