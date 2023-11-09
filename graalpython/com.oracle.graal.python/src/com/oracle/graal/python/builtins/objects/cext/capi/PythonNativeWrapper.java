@@ -133,22 +133,27 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     protected final Object registerReplacement(Object pointer, InteropLibrary lib) {
         LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
         Object result;
-        if (pointer instanceof Long) {
+        if (pointer instanceof Long lptr) {
             // need to convert to actual pointer
-            result = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_CONVERT_POINTER, pointer);
-            CApiTransitions.firstToNative(this, (long) pointer);
+            result = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_CONVERT_POINTER, lptr);
+            CApiTransitions.createReference(this, lptr);
         } else {
             result = pointer;
             if (lib.isPointer(pointer)) {
                 assert pointer.getClass() == NativePointer.class || pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
                 try {
-                    CApiTransitions.firstToNative(this, lib.asPointer(pointer));
+                    CApiTransitions.createReference(this, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } else {
+                /*
+                 * This branch is required for LLVM managed mode where we will never have a native
+                 * pointer (i.e. an address pointing into off-heap memory) but a managed pointer to
+                 * some object emulating the native memory.
+                 */
                 assert pointer.getClass().getSimpleName().contains("LLVMPointer");
-                CApiTransitions.firstToNativeManaged(getDelegate(), pointer);
+                CApiTransitions.createManagedReference(getDelegate(), pointer);
             }
         }
         return result;

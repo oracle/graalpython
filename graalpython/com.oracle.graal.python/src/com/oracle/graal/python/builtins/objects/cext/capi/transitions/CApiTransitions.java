@@ -705,9 +705,18 @@ public abstract class CApiTransitions {
         }
     }
 
+    /**
+     * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given native {@code pointer}
+     * such that the {@code pointer} can be resolved to the {@code delegate}.
+     * <p>
+     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
+     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
+     * We still need to be able to resolve those managed pointers to our objects.
+     * </p>
+     */
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static void firstToNative(PythonNativeWrapper obj, long ptr) {
+    public static void createReference(PythonNativeWrapper obj, long ptr) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
              * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
@@ -722,7 +731,17 @@ public abstract class CApiTransitions {
         }
     }
 
-    public static void firstToNativeManaged(Object delegate, Object pointer) {
+    /**
+     * Creates a weak reference to {@code delegate} and connects that to the given {@code pointer}
+     * object such that the {@code pointer} can be resolved to the {@code delegate}.
+     * <p>
+     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
+     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
+     * We still need to be able to resolve those managed pointers to our objects.
+     * </p>
+     */
+    public static void createManagedReference(Object delegate, Object pointer) {
+        assert PythonContext.get(null).ownsGil();
         getContext().managedNativeLookup.put(pointer, new WeakReference<>(delegate));
     }
 
