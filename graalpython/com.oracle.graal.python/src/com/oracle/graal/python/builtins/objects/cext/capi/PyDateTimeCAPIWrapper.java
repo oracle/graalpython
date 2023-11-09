@@ -62,9 +62,10 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -205,16 +206,22 @@ public final class PyDateTimeCAPIWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
         return getNativePointer();
     }
 
     @ExportMessage
-    @TruffleBoundary
     void toNative() {
         if (!isNative()) {
-            getReplacement(InteropLibrary.getUncached());
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }

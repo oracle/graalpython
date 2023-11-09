@@ -66,8 +66,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -167,6 +169,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     @Override
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
+            setRefCount(IMMORTAL_REFCNT);
             Object pointerObject = allocate((PMemoryView) getDelegate());
             replacement = registerReplacement(pointerObject, lib);
         }
@@ -179,17 +182,22 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     }
 
     @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
         return getNativePointer();
     }
 
     @ExportMessage
-    @TruffleBoundary
     void toNative() {
         if (!isNative()) {
-            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
-            getReplacement(InteropLibrary.getUncached());
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }

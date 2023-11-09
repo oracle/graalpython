@@ -66,6 +66,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -196,16 +197,22 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
         return getNativePointer();
     }
 
     @ExportMessage
-    @TruffleBoundary
-    protected void toNative() {
+    void toNative() {
         if (!isNative()) {
-            getReplacement(InteropLibrary.getUncached());
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }

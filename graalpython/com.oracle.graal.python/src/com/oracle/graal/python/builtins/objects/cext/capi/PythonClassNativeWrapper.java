@@ -56,8 +56,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -163,6 +165,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     @TruffleBoundary
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
+            setRefCount(IMMORTAL_REFCNT); // make this object immortal
             Object pointerObject = ToNativeTypeNode.executeUncached(this);
             replacement = registerReplacement(pointerObject, lib);
         }
@@ -175,17 +178,22 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     }
 
     @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
         return getNativePointer();
     }
 
     @ExportMessage
-    @TruffleBoundary
     void toNative() {
         if (!isNative()) {
-            setRefCount(IMMORTAL_REFCNT); // make this object immortal
-            getReplacement(InteropLibrary.getUncached());
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }
