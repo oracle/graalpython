@@ -193,7 +193,7 @@ public class CDataObject extends PythonBuiltinObject {
 
         @ExportMessage
         boolean isMemberModifiable(String member,
-                                   @Shared @Cached CastToJavaStringNode toJavaStringNode) {
+                        @Shared @Cached CastToJavaStringNode toJavaStringNode) {
             return isMemberReadable(member, toJavaStringNode);
         }
 

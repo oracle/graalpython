@@ -131,7 +131,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
     @ExportMessage
     @TruffleBoundary
     protected void toNative(
-            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (!isNative()) {
             getReplacement(lib);
         }
