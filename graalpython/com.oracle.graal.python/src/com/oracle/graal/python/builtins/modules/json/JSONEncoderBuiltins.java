@@ -145,8 +145,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private static TruffleString formatDouble(double obj) {
-            FloatFormatter f = new FloatFormatter(PRaiseNode.getUncached(), FloatBuiltins.StrNode.spec);
+        private TruffleString formatDouble(double obj) {
+            FloatFormatter f = new FloatFormatter(FloatBuiltins.StrNode.spec, this);
             f.setMinFracDigits(1);
             return FloatBuiltins.StrNode.doFormat(obj, f);
         }

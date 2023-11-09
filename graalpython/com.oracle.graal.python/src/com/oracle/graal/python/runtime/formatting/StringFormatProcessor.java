@@ -23,13 +23,14 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class StringFormatProcessor extends FormatProcessor<String> {
     private final String formatText;
 
-    public StringFormatProcessor(Python3Core core, PRaiseNode raiseNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
-        super(core, raiseNode, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100));
+    public StringFormatProcessor(Python3Core core, TupleBuiltins.GetItemNode getTupleItemNode, String format, Node raisingNode) {
+        super(core, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100), raisingNode);
         index = 0;
         this.formatText = format;
     }
@@ -44,7 +45,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         try {
             return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
-            throw raiseNode.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
+            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -82,15 +83,15 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
             arg = ((PString) arg).getValueUncached();
         }
         if (arg instanceof TruffleString && ((TruffleString) arg).codePointLengthUncached(TS_ENCODING) == 1) {
-            f = ft = setupFormat(new TextFormatter(raiseNode, buffer, spec));
+            f = ft = setupFormat(new TextFormatter(buffer, spec, raisingNode));
             ft.format(((TruffleString) arg).toJavaStringUncached());
         } else if (isJavaString(arg) && isOneCharacter((String) arg)) {
-            f = ft = setupFormat(new TextFormatter(raiseNode, buffer, spec));
+            f = ft = setupFormat(new TextFormatter(buffer, spec, raisingNode));
             ft.format((String) arg);
         } else {
             f = formatInteger(asNumber(arg, spec.type), spec);
             if (f == null) {
-                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
+                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
             }
         }
         return f;
@@ -113,7 +114,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
             default:
                 return null;
         }
-        TextFormatter ft = new TextFormatter(raiseNode, buffer, spec);
+        TextFormatter ft = new TextFormatter(buffer, spec, raisingNode);
         ft.format(result.toJavaStringUncached());
         return ft;
     }

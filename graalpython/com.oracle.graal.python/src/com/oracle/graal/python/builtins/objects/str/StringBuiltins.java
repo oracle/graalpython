@@ -237,13 +237,12 @@ public final class StringBuiltins extends PythonBuiltins {
             // We cannot cast self via argument clinic, because we need to keep it as-is for the
             // empty format string case, which should call __str__, which may be overridden
             String str = castToJavaStringNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___STR__, self);
-            // TODO GR-49237 TextFormatter should use uncachedRaise
-            return formatString(raiseNode.get(inliningTarget), getAndValidateSpec(inliningTarget, formatString, raiseNode), str);
+            return formatString(inliningTarget, getAndValidateSpec(inliningTarget, formatString, raiseNode), str);
         }
 
         @TruffleBoundary
-        private static TruffleString formatString(PRaiseNode raiseNode, Spec spec, String str) {
-            TextFormatter formatter = new TextFormatter(raiseNode, spec);
+        private static TruffleString formatString(Node raisingNode, Spec spec, String str) {
+            TextFormatter formatter = new TextFormatter(spec, raisingNode);
             formatter.format(str);
             return formatter.pad().getResult();
         }
@@ -1880,13 +1879,12 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             String selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___MOD__, self);
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, this);
             try {
-                return fromJavaStringNode.execute(new StringFormatProcessor(context, raiseNode, getTupleItemNode, selfStr).format(assertNoJavaString(right)), TS_ENCODING);
+                return fromJavaStringNode.execute(new StringFormatProcessor(context, getTupleItemNode, selfStr, inliningTarget).format(assertNoJavaString(right)), TS_ENCODING);
             } finally {
                 IndirectCallContext.exit(frame, getLanguage(), context, state);
             }

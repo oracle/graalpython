@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -528,7 +528,7 @@ public class Unparser implements SSTreeVisitor<Void> {
                 builder.appendLongNumberUncached(value.getLong());
                 break;
             case DOUBLE:
-                FloatFormatter f = new FloatFormatter(null, FloatBuiltins.StrNode.spec);
+                FloatFormatter f = new FloatFormatter(FloatBuiltins.StrNode.spec, null);
                 f.setMinFracDigits(1);
                 TruffleString result = f.format(value.getDouble()).getResult();
                 appendStr(result);
@@ -551,7 +551,7 @@ public class Unparser implements SSTreeVisitor<Void> {
                 break;
             case COMPLEX:
                 double[] num = value.getComplex();
-                ComplexFormatter formatter = new ComplexFormatter(null, new Spec(-1, Spec.NONE));
+                ComplexFormatter formatter = new ComplexFormatter(new Spec(-1, Spec.NONE), null);
                 formatter.format(num[0], num[1]);
                 appendStr(formatter.pad().getResult());
                 break;
