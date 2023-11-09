@@ -100,7 +100,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
-    private final boolean stdinIsInteractive = System.console() != null;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private boolean snaptshotStartup = false;
@@ -705,7 +704,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[programArgs.size()]));
         contextBuilder.in(consoleHandler.createInputStream());
-        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
+        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(isTTY()));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 
@@ -737,7 +736,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
             }
 
-            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && stdinIsInteractive))) {
+            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && isTTY()))) {
                 print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
@@ -745,7 +744,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             consoleHandler.setContext(context);
 
-            if (commandString != null || inputFile != null || !stdinIsInteractive) {
+            if (commandString != null || inputFile != null || !isTTY()) {
                 try {
                     evalNonInteractive(context, consoleHandler);
                     rc = 0;
@@ -1041,8 +1040,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         options.add("--show-version");
     }
 
-    private ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
-        if (!stdinIsInteractive) {
+    private static ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
+        if (!isTTY()) {
             return new DefaultConsoleHandler(inStream);
         } else {
             return new JLineConsoleHandler(inStream, outStream, false);
