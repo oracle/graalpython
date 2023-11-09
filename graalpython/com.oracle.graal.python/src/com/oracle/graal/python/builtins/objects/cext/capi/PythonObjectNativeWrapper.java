@@ -53,7 +53,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
@@ -66,10 +66,10 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
         super(object);
     }
 
-    public static PythonAbstractObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
+    public static PythonAbstractObjectNativeWrapper wrap(PythonAbstractObject obj, Node inliningTarget, InlinedConditionProfile noWrapperProfile) {
         // important: native wrappers are cached
         PythonAbstractObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-        if (noWrapperProfile.profile(nativeWrapper == null)) {
+        if (noWrapperProfile.profile(inliningTarget, nativeWrapper == null)) {
             nativeWrapper = new PythonObjectNativeWrapper(obj);
             obj.setNativeWrapper(nativeWrapper);
         }

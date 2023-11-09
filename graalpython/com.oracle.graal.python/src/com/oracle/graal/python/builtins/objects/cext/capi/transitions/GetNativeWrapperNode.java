@@ -69,7 +69,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -81,18 +81,20 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization
     static PythonAbstractObjectNativeWrapper doString(TruffleString str,
+                    @Bind("this") Node inliningTarget,
                     @Cached PythonObjectFactory factory,
-                    @Exclusive @Cached ConditionProfile noWrapperProfile) {
-        return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
+                    @Exclusive @Cached InlinedConditionProfile noWrapperProfile) {
+        return PythonObjectNativeWrapper.wrap(factory.createString(str), inliningTarget, noWrapperProfile);
     }
 
     @Specialization
-    PythonAbstractObjectNativeWrapper doBoolean(boolean b,
-                    @Exclusive @Cached ConditionProfile profile) {
-        Python3Core core = PythonContext.get(this);
+    static PythonAbstractObjectNativeWrapper doBoolean(boolean b,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached InlinedConditionProfile profile) {
+        Python3Core core = PythonContext.get(inliningTarget);
         PInt boxed = b ? core.getTrue() : core.getFalse();
         PythonAbstractObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
-        if (profile.profile(nativeWrapper == null)) {
+        if (profile.profile(inliningTarget, nativeWrapper == null)) {
             CompilerDirectives.transferToInterpreter();
             nativeWrapper = PrimitiveNativeWrapper.createBool(b);
             boxed.setNativeWrapper(nativeWrapper);
@@ -101,8 +103,9 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "isSmallInteger(i)")
-    PrimitiveNativeWrapper doIntegerSmall(int i) {
-        PythonContext context = getContext();
+    static PrimitiveNativeWrapper doIntegerSmall(int i,
+                    @Bind("this") Node inliningTarget) {
+        PythonContext context = PythonContext.get(inliningTarget);
         if (context.getCApiContext() != null) {
             return context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
         }
@@ -122,8 +125,9 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "isSmallLong(l)")
-    PrimitiveNativeWrapper doLongSmall(long l) {
-        return doLongSmall(l, getContext());
+    static PrimitiveNativeWrapper doLongSmall(long l,
+                    @Bind("this") Node inliningTarget) {
+        return doLongSmall(l, PythonContext.get(inliningTarget));
     }
 
     @Specialization(guards = "!isSmallLong(l)")
@@ -137,8 +141,9 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "isNaN(d)")
-    PythonNativeWrapper doDoubleNaN(@SuppressWarnings("unused") double d) {
-        PFloat boxed = getContext().getNaN();
+    static PythonNativeWrapper doDoubleNaN(@SuppressWarnings("unused") double d,
+                    @Bind("this") Node inliningTarget) {
+        PFloat boxed = PythonContext.get(inliningTarget).getNaN();
         PythonAbstractObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
         // Use a counting profile since we should enter the branch just once per context.
         if (nativeWrapper == null) {
@@ -151,7 +156,10 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         return nativeWrapper;
     }
 
-    static PythonAbstractObjectNativeWrapper doSingleton(@SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
+    @Specialization(guards = "isSpecialSingleton(object)")
+    static PythonNativeWrapper doSingleton(PythonAbstractObject object,
+                    @Bind("this") Node inliningTarget) {
+        PythonContext context = PythonContext.get(inliningTarget);
         PythonAbstractObjectNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
         if (nativeWrapper == null) {
             // this will happen just once per context and special singleton
@@ -162,11 +170,6 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
             context.setSingletonNativeWrapper(object, nativeWrapper);
         }
         return nativeWrapper;
-    }
-
-    @Specialization(guards = "isSpecialSingleton(object)")
-    PythonNativeWrapper doSingleton(PythonAbstractObject object) {
-        return doSingleton(object, getContext());
     }
 
     @Specialization
@@ -185,11 +188,11 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = {"!isClass(inliningTarget, object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "1")
     static PythonNativeWrapper runAbstractObject(PythonAbstractObject object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached ConditionProfile noWrapperProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached InlinedConditionProfile noWrapperProfile,
                     @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
         assert object != PNone.NO_VALUE;
-        return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
+        return PythonObjectNativeWrapper.wrap(object, inliningTarget, noWrapperProfile);
     }
 
     @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
