@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -108,7 +107,7 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
     @TruffleBoundary
     private static Object createFunctionWrapper(PythonObject object) {
         int flags = getFlags(object);
-        PythonNativeWrapper wrapper;
+        PyProcsWrapper wrapper;
         if (CExtContext.isMethNoArgs(flags)) {
             wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
         } else if (CExtContext.isMethO(flags)) {
@@ -120,7 +119,10 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
         } else {
             throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
-        return ToNativeReplacedNodeGen.getUncached().execute(wrapper);
+        if (wrapper.isReplacingWrapper()) {
+            return wrapper.getReplacement(InteropLibrary.getUncached());
+        }
+        return wrapper;
     }
 
     private static int getFlags(PythonObject object) {

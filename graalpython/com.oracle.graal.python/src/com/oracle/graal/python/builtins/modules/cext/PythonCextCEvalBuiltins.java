@@ -102,9 +102,9 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
-        static PThreadState save(@Cached GilNode gil) {
+        static Object save(@Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
-            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            Object threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
             LOGGER.fine("C extension releases GIL");
             gil.release(context, true);
             return threadState;

@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
@@ -70,7 +69,6 @@ enum ArgBehavior {
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
-    ReplacedPointer("POINTER", "J", "jlong", "long", ToNativeReplacedNodeGen::create, null, null),
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNode::new, null),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
@@ -229,7 +227,7 @@ public enum ArgDescriptor {
     PySliceObject(ArgBehavior.PyObject, "PySliceObject*"),
     PY_SSIZE_T_PTR(ArgBehavior.Pointer, "Py_ssize_t*"),
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
-    PyThreadState(ArgBehavior.ReplacedPointer, "PyThreadState*"),
+    PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
     PyTryBlock("PyTryBlock*"),

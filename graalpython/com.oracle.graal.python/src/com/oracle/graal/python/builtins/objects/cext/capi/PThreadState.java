@@ -38,7 +38,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -54,33 +53,39 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Emulates CPython's {@code PyThreadState} struct.
+ * <p>
+ * This wrapper does intentionally not implement {@link InteropLibrary#isPointer(Object)},
+ * {@link InteropLibrary#asPointer(Object)}, and {@link InteropLibrary#toNative(Object)} because the
+ * factory method {@link #getThreadState(PythonLanguage, PythonContext)} will already return the
+ * appropriate pointer object that implements that.
+ * </p>
  */
-@ExportLibrary(InteropLibrary.class)
 public final class PThreadState extends PythonStructNativeWrapper {
 
     private final PythonThreadState threadState;
+    private final Object replacement;
 
-    private Object replacement;
-
+    @TruffleBoundary
     private PThreadState(PythonThreadState threadState) {
         this.threadState = threadState;
+        // 'registerReplacement' will set the native pointer if not running LLVM managed mode.
+        replacement = registerReplacement(allocateCLayout(threadState), InteropLibrary.getUncached());
     }
 
-    public static PThreadState getThreadState(PythonLanguage language, PythonContext context) {
-        PythonThreadState threadState = context.getThreadState(language);
+    public static Object getThreadState(PythonLanguage language, PythonContext context) {
+        return getThreadState(context.getThreadState(language));
+    }
+
+    public static Object getThreadState(PythonThreadState threadState) {
         PThreadState nativeWrapper = threadState.getNativeWrapper();
         if (nativeWrapper == null) {
             nativeWrapper = new PThreadState(threadState);
             threadState.setNativeWrapper(nativeWrapper);
         }
-        // does not require a 'to_sulong' since it is already a native wrapper type
-        return nativeWrapper;
+        return nativeWrapper.replacement;
     }
 
     public PythonThreadState getThreadState() {
@@ -88,7 +93,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
     }
 
     @TruffleBoundary
-    private Object allocateReplacementObject() {
+    private static Object allocateCLayout(PythonThreadState threadState) {
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
         Object ptr = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyThreadState, true);
         CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
@@ -102,38 +107,5 @@ public final class PThreadState extends PythonStructNativeWrapper {
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
         writePtrNode.write(ptr, CFields.PyThreadState__interp, nullValue);
         return ptr;
-    }
-
-    @Override
-    public boolean isReplacingWrapper() {
-        return true;
-    }
-
-    @Override
-    public Object getReplacement(InteropLibrary lib) {
-        if (replacement == null) {
-            replacement = registerReplacement(allocateReplacementObject(), lib);
-        }
-        return replacement;
-    }
-
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
-
-    @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
-        return getNativePointer();
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    protected void toNative(
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
-        if (!isNative()) {
-            getReplacement(lib);
-        }
     }
 }
