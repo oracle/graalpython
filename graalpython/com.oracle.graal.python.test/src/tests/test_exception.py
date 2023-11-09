@@ -648,3 +648,28 @@ class ExceptionTests(unittest.TestCase):
         except NameError:
             pass
 
+    def expected_exception_in_builtins_allows_subclasses(self):
+        class StopIter1(StopIteration):
+            pass
+
+        class IndexError1(IndexError):
+            pass
+
+        class AttributeError1(AttributeError):
+            pass
+
+        class Iter1:
+            def __iter__(self): return self
+
+            def __next__(self): raise StopIter1
+
+        class Iter2:
+            def __getitem__(self, i): raise IndexError1
+
+        class Obj1:
+            def __getattr__(self, i): raise AttributeError1
+
+        assert list(Iter1()) == []
+        assert list(Iter2()) == []
+        sentinel = object()
+        assert getattr(Obj1(), 'does_not_exist', sentinel) is sentinel
