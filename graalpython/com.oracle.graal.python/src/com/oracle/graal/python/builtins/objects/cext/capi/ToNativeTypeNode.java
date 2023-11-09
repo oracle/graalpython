@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -92,12 +91,12 @@ import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNa
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ToNativeTypeNode {
 
@@ -201,7 +200,6 @@ public abstract class ToNativeTypeNode {
 
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
         PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
-        CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
         CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
         CStructAccess.WriteLongNode writeI64Node = CStructAccessFactory.WriteLongNodeGen.getUncached();
         CStructAccess.WriteIntNode writeI32Node = CStructAccessFactory.WriteIntNodeGen.getUncached();
@@ -264,12 +262,11 @@ public abstract class ToNativeTypeNode {
 
         // return a C string wrapper that really allocates 'char*' on TO_NATIVE
         Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
-        if (docObj instanceof TruffleString) {
-            docObj = new CStringWrapper((TruffleString) docObj);
-        } else if (docObj instanceof PString) {
-            docObj = new CStringWrapper(castToStringNode.execute(null, docObj));
-        } else {
-            docObj = toNative.execute(docObj);
+        try {
+            docObj = new CStringWrapper(CastToTruffleStringNode.executeUncached(docObj));
+        } catch (CannotCastException e) {
+            // if not directly a string, give up (we don't call descriptors here)
+            docObj = ctx.getNativeNull().getPtr();
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
         // TODO: return a proper traverse function, or at least a dummy
