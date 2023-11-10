@@ -201,7 +201,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -1685,7 +1685,7 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
-                        @Cached InlineIsBuiltinClassProfile profile,
+                        @Cached IsBuiltinClassProfile profile,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) CExtNodes.PCallCapiFunction nativeTypeCheck) {
             Object type = getClassNode.execute(inliningTarget, obj);
