@@ -86,6 +86,13 @@ if not sys.modules.get("__main__"):
     sys.modules["__main__"] = type(sys)("<empty>")
 
 
+def get_boolean_env(name, default=False):
+    env = os.environ.get(name)
+    if env is None:
+        return default
+    return env.lower() in ('true', '1')
+
+
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
@@ -100,13 +107,13 @@ GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java']
 
 # Allows disabling rebuild for some mx commands such as graalpytest
-DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
+DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
 
 _COLLECTING_COVERAGE = False
 
-CI = os.environ.get("CI") == "true"
+CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
-BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and WIN32 # disable assertions on win32 until we properly support that platform
+BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 
 if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
@@ -325,7 +332,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         jdk = get_jdk()
 
     # default: assertion checking is enabled
-    if not WIN32 and (extra_vm_args is None or '-da' not in extra_vm_args):
+    if extra_vm_args is None or '-da' not in extra_vm_args:
         vm_args += ['-ea', '-esa']
 
     if extra_vm_args:
@@ -856,6 +863,11 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     else:
         mx_args = ['-p', vm_suite_path, '--env', env_file]
 
+    mx_args.append("--extra-image-builder-argument=-g")
+
+    if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
+        mx_args.append("--extra-image-builder-argument=-ea")
+
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
         # Example of a string we're building here: PYTHON_JAVA_STANDALONE_SVM_SVMEE_JAVA21
@@ -1082,7 +1094,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False, timeout=None, report=False):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None, report=False):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -1259,7 +1271,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                 mx.warn(message)
 
 
-def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
+def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
                          checkIfWithGraalPythonEE=False, report=False):
     python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
     sub_env = dict(
@@ -1281,7 +1293,6 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
         paths=["test_tagged_unittests.py"],
         env=sub_env,
         cwd=cwd,
-        javaAsserts=javaAsserts,
         nonZeroIsFatal=nonZeroIsFatal,
         report=report,
     )
@@ -1406,7 +1417,6 @@ def graalpython_gate_runner(args, tasks):
                 mx.run(["env"])
             run_python_unittests(
                 graalpy_standalone_jvm(),
-                javaAsserts=True,
                 exclude=excluded_tests,
                 nonZeroIsFatal=nonZeroIsFatal,
                 report=report()
@@ -1425,15 +1435,15 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native_managed(), javaAsserts=True, exclude=excluded_tests, report=report())
+            run_python_unittests(graalpy_standalone_native_managed(), exclude=excluded_tests, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], javaAsserts=True, exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True, report=report(), nonZeroIsFatal=nonZeroIsFatal)
+            run_python_unittests(graalpy_standalone_jvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
@@ -1445,8 +1455,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
-            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], report=report())
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
@@ -1737,7 +1747,7 @@ def graalpy_ext(llvm_mode, **kwargs):
 
 
 def dev_tag(arg=None, **kwargs):
-    if os.environ.get('GRAALPYTHONDEVMODE', '1') == '0' or 'dev' not in SUITE.release_version():
+    if not get_boolean_env('GRAALPYTHONDEVMODE', True) or 'dev' not in SUITE.release_version():
         return ''
 
     rev_list = [
@@ -2386,11 +2396,11 @@ def python_coverage(args):
             # deselect some tagged unittests that hang with coverage enabled
             env['TAGGED_UNITTEST_SELECTION'] = "~test_multiprocessing_spawn,test_multiprocessing_main_handling,test_multiprocessing_graalpy"
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False)
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
-                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, timeout=3600, **kwds) # pylint: disable=unexpected-keyword-arg;
+                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
