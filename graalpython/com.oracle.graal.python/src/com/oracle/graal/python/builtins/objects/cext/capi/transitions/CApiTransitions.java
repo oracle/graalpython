@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
@@ -623,36 +622,6 @@ public abstract class CApiTransitions {
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
             return String.format("<0x%016x>", pointer);
-        }
-    }
-
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    public static void firstToNative(PythonAbstractObjectNativeWrapper obj) {
-        /*
-         * This method is called from 'toNative' messages. Therefore, we don't know the exact time
-         * when this will be executed and it may happen after the GIL was released by a C extension.
-         * So, we need to acquire the GIL here to be safe.
-         */
-        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-            assert !obj.isNative();
-            log(obj);
-            obj.setNativePointer(logResultBoundary(HandleFactory.create(obj)));
-        }
-    }
-
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    public static void firstToNative(PythonStructNativeWrapper obj) {
-        /*
-         * This method is called from 'toNative' messages. Therefore, we don't know the exact time
-         * when this will be executed and it may happen after the GIL was released by a C extension.
-         * So, we need to acquire the GIL here to be safe.
-         */
-        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-            assert !obj.isNative();
-            log(obj);
-            obj.setNativePointer(logResultBoundary(HandleFactory.create(obj)));
         }
     }
 
