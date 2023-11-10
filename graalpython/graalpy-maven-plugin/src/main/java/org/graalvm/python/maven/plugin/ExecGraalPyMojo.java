@@ -40,10 +40,7 @@
  */
 package org.graalvm.python.maven.plugin;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +55,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-
+import org.graalvm.python.embedding.utils.GraalPyRunner;
 
 @Mojo(name = "exec", defaultPhase = LifecyclePhase.NONE,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
@@ -93,24 +90,10 @@ public class ExecGraalPyMojo extends AbstractMojo {
         runGraalPy(project, getLog(), args);
     }
 
-    static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
-        var classpath = calculateClasspath(project, log);
-        var workdir = System.getProperty("exec.workingdir");
-        var java = Paths.get(System.getProperty("java.home"), "bin", "java");
-        var cmd = new ArrayList<String>();
-        cmd.add(java.toString());
-        cmd.add("-classpath");
-        cmd.add(String.join(File.pathSeparator, classpath));
-        cmd.add("com.oracle.graal.python.shell.GraalPythonMain");
-        cmd.addAll(List.of(args));
-        var pb = new ProcessBuilder(cmd);
-        if (workdir != null) {
-            pb.directory(new File(workdir));
-        }
-        log.debug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
-        pb.inheritIO();
+    static List<String> runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
+        var classpath = calculateClasspath(project);
         try {
-            pb.start().waitFor();
+            return GraalPyRunner.run(classpath, new MavenLogDelegate(log), args);
         } catch (IOException | InterruptedException e) {
             throw new MojoExecutionException(e);
         }
@@ -120,7 +103,7 @@ public class ExecGraalPyMojo extends AbstractMojo {
         return getGraalPyArtifact(project, PYTHON_LANGUAGE).getVersion();
     }
 
-    private static Collection<Artifact> resolveProjectDependencies(MavenProject project) {
+    static Collection<Artifact> resolveProjectDependencies(MavenProject project) {
         return project.getArtifacts()
             .stream()
             .filter(a -> !"test".equals(a.getScope()))
@@ -137,7 +120,7 @@ public class ExecGraalPyMojo extends AbstractMojo {
         throw new MojoExecutionException(String.format("Missing GraalPy dependency %s:%s. Please add it to your pom", GRAALPY_GROUP, aid));
     }
 
-    private static HashSet<String> calculateClasspath(MavenProject project, Log log) throws MojoExecutionException {
+    private static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
         var classpath = new HashSet<String>();
         getGraalPyArtifact(project, PYTHON_LANGUAGE);
         getGraalPyArtifact(project, PYTHON_LAUNCHER);
@@ -146,6 +129,50 @@ public class ExecGraalPyMojo extends AbstractMojo {
             classpath.add(r.getFile().getAbsolutePath());
         }
         return classpath;
+    }
+
+    private static class MavenLogDelegate implements GraalPyRunner.Log {
+        private final Log delegate;
+
+        private MavenLogDelegate(Log delegate) {
+            this.delegate = delegate;
+        }
+        public void debug(CharSequence var1) {
+            delegate.debug(var1);
+        }
+        public void debug(CharSequence var1, Throwable var2) {
+            delegate.debug(var1, var2);
+        }
+        public void debug(Throwable var1) {
+            delegate.debug(var1);
+        }
+        public void info(CharSequence var1) {
+            delegate.info(var1);
+        }
+        public void info(CharSequence var1, Throwable var2) {
+            delegate.info(var1, var2);
+        }
+        public void info(Throwable var1) {
+            delegate.info(var1);
+        }
+        public void warn(CharSequence var1) {
+            delegate.warn(var1);
+        }
+        public void warn(CharSequence var1, Throwable var2) {
+            delegate.warn(var1, var2);
+        }
+        public void warn(Throwable var1) {
+            delegate.warn(var1);
+        }
+        public void error(CharSequence var1) {
+            delegate.error(var1);
+        }
+        public void error(CharSequence var1, Throwable var2) {
+            delegate.error(var1, var2);
+        }
+        public void error(Throwable var1) {
+            delegate.error(var1);
+        }
     }
 
 }

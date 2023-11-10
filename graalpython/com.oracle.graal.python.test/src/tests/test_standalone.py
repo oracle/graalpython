@@ -130,7 +130,6 @@ def test_polyglot_app():
                     f"-DartifactId={archetypeArtifactId}",
                     f"-Dversion={graalvmVersion}",
                     "-Dpackaging=jar",
-                    "-DgeneratePom=true",
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, env)
@@ -150,7 +149,6 @@ def test_polyglot_app():
                     f"-DartifactId={pluginArtifactId}",
                     f"-Dversion={graalvmVersion}",
                     "-Dpackaging=jar",
-                    "-DgeneratePom=true",
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, env)

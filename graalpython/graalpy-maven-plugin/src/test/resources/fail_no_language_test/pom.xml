@@ -55,12 +55,11 @@ SOFTWARE.
       <plugin>
         <groupId>org.graalvm.python</groupId>
         <artifactId>graalpy-maven-plugin</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>graalpy-maven-plugin-version-string</version>
         <executions>
           <execution>
             <goals>
-              <goal>prepare-venv</goal>
-              <goal>vfs-index</goal>
+              <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>

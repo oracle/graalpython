@@ -40,9 +40,13 @@
  */
 package org.graalvm.python.maven.plugin.tests;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -59,10 +63,32 @@ public class GraalPyPluginTests {
             pp = Path.of(projectDir(), pp.toString());
         }
         var v = new Verifier(pp.resolve(projectDir).toString());
+
+        Path pom = Path.of( buildDir(model), "test-classes", projectDir, "pom.xml");
+        patchVersion(model, pom);
+
         v.setLocalRepo(pp.resolve("local-repo").toString());
         v.setEnvironmentVariable("MVN", "mvn -Dmaven.repo.local=" + v.getLocalRepository());
         Files.createDirectories(Path.of(v.getLocalRepository()));
         return v;
+    }
+
+    private static void patchVersion(Model model, Path pom) throws IOException {
+        if(Files.exists(pom)) {
+            List<String> lines = new ArrayList<>();
+            String l;
+            try (BufferedReader r = Files.newBufferedReader(pom)) {
+                while ((l = r.readLine()) != null) {
+                    lines.add(l.replaceAll("graalpy-maven-plugin-version-string", model.getVersion()));
+                }
+            }
+            try (BufferedWriter w = Files.newBufferedWriter(pom)) {
+                for (String ll : lines) {
+                    w.write(ll);
+                    w.newLine();
+                }
+            }
+        }
     }
 
     static boolean CAN_RUN_TESTS = true;

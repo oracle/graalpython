@@ -46,7 +46,7 @@ SOFTWARE.
   
   <groupId>org.apache.maven.plugin.my.unit</groupId>
   <artifactId>project-to-test</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.0.0</version>
   <packaging>jar</packaging>
   <name>Test MyMojo</name>
 
@@ -75,7 +75,7 @@ SOFTWARE.
       <type>pom</type>
     </dependency>
     <!-- The dependency on python-launcher is only required if the graalpy
-         plugin is used with packages and the prepare-venv goal -->
+         plugin is used with packages -->
     <dependency>
       <groupId>org.graalvm.python</groupId>
       <artifactId>python-launcher</artifactId>
@@ -88,18 +88,17 @@ SOFTWARE.
       <plugin>
         <groupId>org.graalvm.python</groupId>
         <artifactId>graalpy-maven-plugin</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>graalpy-maven-plugin-version-string</version>
         <executions>
           <execution>
             <configuration>
               <packages>
                 <package>termcolor</package>
               </packages>
+            <pythonHome/>
             </configuration>
             <goals>
-              <goal>prepare-venv</goal>
-              <goal>prepare-embedded-home</goal>
-              <goal>vfs-index</goal>
+              <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>

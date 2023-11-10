@@ -50,24 +50,37 @@ SOFTWARE.
   <packaging>jar</packaging>
   <name>Test MyMojo</name>
   
+  <dependencies>
+    <dependency>
+      <groupId>org.graalvm.polyglot</groupId>
+      <artifactId>python</artifactId>
+      <version>23.1.0</version>
+      <type>pom</type>
+    </dependency>
+    <!-- The dependency on python-launcher is only required if the graalpy
+     plugin is used with packages -->
+    <dependency>
+      <groupId>org.graalvm.python</groupId>
+      <artifactId>python-launcher</artifactId>
+      <version>23.1.0</version>
+    </dependency>
+  </dependencies>
+  
   <build>
     <plugins>
       <plugin>
         <groupId>org.graalvm.python</groupId>
         <artifactId>graalpy-maven-plugin</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>graalpy-maven-plugin-version-string</version>
         <executions>
           <execution>
             <goals>
-              <goal>vfs-index</goal>
+              <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>
         <configuration>
-          <packages>
-            <package>psutil</package>
-            <package>termcolor</package>
-          </packages>
+          <pythonHome/>
         </configuration>
       </plugin>
     </plugins>

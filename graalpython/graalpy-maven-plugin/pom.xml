@@ -41,19 +41,20 @@ SOFTWARE.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+    
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.graalvm.python</groupId>
   <artifactId>graalpy-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>0.0.0</version>
+  <version>24.0.0-dev</version>
   <name>graalpy-maven-plugin</name>
 
   <properties>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <graalpy.version>24.0.0-dev</graalpy.version>
   </properties>
 
   <build>
@@ -103,6 +104,12 @@ SOFTWARE.
       <artifactId>junit-jupiter-engine</artifactId>
       <version>5.9.1</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.graalvm.python</groupId>
+      <artifactId>python-embedding</artifactId>
+      <version>${graalpy.version}</version>
     </dependency>
   </dependencies>
 </project>

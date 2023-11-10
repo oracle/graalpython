@@ -43,6 +43,8 @@ package org.graalvm.python.maven.plugin.tests;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class TestRunFullArchetype extends GraalPyPluginTests {
     @Test
     public void runFullArchetype() throws Exception {
@@ -60,8 +62,8 @@ public class TestRunFullArchetype extends GraalPyPluginTests {
         v.setAutoclean(false);
         v.addCliArguments("exec:java", "-Dexec.mainClass=GraalPy");
         v.execute();
-        v.verifyTextInLog("/graalpy_vfs/home/lib/python3.10");
-        v.verifyTextInLog("/graalpy_vfs/home/lib/graalpy23.1/modules");
+        v.verifyTextInLog("/graalpy_vfs/home/lib-python/3");
+        v.verifyTextInLog("/graalpy_vfs/home/lib-graalpython/modules");
         v.verifyTextInLog("/graalpy_vfs/venv/lib/python3.10/site-packages");
     }
 }

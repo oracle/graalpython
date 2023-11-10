@@ -52,7 +52,7 @@ public class TestGenerateLauncherAndVenvDoNotRegen extends GraalPyPluginTests {
     public void generateLauncherAndVenvAndDoNotRegen() throws Exception {
         Assumptions.assumeTrue(CAN_RUN_TESTS);
         var v = getLocalVerifier("prepare_venv_test");
-        v.addCliArguments("generate-resources");
+        v.addCliArguments("process-resources");
         v.execute();
         v.verifyTextInLog("-m venv");
         v.verifyTextInLog("-m ensurepip");

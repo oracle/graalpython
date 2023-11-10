@@ -70,6 +70,6 @@ public class TestVfsIndex extends GraalPyPluginTests {
         assertFalse(lines.contains("/vfs/home/dir_with_file/empty_dir/"), linesStr);
         assertFalse(lines.contains("/vfs/home/empty_dir/"), linesStr);
         assertFalse(lines.contains("/vfs/home/empty_dir/empty_dir/"), linesStr);
-        assertEquals(4, lines.size(), linesStr);
+        assertEquals(5, lines.size(), linesStr);
     }
 }

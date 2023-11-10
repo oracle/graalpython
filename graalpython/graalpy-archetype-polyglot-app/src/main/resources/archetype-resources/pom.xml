@@ -48,15 +48,24 @@
         <executions>
           <execution>
             <configuration>
+              <!-- specify python packages as if used with pip -->
               <packages>
-                <!-- specify python packages as if used with pip -->
                 <package>termcolor==2.2</package>
               </packages>
+              <pythonHome>
+                <!-- java-like regular expression what file paths should be included into venv/home;
+                     default is all -->
+                <includes>
+                  <include>.*</include>
+                </includes>
+                <!-- java-like regular expression what file paths should be excluded from venv/home;
+                     default is none -->
+                <excludes>
+                </excludes>
+              </pythonHome>
             </configuration>
             <goals>
-              <goal>prepare-venv</goal>
-              <goal>prepare-embedded-home</goal>
-              <goal>vfs-index</goal>
+              <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>

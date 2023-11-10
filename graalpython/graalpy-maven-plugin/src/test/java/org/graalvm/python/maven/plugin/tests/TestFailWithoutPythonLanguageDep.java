@@ -51,7 +51,7 @@ public class TestFailWithoutPythonLanguageDep extends GraalPyPluginTests {
     public void failWithoutPythonLanguageDep() throws Exception {
         Assumptions.assumeTrue(CAN_RUN_TESTS);
         var v = getLocalVerifier("fail_no_language_test");
-        v.addCliArguments("generate-resources");
+        v.addCliArguments("process-resources");
         boolean failed = false;
         try {
             v.execute();
