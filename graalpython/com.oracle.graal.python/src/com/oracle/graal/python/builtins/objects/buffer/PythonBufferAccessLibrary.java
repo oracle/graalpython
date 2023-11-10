@@ -76,7 +76,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <li>Doing bulk operations on the contents - {@link #getCopiedByteArray},
  * {@link #readIntoByteArray}, {@link #writeFromByteArray}, {@link #readIntoBuffer}
  * <li>Doing operations on individual elements interpreted as Java primitives - {@link #readByte},
- * {@link #readInt}... {@link #writeByte}, {@link #writeInt}...
+ * {@link #readIntByteOrder}... {@link #writeByte}, {@link #writeIntByteOrder}...
  * <li>Querying the buffer metadata - {@link #getBufferLength}, {@link #isReadonly}...
  * </ul>
  */
@@ -293,9 +293,18 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public short readShort(Object receiver, int byteOffset) {
+        return readShortByteOrder(receiver, byteOffset, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Read a single short from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public short readShortByteOrder(Object receiver, int byteOffset, ByteOrder byteOrder) {
         byte b1 = readByte(receiver, byteOffset);
         byte b2 = readByte(receiver, byteOffset + 1);
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             return (short) (((b2 & 0xFF) << 8) | (b1 & 0xFF));
         } else {
             return (short) (((b1 & 0xFF) << 8) | (b2 & 0xFF));
@@ -308,11 +317,20 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public int readInt(Object receiver, int byteOffset) {
+        return readIntByteOrder(receiver, byteOffset, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Read a single int from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public int readIntByteOrder(Object receiver, int byteOffset, ByteOrder byteOrder) {
         byte b1 = readByte(receiver, byteOffset);
         byte b2 = readByte(receiver, byteOffset + 1);
         byte b3 = readByte(receiver, byteOffset + 2);
         byte b4 = readByte(receiver, byteOffset + 3);
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             return ((b4 & 0xFF) << 8 * 3) | ((b3 & 0xFF) << 8 * 2) | ((b2 & 0xFF) << 8) | ((b1 & 0xFF));
         } else {
             return ((b1 & 0xFF) << 8 * 3) | ((b2 & 0xFF) << 8 * 2) | ((b3 & 0xFF) << 8) | ((b4 & 0xFF));
@@ -325,6 +343,15 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public long readLong(Object receiver, int byteOffset) {
+        return readLongByteOrder(receiver, byteOffset, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Read a single long from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public long readLongByteOrder(Object receiver, int byteOffset, ByteOrder byteOrder) {
         byte b1 = readByte(receiver, byteOffset);
         byte b2 = readByte(receiver, byteOffset + 1);
         byte b3 = readByte(receiver, byteOffset + 2);
@@ -333,7 +360,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
         byte b6 = readByte(receiver, byteOffset + 5);
         byte b7 = readByte(receiver, byteOffset + 6);
         byte b8 = readByte(receiver, byteOffset + 7);
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             return ((b8 & 0xFFL) << (8 * 7)) | ((b7 & 0xFFL) << (8 * 6)) | ((b6 & 0xFFL) << (8 * 5)) | ((b5 & 0xFFL) << (8 * 4)) |
                             ((b4 & 0xFFL) << (8 * 3)) | ((b3 & 0xFFL) << (8 * 2)) | ((b2 & 0xFFL) << 8) | ((b1 & 0xFFL));
         } else {
@@ -348,7 +375,16 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public float readFloat(Object receiver, int byteOffset) {
-        return Float.intBitsToFloat(readInt(receiver, byteOffset));
+        return readFloatByteOrder(receiver, byteOffset, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Read a single float from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public float readFloatByteOrder(Object receiver, int byteOffset, ByteOrder byteOrder) {
+        return Float.intBitsToFloat(readIntByteOrder(receiver, byteOffset, byteOrder));
     }
 
     /**
@@ -357,7 +393,16 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public double readDouble(Object receiver, int byteOffset) {
-        return Double.longBitsToDouble(readLong(receiver, byteOffset));
+        return readDoubleByteOrder(receiver, byteOffset, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Read a single double from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public double readDoubleByteOrder(Object receiver, int byteOffset, ByteOrder byteOrder) {
+        return Double.longBitsToDouble(readLongByteOrder(receiver, byteOffset, byteOrder));
     }
 
     /**
@@ -377,9 +422,18 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeShort(Object receiver, int byteOffset, short value) {
+        writeShortByteOrder(receiver, byteOffset, value, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Write a single short to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeShortByteOrder(Object receiver, int byteOffset, short value, ByteOrder byteOrder) {
         byte b1 = (byte) (value >> 8);
         byte b2 = (byte) value;
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             writeByte(receiver, byteOffset, b2);
             writeByte(receiver, byteOffset + 1, b1);
         } else {
@@ -394,11 +448,20 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeInt(Object receiver, int byteOffset, int value) {
+        writeIntByteOrder(receiver, byteOffset, value, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Write a single int to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeIntByteOrder(Object receiver, int byteOffset, int value, ByteOrder byteOrder) {
         byte b1 = (byte) (value >> 8 * 3);
         byte b2 = (byte) (value >> 8 * 2);
         byte b3 = (byte) (value >> 8);
         byte b4 = (byte) value;
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             writeByte(receiver, byteOffset, b4);
             writeByte(receiver, byteOffset + 1, b3);
             writeByte(receiver, byteOffset + 2, b2);
@@ -417,6 +480,15 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeLong(Object receiver, int byteOffset, long value) {
+        writeLongByteOrder(receiver, byteOffset, value, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Write a single long to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeLongByteOrder(Object receiver, int byteOffset, long value, ByteOrder byteOrder) {
         byte b1 = (byte) (value >> (8 * 7));
         byte b2 = (byte) (value >> (8 * 6));
         byte b3 = (byte) (value >> (8 * 5));
@@ -425,7 +497,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
         byte b6 = (byte) (value >> (8 * 2));
         byte b7 = (byte) (value >> 8);
         byte b8 = (byte) value;
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             writeByte(receiver, byteOffset, b8);
             writeByte(receiver, byteOffset + 1, b7);
             writeByte(receiver, byteOffset + 2, b6);
@@ -452,7 +524,16 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeFloat(Object receiver, int byteOffset, float value) {
-        writeInt(receiver, byteOffset, Float.floatToIntBits(value));
+        writeFloatByteOrder(receiver, byteOffset, value, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Write a single float to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeFloatByteOrder(Object receiver, int byteOffset, float value, ByteOrder byteOrder) {
+        writeIntByteOrder(receiver, byteOffset, Float.floatToIntBits(value), byteOrder);
     }
 
     /**
@@ -461,7 +542,16 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeDouble(Object receiver, int byteOffset, double value) {
-        writeLong(receiver, byteOffset, Double.doubleToLongBits(value));
+        writeDoubleByteOrder(receiver, byteOffset, value, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Write a single double to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeDoubleByteOrder(Object receiver, int byteOffset, double value, ByteOrder byteOrder) {
+        writeLongByteOrder(receiver, byteOffset, Double.doubleToLongBits(value), byteOrder);
     }
 
     /**

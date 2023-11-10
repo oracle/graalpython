@@ -52,6 +52,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
+import java.nio.ByteOrder;
+
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
@@ -197,32 +199,32 @@ public final class PByteArray extends PBytesLike {
     }
 
     @ExportMessage
-    void writeShort(int byteOffset, short value,
+    void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeShort(store, byteOffset, value);
+        bufferLib.writeShortByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeInt(int byteOffset, int value,
+    void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeInt(store, byteOffset, value);
+        bufferLib.writeIntByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeLong(int byteOffset, long value,
+    void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeLong(store, byteOffset, value);
+        bufferLib.writeLongByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeFloat(int byteOffset, float value,
+    void writeFloatByteOrder(int byteOffset, float value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeFloat(store, byteOffset, value);
+        bufferLib.writeFloatByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeDouble(int byteOffset, double value,
+    void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeDouble(store, byteOffset, value);
+        bufferLib.writeDoubleByteOrder(store, byteOffset, value, byteOrder);
     }
 }

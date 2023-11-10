@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -392,76 +393,76 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    short readShort(int byteOffset,
+    short readShortByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         assert isCContiguous() && !isReleased();
-        return bufferLib.readShort(buffer, offset + byteOffset);
+        return bufferLib.readShortByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeShort(int byteOffset, short value,
-                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
-        assert !readonly;
-        bufferLib.writeShort(buffer, offset + byteOffset, value);
-    }
-
-    @ExportMessage
-    int readInt(int byteOffset,
-                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
-        return bufferLib.readInt(buffer, offset + byteOffset);
-    }
-
-    @ExportMessage
-    void writeInt(int byteOffset, int value,
+    void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         assert isCContiguous() && !isReleased();
         assert !readonly;
-        bufferLib.writeInt(buffer, offset + byteOffset, value);
+        bufferLib.writeShortByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    long readLong(int byteOffset,
+    int readIntByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         assert isCContiguous() && !isReleased();
-        return bufferLib.readLong(buffer, offset + byteOffset);
+        return bufferLib.readIntByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeLong(int byteOffset, long value,
-                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
-        assert !readonly;
-        bufferLib.writeLong(buffer, offset + byteOffset, value);
-    }
-
-    @ExportMessage
-    float readFloat(int byteOffset,
-                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
-        return bufferLib.readFloat(buffer, offset + byteOffset);
-    }
-
-    @ExportMessage
-    void writeFloat(int byteOffset, float value,
-                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert !readonly;
-        bufferLib.writeFloat(buffer, offset + byteOffset, value);
-    }
-
-    @ExportMessage
-    double readDouble(int byteOffset,
-                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
-        return bufferLib.readDouble(buffer, offset + byteOffset);
-    }
-
-    @ExportMessage
-    void writeDouble(int byteOffset, double value,
+    void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         assert isCContiguous() && !isReleased();
         assert !readonly;
-        bufferLib.writeDouble(buffer, offset + byteOffset, value);
+        bufferLib.writeIntByteOrder(buffer, offset + byteOffset, value, byteOrder);
+    }
+
+    @ExportMessage
+    long readLongByteOrder(int byteOffset, ByteOrder byteOrder,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readLongByteOrder(buffer, offset + byteOffset, byteOrder);
+    }
+
+    @ExportMessage
+    void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeLongByteOrder(buffer, offset + byteOffset, value, byteOrder);
+    }
+
+    @ExportMessage
+    float readFloatByteOrder(int byteOffset, ByteOrder byteOrder,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readFloatByteOrder(buffer, offset + byteOffset, byteOrder);
+    }
+
+    @ExportMessage
+    void writeFloatByteOrder(int byteOffset, float value, ByteOrder byteOrder,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert !readonly;
+        bufferLib.writeFloatByteOrder(buffer, offset + byteOffset, value, byteOrder);
+    }
+
+    @ExportMessage
+    double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readDoubleByteOrder(buffer, offset + byteOffset, byteOrder);
+    }
+
+    @ExportMessage
+    void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeDoubleByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }
 }
