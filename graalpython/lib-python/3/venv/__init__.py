@@ -246,6 +246,10 @@ class EnvBuilder:
             f.write('version = %d.%d.%d\n' % sys.version_info[:3])
             if self.prompt is not None:
                 f.write(f'prompt = {self.prompt!r}\n')
+            # Truffle change: setup our a launcher by adding the path to the creating executable
+            if os.name == 'nt':
+                f.write('venvlauncher_command = %s\n', __graalpython__.venvlauncher_command or sys.executable)
+            # End of Truffle change
 
     if os.name != 'nt':
         def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
@@ -309,14 +313,6 @@ class EnvBuilder:
                 return
 
             shutil.copyfile(src, dst)
-            # Truffle change: setup our a launcher by appending the path to the creating executable
-            if src == srcfn:
-                with open(dst, "ab") as f:
-                    sz = f.write((__graalpython__.venvlauncher_command or sys.executable).encode("utf-16le"))
-                    import struct
-                    assert f.write(struct.pack("@I", sz)) == 4
-                    f.flush()
-            # End of Truffle change
 
     def setup_python(self, context):
         """

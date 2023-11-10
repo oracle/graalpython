@@ -7,10 +7,13 @@
 
 #include <windows.h>
 #include <pathcch.h>
+#include <stringapiset.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <share.h>
+
+#pragma comment(lib, "Pathcch.lib")
 
 #define MAXLEN PATHCCH_MAX_CCH
 #define MSGSIZE 1024
@@ -144,7 +147,7 @@ launchEnvironment(wchar_t *env, wchar_t *exe)
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
 
-    debug(L"# about to run: %s\n", exe);
+    debug(L"\n# about to run: %s\n", exe);
     job = CreateJobObject(NULL, NULL);
     ok = QueryInformationJobObject(job, JobObjectExtendedLimitInformation, &info, sizeof(info), &rc);
     if (!ok || (rc != sizeof(info)) || !job) {
@@ -198,11 +201,14 @@ launchEnvironment(wchar_t *env, wchar_t *exe)
 #define GRAAL_PYTHON_ARGS L"GRAAL_PYTHON_ARGS="
 #define GRAAL_PYTHON_EXE_ARG L"--python.Executable="
 #define GRAAL_PYTHON_BASE_EXE_ARG L"--python.VenvlauncherCommand="
+#define GRAAL_PYTHON_COMMAND_CFG "venvlauncher_command = "
+#define PYVENV_CFG L"pyvenv.cfg"
 
 int
 wmain(int argc, wchar_t ** argv)
 {
     FILE * currentExeFile = NULL;
+    FILE * pyvenvCfgFile = NULL;
     uint32_t newExecutableSize = 0;
     wchar_t * env = NULL;
     wchar_t * envCur = NULL;
@@ -219,6 +225,12 @@ wmain(int argc, wchar_t ** argv)
     int currentExecutableSize = sizeof(currentExecutable) / sizeof(currentExecutable[0]);
     memset(currentExecutable, 0, sizeof(currentExecutable));
 
+    wchar_t pyvenvCfg[MAXLEN];
+    memset(pyvenvCfg, 0, sizeof(pyvenvCfg));
+
+    char pyvenvcfg_command[MAXLEN];
+    memset(pyvenvcfg_command, 0, sizeof(pyvenvcfg_command));
+
     if (isEnvVarSet(L"PYLAUNCHER_DEBUG")) {
         setvbuf(stderr, (char *)NULL, _IONBF, 0);
         log_fp = stderr;
@@ -234,32 +246,72 @@ wmain(int argc, wchar_t ** argv)
     }
     debug(L"exe: %s\n", currentExecutable);
 
-    // read path to executable that created the venv from the end of the launcher
-    currentExeFile = _wfsopen(currentExecutable, L"rb", _SH_DENYNO);
-    if (!currentExeFile) {
-        winerror(0, L"Failed to open current executable for reading");
-        goto abort;
+    // check if there's a pyvenv.cfg with a command
+    memcpy(pyvenvCfg, currentExecutable, MAXLEN);
+    PathCchRemoveFileSpec(pyvenvCfg, MAXLEN);
+    PathCchAppend(pyvenvCfg, MAXLEN, PYVENV_CFG);
+    pyvenvCfgFile = _wfsopen(pyvenvCfg, L"r", _SH_DENYNO);
+    if (!pyvenvCfgFile) {
+        debug(L"no pyvenv.cfg at %s\n", pyvenvCfg);
+        PathCchRemoveFileSpec(pyvenvCfg, MAXLEN);
+        PathCchRemoveFileSpec(pyvenvCfg, MAXLEN);
+        PathCchAppend(pyvenvCfg, MAXLEN, PYVENV_CFG);
+        pyvenvCfgFile = _wfsopen(pyvenvCfg, L"r", _SH_DENYNO);
     }
-    exitCode = fseek(currentExeFile, -sizeof(newExecutableSize), SEEK_END);
-    if (exitCode) {
-        error(L"Failed to seek to end of current executable");
-        goto abort;
+    if (pyvenvCfgFile) {
+        debug(L"pyvenv.cfg at %s\n", pyvenvCfg);
+        int i = 0;
+        while (fread_s(pyvenvcfg_command + i, sizeof(pyvenvcfg_command), 1, 1, pyvenvCfgFile)) {
+            if (pyvenvcfg_command[i] == GRAAL_PYTHON_COMMAND_CFG[i]) {
+                ++i;
+            } else {
+                i = 0;
+            }
+            if (strcmp(GRAAL_PYTHON_COMMAND_CFG, pyvenvcfg_command) == 0) {
+                for (i = 0; i < sizeof(pyvenvcfg_command); ++i) {
+                    if (fread_s(pyvenvcfg_command + i, sizeof(pyvenvcfg_command), 1, 1, pyvenvCfgFile) < 1
+                        || pyvenvcfg_command[i] == '\r'
+                        || pyvenvcfg_command[i] == '\n') {
+                        newExecutableSize = MultiByteToWideChar(CP_UTF8, 0, pyvenvcfg_command, i, newExecutable + 1, sizeof(newExecutable) - 2);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    } else {
+        debug(L"no pyvenv.cfg at %s\n", pyvenvCfg);
     }
-    exitCode = fread_s(&newExecutableSize, sizeof(newExecutableSize), sizeof(newExecutableSize), 1, currentExeFile);
-    if (exitCode != 1) {
-        error(L"Failed to read size of original executable from end of current executable, tried to read %d, but only got %d", sizeof(newExecutableSize), exitCode);
-        goto abort;
+
+    if (!newExecutableSize) {
+        // read path to executable that created the venv from the end of the launcher
+        currentExeFile = _wfsopen(currentExecutable, L"rb", _SH_DENYNO);
+        if (!currentExeFile) {
+            winerror(0, L"Failed to open current executable for reading");
+            goto abort;
+        }
+        exitCode = fseek(currentExeFile, -sizeof(newExecutableSize), SEEK_END);
+        if (exitCode) {
+            error(L"Failed to seek to end of current executable");
+            goto abort;
+        }
+        exitCode = fread_s(&newExecutableSize, sizeof(newExecutableSize), sizeof(newExecutableSize), 1, currentExeFile);
+        if (exitCode != 1) {
+            error(L"Failed to read size of original executable from end of current executable, tried to read %d, but only got %d", sizeof(newExecutableSize), exitCode);
+            goto abort;
+        }
+        exitCode = fseek(currentExeFile, -newExecutableSize - sizeof(newExecutableSize), SEEK_END);
+        if (exitCode) {
+            error(L"Failed to seek to beginning of original executable string from end of current executable");
+            goto abort;
+        }
+        exitCode = fread_s(newExecutable + 1, sizeof(newExecutable) - 2, 1, newExecutableSize, currentExeFile);
+        if (exitCode != newExecutableSize) {
+            error(L"Failed to read original executable of length %d from current executable, got %d", newExecutableSize, exitCode);
+            goto abort;
+        }
     }
-    exitCode = fseek(currentExeFile, -newExecutableSize - sizeof(newExecutableSize), SEEK_END);
-    if (exitCode) {
-        error(L"Failed to seek to beginning of original executable string from end of current executable");
-        goto abort;
-    }
-    exitCode = fread_s(newExecutable + 1, sizeof(newExecutable) - 2, 1, newExecutableSize, currentExeFile);
-    if (exitCode != newExecutableSize) {
-        error(L"Failed to read original executable of length %d from current executable, got %d", newExecutableSize, exitCode);
-        goto abort;
-    }
+
     if (wcschr(newExecutable + 1, L'"')) {
         // quotes are not allowed in paths, so this is a complete commandline
         debug(L"new exe has quotes, treating it as commandline\n");
@@ -406,6 +458,7 @@ wmain(int argc, wchar_t ** argv)
     exitCode = launchEnvironment(newEnv, newExeStart);
 
 abort:
+    if (pyvenvCfgFile) fclose(pyvenvCfgFile);
     if (currentExeFile) fclose(currentExeFile);
     if (env) FreeEnvironmentStringsW(env);
     if (newEnv) free(newEnv);
