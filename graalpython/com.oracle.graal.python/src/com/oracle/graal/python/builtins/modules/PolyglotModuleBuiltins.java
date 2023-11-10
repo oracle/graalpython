@@ -628,6 +628,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__);
 
         @Specialization
+        @TruffleBoundary
         Object register(PythonAbstractObject receiver, @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
