@@ -966,8 +966,9 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedExactClassProfile nativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
+                        @Cached CStructAccess.ReadI64Node readI64Node,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
@@ -1016,8 +1017,14 @@ public abstract class CApiTransitions {
                         }
                         return createAbstractNativeObject(value, needsTransfer(), pointer);
                     }
-                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
-                        wrapper = (PythonNativeWrapper) ref;
+                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
+                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
+                        wrapper = nativeWrapper;
+                        /*
+                         * In this case, the native object is a stub and we need to sync the
+                         * reference count to keep it consistent with the wrapper's reference count.
+                         */
+                        nativeWrapper.updateRefCountFromNative(pointer, needsTransfer() ? -1 : 0);
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
                         if (needsTransfer()) {
@@ -1118,10 +1125,11 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedExactClassProfile nativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
                         @Cached InlinedExactClassProfile wrapperProfile) {
 
+            CompilerAsserts.partialEvaluationConstant(stealing);
             PythonNativeWrapper wrapper;
 
             PythonContext pythonContext = PythonContext.get(inliningTarget);
@@ -1150,8 +1158,14 @@ public abstract class CApiTransitions {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         return createAbstractNativeObject(pointer, stealing, pointer);
                     }
-                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
-                        wrapper = (PythonNativeWrapper) ref;
+                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
+                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
+                        wrapper = nativeWrapper;
+                        /*
+                         * In this case, the native object is a stub and we need to sync the
+                         * reference count to keep it consistent with the wrapper's reference count.
+                         */
+                        nativeWrapper.updateRefCountFromNative(pointer, stealing ? -1 : 0);
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
                         if (stealing) {
@@ -1192,6 +1206,23 @@ public abstract class CApiTransitions {
         return refCount - refCntDelta;
     }
 
+    public static long readNativeRefCount(long pointer) {
+        long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value for %016x (%d %016x)\n", pointer, refCount, refCount);
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.finest(PythonUtils.formatJString("readNativeRefCount(%x) = %d (%x)", pointer, refCount, refCount));
+        }
+        return refCount;
+    }
+
+    public static void writeNativeRefCount(long pointer, long newValue) {
+        assert newValue > 0 : PythonUtils.formatJString("refcnt value to write below zero for %016x (%d %016x)\n", pointer, newValue, newValue);
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.finest(PythonUtils.formatJString("writeNativeRefCount(%x, %d (%x))", pointer, newValue, newValue));
+        }
+        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, newValue);
+    }
+
     private static Object createAbstractNativeObject(Object obj, boolean transfer, long pointer) {
         assert isBackendPointerObject(obj) : obj.getClass();
 
@@ -1222,7 +1253,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isNullProfile,
                         @Cached InlinedConditionProfile isLongProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedExactClassProfile nativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile) {
             long pointer;
             if (isLongProfile.profile(inliningTarget, obj instanceof Long)) {
@@ -1260,8 +1291,14 @@ public abstract class CApiTransitions {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                     }
-                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
-                        return (PythonNativeWrapper) ref;
+                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
+                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
+                        /*
+                         * In this case, the native object is a stub and we need to sync the
+                         * reference count to keep it consistent with the wrapper's reference count.
+                         */
+                        nativeWrapper.updateRefCountFromNative(pointer, 0);
+                        return nativeWrapper;
                     }
                 }
                 return null;
