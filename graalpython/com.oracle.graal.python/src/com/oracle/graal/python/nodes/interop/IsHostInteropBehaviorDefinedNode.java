@@ -63,9 +63,9 @@ public abstract class IsHostInteropBehaviorDefinedNode extends Node {
 
     @Specialization
     static boolean isDefined(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
-                       @Cached GetClassNode getClassNode,
-                       @Cached InlinedConditionProfile isMethodDefined,
-                       @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached InlinedConditionProfile isMethodDefined,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
         return value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
