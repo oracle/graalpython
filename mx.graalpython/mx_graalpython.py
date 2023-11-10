@@ -39,6 +39,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from functools import wraps
+from pathlib import Path
 from textwrap import dedent
 
 import mx_urlrewrites
@@ -878,6 +879,11 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     # this might fail because of additional output
     mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out, quiet=True)
     python_home = out.data.splitlines()[-1].strip()
+    if dev and standalone_type == 'native':
+        path = Path(python_home)
+        debuginfo = path / '../../libpythonvm.so.image/libpythonvm.so.debug'
+        if debuginfo.exists():
+            shutil.copy(debuginfo, path / 'lib')
     return python_home
 
 
