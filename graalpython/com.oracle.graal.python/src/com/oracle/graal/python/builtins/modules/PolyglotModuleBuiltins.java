@@ -636,8 +636,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
-                final PFunction[] functions = new PFunction[HostInteropBehaviorMethod.values().length];
-                final boolean[] constants = new boolean[HostInteropBehaviorMethod.values().length];
+                final PFunction[] functions = new PFunction[HostInteropBehaviorMethod.getLength()];
+                final boolean[] constants = new boolean[HostInteropBehaviorMethod.getLength()];
 
                 for (PKeyword kw : keywords) {
                     String name = castToJavaStringNode.execute(kw.getName());

@@ -52,15 +52,15 @@ import com.oracle.truffle.api.object.Shape;
 public class PHostInteropBehavior extends PythonBuiltinObject {
     private final PythonAbstractObject receiver;
 
-    private final CallTarget[] callTargets = new CallTarget[HostInteropBehaviorMethod.values().length];
-    private final PythonObject[] globals = new PythonObject[HostInteropBehaviorMethod.values().length];
+    private final CallTarget[] callTargets = new CallTarget[HostInteropBehaviorMethod.getLength()];
+    private final PythonObject[] globals = new PythonObject[HostInteropBehaviorMethod.getLength()];
     private final boolean[] constants;
 
     public PHostInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
         super(cls, instanceShape);
         this.receiver = receiver;
-        assert functions.length == HostInteropBehaviorMethod.values().length;
-        assert constants.length == HostInteropBehaviorMethod.values().length;
+        assert functions.length == HostInteropBehaviorMethod.getLength();
+        assert constants.length == HostInteropBehaviorMethod.getLength();
         this.constants = constants;
         for (int i = 0; i < functions.length; i++) {
             PFunction function = functions[i];
