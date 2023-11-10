@@ -976,7 +976,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     static LocalTime constructTimeStruct(Object receiver, CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib) throws UnsupportedMessageException {
         return constructTime(receiver, castToIntNode, inliningTarget, lib,
-                        "tm_hour", "tm_minute", "tm_sec", null);
+                        "tm_hour", "tm_min", "tm_sec", null);
     }
 
     static LocalTime constructTime(Object receiver, CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib,

@@ -222,7 +222,7 @@ public enum HostInteropBehaviorMethod {
     write_hash_entry(J_WRITE_HASH_ENTRY, T_WRITE_HASH_ENTRY, 2),
     remove_hash_entry(J_REMOVE_HASH_ENTRY, T_REMOVE_HASH_ENTRY, 1);
 
-    public static HostInteropBehaviorMethod[] VALUES = HostInteropBehaviorMethod.values();
+    public static final HostInteropBehaviorMethod[] VALUES = HostInteropBehaviorMethod.values();
 
     public static int getLength() {
         return VALUES.length;
