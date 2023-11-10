@@ -125,7 +125,6 @@ def _get_posix_vars():
     g['LIBDIR'] = __graalpython__.capi_home
     g['LIBDEST'] = __graalpython__.capi_home
     g['LDLIBRARY'] = 'libpython.' + so_abi + so_ext
-    g['WITH_THREAD'] = 1
     return g
 
 
