@@ -1395,5 +1395,23 @@ suite = {
             },
             "maven": False,
         },
+
+        "graalpy-archetype-polyglot-app": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
+
+        "graalpy-maven-plugin": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
     },
 }
