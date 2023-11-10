@@ -256,7 +256,7 @@ logger.warning("Bye")
 for record in handler.this.logged:
     print(f'Python captured message "{record.getMessage()}" at level {record.getLevel().getName()}')
 ```
-
+Note: The `__init__` method is called after the Java constructor, so the `self` object is already initialized. As a consequence, the `__init__` method cannot have any parameters other than `self` (any arguments passed while constructing the object are passed to the Java constructor implicitly).
 ## Embedding Python into Java
 
 The other way to use Jython is to embed it into Java applications.
