@@ -27,7 +27,7 @@ import warnings
 import test.support
 import test.support.script_helper
 from test import support
-from test.support import hashlib_helper
+from test.support import hashlib_helper, gc_collect
 from test.support import import_helper
 from test.support import os_helper
 from test.support import socket_helper
@@ -5306,6 +5306,9 @@ class TestStartMethod(unittest.TestCase):
 @unittest.skipIf(sys.platform == "win32",
                  "test semantics don't make sense on Windows")
 class TestResourceTracker(unittest.TestCase):
+    # GraalPy change: try trigger all the cleanup, or the leftover finalizers interfere with subsequent tests
+    def tearDown(self):
+        gc_collect()
 
     def test_resource_tracker(self):
         #
@@ -5407,7 +5410,7 @@ class TestResourceTracker(unittest.TestCase):
             # ensure `sem` gets collected, which triggers communication with
             # the semaphore tracker
             del sem
-            gc.collect()
+            gc_collect()
             self.assertIsNone(wr())
             if should_die:
                 self.assertEqual(len(all_warn), 1)
@@ -5928,7 +5931,7 @@ class ManagerMixin(BaseMixin):
                                       f"active children after {dt} seconds")
                 break
 
-        gc.collect()                       # do garbage collection
+        gc_collect()                       # do garbage collection
         if cls.manager._number_of_objects() != 0:
             # This is not really an error since some tests do not
             # ensure that all processes which hold a reference to a
