@@ -53,8 +53,6 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_IS_DURATION = tsLiteral(J_IS_DURATION);
     public static final String J_IS_EXCEPTION = "is_exception";
     public static final TruffleString T_IS_EXCEPTION = tsLiteral(J_IS_EXCEPTION);
-    public static final String J_IS_INSTANT = "is_instant";
-    public static final TruffleString T_IS_INSTANT = tsLiteral(J_IS_INSTANT);
     public static final String J_IS_ITERATOR = "is_iterator";
     public static final TruffleString T_IS_ITERATOR = tsLiteral(J_IS_ITERATOR);
     public static final String J_IS_NULL = "is_null";
@@ -97,8 +95,6 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_AS_DURATION = tsLiteral(J_AS_DURATION);
     public static final String J_AS_FLOAT = "as_float";
     public static final TruffleString T_AS_FLOAT = tsLiteral(J_AS_FLOAT);
-    public static final String J_AS_INSTANT = "as_instant";
-    public static final TruffleString T_AS_INSTANT = tsLiteral(J_AS_INSTANT);
     public static final String J_AS_INT = "as_int";
     public static final TruffleString T_AS_INT = tsLiteral(J_AS_INT);
     public static final String J_AS_LONG = "as_long";

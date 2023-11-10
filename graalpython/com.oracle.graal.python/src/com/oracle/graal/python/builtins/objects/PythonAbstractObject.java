@@ -61,6 +61,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -319,8 +320,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.write_array_element, key, value);
-        if (value == PNone.NO_VALUE) {
+        Object interopValue = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.write_array_element, key, value);
+        if (interopValue == PNone.NO_VALUE) {
             boolean mustRelease = gil.acquire();
             try {
                 if (interopLib.hasArrayElements(this)) {
@@ -894,7 +895,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
+                    @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_date);
         if (value != PNone.NO_VALUE) {
             return constructDate(castToIntNode, inliningTarget, lib, value);
@@ -1012,7 +1013,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
+                    @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_time);
         if (value != PNone.NO_VALUE) {
             return constructTime(value, castToIntNode, inliningTarget, lib);
@@ -1056,7 +1057,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary(limit = "2") InteropLibrary lib) {
+                    @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.is_time_zone);
         if (value != PNone.NO_VALUE) {
             assert HostInteropBehaviorMethod.is_time_zone.isConstantBoolean();
@@ -1230,6 +1231,44 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @TruffleBoundary
     private static LocalDate createLocalDate(int year, int month, int day) {
         return LocalDate.of(year, month, day);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean isDuration(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) {
+        return getValue.executeBoolean(inliningTarget, this, HostInteropBehaviorMethod.is_duration, false);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Duration asDuration(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_duration);
+        if (value != PNone.NO_VALUE) {
+            return constructDuration(value, toLongNode, inliningTarget, lib);
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    private static Duration constructDuration(Object receiver, CastToJavaLongExactNode castToLongNode, Node inliningTarget, InteropLibrary lib) throws UnsupportedMessageException {
+        try {
+            long sec = castToLongNode.execute(inliningTarget, lib.readMember(receiver, "seconds"));
+            long nano = castToLongNode.execute(inliningTarget, lib.readMember(receiver, "nano_adjustment"));
+            return createDuration(sec, nano);
+        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @TruffleBoundary
+    private static Duration createDuration(long seconds, long nanoAdjustment) {
+        return Duration.ofSeconds(seconds, nanoAdjustment);
     }
 
     @GenerateUncached
@@ -2093,7 +2132,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public byte asByte(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaByteNode toByteNode) throws UnsupportedMessageException {
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaByteNode toByteNode) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_byte);
         if (value != PNone.NO_VALUE) {
             return toByteNode.execute(inliningTarget, value);
@@ -2105,7 +2145,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public short asShort(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaShortNode toShortNode) throws UnsupportedMessageException {
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaShortNode toShortNode) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_short);
         if (value != PNone.NO_VALUE) {
             return toShortNode.execute(inliningTarget, value);
@@ -2130,7 +2171,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public long asLong(@Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaLongExactNode toLongNode) throws UnsupportedMessageException {
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaLongExactNode toLongNode) throws UnsupportedMessageException {
         Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.as_long);
         if (value != PNone.NO_VALUE) {
             return toLongNode.execute(inliningTarget, value);
