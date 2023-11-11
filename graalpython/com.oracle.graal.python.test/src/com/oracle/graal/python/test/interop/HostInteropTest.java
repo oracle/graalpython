@@ -418,7 +418,6 @@ public class HostInteropTest extends PythonTests {
                             is_hash_entry_removable=lambda t, k: k in t.data,
                             is_hash_entry_insertable=lambda t, k: k not in t.data,
                             read_hash_value=lambda t, k: t.data.get(k),
-                            read_hash_value_or_default=lambda t, k, d: t.data.get(k, d),
                             remove_hash_entry=lambda t, k: t.remove(k),
                             write_hash_entry=lambda t, k, v: t.put(k, v)
                         )

@@ -143,8 +143,6 @@ public abstract class HostInteropMethodNames {
     public static final TruffleString T_GET_HASH_SIZE = tsLiteral(J_GET_HASH_SIZE);
     public static final String J_READ_HASH_VALUE = "get_hash_value";
     public static final TruffleString T_READ_HASH_VALUE = tsLiteral(J_READ_HASH_VALUE);
-    public static final String J_READ_HASH_VALUE_OR_DEFAULT = "get_hash_value_or_default";
-    public static final TruffleString T_READ_HASH_VALUE_OR_DEFAULT = tsLiteral(J_READ_HASH_VALUE_OR_DEFAULT);
     public static final String J_GET_HASH_VALUES_ITERATOR = "get_hash_values_iterator";
     public static final TruffleString T_GET_HASH_VALUES_ITERATOR = tsLiteral(J_GET_HASH_VALUES_ITERATOR);
     public static final String J_HAS_HASH_ENTRIES = "has_hash_entries";

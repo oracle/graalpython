@@ -218,7 +218,6 @@ public enum HostInteropBehaviorMethod {
     is_hash_entry_insertable(J_IS_HASH_ENTRY_INSERTABLE, T_IS_HASH_ENTRY_INSERTABLE, 1),
     is_hash_entry_removable(J_IS_HASH_ENTRY_REMOVABLE, T_IS_HASH_ENTRY_REMOVABLE, 1),
     read_hash_value(J_READ_HASH_VALUE, T_READ_HASH_VALUE, 1),
-    read_hash_value_or_default(J_READ_HASH_VALUE_OR_DEFAULT, T_READ_HASH_VALUE_OR_DEFAULT, 2),
     write_hash_entry(J_WRITE_HASH_ENTRY, T_WRITE_HASH_ENTRY, 2),
     remove_hash_entry(J_REMOVE_HASH_ENTRY, T_REMOVE_HASH_ENTRY, 1);
 

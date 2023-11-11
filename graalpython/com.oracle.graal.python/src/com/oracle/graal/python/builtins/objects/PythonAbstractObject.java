@@ -2301,18 +2301,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public Object readHashValueOrDefault(Object key, Object defaultValue,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, HostInteropBehaviorMethod.read_hash_value_or_default, key, defaultValue);
-        if (value != PNone.NO_VALUE) {
-            return value;
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryReadable(Object key,
                     @Bind("$node") Node inliningTarget,
                     @Shared("getValue") @Cached GetHostInteropBehaviorValueNode getValue,
