@@ -146,7 +146,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
     };
     private static final String DEFAULT_UNIX_MOUNT_POINT = "/graalpy_vfs";
-    private static final String DEFAULT_WINDOWS_MOUNT_POINT = "X:${symbol_escape}${symbol_escape}graalpy_vfs";
+    private static final String DEFAULT_WINDOWS_MOUNT_POINT = "x:${symbol_escape}${symbol_escape}graalpy_vfs";
 
     public VirtualFileSystem() {
         this(DEFAULT_EXTRACT_FILTER);
@@ -365,7 +365,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         String entryKey = caseInsensitive ? pathString.toLowerCase(Locale.ROOT) : pathString;
         Entry e = VFS_ENTRIES.get(entryKey);
         if(e == null) {
-            pathString = platformPathToResourcePath(pathString);
+            pathString = platformPathToResourcePath(entryKey);
             URL uri = pathString == null ? null : VirtualFileSystem.class.getResource(pathString);
             if(uri != null) {
                 if(getDirsList().contains(pathString)) {

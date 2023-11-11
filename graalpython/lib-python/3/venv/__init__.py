@@ -248,7 +248,7 @@ class EnvBuilder:
                 f.write(f'prompt = {self.prompt!r}\n')
             # Truffle change: setup our a launcher by adding the path to the creating executable
             if os.name == 'nt':
-                f.write('venvlauncher_command = %s\n', __graalpython__.venvlauncher_command or sys.executable)
+                f.write('venvlauncher_command = %s\n' % (__graalpython__.venvlauncher_command or sys.executable))
             # End of Truffle change
 
     if os.name != 'nt':
