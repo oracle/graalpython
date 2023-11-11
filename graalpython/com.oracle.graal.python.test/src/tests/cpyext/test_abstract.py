@@ -652,6 +652,10 @@ class TestAbstractWithNative(object):
         assert NativeSequence.is_sequence(sequence)
         assert not NativeMapping.is_mapping(sequence)
 
+    def test___name__(self):
+        QualifiedType = CPyExtType("QualifiedType", tp_name="my.nested.package.QualifiedType")
+        assert QualifiedType.__name__ == 'QualifiedType'
+
 
 class TestAbstract(CPyExtTestCase):
 

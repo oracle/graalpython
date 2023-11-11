@@ -36,15 +36,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import gc
-
-import sys
 import os
-from io import StringIO
-
 from importlib import invalidate_caches
+from io import StringIO
+from pathlib import Path
 from string import Formatter
-__dir__ = __file__.rpartition("/")[0]
+
+import gc
+import sys
+
+DIR = Path(__file__).parent.absolute()
 
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
@@ -101,7 +102,7 @@ def ccompile(self, name):
     from hashlib import sha256
     EXT_SUFFIX = get_config_var("EXT_SUFFIX")
 
-    source_file = '%s/%s.c' % (__dir__, name)
+    source_file = DIR / f'{name}.c'
     file_not_empty(source_file)
 
     # compute checksum of source file
@@ -113,23 +114,23 @@ def ccompile(self, name):
     cur_checksum = m.hexdigest()
 
     # see if there is already a checksum file
-    checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
+    checksum_file = DIR / f'{name}{EXT_SUFFIX}.sha256'
     available_checksum = ""
-    if os.path.exists(checksum_file):
+    if checksum_file.exists():
         # read checksum file
         with open(checksum_file, "r") as f:
             available_checksum = f.readline()
 
     # note, the suffix is already a string like '.so'
-    binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
+    lib_file = DIR / f'{name}{EXT_SUFFIX}'
 
     # Compare checksums and only re-compile if different.
     # Note: It could be that the C source file's checksum didn't change but someone
     # manually deleted the shared library file.
-    if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
-        module = Extension(name, sources=[source_file])
+    if available_checksum != cur_checksum or not lib_file.exists():
+        module = Extension(name, sources=[str(source_file)])
         verbosity = '--verbose' if sys.flags.verbose else '--quiet'
-        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__, 'clean']
+        args = [verbosity, 'build', 'install_lib', '-f', f'--install-dir={DIR}', 'clean']
         setup(
             script_name='setup',
             script_args=args,
@@ -151,7 +152,7 @@ def ccompile(self, name):
 
     # ensure file was really written
     if GRAALPYTHON:
-        file_not_empty(binary_file_llvm)
+        file_not_empty(lib_file)
 
 
 def file_not_empty(path):
@@ -378,7 +379,7 @@ class CPyExtFunction():
 
         code = self.template.format(**fargs)
 
-        with open("%s/%s.c" % (__dir__, self.name), "wb", buffering=0) as f:
+        with open(DIR / f'{self.name}.c', "wb", buffering=0) as f:
             f.write(bytes(code, 'utf-8'))
 
     def _insert(self, d, name, default_value):
@@ -388,7 +389,7 @@ class CPyExtFunction():
         return "<CPyExtFunction %s>" % self.name
 
     def test(self):
-        sys.path.insert(0, __dir__)
+        sys.path.insert(0, str(DIR))
         try:
             cmodule = __import__(self.name)
         finally:
@@ -584,7 +585,7 @@ def CPyExtType(name, code='', **kwargs):
 
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
-        "{name}.{name}",
+        "{tp_name}",
         sizeof({name}Object),       /* tp_basicsize */
         {tp_itemsize},              /* tp_itemsize */
         {tp_dealloc},               /* tp_dealloc */
@@ -655,6 +656,7 @@ def CPyExtType(name, code='', **kwargs):
     kwargs["code"] = code
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
+    kwargs.setdefault("tp_name", f"{name}.{name}")
     kwargs.setdefault("tp_itemsize", "0")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
     kwargs.setdefault("tp_alloc", "PyType_GenericAlloc")
@@ -665,7 +667,7 @@ def CPyExtType(name, code='', **kwargs):
     kwargs.setdefault("struct_base", "PyObject_HEAD")
     c_source = UnseenFormatter().format(template, **kwargs)
 
-    source_file = "%s/%s.c" % (__dir__, name)
+    source_file = DIR / f'{name}.c'
     with open(source_file, "wb", buffering=0) as f:
         f.write(bytes(c_source, 'utf-8'))
 
@@ -678,7 +680,7 @@ def CPyExtType(name, code='', **kwargs):
         raise SystemError("source file %s not available" % (source_file,))
 
     ccompile(None, name)
-    sys.path.insert(0, __dir__)
+    sys.path.insert(0, str(DIR))
     try:
         cmodule = __import__(name)
     finally:

@@ -99,6 +99,10 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
         return execute(frame, inliningTarget, object, OverflowError);
     }
 
+    public static int executeExactUncached(Object object) {
+        return getUncached().executeExact(null, null, object);
+    }
+
     /**
      * Attention: only to be used with a cached variant of this node. Prefer the inline variant (the
      * default when used as @Cached).

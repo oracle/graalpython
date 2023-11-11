@@ -1141,7 +1141,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 TruffleString string = castToTruffleStringNode.execute(inliningTarget, value);
@@ -1159,20 +1159,19 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+        static Object getName(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
             TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
             int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
-            int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, nameLen, TS_ENCODING);
-            if (firstDot < 0) {
+            int lastDot = indexOfCodePointNode.execute(tpName, '.', nameLen, 0, TS_ENCODING);
+            if (lastDot < 0) {
                 return tpName;
             }
-            return substringNode.execute(tpName, firstDot + 1, nameLen - firstDot - 1, TS_ENCODING, true);
+            return substringNode.execute(tpName, lastDot + 1, nameLen - lastDot - 1, TS_ENCODING, true);
         }
 
         @Specialization(guards = "!isNoValue(value)")

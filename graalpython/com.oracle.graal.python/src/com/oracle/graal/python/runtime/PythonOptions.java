@@ -240,6 +240,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
+    @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
                     "- 'default' means the 'check_source' flag in hash-based pycs" +
                     "  determines invalidation" +

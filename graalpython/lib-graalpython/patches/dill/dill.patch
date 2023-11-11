@@ -1,0 +1,13 @@
+diff --git a/dill/__init__.py b/dill/__init__.py
+index 54679b7..6572e53 100644
+--- a/dill/__init__.py
++++ b/dill/__init__.py
+@@ -85,7 +85,7 @@ def load_types(pickleable=True, unpickleable=True):
+     # add corresponding types from objects to types
+     reload(types)
+ 
+-def extend(use_dill=True):
++def extend(use_dill=False):
+     '''add (or remove) dill types to/from the pickle registry
+ 
+     by default, ``dill`` populates its types to ``pickle.Pickler.dispatch``.
