@@ -724,16 +724,6 @@ public abstract class CApiTransitions {
         return refCount;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public static void setRefCount(PythonAbstractObjectNativeWrapper nativeWrapper, long value) {
-        long refCnt = nativeWrapper.getRefCount();
-        if (value < refCnt) {
-            decRef(nativeWrapper, refCnt - value);
-        } else if (value > refCnt) {
-            incRef(nativeWrapper, value - refCnt);
-        }
-    }
-
     private static final InteropLibrary LIB = InteropLibrary.getUncached();
 
     /**
