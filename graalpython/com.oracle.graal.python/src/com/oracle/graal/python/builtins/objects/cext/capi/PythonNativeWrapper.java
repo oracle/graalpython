@@ -171,6 +171,13 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     public abstract void updateRefCountFromNative(long pointer, int delta);
 
     /**
+     * Write the wrapper's managed reference count to the native {@code ob_refcnt} field. Only
+     * native wrappers of Python objects maintain a reference counts. Hence, this operation may be a
+     * NOP for other wrappers.
+     */
+    public abstract void updateRefCountToNative();
+
+    /**
      * A wrapper for a reference counted object.
      */
     public abstract static class PythonAbstractObjectNativeWrapper extends PythonNativeWrapper {
@@ -206,6 +213,12 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         public final void updateRefCountFromNative(long pointer, int delta) {
             refCount = CApiTransitions.readNativeRefCount(pointer) + delta;
         }
+
+        @Override
+        public void updateRefCountToNative() {
+            assert isNative();
+            CApiTransitions.writeNativeRefCount(getNativePointer(), refCount);
+        }
     }
 
     /**
@@ -222,6 +235,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         @Override
         public final void updateRefCountFromNative(long pointer, int delta) {
+            // nothing to do
+        }
+
+        @Override
+        public void updateRefCountToNative() {
             // nothing to do
         }
     }

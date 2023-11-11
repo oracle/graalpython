@@ -1317,6 +1317,7 @@ public abstract class CExtNodes {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                    objectNativeWrapper.updateRefCountFromNative(pointer, 0);
                     CApiTransitions.incRef(objectNativeWrapper, 1);
                 }
                 return lookup;
@@ -1342,6 +1343,7 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                        objectNativeWrapper.updateRefCountFromNative(pointer, 0);
                         CApiTransitions.incRef(objectNativeWrapper, 1);
                     }
                     return lookup;

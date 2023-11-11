@@ -881,6 +881,12 @@ public abstract class CApiTransitions {
             }
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
+            } else {
+                /*
+                 * The reference count of the managed wrapper may have been modified, so we need to
+                 * write the updated value to native.
+                 */
+                wrapper.updateRefCountToNative();
             }
             return wrapper;
         }
