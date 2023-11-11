@@ -1316,6 +1316,9 @@ public abstract class CExtNodes {
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
+                if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                    CApiTransitions.incRef(objectNativeWrapper, 1);
+                }
                 return lookup;
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
@@ -1338,6 +1341,9 @@ public abstract class CExtNodes {
                 }
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
+                    if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                        CApiTransitions.incRef(objectNativeWrapper, 1);
+                    }
                     return lookup;
                 }
                 if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {

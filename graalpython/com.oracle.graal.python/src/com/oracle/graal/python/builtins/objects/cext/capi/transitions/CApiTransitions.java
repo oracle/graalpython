@@ -598,8 +598,8 @@ public abstract class CApiTransitions {
     }
 
     /**
-     * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given native {@code pointer}
-     * such that the {@code pointer} can be resolved to the {@code delegate}.
+     * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given
+     * native {@code pointer} such that the {@code pointer} can be resolved to the {@code delegate}.
      * <p>
      * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
      * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
@@ -1034,7 +1034,7 @@ public abstract class CApiTransitions {
 
         /**
          * Resolves a wrapper to its delegate and does appropriate reference count manipulation.
-         * 
+         *
          * @param node The inlining target for profiles.
          * @param wrapperProfile The wrapper class profile.
          * @param transfer Indicates if ownership of the reference is transferred to managed space.
