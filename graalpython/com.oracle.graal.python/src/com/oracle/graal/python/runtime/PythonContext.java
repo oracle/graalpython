@@ -201,6 +201,7 @@ import sun.misc.Unsafe;
 
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
+    public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
