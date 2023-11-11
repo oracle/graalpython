@@ -112,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -152,6 +151,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
@@ -670,7 +670,15 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PythonAbstractObjectNativeWrapper wrapper) {
-            return wrapper.getRefCount();
+            /*
+             * We are allocating native object stubs for each wrapper. Therefore, reference counting
+             * should only be done on the native side. However, we allow access for debugging
+             * purposes.
+             */
+            if (PythonContext.DEBUG_CAPI) {
+                return wrapper.getRefCount();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -678,11 +686,18 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyObject_ob_type extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object,
-                        @Cached GetClassNode getClassNode) {
-            Object result = getClassNode.execute(this, object);
-            assert !(result instanceof Integer);
-            return result;
+        static Object get(Object object) {
+            /*
+             * We are allocating native object stubs for each wrapper. Therefore, accesses to
+             * 'ob_type' should only be done on the native side. However, we allow access for
+             * debugging purposes.
+             */
+            if (PythonContext.DEBUG_CAPI) {
+                Object result = GetClassNode.executeUncached(object);
+                assert !(result instanceof Integer);
+                return result;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -778,9 +793,17 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_set_PyObject_ob_refcnt extends CApiBinaryBuiltinNode {
 
         @Specialization
+        @SuppressWarnings("unused")
         static Object set(PythonAbstractObjectNativeWrapper wrapper, long value) {
-            CApiTransitions.setRefCount(wrapper, value);
-            return PNone.NONE;
+            /*
+             * We are allocating native object stubs for each wrapper. Therefore, reference counting
+             * should only be done on the native side. However, we allow access for debugging
+             * purposes.
+             */
+            if (PythonContext.DEBUG_CAPI) {
+                wrapper.setRefCount(value);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
