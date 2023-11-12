@@ -272,7 +272,7 @@ wmain(int argc, wchar_t ** argv)
                     if (fread_s(pyvenvcfg_command + i, sizeof(pyvenvcfg_command), 1, 1, pyvenvCfgFile) < 1
                         || pyvenvcfg_command[i] == '\r'
                         || pyvenvcfg_command[i] == '\n') {
-                        newExecutableSize = MultiByteToWideChar(CP_UTF8, 0, pyvenvcfg_command, i, newExecutable + 1, sizeof(newExecutable) - 2);
+                        newExecutableSize = MultiByteToWideChar(CP_UTF8, 0, pyvenvcfg_command, i, newExecutable + 1, sizeof(newExecutable) - 2) * sizeof(newExecutable[0]);
                         break;
                     }
                 }
