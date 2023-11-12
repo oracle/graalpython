@@ -150,7 +150,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     public VirtualFileSystem(Predicate<Path> extractFilter) {
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
         if (mp == null) {
-            mp = isWindows() ? "X:\\graalpy_vfs" : "/graalpy_vfs";
+            mp = isWindows() ? "x:\\graalpy_vfs" : "/graalpy_vfs";
         }
         this.mountPoint = Path.of(mp);
         if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
@@ -335,7 +335,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         String entryKey = caseInsensitive ? pathString.toLowerCase(Locale.ROOT) : pathString;
         Entry e = VFS_ENTRIES.get(entryKey);
         if(e == null) {
-            pathString = platformPathToResourcePath(pathString);
+            pathString = platformPathToResourcePath(entryKey);
             URL uri = pathString == null ? null : VirtualFileSystem.class.getResource(pathString);
             if(uri != null) {
                 if(getDirsList().contains(pathString)) {
