@@ -17,8 +17,10 @@
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_system
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_system_alias
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname
+*graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_asdict
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_cast_to_tuple
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_copy
+*graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_fields
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_pickle
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_processor
 *graalpython.lib-python.3.test.test_platform.PlatformTest.test_uname_replace

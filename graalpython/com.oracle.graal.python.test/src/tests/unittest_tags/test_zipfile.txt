@@ -203,11 +203,17 @@
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_close_after_close
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_issue44439
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_write_after_close
+*graalpython.lib-python.3.test.test_zipfile.StripExtraTests.test_multiples
+*graalpython.lib-python.3.test.test_zipfile.StripExtraTests.test_no_data
+*graalpython.lib-python.3.test.test_zipfile.StripExtraTests.test_too_short
+*graalpython.lib-python.3.test.test_zipfile.StripExtraTests.test_with_data
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_execute_zip2
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_execute_zip64
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_read_zip64_with_exe_prepended
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_read_zip_with_exe_prepended
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_dir_parent
+*graalpython.lib-python.3.test.test_zipfile.TestPath.test_encoding_warnings
+*graalpython.lib-python.3.test.test_zipfile.TestPath.test_extract_orig_with_implied_dirs
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_filename
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_implied_dirs_performance
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_inheritance
@@ -221,6 +227,8 @@
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_mutability
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open_binary_invalid_args
+*graalpython.lib-python.3.test.test_zipfile.TestPath.test_open_encoding_errors
+*graalpython.lib-python.3.test.test_zipfile.TestPath.test_open_encoding_utf16
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open_extant_directory
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open_missing_directory
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open_write

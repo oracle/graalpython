@@ -122,6 +122,7 @@
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getaddrinfo_ipv6_basic
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getaddrinfo_ipv6_scopeid_numeric
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getaddrinfo_ipv6_scopeid_symbolic
+*graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getfqdn_filter_localhost
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getnameinfo
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getnameinfo_ipv6_scopeid_numeric
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_getnameinfo_ipv6_scopeid_symbolic

@@ -30,7 +30,9 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_count
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_count_with_stride
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_cycle
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_cycle_copy_pickle
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_cycle_setstate
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_cycle_unpickle_compat
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_dropwhile
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_filter
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_filterfalse

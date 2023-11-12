@@ -55,6 +55,7 @@
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_no_unicode_blake2
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_no_unicode_sha3
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_readonly_types
+*graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_sha3_update_overflow
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_threaded_hashing
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_unknown_hash
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_usedforsecurity_false

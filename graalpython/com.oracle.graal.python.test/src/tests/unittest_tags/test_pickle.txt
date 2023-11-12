@@ -22,6 +22,8 @@
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_buffer_callback_error
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_buffers_error
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_buffers_numpy
+*graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_builtin_exceptions
+*graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_builtin_functions
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_bytearray
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_bytearray8
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_bytearray_memoization_bug
@@ -189,6 +191,8 @@
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_buffer_callback_error
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_buffers_error
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_buffers_numpy
+*graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_builtin_exceptions
+*graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_builtin_functions
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_bytearray
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_bytearray_memoization_bug
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_bytes

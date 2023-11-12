@@ -205,6 +205,7 @@
 *graalpython.lib-python.3.test.test_io.CIOTest.test_nonbuffered_textio
 *graalpython.lib-python.3.test.test_io.CIOTest.test_open_handles_NUL_chars
 *graalpython.lib-python.3.test.test_io.CIOTest.test_opener
+*graalpython.lib-python.3.test.test_io.CIOTest.test_opener_invalid_fd
 *graalpython.lib-python.3.test.test_io.CIOTest.test_optional_abilities
 *graalpython.lib-python.3.test.test_io.CIOTest.test_raw_bytes_io
 *graalpython.lib-python.3.test.test_io.CIOTest.test_raw_file_io
@@ -217,6 +218,7 @@
 *graalpython.lib-python.3.test.test_io.CIncrementalNewlineDecoderTest.test_newline_bytes
 *graalpython.lib-python.3.test.test_io.CIncrementalNewlineDecoderTest.test_newline_decoder
 *graalpython.lib-python.3.test.test_io.CIncrementalNewlineDecoderTest.test_translate
+*graalpython.lib-python.3.test.test_io.CIncrementalNewlineDecoderTest.test_uninitialized
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test___all__
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_abc_inheritance
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_abc_inheritance_official
@@ -509,6 +511,7 @@
 *graalpython.lib-python.3.test.test_io.PyIOTest.test_nonbuffered_textio
 *graalpython.lib-python.3.test.test_io.PyIOTest.test_open_handles_NUL_chars
 *graalpython.lib-python.3.test.test_io.PyIOTest.test_opener
+*graalpython.lib-python.3.test.test_io.PyIOTest.test_opener_invalid_fd
 *graalpython.lib-python.3.test.test_io.PyIOTest.test_optional_abilities
 *graalpython.lib-python.3.test.test_io.PyIOTest.test_raw_bytes_io
 *graalpython.lib-python.3.test.test_io.PyIOTest.test_raw_file_io

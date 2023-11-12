@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_get_docstring
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_get_docstring_none
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_increment_lineno
+*graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_increment_lineno_on_module
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_iter_child_nodes
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_iter_fields
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_level_as_none

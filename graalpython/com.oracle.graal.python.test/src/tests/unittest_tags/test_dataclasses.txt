@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_class_var_no_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_class_var_with_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_classvar_default_factory
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_clean_traceback_from_fields_exception
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_compare_subclasses
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_dataclasses_pickleable
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_dataclasses_qualnames
@@ -30,6 +31,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_metadata_custom_mapping
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_metadata_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_metadata_mapping
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_BUILTINS_frozen
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_like_builtin
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_like_builtin_frozen
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_object
@@ -37,6 +39,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_self
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_no_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_order
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_recursive_repr
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_repr
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_function_annotations
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_generic_dataclasses
@@ -94,6 +97,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_post_init_classmethod
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_post_init_staticmethod
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_post_init_super
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_recursive_annotation
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_simple_compare
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_two_fields_one_default
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_default_value

@@ -48,6 +48,7 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_attributes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_remove_unsafe_bytes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_scoped_IPv6
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_strip_url
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_usingsys
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_withoutscheme
 *graalpython.lib-python.3.test.test_urlparse.Utility_Tests.test_splitattr

@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_bool_called_at_least_once
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_boolean
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_callable
+*graalpython.lib-python.3.test.test_bool.BoolTest.test_complex
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_contains
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_convert
 *graalpython.lib-python.3.test.test_bool.BoolTest.test_convert_to_bool
