@@ -427,6 +427,7 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
         cmd += [
             "--no-fallback",
             "-H:-CopyLanguageResources",
+            "-H:+UnlockExperimentalVMOptions",
             f"-H:ResourceConfigurationFiles={target_dir}/{NATIVE_IMAGE_RESOURCES_FILE}",
             "-o",
             output,
