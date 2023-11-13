@@ -47,7 +47,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import java.util.ArrayList;
 
 public class PHostInteropBehavior extends PythonBuiltinObject {
     private final PythonAbstractObject receiver;
@@ -105,5 +109,17 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
     public boolean getConstantValue(HostInteropBehaviorMethod method) {
         assert method.constantBoolean;
         return constants[method.ordinal()];
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public Object[] getDefinedMethods() {
+        ArrayList<TruffleString> defined = new ArrayList<>();
+        for (int i = 0; i < callTargets.length; i++) {
+            HostInteropBehaviorMethod method = HostInteropBehaviorMethod.VALUES[i];
+            if (isDefined(method)) {
+                defined.add(method.tsName);
+            }
+        }
+        return defined.toArray();
     }
 }

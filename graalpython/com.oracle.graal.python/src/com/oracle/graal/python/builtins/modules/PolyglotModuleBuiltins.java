@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_HOST_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_HOST_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
@@ -80,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
