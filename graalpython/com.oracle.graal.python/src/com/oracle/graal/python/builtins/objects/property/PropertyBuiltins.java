@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -127,7 +128,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
             if ((doc == PNone.NO_VALUE || doc == PNone.NONE) && fget != PNone.NO_VALUE) {
                 Object get_doc = PyObjectLookupAttr.executeUncached(fget, T___DOC__);
                 if (get_doc != PNone.NO_VALUE) {
-                    if (IsBuiltinClassProfile.profileClassSlowPath(GetPythonObjectClassNode.executeUncached(self), PythonBuiltinClassType.PProperty)) {
+                    if (IsBuiltinClassExactProfile.profileClassSlowPath(GetPythonObjectClassNode.executeUncached(self), PythonBuiltinClassType.PProperty)) {
                         self.setDoc(get_doc);
                     } else {
                         /*

@@ -43,9 +43,9 @@ package com.oracle.graal.python.nodes.object;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinObjectProfileNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinClassExactProfileNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinObjectExactProfileNodeGen;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinObjectProfileNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -165,14 +165,7 @@ public abstract class BuiltinClassProfiles {
         }
 
         public static boolean profileClassSlowPath(Object clazz, PythonBuiltinClassType type) {
-            if (clazz instanceof PythonBuiltinClassType) {
-                return clazz == type;
-            } else {
-                if (clazz instanceof PythonBuiltinClass) {
-                    return ((PythonBuiltinClass) clazz).getType() == type;
-                }
-                return false;
-            }
+            return getUncached().profileClass(null, clazz, type);
         }
 
         public final boolean profileClass(Node inliningTarget, Object type, PythonBuiltinClassType pythonClass) {
