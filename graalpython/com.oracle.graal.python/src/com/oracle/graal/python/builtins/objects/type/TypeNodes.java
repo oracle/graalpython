@@ -179,7 +179,6 @@ import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -209,6 +208,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -217,14 +217,12 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -1975,20 +1973,8 @@ public abstract class TypeNodes {
     }
 
     @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
-    protected abstract static class AllocateTypeWithMetaclassNode extends Node implements IndirectCallNode {
-
-        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return dontNeedCallerFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return dontNeedExceptionState;
-        }
+    @GenerateInline(false) // footprint reduction 208 -> 190
+    protected abstract static class AllocateTypeWithMetaclassNode extends Node {
 
         public abstract PythonClass execute(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass);
 
@@ -2004,8 +1990,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
+        static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
@@ -2167,7 +2154,7 @@ public abstract class TypeNodes {
                     }
                 }
                 // Make slots into a tuple
-                Object state = IndirectCallContext.enter(frame, language, context, this);
+                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 try {
                     pythonClass.setAttribute(T___SLOTS__, slotsObject);
 

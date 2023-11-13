@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,12 +85,13 @@ public final class StringModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PythonObjectFactory factory) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             List<Object[]> parserList;
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
-            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, this);
+            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 parserList = formatter.formatterParser(this);
             } finally {
@@ -118,12 +120,13 @@ public final class StringModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object formatterParser(VirtualFrame frame, TruffleString self,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PythonObjectFactory factory) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             TemplateFormatter.FieldNameSplitResult result;
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
-            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, this);
+            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 result = formatter.formatterFieldNameSplit(this);
             } finally {

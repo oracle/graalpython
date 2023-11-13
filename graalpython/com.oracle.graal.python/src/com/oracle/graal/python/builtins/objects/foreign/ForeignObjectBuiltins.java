@@ -121,6 +121,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -889,17 +891,18 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode gil,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            PythonLanguage language = getLanguage();
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext context = PythonContext.get(inliningTarget);
             try {
-                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
+                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 gil.release(true);
                 try {
                     if (lib.isExecutable(callee)) {
@@ -909,7 +912,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     gil.acquire();
-                    IndirectCallContext.exit(frame, language, getContext(), state);
+                    IndirectCallContext.exit(frame, language, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);

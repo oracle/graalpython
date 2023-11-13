@@ -104,12 +104,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupport;
@@ -920,9 +920,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
+        static long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
@@ -933,22 +933,22 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
-                bufferLib.release(dataBuffer, frame, this);
+                bufferLib.release(dataBuffer, frame, indirectCallData);
             }
         }
 
-        public long write(int fd, byte[] dataBytes,
+        public static long write(int fd, byte[] dataBytes,
                         int dataLen, Node inliningTarget, PosixSupportLibrary posixLib,
                         InlinedBranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
                     try {
-                        return posixLib.write(getPosixSupport(), fd, new Buffer(dataBytes, dataLen));
+                        return posixLib.write(PosixSupport.get(inliningTarget), fd, new Buffer(dataBytes, dataLen));
                     } catch (PosixException e) {
                         errorProfile.enter(inliningTarget);
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            PythonContext.triggerAsyncActions(this);
+                            PythonContext.triggerAsyncActions(inliningTarget);
                         } else {
                             throw e;
                         }
@@ -3219,7 +3219,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
      * {@link PosixFileHandle}.
      */
-    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
+    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaise {
 
         private final String functionNameWithColon;
         private final String argumentName;
@@ -3286,17 +3286,18 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isHandled(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
         PosixFileHandle doBuffer(VirtualFrame frame, Object value,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), indirectCallData);
             try {
                 warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
                 return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
             } finally {
-                bufferLib.release(buffer, frame, getContext(), getLanguage(), this);
+                bufferLib.release(buffer, frame, getContext(), getLanguage(), indirectCallData);
             }
         }
 

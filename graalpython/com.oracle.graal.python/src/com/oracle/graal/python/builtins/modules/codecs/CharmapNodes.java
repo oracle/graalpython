@@ -76,11 +76,11 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -356,7 +356,8 @@ public final class CharmapNodes {
     }
 
     // Equivalent of PyUnicode_DecodeCharmap
-    public abstract static class PyUnicodeDecodeCharmapNode extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false) // footprint reduction 76 -> 57
+    public abstract static class PyUnicodeDecodeCharmapNode extends PNodeWithContext {
 
         private static final int UNDEFINED_MAPPING = 0xfffe;
 
@@ -364,26 +365,27 @@ public final class CharmapNodes {
 
         @Specialization(limit = "3")
         TruffleString decodeLatin1(VirtualFrame frame, Object data, @SuppressWarnings("unused") TruffleString errors, @SuppressWarnings("unused") PNone mapping,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // equivalent of PyUnicode_DecodeLatin1
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, getContext(), getLanguage(), this);
+            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, getContext(), getLanguage(), indirectCallData);
             try {
                 int len = bufferLib.getBufferLength(dataBuffer);
                 byte[] src = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
                 TruffleString latin1 = fromByteArrayNode.execute(src, 0, len, TruffleString.Encoding.ISO_8859_1, true);
                 return switchEncodingNode.execute(latin1, TS_ENCODING);
             } finally {
-                bufferLib.release(dataBuffer, frame, this);
+                bufferLib.release(dataBuffer, frame, indirectCallData);
             }
         }
 
         @Specialization(limit = "3", guards = "isBuiltinString.execute(inliningTarget, mappingObj)")
         static TruffleString decodeStringMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
                         @Bind("this") Node inliningTarget,
-                        @Bind("getIndirectCallNode()") IndirectCallNode indirectCallNode,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
@@ -407,7 +409,7 @@ public final class CharmapNodes {
             int errorStartPos;
             int srcLen;
             do {
-                Object srcBuf = bufferAcquireLib.acquireReadonly(srcObj, frame, context, language, indirectCallNode);
+                Object srcBuf = bufferAcquireLib.acquireReadonly(srcObj, frame, context, language, indirectCallData);
                 try {
                     srcLen = bufferLib.getBufferLength(srcBuf);
                     byte[] src = bufferLib.getInternalOrCopiedByteArray(srcBuf);
@@ -426,7 +428,7 @@ public final class CharmapNodes {
                         appendCodePointNode.execute(tsb, cp, 1, true);
                     }
                 } finally {
-                    bufferLib.release(srcBuf, frame, context, language, indirectCallNode);
+                    bufferLib.release(srcBuf, frame, context, language, indirectCallData);
                 }
                 if (errorStartPos != -1) {
                     DecodingErrorHandlerResult result = callErrorHandlerNode.execute(frame, inliningTarget, cache, errors, T_CHARMAP, srcObj, errorStartPos, errorStartPos + 1,
@@ -442,7 +444,7 @@ public final class CharmapNodes {
         @Specialization(limit = "3", guards = {"!isBuiltinString.execute(inliningTarget, mappingObj)", "!isPNone(mappingObj)"})
         static TruffleString decodeGenericMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
                         @Bind("this") Node inliningTarget,
-                        @Bind("getIndirectCallNode()") IndirectCallNode indirectCallNode,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
@@ -473,7 +475,7 @@ public final class CharmapNodes {
             int errorStartPos;
             int srcLen;
             do {
-                Object srcBuf = bufferAcquireLib.acquireReadonly(srcObj, frame, context, language, indirectCallNode);
+                Object srcBuf = bufferAcquireLib.acquireReadonly(srcObj, frame, context, language, indirectCallData);
                 try {
                     srcLen = bufferLib.getBufferLength(srcBuf);
                     byte[] src = bufferLib.getInternalOrCopiedByteArray(srcBuf);
@@ -520,7 +522,7 @@ public final class CharmapNodes {
                         }
                     }
                 } finally {
-                    bufferLib.release(srcBuf, frame, context, language, indirectCallNode);
+                    bufferLib.release(srcBuf, frame, context, language, indirectCallData);
                 }
                 if (errProfile.profile(inliningTarget, errorStartPos != -1)) {
                     DecodingErrorHandlerResult result = callErrorHandlerNode.execute(frame, inliningTarget, cache, errors, T_CHARMAP, srcObj, errorStartPos, errorStartPos + 1,
@@ -531,10 +533,6 @@ public final class CharmapNodes {
                 }
             } while (pos < srcLen);
             return toStringNode.execute(tsb, false);
-        }
-
-        IndirectCallNode getIndirectCallNode() {
-            return this;
         }
     }
 

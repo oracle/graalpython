@@ -69,10 +69,10 @@ public final class Sha1ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Sha1FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA1Type, "sha1", "sha1", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA1Type, "sha1", "sha1", buffer);
         }
     }
 

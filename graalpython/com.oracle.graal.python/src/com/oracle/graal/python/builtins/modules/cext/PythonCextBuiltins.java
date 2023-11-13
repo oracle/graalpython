@@ -157,7 +157,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -170,6 +169,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -318,7 +318,7 @@ public final class PythonCextBuiltins {
         throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
 
-    public abstract static class CApiBuiltinNode extends PNodeWithRaiseAndIndirectCall {
+    public abstract static class CApiBuiltinNode extends PNodeWithContext {
 
         public abstract Object execute(Object[] args);
 
@@ -356,7 +356,7 @@ public final class PythonCextBuiltins {
             return getContext();
         }
 
-        protected static final CApiContext getCApiContext(Node inliningTarget) {
+        protected static CApiContext getCApiContext(Node inliningTarget) {
             return PythonContext.get(inliningTarget).getCApiContext();
         }
 
@@ -1374,19 +1374,20 @@ public final class PythonCextBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Track.class);
 
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
-        int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject, long size,
+        static int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject, long size,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Shared @Cached GetThreadStateNode getThreadStateNode,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
-                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
+                        @Cached("lookupDomain(inliningTarget, domain)") int cachedDomainIdx) {
 
             // this will also be called if the allocation failed
             if (!lib.isNull(pointerObject)) {
-                CApiContext cApiContext = getCApiContext();
+                CApiContext cApiContext = getCApiContext(inliningTarget);
                 Object key = CApiContext.asPointer(pointerObject, lib);
                 cApiContext.getTraceMallocDomain(cachedDomainIdx).track(key, size);
-                cApiContext.increaseMemoryPressure(null, inliningTarget, getThreadStateNode, this, size);
+                cApiContext.increaseMemoryPressure(null, inliningTarget, getThreadStateNode, indirectCallData, size);
                 if (LOGGER.isLoggable(Level.FINE)) {
                     LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(key)));
                 }
@@ -1395,16 +1396,16 @@ public final class PythonCextBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        int doGeneric(int domain, Object pointerObject, long size,
+        static int doGeneric(int domain, Object pointerObject, long size,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Shared @Cached GetThreadStateNode getThreadStateNode) {
-            return doCachedDomainIdx(domain, pointerObject, size, inliningTarget, getThreadStateNode, lib, domain, lookupDomain(domain));
+            return doCachedDomainIdx(domain, pointerObject, size, inliningTarget, indirectCallData, getThreadStateNode, lib, domain, lookupDomain(inliningTarget, domain));
         }
 
-        int lookupDomain(int domain) {
-            return getCApiContext().findOrCreateTraceMallocDomain(domain);
+        static int lookupDomain(Node inliningTarget, int domain) {
+            return getCApiContext(inliningTarget).findOrCreateTraceMallocDomain(domain);
         }
     }
 

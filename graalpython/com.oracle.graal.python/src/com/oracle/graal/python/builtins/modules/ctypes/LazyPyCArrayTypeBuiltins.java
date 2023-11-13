@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -153,14 +154,14 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object doSet(VirtualFrame frame, CDataObject self, Object value,
+        static Object doSet(VirtualFrame frame, CDataObject self, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = acquireLib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, this);
+            Object buffer = acquireLib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -170,7 +171,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }

@@ -41,8 +41,8 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
@@ -132,7 +132,7 @@ public abstract class ExceptionStateNodes {
                     RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
                     RootNode rootNode = target.getRootNode();
                     Node callNode = frameInstance.getCallNode();
-                    IndirectCallNode.setEncapsulatingNeedsToPassExceptionState(callNode);
+                    IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
                     if (rootNode instanceof PRootNode) {
                         PRootNode pRootNode = (PRootNode) rootNode;
                         pRootNode.setNeedsExceptionState();

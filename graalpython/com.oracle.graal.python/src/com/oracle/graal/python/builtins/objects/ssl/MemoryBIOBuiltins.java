@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Bind;
@@ -127,9 +128,9 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
+        static int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -146,7 +147,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

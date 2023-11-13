@@ -39,9 +39,12 @@ import java.io.InputStream;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -90,6 +93,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1024,5 +1028,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 SignalModuleBuiltins.resetSignalHandlers(signalModule);
             }
         }
+    }
+
+    private final Map<Node, IndirectCallData> indirectCallDataMap = Collections.synchronizedMap(new WeakHashMap<>());
+
+    public static IndirectCallData lookupIndirectCallData(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        return get(node).indirectCallDataMap.get(node);
+    }
+
+    public static IndirectCallData createIndirectCallData(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        return get(node).indirectCallDataMap.computeIfAbsent(node, n -> new IndirectCallData(node));
     }
 }

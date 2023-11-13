@@ -104,6 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -780,24 +781,25 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        TruffleString doGeneric(VirtualFrame frame, Object addr,
+        static TruffleString doGeneric(VirtualFrame frame, Object addr,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (len != 4) {
                     throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
                 }
-                Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
-                return posixLib.getPathAsString(getPosixSupport(), result);
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                Object result = posixLib.inet_ntoa(posixSupport, ByteArraySupport.bigEndian().getInt(bytes, 0));
+                return posixLib.getPathAsString(posixSupport, result);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }
@@ -836,15 +838,15 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
+        static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -860,13 +862,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, family);
                 }
                 try {
-                    Object result = posixLib.inet_ntop(getPosixSupport(), family, bytes);
-                    return posixLib.getPathAsString(getPosixSupport(), result);
+                    PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                    Object result = posixLib.inet_ntop(posixSupport, family, bytes);
+                    return posixLib.getPathAsString(posixSupport, result);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

@@ -95,8 +95,8 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -488,14 +488,15 @@ public abstract class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:textiowrapper_read_chunk
      */
-    protected abstract static class ReadChunkNode extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false)      // needs indirect call data
+    protected abstract static class ReadChunkNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, PTextIO self, int size_hint);
 
         @Specialization(guards = "self.hasDecoder()")
-        @SuppressWarnings("truffle-static-method")
-        boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
+        static boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
@@ -555,7 +556,7 @@ public abstract class TextIOWrapperNodes {
 
             Object inputChunkBuf;
             try {
-                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk, frame, this);
+                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk, frame, indirectCallData);
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? T_READ1 : T_READ), inputChunk);
             }
@@ -592,7 +593,7 @@ public abstract class TextIOWrapperNodes {
 
                 return !eof;
             } finally {
-                bufferLib.release(inputChunkBuf, frame, this);
+                bufferLib.release(inputChunkBuf, frame, indirectCallData);
             }
         }
 

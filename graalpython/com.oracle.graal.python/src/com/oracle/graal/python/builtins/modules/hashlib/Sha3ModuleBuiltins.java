@@ -82,7 +82,7 @@ public final class Sha3ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -94,7 +94,7 @@ public final class Sha3ModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
-            return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer, this);
+            return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer);
         }
 
         private static String javaNameFromType(PythonBuiltinClassType type) {

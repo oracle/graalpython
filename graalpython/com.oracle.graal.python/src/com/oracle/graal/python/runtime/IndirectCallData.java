@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,45 +38,72 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInterface;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
-public interface IndirectCallNode extends NodeInterface {
-    abstract Assumption needNotPassFrameAssumption();
+public final class IndirectCallData {
 
-    abstract Assumption needNotPassExceptionAssumption();
+    private static final IndirectCallData UNCACHED = new IndirectCallData();
 
-    default boolean calleeNeedsCallerFrame() {
+    private final TruffleWeakReference<Node> nodeRef;
+    @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
+    @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+
+    private IndirectCallData() {
+        this.nodeRef = new TruffleWeakReference<>(null);
+    }
+
+    public IndirectCallData(Node node) {
+        assert node != null;
+        this.nodeRef = new TruffleWeakReference<>(node);
+    }
+
+    public boolean isUncached() {
+        assert (nodeRef.get() == null) == (this == UNCACHED);
+        return this == UNCACHED;
+    }
+
+    public Node getNode() {
+        assert !isUncached();
+        return nodeRef.get();
+    }
+
+    public boolean calleeNeedsCallerFrame() {
         return !needNotPassFrameAssumption().isValid();
     }
 
-    default boolean calleeNeedsExceptionState() {
+    public boolean calleeNeedsExceptionState() {
         return !needNotPassExceptionAssumption().isValid();
     }
 
-    default void setCalleeNeedsCallerFrame() {
+    public void setCalleeNeedsCallerFrame() {
         needNotPassFrameAssumption().invalidate();
     }
 
-    default void setCalleeNeedsExceptionState() {
+    public void setCalleeNeedsExceptionState() {
         needNotPassExceptionAssumption().invalidate();
     }
 
     /**
-     * Finds the parent of {@code callNode} that is an {@link IndirectCallNode} and marks it so it
-     * will pass the state via the context the next time.
+     * Finds the parent of {@code callNode} that has an {@link IndirectCallData} instance attached
+     * and marks it so that it will pass the state via the context the next time.
      *
      * @return {@code true} if the marking was successful, {@code false} otherwise
      */
     public static boolean setEncapsulatingNeedsToPassCallerFrame(final Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
-            if (pythonCallNode instanceof IndirectCallNode) {
-                final IndirectCallNode indirectCallNode = (IndirectCallNode) pythonCallNode;
-                indirectCallNode.setCalleeNeedsCallerFrame();
+            IndirectCallData data = PythonLanguage.lookupIndirectCallData(pythonCallNode);
+            if (data != null) {
+                data.setCalleeNeedsCallerFrame();
                 return true;
             }
             pythonCallNode = pythonCallNode.getParent();
@@ -87,24 +114,40 @@ public interface IndirectCallNode extends NodeInterface {
     public static void setEncapsulatingNeedsToPassExceptionState(Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
-            if (pythonCallNode instanceof IndirectCallNode) {
-                ((IndirectCallNode) pythonCallNode).setCalleeNeedsExceptionState();
+            IndirectCallData data = PythonLanguage.lookupIndirectCallData(pythonCallNode);
+            if (data != null) {
+                data.setCalleeNeedsExceptionState();
                 break;
             }
             pythonCallNode = pythonCallNode.getParent();
         }
     }
 
-    /**
-     * Useful for {@code static} specializations that need an {@link IndirectCallNode}.
-     *
-     * <pre>
-     *      &#64;Bind("getThisIndirectCallNode()") IndirectCallNode indirectCallNode
-     * </pre>
-     *
-     * @return this
-     */
-    default IndirectCallNode getThisAsIndirectCallNode() {
-        return this;
+    private Assumption needNotPassFrameAssumption() {
+        assert !isUncached();
+        if (nativeCodeDoesntNeedMyFrame == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        }
+        return nativeCodeDoesntNeedMyFrame;
+    }
+
+    private Assumption needNotPassExceptionAssumption() {
+        assert !isUncached();
+        if (nativeCodeDoesntNeedExceptionState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        }
+        return nativeCodeDoesntNeedExceptionState;
+    }
+
+    @NeverDefault
+    public static IndirectCallData createFor(Node node) {
+        return PythonLanguage.createIndirectCallData(node);
+    }
+
+    @NeverDefault
+    public static IndirectCallData getUncached() {
+        return UNCACHED;
     }
 }

@@ -231,6 +231,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1653,6 +1654,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyLongCheckExactNode longCheckExact,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
@@ -1684,7 +1686,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (truncResult == PNone.NO_VALUE) {
                         Object buffer;
                         try {
-                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
+                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
                         } catch (PException e) {
                             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
                         }
@@ -1693,7 +1695,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             return stringToInt(frame, cls, number, 10, obj, inliningTarget, isPrimitiveIntProfile,
                                             notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory, raiseNode);
                         } finally {
-                            bufferLib.release(buffer, frame, this);
+                            bufferLib.release(buffer, frame, indirectCallData);
                         }
                     }
                     if (isIntegerType(truncResult)) {
@@ -2202,9 +2204,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
+        static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
@@ -2216,7 +2218,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj, frame, this);
+                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
@@ -2233,7 +2235,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

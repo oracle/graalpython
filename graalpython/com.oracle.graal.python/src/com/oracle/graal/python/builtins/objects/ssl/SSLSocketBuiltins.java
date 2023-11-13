@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -118,14 +119,15 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
-        Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
+        static Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached SSLOperationNode sslOperationNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
                         @SuppressWarnings("unused") @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, this);
+            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, indirectCallData);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 int toReadLen = len;
@@ -151,7 +153,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 }
                 return readBytes;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -166,9 +168,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
+        static Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
             try {
@@ -178,7 +180,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 sslOperationNode.write(frame, inliningTarget, self, input);
                 return length;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

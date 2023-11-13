@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -52,10 +51,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -97,29 +93,6 @@ public abstract class ArgumentCastNode extends Node {
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
-        }
-    }
-
-    public abstract static class ArgumentCastNodeWithRaiseAndIndirectCall extends ArgumentCastNodeWithRaise implements IndirectCallNode {
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
-
-        @Override
-        public final Assumption needNotPassFrameAssumption() {
-            if (nativeCodeDoesntNeedMyFrame == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        @Override
-        public final Assumption needNotPassExceptionAssumption() {
-            if (nativeCodeDoesntNeedExceptionState == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedExceptionState;
         }
     }
 

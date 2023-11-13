@@ -51,24 +51,22 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRoo
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -84,19 +82,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodeNodes {
 
-    public static class CreateCodeNode extends PNodeWithContext implements IndirectCallNode {
-        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return dontNeedCallerFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return dontNeedExceptionState;
-        }
+    public static class CreateCodeNode extends PNodeWithContext {
+        @SuppressWarnings("this-escape") // we only need the reference, doesn't matter that the
+                                         // object may not yet be fully constructed
+        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
 
         public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
@@ -108,7 +97,7 @@ public abstract class CodeNodes {
 
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,

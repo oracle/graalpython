@@ -125,7 +125,7 @@ public final class Blake2ModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object newDigest(VirtualFrame frame, Object type, Object data, int digestSize,
+        static Object newDigest(VirtualFrame frame, Object type, Object data, int digestSize,
                         PNone key, PNone salt, PNone person, int fanout, int depth, int leafSize, int nodeOffset, int nodeDepth, int innerSize, boolean lastNode, boolean usedforsecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
@@ -156,7 +156,7 @@ public final class Blake2ModuleBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             javaName = PythonUtils.formatJString(javaName, javaDigestSize);
-            return createNode.execute(frame, inliningTarget, resultType, pythonName, javaName, data, this);
+            return createNode.execute(frame, inliningTarget, resultType, pythonName, javaName, data);
         }
 
         @SuppressWarnings("unused")

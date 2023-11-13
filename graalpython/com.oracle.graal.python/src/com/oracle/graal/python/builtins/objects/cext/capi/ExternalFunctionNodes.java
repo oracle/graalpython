@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -112,6 +111,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -120,13 +120,11 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -754,7 +752,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
      */
-    public static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
+    public static final class ExternalFunctionInvokeNode extends PNodeWithContext {
         private final CApiTiming timing;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
@@ -762,32 +760,12 @@ public abstract class ExternalFunctionNodes {
         @Child private InteropLibrary lib;
         @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
         @Child private GilNode gilNode = GilNode.create();
-
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
 
         private final PExternalFunctionWrapper provider;
 
         public PExternalFunctionWrapper getWrapper() {
             return provider;
-        }
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return nativeCodeDoesntNeedExceptionState;
-        }
-
-        @Override
-        public Node copy() {
-            ExternalFunctionInvokeNode node = (ExternalFunctionInvokeNode) super.copy();
-            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            return node;
         }
 
         @TruffleBoundary
@@ -815,7 +793,7 @@ public abstract class ExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, threadState, indirectCallData);
 
             CApiTiming.enter();
             try {
