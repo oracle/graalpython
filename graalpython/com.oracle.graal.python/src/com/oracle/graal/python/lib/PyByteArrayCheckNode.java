@@ -44,8 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -77,10 +76,9 @@ public abstract class PyByteArrayCheckNode extends Node {
     }
 
     @Specialization
-    static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray);
+    static boolean doNative(PythonAbstractNativeObject object,
+                    @Cached(inline = false) IsBuiltinObjectProfile check) {
+        return check.profileObjectCached(object, PythonBuiltinClassType.PByteArray);
     }
 
     @Fallback

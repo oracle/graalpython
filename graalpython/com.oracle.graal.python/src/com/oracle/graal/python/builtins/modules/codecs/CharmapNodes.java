@@ -73,13 +73,13 @@ import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinSubtypeObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -326,7 +326,7 @@ public final class CharmapNodes {
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, int cp, Object mapping,
                         @Cached PyObjectGetItem pyObjectGetItemNode,
-                        @Cached IsBuiltinSubtypeObjectProfile isLookupErrorProfile,
+                        @Cached IsBuiltinObjectProfile isLookupErrorProfile,
                         @Cached PyLongCheckNode pyLongCheckNode,
                         @Cached PyLongAsLongNode pyLongAsLongNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
@@ -335,7 +335,7 @@ public final class CharmapNodes {
             try {
                 item = pyObjectGetItemNode.execute(frame, inliningTarget, mapping, cp);
             } catch (PException e) {
-                e.expectSubclass(frame, inliningTarget, PythonBuiltinClassType.LookupError, isLookupErrorProfile);
+                e.expect(inliningTarget, PythonBuiltinClassType.LookupError, isLookupErrorProfile);
                 return PNone.NONE;
             }
             if (item == PNone.NONE) {
@@ -380,13 +380,13 @@ public final class CharmapNodes {
             }
         }
 
-        @Specialization(limit = "3", guards = "isBuiltinString(inliningTarget, mappingObj, mappingClassProfile)")
+        @Specialization(limit = "3", guards = "isBuiltinString.execute(inliningTarget, mappingObj)")
         static TruffleString decodeStringMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
                         @Bind("this") Node inliningTarget,
                         @Bind("getIndirectCallNode()") IndirectCallNode indirectCallNode,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
-                        @SuppressWarnings("unused") @Cached @Exclusive IsBuiltinObjectProfile mappingClassProfile,
+                        @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
                         @Cached @Exclusive CastToTruffleStringNode castToTruffleStringNode,
                         @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached @Shared TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -439,15 +439,15 @@ public final class CharmapNodes {
             return toStringNode.execute(tsb, false);
         }
 
-        @Specialization(limit = "3", guards = {"!isBuiltinString(inliningTarget, mappingObj, mappingClassProfile)", "!isPNone(mappingObj)"})
+        @Specialization(limit = "3", guards = {"!isBuiltinString.execute(inliningTarget, mappingObj)", "!isPNone(mappingObj)"})
         static TruffleString decodeGenericMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
                         @Bind("this") Node inliningTarget,
                         @Bind("getIndirectCallNode()") IndirectCallNode indirectCallNode,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
-                        @SuppressWarnings("unused") @Cached @Exclusive IsBuiltinObjectProfile mappingClassProfile,
+                        @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
                         @Cached PyObjectGetItem pyObjectGetItemNode,
-                        @Cached @Exclusive IsBuiltinSubtypeObjectProfile isLookupErrorProfile,
+                        @Cached @Exclusive IsBuiltinObjectProfile isLookupErrorProfile,
                         @Cached PyLongCheckNode pyLongCheckNode,
                         @Cached PyLongAsLongNode pyLongAsLongNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
@@ -484,7 +484,7 @@ public final class CharmapNodes {
                         try {
                             item = pyObjectGetItemNode.execute(frame, inliningTarget, mappingObj, key);
                         } catch (PException e) {
-                            e.expectSubclass(frame, inliningTarget, PythonBuiltinClassType.LookupError, isLookupErrorProfile);
+                            e.expect(inliningTarget, PythonBuiltinClassType.LookupError, isLookupErrorProfile);
                             errorStartPos = pos;
                             break;
                         }

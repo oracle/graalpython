@@ -68,13 +68,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -165,16 +163,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object dir(VirtualFrame frame, PythonModule self,
                         @Bind("this") Node inliningTarget,
-                        @Cached IsBuiltinObjectProfile isDictProfile,
+                        @Cached PyDictGetItem pyDictGetItem,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object dict = lookup.execute(frame, inliningTarget, self, T___DICT__);
-            if (isDictProfile.profileObject(inliningTarget, dict, PythonBuiltinClassType.PDict)) {
-                HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
-                Object dirFunc = getItem.execute(inliningTarget, dictStorage, T___DIR__);
+            Object dictObj = lookup.execute(frame, inliningTarget, self, T___DICT__);
+            if (dictObj instanceof PDict dict) {
+                Object dirFunc = pyDictGetItem.execute(frame, inliningTarget, dict, T___DIR__);
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {

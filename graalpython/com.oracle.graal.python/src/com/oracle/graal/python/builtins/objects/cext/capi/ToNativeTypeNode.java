@@ -89,7 +89,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNativeGetattroSlotNodeGen;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -207,7 +207,7 @@ public abstract class ToNativeTypeNode {
 
         PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
         obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
-        boolean isType = InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
+        boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
         PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
@@ -261,7 +261,7 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number,
-                        InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue));
+                        IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, hasSlot(clazz, SlotMethodDef.SQ_LENGTH) ? allocatePySequenceMethods(clazz, nullValue) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocatePyMappingMethods(clazz) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));

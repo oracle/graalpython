@@ -58,7 +58,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -119,7 +119,7 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
                 Object pythonException = e.getEscapedException();
-                if (!InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.executeUncached(pythonException), PythonBuiltinClassType.SystemExit)) {
+                if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.executeUncached(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
                     callWrite.execute(null, null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));
                     try {

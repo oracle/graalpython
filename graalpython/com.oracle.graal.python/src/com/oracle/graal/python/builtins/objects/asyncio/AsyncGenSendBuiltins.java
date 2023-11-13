@@ -59,7 +59,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -104,9 +105,9 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseReuse,
                         @Cached PRaiseNode raiseAlreadyRunning,
                         @Cached CommonGeneratorBuiltins.SendNode send,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isStopIteration,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isGenExit,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isAsyncGenWrappedValue,
+                        @Cached IsBuiltinObjectProfile isStopIteration,
+                        @Cached IsBuiltinObjectProfile isGenExit,
+                        @Cached IsBuiltinObjectExactProfile isAsyncGenWrappedValue,
                         @Cached PRaiseNode raiseStopIteration) {
             Object result;
             if (self.getState() == AwaitableState.CLOSED) {
@@ -146,8 +147,8 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
 
     static PException handleAGError(PAsyncGen self, PException exception,
                     Node inliningTarget,
-                    BuiltinClassProfiles.IsBuiltinObjectProfile isStopAsyncIteration,
-                    BuiltinClassProfiles.IsBuiltinObjectProfile isGeneratorExit) {
+                    IsBuiltinObjectProfile isStopAsyncIteration,
+                    IsBuiltinObjectProfile isGeneratorExit) {
         if (isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration) ||
                         isGeneratorExit.profileException(inliningTarget, exception, PythonBuiltinClassType.GeneratorExit)) {
             self.markClosed();
@@ -158,7 +159,7 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
 
     static Object unwrapAGYield(PAsyncGen self, Object result,
                     Node inliningTarget,
-                    BuiltinClassProfiles.IsBuiltinObjectProfile isAGWrappedValue,
+                    IsBuiltinObjectExactProfile isAGWrappedValue,
                     PRaiseNode raise) {
         if (isAGWrappedValue.profileObject(inliningTarget, result, PythonBuiltinClassType.PAsyncGenAWrappedValue)) {
             self.setRunningAsync(false);
@@ -178,9 +179,9 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseReuse,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isStopIteration,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isGeneratorExit,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isAGWrappedValue,
+                        @Cached IsBuiltinObjectProfile isStopIteration,
+                        @Cached IsBuiltinObjectProfile isGeneratorExit,
+                        @Cached IsBuiltinObjectExactProfile isAGWrappedValue,
                         @Cached PRaiseNode raiseStopIteration) {
             Object result;
 

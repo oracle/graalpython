@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -72,9 +73,9 @@ public abstract class PyFloatCheckNode extends Node {
     }
 
     @Specialization
-    static boolean doNative(PythonAbstractNativeObject obj,
-                    @Cached(inline = false) PyObjectTypeCheck check) {
-        return check.executeCached(obj, PythonBuiltinClassType.PFloat);
+    static boolean doNative(PythonAbstractNativeObject object,
+                    @Cached(inline = false) IsBuiltinObjectProfile check) {
+        return check.profileObjectCached(object, PythonBuiltinClassType.PFloat);
     }
 
     @Fallback

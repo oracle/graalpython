@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinSubtypeObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -61,7 +60,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -225,21 +223,15 @@ public final class PException extends AbstractTruffleException {
     }
 
     public void expectIndexError(Node inliningTarget, IsBuiltinObjectProfile profile) {
-        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.IndexError)) {
-            throw this;
-        }
+        expect(inliningTarget, PythonBuiltinClassType.IndexError, profile);
     }
 
     public void expectStopIteration(Node inliningTarget, IsBuiltinObjectProfile profile) {
-        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.StopIteration)) {
-            throw this;
-        }
+        expect(inliningTarget, PythonBuiltinClassType.StopIteration, profile);
     }
 
     public void expectAttributeError(Node inliningTarget, IsBuiltinObjectProfile profile) {
-        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.AttributeError)) {
-            throw this;
-        }
+        expect(inliningTarget, PythonBuiltinClassType.AttributeError, profile);
     }
 
     public boolean expectTypeOrOverflowError(Node inliningTarget, IsBuiltinObjectProfile profile) {
@@ -250,34 +242,16 @@ public final class PException extends AbstractTruffleException {
         return ofError;
     }
 
-    public void expectOverflowErrorCached(IsBuiltinObjectProfile profile) {
-        expectOverflowError(profile, profile);
-    }
-
     public void expectOverflowError(Node inliningTarget, IsBuiltinObjectProfile profile) {
-        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.OverflowError)) {
-            throw this;
-        }
-    }
-
-    public void expectTypeErrorCached(IsBuiltinObjectProfile profile) {
-        expectTypeError(profile, profile);
+        expect(inliningTarget, PythonBuiltinClassType.OverflowError, profile);
     }
 
     public void expectTypeError(Node inliningTarget, IsBuiltinObjectProfile profile) {
-        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.TypeError)) {
-            throw this;
-        }
+        expect(inliningTarget, PythonBuiltinClassType.TypeError, profile);
     }
 
     public void expect(Node inliningTarget, PythonBuiltinClassType error, IsBuiltinObjectProfile profile) {
         if (!profile.profileException(inliningTarget, this, error)) {
-            throw this;
-        }
-    }
-
-    public void expectSubclass(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType error, IsBuiltinSubtypeObjectProfile profile) {
-        if (!profile.profileException(frame, inliningTarget, this, error)) {
             throw this;
         }
     }

@@ -5,9 +5,6 @@
  */
 package com.oracle.graal.python.builtins.modules.json;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTuple;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.PGuards.isDouble;
@@ -48,7 +45,10 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyListCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -241,7 +241,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, dict);
                 builder.appendCodePointUncached('{');
 
-                if (!encoder.sortKeys && IsBuiltinObjectProfile.profileObjectUncached(dict, PDict)) {
+                if (!encoder.sortKeys && PGuards.isBuiltinDict(dict)) {
                     HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
                     boolean first = true;
                     while (HashingStorageIteratorNext.executeUncached(storage, it)) {
@@ -314,7 +314,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, list);
                 builder.appendCodePointUncached('[');
 
-                if (IsBuiltinObjectProfile.profileObjectUncached(list, PTuple) || IsBuiltinObjectProfile.profileObjectUncached(list, PList)) {
+                if (PyTupleCheckExactNode.executeUncached(list) || PyListCheckExactNode.executeUncached(list)) {
                     for (int i = 0; i < storage.length(); i++) {
                         if (i > 0) {
                             builder.appendStringUncached(encoder.itemSeparator);

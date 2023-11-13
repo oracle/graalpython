@@ -38,52 +38,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
+package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateUncached
-@ImportStatic(PythonBuiltinClassType.class)
-@GenerateInline(false) // used in bytecode root node
-public abstract class EndAsyncForNode extends PNodeWithContext {
-    public abstract void execute(Object exception, boolean rootNodeVisible);
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyListCheckNode extends Node {
+    public abstract boolean execute(Node inliningTarget, Object object);
 
-    public static EndAsyncForNode getUncached() {
-        return EndAsyncForNodeGen.getUncached();
-    }
-
-    public static EndAsyncForNode create() {
-        return EndAsyncForNodeGen.create();
+    @Specialization
+    static boolean managed(@SuppressWarnings("unused") PList object) {
+        return true;
     }
 
     @Specialization
-    @SuppressWarnings("unused")
-    void doNone(PNone none, boolean rootNodeVisible) {
+    static boolean doNative(PythonAbstractNativeObject object,
+                    @Cached(inline = false) IsBuiltinObjectProfile check) {
+        return check.profileObjectCached(object, PythonBuiltinClassType.PList);
     }
 
-    @Specialization
-    void doPException(PException exception, boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
-                    @Cached IsBuiltinObjectProfile isStopAsyncIteration) {
-        if (!isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration)) {
-            throw exception.getExceptionForReraise(rootNodeVisible);
-        }
-    }
-
-    @Specialization(guards = "!isPException(exception)")
-    void doInteropException(AbstractTruffleException exception, @SuppressWarnings("unused") boolean rootNodeVisible) {
-        throw exception;
+    @Fallback
+    static boolean other(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

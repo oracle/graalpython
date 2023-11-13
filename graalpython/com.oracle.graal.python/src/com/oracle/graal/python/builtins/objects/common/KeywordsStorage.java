@@ -47,8 +47,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -129,17 +129,17 @@ public class KeywordsStorage extends HashingStorage {
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
-        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString.execute(inliningTarget, key)", limit = "1")
         static Object pstring(@SuppressWarnings("unused") Node inliningTarget, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectProfile profile,
                         @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
             return string(self, castToTruffleStringNode.execute(inliningTarget, key), -1, equalNode);
         }
 
-        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "!isBuiltinString.execute(inliningTarget, key)", limit = "1")
         static Object notString(Frame frame, @SuppressWarnings("unused") Node inliningTarget, KeywordsStorage self, Object key, long hashIn,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached PyObjectHashNode hashNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long hash = hashIn == -1 ? hashNode.execute(frame, inliningTarget, key) : hashIn;

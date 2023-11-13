@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.exception;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -55,7 +54,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -84,10 +82,9 @@ public abstract class ExceptMatchNode extends Node {
         throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
     }
 
-    @Specialization(guards = "isClass(inliningTarget, clause, isTypeNode)", limit = "1")
+    @Specialization(guards = "!isPTuple(clause)")
     static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtype,
@@ -96,20 +93,23 @@ public abstract class ExceptMatchNode extends Node {
         return isSubtype.execute(frame, getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
     }
 
-    @Specialization(guards = {"eLib.isException(e)", "clauseLib.isMetaObject(clause)"}, limit = "3", replaces = "matchPythonSingle")
-    @SuppressWarnings("unused")
+    @Specialization(guards = {"!isPTuple(clause)", "!isPException(e)"}, limit = "1")
     static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
                     @Shared @Cached ValidExceptionNode isValidException,
-                    @CachedLibrary("e") InteropLibrary eLib,
                     @CachedLibrary("clause") InteropLibrary clauseLib,
                     @Shared @Cached PRaiseNode raiseNode) {
         // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
         // foreign exception types if they *are* exception types
         raiseIfNoException(frame, clause, isValidException, raiseNode);
-        try {
-            return clauseLib.isMetaInstance(clause, e);
-        } catch (UnsupportedMessageException e1) {
-            throw CompilerDirectives.shouldNotReachHere();
+        if (clauseLib.isMetaObject(clause)) {
+            try {
+                return clauseLib.isMetaInstance(clause, e);
+            } catch (UnsupportedMessageException e1) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        } else {
+            // This shouldn't really happen if the type passed validation, we're just defensive
+            return false;
         }
     }
 
@@ -127,14 +127,6 @@ public abstract class ExceptMatchNode extends Node {
                 return true;
             }
         }
-        return false;
-    }
-
-    @Fallback
-    @SuppressWarnings("unused")
-    static boolean fallback(VirtualFrame frame, Object e, Object clause,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        raiseNoException(raiseNode);
         return false;
     }
 

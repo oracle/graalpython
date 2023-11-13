@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -125,11 +125,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         static Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasInitializerProfile,
-                        @Cached InlineIsBuiltinClassProfile isNotSubtypeProfile,
+                        @Cached IsBuiltinClassExactProfile isNotSubtypeProfile,
                         @Cached CastToTruffleStringCheckedNode cast,
                         @Cached ArrayNodeInternal arrayNodeInternal,
                         @Cached PRaiseNode.Lazy raise) {
-            if (isNotSubtypeProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PArray)) {
+            if (isNotSubtypeProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PArray)) {
                 if (kwargs.length != 0) {
                     throw raise.get(inliningTarget).raise(TypeError, S_TAKES_NO_KEYWORD_ARGS, "array.array()");
                 }

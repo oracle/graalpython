@@ -43,17 +43,20 @@ package com.oracle.graal.python.nodes.object;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.InlineIsBuiltinClassProfileNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinObjectProfileNodeGen;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinClassExactProfileNodeGen;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinObjectExactProfileNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class BuiltinClassProfiles {
     private BuiltinClassProfiles() {
@@ -116,56 +119,98 @@ public abstract class BuiltinClassProfiles {
     }
 
     @GenerateUncached
-    @GenerateInline(inlineByDefault = true)
-    // TODO: DSL inlining - remove the Inline prefix
-    public abstract static class InlineIsBuiltinClassProfile extends Node {
-        public static InlineIsBuiltinClassProfile getUncached() {
-            return InlineIsBuiltinClassProfileNodeGen.getUncached();
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class IsBuiltinClassExactProfile extends Node {
+
+        public final boolean profileClass(Node inliningTarget, Object type, PythonBuiltinClassType pythonClass) {
+            return execute(inliningTarget, type, pythonClass);
+        }
+
+        public static boolean profileClassSlowPath(Object type, PythonBuiltinClassType pythonClass) {
+            return getUncached().execute(null, type, pythonClass);
+        }
+
+        abstract boolean execute(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass);
+
+        @Specialization
+        static boolean doType(Node inliningTarget, PythonBuiltinClassType clazz, PythonBuiltinClassType pythonClass,
+                        @Shared @Cached InlinedConditionProfile profile) {
+            return profile.profile(inliningTarget, clazz == pythonClass);
+        }
+
+        @Specialization
+        static boolean doClass(Node inliningTarget, PythonBuiltinClass clazz, PythonBuiltinClassType pythonClass,
+                        @Shared @Cached InlinedConditionProfile profile) {
+            return profile.profile(inliningTarget, clazz.getType() == pythonClass);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean doOthers(Object clazz, PythonBuiltinClassType pythonClass) {
+            return false;
+        }
+
+        public static IsBuiltinClassExactProfile getUncached() {
+            return IsBuiltinClassExactProfileNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class IsBuiltinClassProfile extends Node {
+        public static IsBuiltinClassProfile getUncached() {
+            return BuiltinClassProfilesFactory.IsBuiltinClassProfileNodeGen.getUncached();
         }
 
         public static boolean profileClassSlowPath(Object clazz, PythonBuiltinClassType type) {
-            if (clazz instanceof PythonBuiltinClassType) {
-                return clazz == type;
-            } else {
-                if (clazz instanceof PythonBuiltinClass) {
-                    return ((PythonBuiltinClass) clazz).getType() == type;
-                }
-                return false;
-            }
+            return getUncached().profileClass(null, clazz, type);
         }
 
-        public static InlineIsBuiltinClassProfile create() {
-            return InlineIsBuiltinClassProfileNodeGen.create();
-        }
-
-        public final boolean profileIsBuiltinClass(Node inliningTarget, Object clazz, PythonBuiltinClassType type) {
-            return execute(inliningTarget, clazz, type);
-        }
-
-        public boolean profileClass(Node inliningTarget, Object type, PythonBuiltinClassType pythonClass) {
+        public final boolean profileClass(Node inliningTarget, Object type, PythonBuiltinClassType pythonClass) {
             return execute(inliningTarget, type, pythonClass);
         }
 
         abstract boolean execute(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass);
 
+        @Specialization(guards = "sameType(clazz, pythonClass)")
+        @SuppressWarnings("unused")
+        static boolean doSameType(PythonBuiltinClassType clazz, PythonBuiltinClassType pythonClass) {
+            return true;
+        }
+
+        @Specialization(guards = "sameType(clazz, pythonClass)")
+        @SuppressWarnings("unused")
+        static boolean doSameType(PythonBuiltinClass clazz, PythonBuiltinClassType pythonClass) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doOthers(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass,
+                        @Cached InlinedConditionProfile profile,
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+            return profile.profile(inliningTarget, isSubtypeNode.execute(clazz, pythonClass));
+        }
+
+        protected static boolean sameType(PythonBuiltinClassType a, PythonBuiltinClassType b) {
+            return a == b;
+        }
+
+        protected static boolean sameType(PythonBuiltinClass a, PythonBuiltinClassType b) {
+            return a.getType() == b;
+        }
+    }
+
+    // XXX temporary EE compat shim, remove when unused
+    @GenerateInline
+    public abstract static class InlineIsBuiltinClassProfile extends IsBuiltinClassExactProfile {
         public final boolean profileClassCached(Object clazz, PythonBuiltinClassType pythonClass) {
             return execute(this, clazz, pythonClass);
         }
 
-        @Specialization
-        static boolean doType(Node inliningTarget, PythonBuiltinClassType clazz, PythonBuiltinClassType pythonClass) {
-            return clazz == pythonClass;
-        }
-
-        @Specialization
-        static boolean doClass(Node inliningTarget, PythonBuiltinClass clazz, PythonBuiltinClassType pythonClass) {
-            return clazz.getType() == pythonClass;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean doOthers(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass) {
-            return false;
+        public static InlineIsBuiltinClassProfile create() {
+            return BuiltinClassProfilesFactory.InlineIsBuiltinClassProfileNodeGen.create();
         }
     }
 
@@ -190,21 +235,18 @@ public abstract class BuiltinClassProfiles {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
-    public abstract static class IsBuiltinObjectProfile extends Node {
+    public abstract static class IsBuiltinObjectExactProfile extends Node {
         public static boolean profileObjectUncached(Object obj, PythonBuiltinClassType type) {
-            return IsBuiltinObjectProfileNodeGen.getUncached().profileObject(null, obj, type);
+            return getUncached().profileObject(null, obj, type);
         }
 
-        public static IsBuiltinObjectProfile getUncached() {
-            return IsBuiltinObjectProfileNodeGen.getUncached();
+        public static IsBuiltinObjectExactProfile getUncached() {
+            return IsBuiltinObjectExactProfileNodeGen.getUncached();
         }
 
-        public static IsBuiltinObjectProfile create() {
-            return IsBuiltinObjectProfileNodeGen.create();
-        }
-
-        public final boolean profileException(Node inliningTarget, PException obj, PythonBuiltinClassType type) {
-            return profileObject(inliningTarget, obj.getUnreifiedException(), type);
+        @NeverDefault
+        public static IsBuiltinObjectExactProfile create() {
+            return IsBuiltinObjectExactProfileNodeGen.create();
         }
 
         public final boolean profileObject(Node inliningTarget, Object obj, PythonBuiltinClassType type) {
@@ -216,9 +258,9 @@ public abstract class BuiltinClassProfiles {
         @Specialization
         static boolean doIt(Node inliningTarget, Object obj, PythonBuiltinClassType type,
                         @Cached GetClassNode getClassNode,
-                        @Cached InlineIsBuiltinClassProfile isBuiltinClass) {
+                        @Cached IsBuiltinClassExactProfile isBuiltinClass) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
-            return isBuiltinClass.profileIsBuiltinClass(inliningTarget, clazz, type);
+            return isBuiltinClass.profileClass(inliningTarget, clazz, type);
         }
     }
 
@@ -241,34 +283,42 @@ public abstract class BuiltinClassProfiles {
         }
     }
 
-    @GenerateCached(false)
     @GenerateUncached
-    @GenerateInline
-    public abstract static class IsBuiltinSubtypeObjectProfile extends Node {
+    @GenerateInline(inlineByDefault = true)
+    public abstract static class IsBuiltinObjectProfile extends Node {
         public static boolean profileObjectUncached(Object obj, PythonBuiltinClassType type) {
-            return IsBuiltinSubtypeObjectProfile.getUncached().profileObject(null, null, obj, type);
+            return getUncached().profileObject(null, obj, type);
         }
 
-        public static IsBuiltinSubtypeObjectProfile getUncached() {
-            return BuiltinClassProfilesFactory.IsBuiltinSubtypeObjectProfileNodeGen.getUncached();
+        public static IsBuiltinObjectProfile getUncached() {
+            return BuiltinClassProfilesFactory.IsBuiltinObjectProfileNodeGen.getUncached();
         }
 
-        public final boolean profileException(VirtualFrame frame, Node inliningTarget, PException obj, PythonBuiltinClassType type) {
-            return profileObject(frame, inliningTarget, obj.getUnreifiedException(), type);
+        @NeverDefault
+        public static IsBuiltinObjectProfile create() {
+            return IsBuiltinObjectProfileNodeGen.create();
         }
 
-        public final boolean profileObject(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type) {
-            return execute(frame, inliningTarget, obj, type);
+        public final boolean profileException(Node inliningTarget, PException obj, PythonBuiltinClassType type) {
+            return profileObject(inliningTarget, obj.getUnreifiedException(), type);
         }
 
-        abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type);
+        public final boolean profileObject(Node inliningTarget, Object obj, PythonBuiltinClassType type) {
+            return execute(inliningTarget, obj, type);
+        }
+
+        public final boolean profileObjectCached(Object obj, PythonBuiltinClassType type) {
+            return execute(this, obj, type);
+        }
+
+        abstract boolean execute(Node inliningTarget, Object obj, PythonBuiltinClassType type);
 
         @Specialization
-        static boolean doIt(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type,
+        static boolean doIt(Node inliningTarget, Object obj, PythonBuiltinClassType type,
                         @Cached GetClassNode getClassNode,
-                        @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
-            return isSubtypeNode.execute(frame, clazz, type);
+            return isBuiltinClassProfile.execute(inliningTarget, clazz, type);
         }
     }
 

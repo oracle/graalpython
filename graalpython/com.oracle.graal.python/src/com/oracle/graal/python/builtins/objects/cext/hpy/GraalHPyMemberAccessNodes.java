@@ -107,7 +107,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -433,7 +433,7 @@ public class GraalHPyMemberAccessNodes {
         @Child private PyLongAsLongNode pyLongAsLongNode;
         @Child private PyFloatAsDoubleCachedNode pyFloatAsDoubleNode;
         @Child private AsNativePrimitiveNode asNativePrimitiveNode;
-        @Child private IsBuiltinObjectProfile isBuiltinObjectProfile;
+        @Child private IsBuiltinObjectExactProfile isBuiltinObjectProfile;
         @Child private IsNode isNode;
         @Child private GraalHPyCAccess.ReadHPyFieldNode readHPyFieldNode;
         @Child private GraalHPyCAccess.WriteHPyFieldNode writeHPyFieldNode;
@@ -652,10 +652,10 @@ public class GraalHPyMemberAccessNodes {
             return asNativePrimitiveNode;
         }
 
-        private IsBuiltinObjectProfile ensureIsBuiltinObjectProfile() {
+        private IsBuiltinObjectExactProfile ensureIsBuiltinObjectProfile() {
             if (isBuiltinObjectProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinObjectProfile = insert(IsBuiltinObjectProfile.create());
+                isBuiltinObjectProfile = insert(IsBuiltinObjectExactProfile.create());
             }
             return isBuiltinObjectProfile;
         }

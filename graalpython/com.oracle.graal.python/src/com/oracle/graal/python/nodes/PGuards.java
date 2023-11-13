@@ -103,9 +103,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -117,6 +117,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -397,10 +398,6 @@ public abstract class PGuards {
         return obj instanceof TruffleString;
     }
 
-    public static boolean isBuiltinString(Node inliningTarget, Object obj, IsBuiltinObjectProfile profile) {
-        return isJavaString(obj) || obj instanceof TruffleString || profile.profileObject(inliningTarget, obj, PythonBuiltinClassType.PString);
-    }
-
     public static boolean isBuiltinFunction(Object obj) {
         return obj instanceof PBuiltinFunction;
     }
@@ -472,6 +469,10 @@ public abstract class PGuards {
 
     public static boolean isPCode(Object obj) {
         return obj instanceof PCode;
+    }
+
+    public static boolean isPException(AbstractTruffleException exception) {
+        return exception instanceof PException;
     }
 
     public static boolean isPBaseException(Object obj) {

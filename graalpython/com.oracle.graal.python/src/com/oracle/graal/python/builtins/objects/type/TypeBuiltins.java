@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -158,7 +159,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -279,7 +280,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
-            if (InlineIsBuiltinClassProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
+            if (IsBuiltinClassExactProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
                 return self.getAttribute(TYPE_DOC);
             } else {
                 return self.getAttribute(T___DOC__);
@@ -1018,27 +1019,27 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___SUBCLASSCHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
-        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
-        @Child private GetFixedAttributeNode getBasesAttrNode;
-        @Child private ObjectNodes.FastIsTupleSubClassNode isTupleSubClassNode;
 
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
-        boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived,
+        static boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsSameTypeNode isSameTypeNode) {
-            return isSameType(inliningTarget, cls, derived, isSameTypeNode) || isSubtypeNode.execute(frame, derived, cls);
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached IsSubtypeNode isSubtypeNode) {
+            return isSameTypeNode.execute(inliningTarget, cls, derived) || isSubtypeNode.execute(frame, derived, cls);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean doObjectObject(VirtualFrame frame, Object cls, Object derived,
+        static boolean doObjectObject(VirtualFrame frame, Object cls, Object derived,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsBuiltinObjectProfile isAttrErrorProfile,
+                        @Cached("create(T___BASES__)") GetFixedAttributeNode getBasesAttrNode,
+                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached TypeNodes.IsTypeNode isClsTypeNode,
                         @Cached TypeNodes.IsTypeNode isDerivedTypeNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (isSameType(inliningTarget, cls, derived, isSameTypeNode)) {
+            if (isSameTypeNode.execute(inliningTarget, cls, derived)) {
                 return true;
             }
 
@@ -1046,10 +1047,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             if (isClsTypeNode.execute(inliningTarget, cls) && isDerivedTypeNode.execute(inliningTarget, derived)) {
                 return isSubtypeNode.execute(frame, derived, cls);
             }
-            if (!checkClass(frame, inliningTarget, derived, isAttrErrorProfile)) {
+            if (!checkClass(frame, inliningTarget, derived, getBasesAttrNode, tupleCheck, isAttrErrorProfile)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
             }
-            if (!checkClass(frame, inliningTarget, cls, isAttrErrorProfile)) {
+            if (!checkClass(frame, inliningTarget, cls, getBasesAttrNode, tupleCheck, isAttrErrorProfile)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
             }
             return false;
@@ -1057,12 +1058,8 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         // checks if object has '__bases__' (see CPython 'abstract.c' function
         // 'recursive_issubclass')
-        private boolean checkClass(VirtualFrame frame, Node inliningTarget, Object obj, IsBuiltinObjectProfile isAttrErrorProfile) {
-            if (getBasesAttrNode == null || isTupleSubClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getBasesAttrNode = insert(GetFixedAttributeNode.create(T___BASES__));
-                isTupleSubClassNode = insert(ObjectNodes.FastIsTupleSubClassNode.create());
-            }
+        private static boolean checkClass(VirtualFrame frame, Node inliningTarget, Object obj, GetFixedAttributeNode getBasesAttrNode, PyTupleCheckNode tupleCheck,
+                        IsBuiltinObjectProfile isAttrErrorProfile) {
             Object basesObj;
             try {
                 basesObj = getBasesAttrNode.executeObject(frame, obj);
@@ -1070,11 +1067,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 e.expectAttributeError(inliningTarget, isAttrErrorProfile);
                 return false;
             }
-            return isTupleSubClassNode.executeCached(frame, basesObj);
-        }
-
-        protected static boolean isSameType(Node inliningTarget, Object a, Object b, IsSameTypeNode isSameTypeNode) {
-            return isSameTypeNode.execute(inliningTarget, a, b);
+            return tupleCheck.execute(inliningTarget, basesObj);
         }
     }
 
