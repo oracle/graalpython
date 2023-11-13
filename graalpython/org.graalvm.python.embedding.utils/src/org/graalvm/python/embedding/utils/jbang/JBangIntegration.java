@@ -262,13 +262,16 @@ public class JBangIntegration {
                 // on windows, generate a venv launcher that executes our mvn target
                 var script = String.format("""
                                 import os, shutil, struct, venv
+                                from pathlib import Path
                                 vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
                                 tl = os.path.join(r'%s')
+                                os.makedirs(Path(tl).parent.absolute())
                                 shutil.copy(vl, tl)
                                 cmd = r'mvn.cmd -f "%s" graalpy:exec "-Dexec.workingdir=%s"'
-                                with open(tl, 'ab') as f:
-                                    sz = f.write(cmd.encode('utf-16le'))
-                                    f.write(struct.pack("@I", sz)) == 4
+                                pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
+                                with open(pyvenvcfg, 'w', encoding='utf-8') as f:
+                                    f.write('venvlauncher_command = ')
+                                    f.write(cmd)
                                 """,
                                 launcher,
                                 Paths.get(projectPath, "pom.xml").toString(),
