@@ -72,6 +72,7 @@
 #define PY_TRUFFLE_LOG_FINE 0x8
 #define PY_TRUFFLE_LOG_FINER 0x10
 #define PY_TRUFFLE_LOG_FINEST 0x20
+#define PY_TRUFFLE_DEBUG_CAPI 0x30
 
 typedef struct mmap_object mmap_object;
 
@@ -703,6 +704,9 @@ static MUST_INLINE int PyTruffle_Log_Finer() {
 }
 static MUST_INLINE int PyTruffle_Log_Finest() {
 	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
+}
+static MUST_INLINE int PyTruffle_Debug_CAPI() {
+	return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
 }
 
 static void PyTruffle_Log(int level, const char* format, ... ) {

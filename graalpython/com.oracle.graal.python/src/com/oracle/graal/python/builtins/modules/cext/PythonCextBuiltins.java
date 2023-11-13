@@ -1523,6 +1523,7 @@ public final class PythonCextBuiltins {
     private static final int LOG_FINE = 0x8;
     private static final int LOG_FINER = 0x10;
     private static final int LOG_FINEST = 0x20;
+    private static final int DEBUG_CAPI = 0x30;
 
     @CApiBuiltin(ret = Int, call = Ignored)
     abstract static class PyTruffle_Native_Options extends CApiNullaryBuiltinNode {
@@ -1547,6 +1548,9 @@ public final class PythonCextBuiltins {
             }
             if (LOGGER.isLoggable(Level.FINEST)) {
                 options |= LOG_FINEST;
+            }
+            if (PythonContext.DEBUG_CAPI) {
+                options |= DEBUG_CAPI;
             }
             return options;
         }
