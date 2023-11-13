@@ -560,6 +560,7 @@ public abstract class CApiTransitions {
                         @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached CStructAccess.WriteObjectNode writeObjectNode,
+                        @Cached InlinedExactClassProfile wrapperProfile,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
 
@@ -569,10 +570,13 @@ public abstract class CApiTransitions {
                 assert !(wrapper instanceof TruffleObjectNativeWrapper);
                 pollReferenceQueue();
 
+                long refCount = wrapper.getRefCount();
+                Object type = getClassNode.execute(inliningTarget, NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper));
+
                 // allocate a native stub object (C type: PyObject)
                 Object nativeObjectStub = allocateNode.alloc(CStructs.PyObject);
-                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, wrapper.getRefCount());
-                writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, getClassNode.execute(inliningTarget, wrapper.getDelegate()));
+                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, refCount);
+                writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
                 HandleContext handleContext = getContext();
                 long pointer = PythonUtils.coerceToLong(nativeObjectStub, lib);
                 PythonObjectReference ref = PythonObjectReference.create(wrapper, pointer);
