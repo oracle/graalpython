@@ -95,7 +95,7 @@ new file mode 100644
 index 0000000..b8a506c
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,195 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -243,8 +243,9 @@ index 0000000..b8a506c
 +    if rule:
 +        if patch := rule.get('patch'):
 +            print(f"Patching package {name} using {patch}")
++            exe = '.exe' if os.name == 'nt' else ''
 +            try:
-+                subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", str(patch)], check=True)
++                subprocess.run([f"patch{exe}", "-f", "-d", location, "-p1", "-i", str(patch)], check=True)
 +            except FileNotFoundError:
 +                print(
 +                    "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
