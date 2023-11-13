@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,14 +34,14 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___KWDEFAULTS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -50,6 +50,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -57,7 +60,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -71,6 +73,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -80,6 +83,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
 public final class MethodBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = MethodBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -100,8 +104,9 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Cached("create(GetAttribute)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(frame, self.getFunction(), T___CODE__);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetAttr getCode) {
+            return getCode.execute(frame, inliningTarget, self.getFunction(), T___CODE__);
         }
     }
 
@@ -117,9 +122,9 @@ public final class MethodBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetattributeNode extends PythonBuiltinNode {
+    public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
                         @Bind("this") Node inliningTarget,
@@ -202,7 +207,8 @@ public final class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Slot(SlotKind.tp_descr_get)
+    @GenerateUncached
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization

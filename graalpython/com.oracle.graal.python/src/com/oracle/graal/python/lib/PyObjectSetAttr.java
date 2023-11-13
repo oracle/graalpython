@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_NO_ATTRS_S_TO_ASSIGN;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_NO_ATTRS_S_TO_DELETE;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_RO_ATTRS_S_TO_ASSIGN;
@@ -49,6 +48,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_RO_ATTRS_S_TO_DE
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -69,27 +70,29 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent PyObject_SetAttr*. Like Python, this method raises when the attribute doesn't exist.
+ *
+ * @see PyObjectSetAttrO
  */
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectSetAttr extends PNodeWithContext {
-    public static void executeUncached(Object receiver, Object name, Object value) {
+    public static void executeUncached(Object receiver, TruffleString name, Object value) {
         PyObjectSetAttr.getUncached().execute(null, null, receiver, name, value);
     }
 
-    public final void executeCached(Frame frame, Object receiver, Object name, Object value) {
+    public final void executeCached(Frame frame, Object receiver, TruffleString name, Object value) {
         execute(frame, this, receiver, name, value);
     }
 
-    public abstract void execute(Frame frame, Node inliningTarget, Object receiver, Object name, Object value);
+    public abstract void execute(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object value);
 
-    public final void execute(Node inliningTarget, Object receiver, Object name, Object value) {
+    public final void execute(Node inliningTarget, Object receiver, TruffleString name, Object value) {
         execute(null, inliningTarget, receiver, name, value);
     }
 
-    public final void deleteCached(Frame frame, Object receiver, Object name) {
+    public final void deleteCached(Frame frame, Object receiver, TruffleString name) {
         execute(frame, null, receiver, name, null);
     }
 
@@ -97,14 +100,15 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     static void setFixedAttr(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") TruffleString name, Object value,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Shared("getClass") @Cached GetClassNode getClass,
+                    @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Shared("lookup") @Cached(parameters = "SetAttr", inline = false) LookupSpecialMethodSlotNode lookupSetattr,
-                    @Shared("lookupGet") @Cached(parameters = "GetAttribute", inline = false) LookupSpecialMethodSlotNode lookupGetattr,
                     @Shared("raise") @Cached PRaiseNode.Lazy raise,
                     @Shared("call") @Cached(inline = false) CallTernaryMethodNode callSetattr) {
         Object type = getClass.execute(inliningTarget, self);
         Object setattr = lookupSetattr.execute(frame, type, self);
         if (setattr == PNone.NO_VALUE) {
-            if (lookupGetattr.execute(frame, type, self) == PNone.NO_VALUE) {
+            TpSlots slots = getSlotsNode.execute(inliningTarget, type);
+            if (slots.tp_get_attro_attr() == null) {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_NO_ATTRS_S_TO_ASSIGN, self, name);
             } else {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_RO_ATTRS_S_TO_ASSIGN, self, name);
@@ -117,14 +121,15 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     static void delFixedAttr(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object value,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Shared("getClass") @Cached GetClassNode getClass,
+                    @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Shared("lookupDel") @Cached(parameters = "DelAttr", inline = false) LookupSpecialMethodSlotNode lookupDelattr,
-                    @Shared("lookupGet") @Cached(parameters = "GetAttribute", inline = false) LookupSpecialMethodSlotNode lookupGetattr,
                     @Shared("raise") @Cached PRaiseNode.Lazy raise,
                     @Shared("callDel") @Cached(inline = false) CallBinaryMethodNode callDelattr) {
         Object type = getClass.execute(inliningTarget, self);
         Object delattr = lookupDelattr.execute(frame, type, self);
         if (delattr == PNone.NO_VALUE) {
-            if (lookupGetattr.execute(frame, type, self) == PNone.NO_VALUE) {
+            TpSlots slots = getSlotsNode.execute(inliningTarget, type);
+            if (slots.tp_get_attro_attr() == null) {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_NO_ATTRS_S_TO_DELETE, self, name);
             } else {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_RO_ATTRS_S_TO_DELETE, self, name);
@@ -136,24 +141,17 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     @Specialization(replaces = {"setFixedAttr", "delFixedAttr"})
     static void doDynamicAttr(Frame frame, Node inliningTarget, Object self, TruffleString name, Object value,
                     @Shared("getClass") @Cached GetClassNode getClass,
+                    @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Shared("lookup") @Cached(parameters = "SetAttr", inline = false) LookupSpecialMethodSlotNode lookupSetattr,
                     @Shared("lookupDel") @Cached(parameters = "DelAttr", inline = false) LookupSpecialMethodSlotNode lookupDelattr,
-                    @Shared("lookupGet") @Cached(parameters = "GetAttribute", inline = false) LookupSpecialMethodSlotNode lookupGetattr,
                     @Shared("raise") @Cached PRaiseNode.Lazy raise,
                     @Shared("call") @Cached(inline = false) CallTernaryMethodNode callSetattr,
                     @Shared("callDel") @Cached(inline = false) CallBinaryMethodNode callDelattr) {
         if (value == null) {
-            delFixedAttr(frame, inliningTarget, self, name, value, name, getClass, lookupDelattr, lookupGetattr, raise, callDelattr);
+            delFixedAttr(frame, inliningTarget, self, name, value, name, getClass, getSlotsNode, lookupDelattr, raise, callDelattr);
         } else {
-            setFixedAttr(frame, inliningTarget, self, name, value, name, getClass, lookupSetattr, lookupGetattr, raise, callSetattr);
+            setFixedAttr(frame, inliningTarget, self, name, value, name, getClass, getSlotsNode, lookupSetattr, raise, callSetattr);
         }
-    }
-
-    @Specialization(guards = "!isString(name)")
-    @SuppressWarnings("unused")
-    static void nameMustBeString(Node inliningTarget, Object self, Object name, Object value,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raise) {
-        throw raise.get(inliningTarget).raise(TypeError, ATTR_NAME_MUST_BE_STRING, name);
     }
 
     @NeverDefault

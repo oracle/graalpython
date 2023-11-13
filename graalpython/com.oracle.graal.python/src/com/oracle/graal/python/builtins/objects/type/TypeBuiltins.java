@@ -67,7 +67,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
@@ -92,6 +91,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -124,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeHelperNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -135,6 +137,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsAr
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -151,13 +157,11 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
@@ -205,6 +209,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public final class TypeBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = TypeBuiltinsSlotsGen.SLOTS;
 
     public static final HashMap<String, HiddenAttr> INITIAL_HIDDEN_TYPE_ATTRS = new HashMap<>();
 
@@ -454,11 +459,11 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Fallback
         static Object doBind(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type,
                         @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
-                        @Cached(inline = false) CallTernaryMethodNode callGet) {
-            Object getMethod = lookupGet.execute(getClassNode.execute(inliningTarget, descriptor));
-            if (getMethod != NO_VALUE) {
-                return callGet.execute(frame, getMethod, descriptor, PNone.NONE, type);
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotDescrGet callGetSlot) {
+            var getMethod = getSlotsNode.execute(inliningTarget, descriptor).tp_descr_get();
+            if (getMethod != null) {
+                return callGetSlot.execute(frame, inliningTarget, getMethod, descriptor, PNone.NONE, type);
             }
             return descriptor;
         }
@@ -651,27 +656,25 @@ public final class TypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
-        @Child private LookupInheritedSlotNode valueGetLookup;
-        @Child private LookupCallableSlotInMRONode lookupGetNode;
-        @Child private LookupCallableSlotInMRONode lookupSetNode;
-        @Child private LookupCallableSlotInMRONode lookupDeleteNode;
-        @Child private CallTernaryMethodNode invokeGet;
-        @Child private CallTernaryMethodNode invokeValueGet;
+    public abstract static class GetattributeNode extends GetAttrBuiltinNode {
+        @Child private CallSlotDescrGet callSlotDescrGet;
+        @Child private CallSlotDescrGet callSlotValueGet;
         @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
 
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetClassNode getDescClassNode,
+                        @Cached GetObjectSlotsNode getDescrSlotsNode,
+                        @Cached GetObjectSlotsNode getValueSlotsNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached CastToTruffleStringNode castToString,
                         @Cached InlinedBranchProfile hasDescProfile,
-                        @Cached InlinedBranchProfile isDescProfile,
+                        @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedBranchProfile hasValueProfile,
+                        @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString key;
@@ -681,54 +684,37 @@ public final class TypeBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object descr = lookup.execute(type, key);
-            Object get = null;
+            Object metatype = getClassNode.execute(inliningTarget, object);
+            Object descr = lookup.execute(metatype, key);
+            TpSlot get = null;
+            boolean hasDescrGet = false;
             if (descr != NO_VALUE) {
                 // acts as a branch profile
-                Object dataDescClass = getDescClassNode.execute(inliningTarget, descr);
-                get = lookupGet(dataDescClass);
-                if (PGuards.isCallableOrDescriptor(get)) {
-                    Object delete = NO_VALUE;
-                    Object set = lookupSet(dataDescClass);
-                    if (set == NO_VALUE) {
-                        delete = lookupDelete(dataDescClass);
-                    }
-                    if (set != NO_VALUE || delete != NO_VALUE) {
-                        isDescProfile.enter(inliningTarget);
-                        // Only override if __get__ is defined, too, for compatibility with CPython.
-                        if (invokeGet == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            invokeGet = insert(CallTernaryMethodNode.create());
-                        }
-                        return invokeGet.execute(frame, get, descr, object, type);
-                    }
+                var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
+                get = descrSlots.tp_descr_get();
+                hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
+                if (hasDescrGet && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
+                    return dispatchDescrGet(frame, object, metatype, descr, get);
                 }
             }
             Object value = readAttribute(object, key);
             if (value != NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);
-                Object valueGet = lookupValueGet(value);
-                if (valueGet == NO_VALUE) {
+                var valueSlots = getValueSlotsNode.execute(inliningTarget, value);
+                var valueGet = valueSlots.tp_descr_get();
+                if (valueGet == null) {
+                    hasNonDescriptorValueProfile.enter(inliningTarget);
                     return value;
-                } else if (PGuards.isCallableOrDescriptor(valueGet)) {
-                    if (invokeValueGet == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        invokeValueGet = insert(CallTernaryMethodNode.create());
-                    }
-                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
+                } else {
+                    return dispatchValueGet(frame, object, value, valueGet);
                 }
             }
             if (descr != NO_VALUE) {
                 hasDescProfile.enter(inliningTarget);
-                if (get == NO_VALUE) {
+                if (!hasDescrGet) {
                     return descr;
-                } else if (PGuards.isCallableOrDescriptor(get)) {
-                    if (invokeGet == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        invokeGet = insert(CallTernaryMethodNode.create());
-                    }
-                    return invokeGet.execute(frame, get, descr, object, type);
+                } else {
+                    return dispatchDescrGet(frame, object, metatype, descr, get);
                 }
             }
             errorProfile.enter(inliningTarget);
@@ -743,36 +729,22 @@ public final class TypeBuiltins extends PythonBuiltins {
             return lookupAsClass.execute(object, key);
         }
 
-        private Object lookupDelete(Object dataDescClass) {
-            if (lookupDeleteNode == null) {
+        private Object dispatchDescrGet(VirtualFrame frame, Object object, Object type, Object descr, TpSlot getSlot) {
+            if (callSlotDescrGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupDeleteNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Delete));
+                callSlotDescrGet = insert(CallSlotDescrGet.create());
             }
-            return lookupDeleteNode.execute(dataDescClass);
+            return callSlotDescrGet.executeCached(frame, getSlot, descr, object, type);
         }
 
-        private Object lookupSet(Object dataDescClass) {
-            if (lookupSetNode == null) {
+        private Object dispatchValueGet(VirtualFrame frame, Object type, Object descr, TpSlot getSlot) {
+            if (callSlotValueGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
+                callSlotValueGet = insert(CallSlotDescrGet.create());
             }
-            return lookupSetNode.execute(dataDescClass);
-        }
-
-        private Object lookupGet(Object dataDescClass) {
-            if (lookupGetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Get));
-            }
-            return lookupGetNode.execute(dataDescClass);
-        }
-
-        private Object lookupValueGet(Object value) {
-            if (valueGetLookup == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueGetLookup = insert(LookupInheritedSlotNode.create(SpecialMethodSlot.Get));
-            }
-            return valueGetLookup.execute(value);
+            // NO_VALUE 2nd argument indicates the descriptor was found on the target object itself
+            // (or a base)
+            return callSlotValueGet.executeCached(frame, getSlot, descr, PNone.NONE, type);
         }
     }
 
@@ -873,6 +845,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
             cls.setBases(newBestBase, baseClasses);
             SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, PythonLanguage.get(inliningTarget));
+            TpSlots.updateAllSlots(cls);
 
             return PNone.NONE;
         }
@@ -952,20 +925,20 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
-        @Child private LookupAndCallBinaryNode getAttributeNode;
+        @Child private PyObjectLookupAttr getAttributeNode;
 
         public abstract boolean executeWith(VirtualFrame frame, Object cls, Object instance);
 
-        public LookupAndCallBinaryNode getGetAttributeNode() {
+        public PyObjectLookupAttr getGetAttributeNode() {
             if (getAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttributeNode = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute));
+                getAttributeNode = insert(PyObjectLookupAttr.create());
             }
             return getAttributeNode;
         }
 
         private PythonObject getInstanceClassAttr(VirtualFrame frame, Object instance) {
-            Object classAttr = getGetAttributeNode().executeObject(frame, instance, T___CLASS__);
+            Object classAttr = getGetAttributeNode().executeCached(frame, instance, T___CLASS__);
             if (classAttr instanceof PythonObject) {
                 return (PythonObject) classAttr;
             }
@@ -983,7 +956,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 return true;
             }
 
-            Object instanceClass = getGetAttributeNode().executeObject(frame, instance, T___CLASS__);
+            Object instanceClass = getGetAttributeNode().executeCached(frame, instance, T___CLASS__);
             return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(frame, instanceClass, cls);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,13 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,12 +55,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -76,15 +79,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNone)
 public final class NoneBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = NoneBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return NoneBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.nb_bool)
+    @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends PythonUnaryBuiltinNode {
+    abstract static class BoolNode extends InquiryBuiltinNode {
         @Specialization
         static boolean doNone(PNone none) {
             assert none == PNone.NONE;
@@ -113,9 +118,9 @@ public final class NoneBuiltins extends PythonBuiltins {
      * workaround that bypasses the descriptor __get__ handling and invokes the get function
      * directly.
      */
-    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetAttributeNode extends GetAttrBuiltinNode {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Object object, Object keyObj,

@@ -579,7 +579,7 @@ final class Signals {
         }
     }
 
-    final static class Alarm {
+    static final class Alarm {
         final int seconds;
         final long startMillis;
         private Thread thread;

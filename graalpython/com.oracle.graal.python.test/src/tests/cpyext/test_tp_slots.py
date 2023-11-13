@@ -36,7 +36,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 from . import CPyExtType, CPyExtHeapType
+
+SlotsGetter = CPyExtType("SlotsGetter",
+                         """
+                         static PyObject* get_tp_attr(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_getattr);
+                         }
+                         static PyObject* get_tp_attro(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_getattro);
+                         }
+                         static PyObject* get_tp_descr_get(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_descr_get);
+                         }
+                         """,
+                         tp_methods=
+                         '{"get_tp_attr", (PyCFunction)get_tp_attr, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_attro", (PyCFunction)get_tp_attro, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_descr_get", (PyCFunction)get_tp_descr_get, METH_O | METH_STATIC, ""}')
+
+
 
 
 def test_descr():
@@ -87,18 +107,13 @@ def test_descr():
 
 
 def test_attrs():
-    SlotsGetter = CPyExtType("SlotsGetter",
-                         """
-                         static PyObject* get_tp_attr(PyObject* unused, PyObject* object) {
-                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_getattr);
-                         }
-                         static PyObject* get_tp_attro(PyObject* unused, PyObject* object) {
-                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_getattro);
-                         }
-                         """,
-                         tp_methods=
-                             '{"get_tp_attr", (PyCFunction)get_tp_attr, METH_O | METH_STATIC, ""},' +
-                             '{"get_tp_attro", (PyCFunction)get_tp_attro, METH_O | METH_STATIC, ""}')
+    Dummy = CPyExtHeapType("DummyThatShouldInheritBuiltinGetattro",
+                                   slots= ['{Py_nb_add, &myadd}'],
+                                   code='PyObject* myadd(PyObject* a, PyObject *b) { Py_INCREF(b); return b; }')
+    # Check that we inherit the slot value and do not wrap it with some indirection
+    # This should ensure that fast-paths for builtin tp_getattro work correctly
+    assert SlotsGetter.get_tp_attro(Dummy()) == SlotsGetter.get_tp_attro(object())
+    assert Dummy.__getattribute__ == object.__getattribute__
 
     class AttrManaged:
         def __init__(self):
@@ -111,6 +126,16 @@ def test_attrs():
     assert SlotsGetter.get_tp_attro(AttrManaged()) != 0
     assert AttrManaged().bar == 1
     assert AttrManaged().foo == 42
+
+    import sys
+    TestAttrOStolenFromModule = CPyExtType("TestAttrOStolenFromModule",
+                                           ready_code = 'TestAttrOStolenFromModuleType.tp_getattro = PyModule_Type.tp_getattro;')
+    assert SlotsGetter.get_tp_attro(sys) == SlotsGetter.get_tp_attro(TestAttrOStolenFromModule())
+    assert sys.__getattribute__.__objclass__ == type(sys)
+    assert TestAttrOStolenFromModule.__getattribute__.__objclass__ == TestAttrOStolenFromModule
+
+    TestAttrEmptyDummy = CPyExtType("TestAttrEmptyDummy")
+    assert TestAttrEmptyDummy.__getattribute__ == object.__getattribute__
 
     TestAttrSet = CPyExtType("TestAttrSet",
                               '''
@@ -171,3 +196,52 @@ def test_concat_vs_add():
     y = SqAddAndNbAdd()
     assert x + y is y
     # TODO: assert _operator.concat(x, x) is x when _operator.concat is implemented
+
+
+def test_incompatible_slots_assignment():
+    def assert_type_error(code):
+        try:
+            code()
+            assert False, "should have raised TypeError: attribute name must be string"
+        except TypeError:
+            pass
+
+    HackySlotsWithBuiltin = CPyExtType("HackySlots",
+                                       ready_code='HackySlotsType.tp_descr_get = (void*)PyBaseObject_Type.tp_getattro;')
+
+    class BarAttr(HackySlotsWithBuiltin):
+        def __init__(self):
+            self.bar = 42
+
+    class MyClassWithDescr:
+        descr = BarAttr()
+
+    assert SlotsGetter.get_tp_descr_get(HackySlotsWithBuiltin()) == SlotsGetter.get_tp_attro(object())
+    assert BarAttr().__get__('bar') == 42
+    assert_type_error(lambda: MyClassWithDescr().descr)
+
+    class ManagedAttrO:
+        def __getattribute__(self, item):
+            return item
+
+    try:
+        sys.modules["test_incompatible_slots_assignment_managed"] = ManagedAttrO
+        HackySlotsWithManaged = CPyExtType("HackySlotsWithManaged",
+                                           ready_code="""
+                                 PyTypeObject* ManagedAttrO = (PyTypeObject*) PyDict_GetItemString(PyImport_GetModuleDict(), "test_incompatible_slots_assignment_managed");
+                                 HackySlotsWithManagedType.tp_descr_get = (void*)ManagedAttrO->tp_getattro;
+                                 """)
+
+        class FooAttr(HackySlotsWithManaged):
+            def __init__(self):
+                self.foo = 42
+
+        class MyClassWithDescr2:
+            descr = FooAttr()
+
+        assert FooAttr().__get__('foo') == 42, FooAttr().__get__('foo')
+        assert_type_error(lambda: MyClassWithDescr2().descr)
+        # This does not hold on GraalPy, because we need a different closure, because the lookup result has changed:
+        # assert SlotsGetter.get_tp_descr_get(HackySlotsWithManaged()) == SlotsGetter.get_tp_attro(ManagedAttrO())
+    finally:
+        sys.modules.pop("test_incompatible_slots_assignment_managed", None)

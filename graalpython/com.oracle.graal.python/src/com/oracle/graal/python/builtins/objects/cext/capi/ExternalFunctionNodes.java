@@ -103,6 +103,8 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -115,6 +117,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -351,7 +354,7 @@ public abstract class ExternalFunctionNodes {
      * the definition in {code capi.h}.
      */
     public enum PExternalFunctionWrapper implements NativeCExtSymbol {
-        DIRECT(1, PyObjectTransfer, PyObject, PyObject),
+        DIRECT(1, PyObjectTransfer, PyObject, PyObject), // TODO: remove?
         FASTCALL(2, PyObjectTransfer, PyObject, Pointer, Py_ssize_t),
         FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, Pointer, Py_ssize_t, PyObject),
         KEYWORDS(4, PyObjectTransfer, PyObject, PyObject, PyObject), // METH_VARARGS | METH_KEYWORDS
@@ -663,6 +666,7 @@ public abstract class ExternalFunctionNodes {
             int numDefaults = -1;
             PKeyword[] kwDefaults;
             RootCallTarget callTarget;
+            TpSlot slot = null;
             if (callable instanceof RootCallTarget) {
                 callTarget = (RootCallTarget) callable;
                 /*
@@ -701,6 +705,7 @@ public abstract class ExternalFunctionNodes {
                 // ensure that 'callable' is executable via InteropLibrary
                 Object boundCallable = CExtContext.ensureExecutable(callable, sig);
                 kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
+                slot = new TpSlotNative(boundCallable);
             }
 
             // generate default values for positional args (if necessary)
@@ -721,7 +726,7 @@ public abstract class ExternalFunctionNodes {
                 case METHOD:
                     return factory.createBuiltinFunction(name, type, defaults, kwDefaults, flags, callTarget);
             }
-            return factory.createWrapperDescriptor(name, type, defaults, kwDefaults, flags, callTarget);
+            return factory.createWrapperDescriptor(name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
         }
 
         private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
@@ -952,7 +957,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    abstract static class MethodDescriptorRoot extends PRootNode {
+    public abstract static class MethodDescriptorRoot extends PRootNode {
         private final PExternalFunctionWrapper provider;
         private final CApiTiming timing;
         @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -2398,6 +2403,37 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class PyObjectCheckFunctionResultNode extends CheckFunctionResultNode {
+        @Specialization(guards = "!isForeignObject.execute(inliningTarget, result)")
+        static Object doPythonObject(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") Object result,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached IsForeignObjectNode isForeignObject,
+                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
+            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, PGuards.isNoValue(result));
+            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, true, state, errOccurredProfile);
+            assert !indicatesError; // otherwise we should not reach here
+            return result;
+        }
+
+        @Specialization(guards = "isForeignObject.execute(inliningTarget, result)")
+        static Object doForeign(PythonThreadState state, TruffleString name, Object result,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached IsForeignObjectNode isForeignObject,
+                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
+                        @Shared @Cached InlinedConditionProfile errOccurredProfile,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, lib.isNull(result));
+            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, true, state, errOccurredProfile);
+            assert !indicatesError; // otherwise we should not reach here
+            return result;
+        }
+    }
+
     /**
      * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
      */
@@ -2526,6 +2562,8 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     @GenerateUncached
     public abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
+
+        public abstract boolean executeBool(PythonThreadState threadState, TruffleString name, Object result);
 
         @Specialization
         static boolean doLong(PythonThreadState threadState, TruffleString name, long result,

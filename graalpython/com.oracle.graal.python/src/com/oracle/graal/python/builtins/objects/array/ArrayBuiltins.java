@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
@@ -70,6 +69,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,6 +89,8 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -135,6 +138,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -152,6 +156,7 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
 public final class ArrayBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = ArrayBuiltinsSlotsGen.SLOTS;
 
     private static final TruffleString T_ARRAY_RECONSTRUCTOR = tsLiteral("_array_reconstructor");
 
@@ -737,9 +742,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.sq_length)
+    @GenerateUncached
     @GenerateNodeFactory
-    abstract static class LenNode extends PythonUnaryBuiltinNode {
+    abstract static class LenNode extends LenBuiltinNode {
 
         @Specialization
         static int len(PArray self) {

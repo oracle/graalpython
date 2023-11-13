@@ -1,3 +1,4 @@
 com.oracle.graal.python.processor.ArgumentClinicProcessor
 com.oracle.graal.python.processor.GenerateEnumConstantsProcessor
 com.oracle.graal.python.processor.CApiBuiltinsProcessor
+com.oracle.graal.python.processor.SlotsProcessor

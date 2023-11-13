@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -80,7 +80,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                     @Cached(value = "kwArgsArg", dimensions = 1) TruffleString[] kwArgs,
                     @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
-                    @Cached PyObjectGetAttr getAttr,
+                    @Cached PyObjectGetAttrO getAttr,
                     @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                     @Cached IsBuiltinObjectProfile isClassProfile,
                     @Cached StringBuiltins.EqNode eqStrNode,
@@ -143,7 +143,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
 
     @ExplodeLoop
     private static void getArgs(VirtualFrame frame, Node inliningTarget, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs,
-                    PyObjectGetAttr getAttr,
+                    PyObjectGetAttrO getAttr,
                     StringBuiltins.EqNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(nargs);
         for (int i = 0; i < nargs; i++) {
@@ -158,7 +158,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
 
     @ExplodeLoop
     private static void getKwArgs(VirtualFrame frame, Node inliningTarget, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength,
-                    PyObjectGetAttr getAttr,
+                    PyObjectGetAttrO getAttr,
                     StringBuiltins.EqNode eqStrNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(kwArgs);
         for (int i = 0; i < kwArgs.length; i++) {

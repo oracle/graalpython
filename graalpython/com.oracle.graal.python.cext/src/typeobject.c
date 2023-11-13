@@ -9260,6 +9260,9 @@ static void add_slot(PyTypeObject* type, char* name, void* meth, int flags, int 
 static int type_ready_graalpy_slot_conv(PyTypeObject* cls) {
 #define ADD_SLOT_CONV(__name__, __meth__, __flags__, __signature__) add_slot(cls, (__name__), (__meth__), (__flags__), (__signature__), NULL)
 
+    // TODO: once all slots are converted, we can do one upcall to managed implementation
+    // of add_operators that will use TpSlots#SLOTDEFS and the same algorithm as CPython
+
     /*
      * NOTE: ADD_SLOT_CONV won't overwrite existing attributes, so the order is crucial and must
      * reflect CPython's 'slotdefs' array.
@@ -9273,13 +9276,13 @@ static int type_ready_graalpy_slot_conv(PyTypeObject* cls) {
 
     // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
     // and convert arguments that should be C primitives.
-    ADD_SLOT_CONV("__getattribute__", cls->tp_getattr, -2, JWRAPPER_GETATTR);
+    // ADD_SLOT_CONV("__getattribute__", cls->tp_getattr, -2, JWRAPPER_GETATTR); tp_getattr does not have wrapper set in slotdefs and hence is ignored in add_operators
     ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR);
     ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_REPR);
     ADD_SLOT_CONV("__hash__", cls->tp_hash, -1, JWRAPPER_HASHFUNC);
     ADD_SLOT_CONV("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS, JWRAPPER_CALL);
     ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_STR);
-    ADD_SLOT_CONV("__getattribute__", cls->tp_getattro, -2, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__getattribute__", cls->tp_getattro, -2, JWRAPPER_BINARYFUNC);
     ADD_SLOT_CONV("__setattr__", cls->tp_setattro, -3, JWRAPPER_SETATTRO);
     ADD_SLOT_CONV("__delattr__", cls->tp_setattro, -3, JWRAPPER_DELATTRO);
     ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);

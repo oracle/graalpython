@@ -153,10 +153,6 @@ public abstract class PRaiseNode extends Node {
         return raiseWithData(PythonBuiltinClassType.StopIteration, args, retVal);
     }
 
-    public final PException raiseHasNoLength(Object result) {
-        return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_HAS_NO_LEN, result);
-    }
-
     public final PException raiseIntegerInterpretationError(Object result) {
         return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, result);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,7 +38,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
@@ -53,12 +52,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -79,6 +82,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -86,6 +90,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMappingproxy)
 public final class MappingproxyBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = MappingproxyBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -191,9 +196,11 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.sq_length)
+    @Slot(SlotKind.mp_length)
+    @GenerateUncached
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+    public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         public int len(VirtualFrame frame, PMappingproxy self,
                         @Bind("this") Node inliningTarget,

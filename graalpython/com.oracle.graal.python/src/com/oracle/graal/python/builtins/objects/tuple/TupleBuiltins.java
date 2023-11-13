@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
@@ -56,6 +55,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,6 +75,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -112,6 +115,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -126,6 +130,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public final class TupleBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = TupleBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -201,9 +206,11 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.sq_length)
+    @Slot(SlotKind.mp_length)
+    @GenerateUncached
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+    public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         public int len(Object self,
                         @Bind("this") Node inliningTarget,

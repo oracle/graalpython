@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SPEC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
@@ -62,6 +61,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -72,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -95,6 +98,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -111,6 +115,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
 public final class ModuleBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = ModuleBuiltinsSlotsGen.SLOTS;
 
     public static final TruffleString T__INITIALIZING = tsLiteral("_initializing");
 
@@ -221,16 +226,27 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
-
+    public abstract static class ModuleGetattritbuteNode extends GetAttrBuiltinNode {
         @Specialization
+        static Object getattributeStr(VirtualFrame frame, PythonModule self, TruffleString key,
+                        @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Shared @Cached HandleGetattrExceptionNode handleException) {
+            try {
+                return objectGetattrNode.execute(frame, self, key);
+            } catch (PException e) {
+                return handleException.execute(frame, self, key, e);
+            }
+        }
+
+        @Specialization(replaces = "getattributeStr")
+        @InliningCutoff
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
-                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached HandleGetattrExceptionNode handleException) {
+                        @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Shared @Cached HandleGetattrExceptionNode handleException) {
             TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             try {
                 return objectGetattrNode.execute(frame, self, key);
@@ -239,6 +255,9 @@ public final class ModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        // Note: this is similar to the "use __getattribute__, if error fallback to __getattr__"
+        // dance that is normally done in the slot wrapper of __getattribute__/__getattr__ Python
+        // level methods. This case is, however, slightly different.
         @GenerateInline(false) // footprint reduction 56 -> 37
         protected abstract static class HandleGetattrExceptionNode extends PNodeWithContext {
             public abstract Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e);

@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -65,7 +66,8 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     @TruffleBoundary
     public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base, new PythonAbstractClass[]{base});
+        super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base, new PythonAbstractClass[]{base},
+                        builtinClass.getSlots());
         this.type = builtinClass;
         this.methodsFlags = type.getMethodsFlags();
     }
@@ -98,6 +100,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         // Ideally, startup code should not create ASTs that rely on assumptions of props of
         // builtins. So there should be no assumptions to invalidate yet
         assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
+        assert checkSpecialMethodUpdate(key, newValue);
         SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
         if (slot != null) {
             SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, newValue);
@@ -107,6 +110,15 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         // paths during initialization
         assert newValue != PNone.NO_VALUE;
         PythonClass.updateMroShapeSubTypes(this);
+    }
+
+    private static boolean checkSpecialMethodUpdate(TruffleString key, Object newValue) {
+        // We disallow Python based slots for builtins, so that we can always satisfy slot lookup
+        // only with PythonBuiltinClassType#slots
+        // TODO: change to the commented out line below once all @Builtin are converted to @Slot
+        // assert ... || (newValue instanceof PBuiltinFunction pbf && pbf.getSlot() != null);
+        assert !TpSlots.isSpecialMethod(key) || (newValue instanceof PBuiltinFunction pbf);
+        return true;
     }
 
     @ExportMessage(library = InteropLibrary.class)

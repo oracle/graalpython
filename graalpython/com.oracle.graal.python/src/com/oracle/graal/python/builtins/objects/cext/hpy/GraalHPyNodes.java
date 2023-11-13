@@ -1286,7 +1286,8 @@ public abstract class GraalHPyNodes {
                         if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
                             Object interopPFuncPtr = context.nativeToInteropPointer(pfuncPtr);
                             PBuiltinFunction method;
-                            Object resolved = CreateFunctionNode.resolveClosurePointer(context.getContext(), interopPFuncPtr, lib);
+                            Object resolved = CreateFunctionNode.resolveClosurePointerToBuiltinFun(context.getContext(), interopPFuncPtr, lib, enclosingType, attributeKey,
+                                            slot.getSignature());
                             if (resolved instanceof PBuiltinFunction builtinFunction) {
                                 method = builtinFunction;
                             } else {

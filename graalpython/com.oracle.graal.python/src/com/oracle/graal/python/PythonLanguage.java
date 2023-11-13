@@ -36,6 +36,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
@@ -333,6 +335,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     private final ConcurrentHashMap<Object, RootCallTarget> cachedCallTargets = new ConcurrentHashMap<>();
 
+    @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
+
     /**
      * A map to retrieve call targets of special slot methods for a given BuiltinMethodDescriptor.
      * Used to perform uncached calls to slots. The call targets are not directly part of
@@ -379,6 +383,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
+    }
+
+    public PythonLanguage() {
+        // Make sure all the builtin slot classes are initialized
+        if (PythonBuiltinClassType.PythonClass.getSlots() == null) {
+            throw new IllegalStateException("Slots must be initialized in PythonBuiltinClassType static initializer");
+        }
+        builtinSlotsCallTargets = new RootCallTarget[TpSlot.getBuiltinsCallTargetsCount()];
     }
 
     /**
@@ -965,6 +977,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             builtinTypeInstanceShapes[ordinal] = shape;
         }
         return shape;
+    }
+
+    public RootCallTarget getBuiltinSlotCallTarget(int index) {
+        return builtinSlotsCallTargets[index];
+    }
+
+    public void setBuiltinSlotCallTarget(int index, RootCallTarget callTarget) {
+        VarHandle.storeStoreFence();
+        builtinSlotsCallTargets[index] = callTarget;
     }
 
     /**

@@ -413,7 +413,7 @@ class TestObject(object):
         def validate(cls, has_getattro, has_getattr):
             foo = cls()
             if has_getattro:
-                assert foo.asdf == 'asdf'
+                assert foo.asdf == 'asdf', foo.asdf
                 assert TestWithGetattro.call_getattro_slot(foo, 'asdf') == 'asdf'
             elif has_getattr:
                 assert foo.asdf == 3

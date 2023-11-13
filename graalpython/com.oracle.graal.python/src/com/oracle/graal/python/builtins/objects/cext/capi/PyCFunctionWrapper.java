@@ -108,6 +108,17 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     protected final RootCallTarget callTarget;
     protected final Signature signature;
     protected final TruffleString callTargetName;
+    /**
+     * This uses the fact that {@link BuiltinMethodDescriptor} is context independent (but language
+     * dependent) so it is "more" shareable in the native, and we can use create a
+     * {@link BuiltinMethodDescriptor} not only for slots but for any builtin.
+     * <p/>
+     * Once {@link BuiltinMethodDescriptor} is phased out, we should reconsider if we need a context
+     * independent token for builtins for which one can look up a call target in the current
+     * language or a {@code PBuiltinFunction} in the current context. We can reuse the TpSlots
+     * mechanism like we reused {@link BuiltinMethodDescriptor} originally intended for slots only,
+     * but is it worth the effort and complexity?
+     */
     protected final BuiltinMethodDescriptor builtinMethodDescriptor;
     protected final CApiTiming timing;
     private long pointer;

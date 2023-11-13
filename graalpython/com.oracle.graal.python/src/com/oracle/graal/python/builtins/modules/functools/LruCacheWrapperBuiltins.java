@@ -52,7 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLEAR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
@@ -60,6 +59,8 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -98,6 +100,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -107,6 +110,8 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLruCacheWrapper)
 public final class LruCacheWrapperBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = LruCacheWrapperBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LruCacheWrapperBuiltinsFactory.getFactories();
@@ -572,7 +577,8 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @Slot(SlotKind.tp_descr_get)
+    @GenerateUncached
     @GenerateNodeFactory
     abstract static class GetNode extends PythonTernaryBuiltinNode {
 

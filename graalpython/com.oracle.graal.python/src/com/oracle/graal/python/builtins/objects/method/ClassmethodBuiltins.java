@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,14 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -73,6 +75,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -85,14 +88,17 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PBuiltinClassMethod})
 public final class ClassmethodBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = ClassmethodBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ClassmethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
+    @Slot(SlotKind.tp_descr_get)
     @ReportPolymorphism
+    @GenerateUncached
+    @GenerateNodeFactory
     abstract static class GetNode extends PythonTernaryBuiltinNode {
 
         /**
@@ -151,6 +157,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     @ReportPolymorphism
     abstract static class MakeMethodNode extends PNodeWithContext {

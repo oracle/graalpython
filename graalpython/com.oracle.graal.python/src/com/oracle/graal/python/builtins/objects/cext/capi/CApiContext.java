@@ -1180,10 +1180,22 @@ public final class CApiContext extends CExtContext {
         return info == null ? -1 : info.pointer;
     }
 
+    public Object getClosureForExecutable(Object executable) {
+        CompilerAsserts.neverPartOfCompilation();
+        ClosureInfo info = callableClosureByExecutable.get(executable);
+        return info == null ? null : info.closure;
+    }
+
     public Object getClosureDelegate(long pointer) {
         CompilerAsserts.neverPartOfCompilation();
         ClosureInfo info = callableClosures.get(pointer);
         return info == null ? null : info.delegate;
+    }
+
+    public Object getClosureExecutable(long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        ClosureInfo info = callableClosures.get(pointer);
+        return info == null ? null : info.executable;
     }
 
     public void setClosurePointer(Object closure, Object delegate, Object executable, long pointer) {

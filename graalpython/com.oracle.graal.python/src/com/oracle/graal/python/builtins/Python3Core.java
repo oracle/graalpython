@@ -56,9 +56,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -264,6 +261,7 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.WrapperDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
@@ -352,18 +350,23 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinWithSignature;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
@@ -792,6 +795,10 @@ public abstract class Python3Core {
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
     @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.VALUES.length];
 
+    // Mapping from builtin slots (context independent) to corresponding builtin function
+    // Not all slots used this mapping
+    @CompilationFinal(dimensions = 1) private PBuiltinFunction[] builtinSlotsFunctions;
+
     private final Map<TruffleString, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
@@ -1127,11 +1134,27 @@ public abstract class Python3Core {
         return builtinTypes[index];
     }
 
+    public void initializeBuiltinSlotsFunctionsMapping() {
+        // The slots themselves are initialized once per VM in PythonBuiltinClassType static ctor
+        // This array is going to be filled by the slots when they create their corresponding
+        // builtins
+        builtinSlotsFunctions = new PBuiltinFunction[TpSlotBuiltinWithSignature.getBuiltinFunctionsCount()];
+    }
+
+    public void setBuiltinSlotFunction(int index, PBuiltinFunction function) {
+        builtinSlotsFunctions[index] = function;
+    }
+
+    public PBuiltinFunction lookupBuiltinSlotFunction(int index) {
+        return builtinSlotsFunctions[index];
+    }
+
     private void initializeTypes() {
         // create class objects for builtin types
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             initializeBuiltinClass(builtinClass);
         }
+        initializeBuiltinSlotsFunctionsMapping();
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
         // so we have the mapping from java classes to python classes and builtin names to modules
         // available.
@@ -1165,6 +1188,7 @@ public abstract class Python3Core {
     }
 
     private void populateBuiltins() {
+        assert PythonBuiltinClassType.verifySlotsConventions(builtins);
         for (PythonBuiltins builtin : builtins) {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
@@ -1183,6 +1207,13 @@ public abstract class Python3Core {
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);
             }
+        }
+
+        Map<TruffleString, BoundBuiltinCallable<?>> wrapped = new HashMap<>();
+        for (PythonBuiltinClassType klass : PythonBuiltinClassType.VALUES) {
+            wrapped.clear();
+            TpSlots.addOperatorsToBuiltin(wrapped, this, klass);
+            PythonBuiltins.addFunctionsToModuleObject(wrapped, lookupType(klass), factory());
         }
 
         // core machinery

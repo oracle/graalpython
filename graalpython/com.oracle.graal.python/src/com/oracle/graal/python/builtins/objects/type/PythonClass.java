@@ -85,11 +85,11 @@ public final class PythonClass extends PythonManagedClass {
     private byte mroShapeInvalidationsCount;
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, base, baseClasses);
+        super(lang, typeClass, classShape, null, name, base, baseClasses, null);
     }
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, invokeMro, false, base, baseClasses);
+        super(lang, typeClass, classShape, null, name, invokeMro, false, base, baseClasses, null);
     }
 
     public Assumption getSlotsFinalAssumption() {

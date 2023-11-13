@@ -180,7 +180,7 @@ public abstract class MethodsFlags {
                     SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
 
     public static final long DEFAULTDICT_M_FLAGS = NB_OR | DICT_M_FLAGS;
-    public static final long DEQUE_M_FLAGS = NB_BOOL | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT |
+    public static final long DEQUE_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT |
                     SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT;
 
     public static final long MAPPINGPROXY_M_FLAGS = NB_OR | NB_INPLACE_OR | SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;

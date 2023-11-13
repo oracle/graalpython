@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,27 +41,30 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.LENFUNC;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -69,66 +72,87 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Equivalent of CPython's {@code PySequence_Size}. For native object it would only call
- * {@code sq_length} and never {@code mp_length}. Unlike CPython's {@code PySequence_Size} this node
- * does not return -1 on error it instead raises TypeError
+ * Equivalent of CPython's {@code PySequence_Size}, which has a slightly different semantics to
+ * {@code PyObject_Size}.
  */
-@ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
-@GenerateInline(value = false)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
+@ImportStatic(PGuards.class)
 public abstract class PySequenceSizeNode extends Node {
-    private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_SEQUENCE_SIZE;
-    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
+    // Note: these fast-paths are duplicated in IteratorNodes$GetLength, because there is no simple
+    // way to share them effectively without unnecessary indirections and overhead in the
+    // interpreter
 
-    public abstract long execute(Frame frame, Object object);
-
-    public final long execute(Object object) {
-        return execute(null, object);
-    }
+    public abstract int execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static long doPSequence(PSequence object) {
+    static int doTruffleString(TruffleString str,
+                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+        return codePointLengthNode.execute(str, TS_ENCODING);
+    }
+
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    static int doList(PList object) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = {"!isNativeObject(object)", "!isPSequence(object)"})
-    static long doGenericManaged(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached GetClassNode getClassNode,
-                    @Cached PySequenceCheckNode sequenceCheckNode,
-                    @Cached PyMappingCheckNode mappingCheckNode,
-                    @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                    @Cached CallUnaryMethodNode callLen,
-                    @Cached CastToJavaLongExactNode toJavaLongExactNode,
-                    @Cached PRaiseNode.Lazy raise) {
-        if (sequenceCheckNode.execute(inliningTarget, object)) {
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object len = lookupLen.execute(frame, type, object);
-            assert len != PNone.NO_VALUE;
-            Object result = callLen.executeObject(frame, len, object);
-            try {
-                return toJavaLongExactNode.execute(inliningTarget, result);
-            } catch (CannotCastException cce) {
-                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
-            }
-        }
-        if (mappingCheckNode.execute(inliningTarget, object)) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
-        } else {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
-        }
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    static int doTuple(PTuple object) {
+        return object.getSequenceStorage().length();
     }
 
-    @Specialization
-    static long doNative(VirtualFrame frame, PythonAbstractNativeObject object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached ExternalFunctionNodes.ExternalFunctionWrapperInvokeNode invokeNode) {
-        Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
-        Object size = invokeNode.execute(frame, LENFUNC, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object)});
-        assert PGuards.isInteger(size);
-        return (long) size;
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    static int doDict(Node inliningTarget, PDict object,
+                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, object.getDictStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doSet(Node inliningTarget, PSet object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, object.getDictStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @InliningCutoff
+    static int doPString(Node inliningTarget, PString object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @Cached(inline = false) StringNodes.StringLenNode lenNode) {
+        return lenNode.execute(object);
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doPBytes(Node inliningTarget, PBytesLike object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        return object.getSequenceStorage().length();
+    }
+
+    @Fallback
+    static int doOthers(Frame frame, Node inliningTarget, Object object,
+                    @Cached GetObjectSlotsNode getTpSlotsNode,
+                    @Cached TpSlotLen.CallSlotLenNode callSlotLenNode,
+                    @Cached InlinedBranchProfile hasNoSqLenBranch,
+                    @Cached PRaiseNode.Lazy raiseNode) {
+        TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
+        if (slots.sq_length() != null) {
+            return callSlotLenNode.execute((VirtualFrame) frame, inliningTarget, slots.sq_length(), object);
+        }
+        hasNoSqLenBranch.enter(inliningTarget);
+        throw raiseError(object, inliningTarget, raiseNode, slots);
+    }
+
+    @InliningCutoff
+    private static PException raiseError(Object object, Node inliningTarget, Lazy raiseNode, TpSlots slots) {
+        TruffleString error = ErrorMessages.OBJ_HAS_NO_LEN;
+        if (slots.mp_length() == null) {
+            error = ErrorMessages.IS_NOT_A_SEQUENCE;
+        }
+        throw raiseNode.get(inliningTarget).raise(TypeError, error, object);
     }
 }

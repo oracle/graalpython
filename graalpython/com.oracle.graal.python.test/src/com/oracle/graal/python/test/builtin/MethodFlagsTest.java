@@ -122,7 +122,6 @@ public class MethodFlagsTest {
             assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_INDEX, SpecialMethodNames.T___INDEX__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_MATRIX_MULTIPLY, SpecialMethodNames.T___MATMUL__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_INPLACE_MATRIX_MULTIPLY, SpecialMethodNames.T___IMATMUL__);
-            assertMethodConsistentWithFlag(clazz, MethodsFlags.SQ_LENGTH | MethodsFlags.MP_LENGTH, SpecialMethodNames.T___LEN__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.SQ_ITEM | MethodsFlags.MP_SUBSCRIPT, SpecialMethodNames.T___GETITEM__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.SQ_ASS_ITEM | MethodsFlags.MP_ASS_SUBSCRIPT, SpecialMethodNames.T___SETITEM__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.SQ_CONTAINS, SpecialMethodNames.T___CONTAINS__);

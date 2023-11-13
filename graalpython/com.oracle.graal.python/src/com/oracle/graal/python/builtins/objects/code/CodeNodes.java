@@ -222,6 +222,10 @@ public abstract class CodeNodes {
         @Specialization(replaces = "doCachedCode")
         static RootCallTarget doGeneric(Node inliningTarget, PCode code,
                         @Cached InlinedConditionProfile hasCtProfile) {
+            return getInMultiContext(inliningTarget, code, hasCtProfile);
+        }
+
+        public static RootCallTarget getInMultiContext(Node inliningTarget, PCode code, InlinedConditionProfile hasCtProfile) {
             RootCallTarget ct = code.callTarget;
             if (hasCtProfile.profile(inliningTarget, ct == null)) {
                 ct = code.initializeCallTarget();

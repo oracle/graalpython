@@ -1971,6 +1971,24 @@ public abstract class TypeNodes {
 
                 SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);
 
+                // Initialization of the type slots:
+                //
+                // For now, we have the same helper functions as CPython and we execute them in the
+                // same order even-though we could squash them and optimize the wrapping and
+                // unwrapping of slots, but it would be more difficult to make sure that at the end
+                // of the day we produce exactly the same results, especially if there are native
+                // types in the MRO (we can, e.g., optimize this only for pure Python types to keep
+                // it still simple).
+                //
+                // From CPython point of view: we are in "type_new_impl", we call PyType_Ready,
+                // which calls type_ready_inherit to inherit the slots, and then
+                // fixup_slot_dispatchers to set the slots according to magic methods.
+                //
+                // We do not need to map slots to magic methods (add_operators in CPython), because
+                // this is a managed class and it cannot define its own slots.
+                TpSlots.inherit(newType, getMroStorageNode.execute(inliningTarget, newType));
+                TpSlots.fixupSlotDispatchers(newType);
+
                 HashingStorage storage = namespace.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                 while (itNext.execute(inliningTarget, storage, it)) {

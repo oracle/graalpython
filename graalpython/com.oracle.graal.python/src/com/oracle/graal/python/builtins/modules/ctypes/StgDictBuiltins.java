@@ -67,8 +67,10 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -78,7 +80,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -107,6 +108,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StgDict)
 public final class StgDictBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = TpSlots.createEmpty();
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -186,7 +188,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
         static void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetAnyAttributeNode getAttributeNode,
+                        @Cached PyObjectGetAttrO getAttributeNode,
                         @Cached SetAttributeNode.Dynamic setAttributeNode,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
@@ -210,7 +212,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                 // PyArg_ParseTuple(pair, "OO|O", & fname, &ftype, &bits);
                 Object[] array = getArray.execute(inliningTarget, pair.getSequenceStorage());
                 Object fname = array[0];
-                CFieldObject fdescr = (CFieldObject) getAttributeNode.executeObject(frame, descr.proto, fname);
+                CFieldObject fdescr = (CFieldObject) getAttributeNode.execute(frame, inliningTarget, descr.proto, fname);
                 if (getClassNode.execute(inliningTarget, fdescr) != context.lookupType(CField)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, UNEXPECTED_TYPE);
                 }
@@ -316,7 +318,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetItem getItemNode,
                         @Cached MakeFieldsNode makeFieldsNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetAnyAttributeNode getAttr,
+                        @Cached PyObjectGetAttrO getAttr,
                         @Cached PyObjectLookupAttr lookupAnon,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object anon = lookupAnon.execute(frame, inliningTarget, type, T__ANONYMOUS_);
@@ -329,7 +331,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
             for (int i = 0; i < sizeNode.execute(frame, inliningTarget, anon); ++i) {
                 Object fname = getItemNode.execute(frame, inliningTarget, anon, i); /* borrowed */
-                CFieldObject descr = (CFieldObject) getAttr.executeObject(frame, type, fname);
+                CFieldObject descr = (CFieldObject) getAttr.execute(frame, inliningTarget, type, fname);
                 if (getClassNode.execute(inliningTarget, descr) != CField) {
                     throw raiseNode.get(inliningTarget).raise(AttributeError, S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS, fname);
                 }

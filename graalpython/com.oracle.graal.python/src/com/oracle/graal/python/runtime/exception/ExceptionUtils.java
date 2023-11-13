@@ -177,11 +177,11 @@ public final class ExceptionUtils {
             sb.append(", in ");
             sb.append(rootNode.getName());
         } else if (evenWithoutSource) {
-            if (rootNode instanceof BuiltinFunctionRootNode) {
+            if (rootNode instanceof BuiltinFunctionRootNode builtinRoot) {
                 sb.append("  Builtin function ");
                 sb.append(rootNode.getName());
                 sb.append(" (node class ");
-                sb.append(((BuiltinFunctionRootNode) rootNode).getFactory().getNodeClass().getName());
+                sb.append(builtinRoot.getFactory().getNodeClass().getName());
                 sb.append(")");
             } else {
                 sb.append("  Builtin root ");

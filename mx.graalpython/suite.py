@@ -432,7 +432,7 @@ suite = {
             ],
             "jacoco": "include",
             "javaCompliance": "17+",
-            "checkstyleVersion": "8.36.1",
+            "checkstyleVersion": "10.7.0",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"

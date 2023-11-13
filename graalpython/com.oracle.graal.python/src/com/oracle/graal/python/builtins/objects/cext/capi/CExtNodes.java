@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErr
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -136,6 +137,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -454,6 +458,8 @@ public abstract class CExtNodes {
     @GenerateInline(false) // footprint reduction 60 -> 41
     public abstract static class AsCharPointerNode extends Node {
         public abstract Object execute(Object obj, boolean allocatePyMem);
+
+        public abstract Object execute(TruffleString obj, boolean allocatePyMem);
 
         public final Object execute(Object obj) {
             return execute(obj, false);
@@ -2004,16 +2010,44 @@ public abstract class CExtNodes {
 
         public abstract PythonObject execute(Node inliningTarget, TruffleString name, Object callable, int wrapper, Object type, Object flags);
 
+        /*
+         * Note: this is called from PyTruffleType_AddSlot, which is similar to CPython's
+         * add_operators: it creates corresponding Python magic methods from slots, but only from
+         * slots declared on given native type and not from inherited slots. So we should not see
+         * here pointers to native wrappers of managed slots. However, one could: 1) initialize a
+         * type multiple times, in which case we'd see here inherited slots, or 2) "steal" a slot
+         * from some existing type. This is why we resolve native closures and handle delegates of
+         * type TpSlotBuiltin/Managed in the managed case.
+         */
+
         @Specialization(guards = "!isNoValue(type)")
         @TruffleBoundary
         static PythonObject doPythonCallable(TruffleString name, PythonNativeWrapper callable, int signature, Object type, int flags) {
-            // This can happen if a native type inherits slots from a managed type. Therefore,
-            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
-            // case, we assume that the object is already callable.
             Object managedCallable = callable.getDelegate();
             PythonContext context = PythonContext.get(null);
             PythonLanguage language = context.getLanguage();
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, context.factory(), false);
+            boolean doArgAndResultConversion = false;
+            if (managedCallable instanceof TpSlotBuiltin<?> builtinSlot) {
+                var builtin = builtinSlot.createBuiltin(context, type, name, PExternalFunctionWrapper.fromValue(signature));
+                if (builtin != null) {
+                    return builtin;
+                }
+                assert callable instanceof TpSlotWrapper;
+                managedCallable = callable;
+                doArgAndResultConversion = true;
+            } else if (managedCallable instanceof TpSlotPython pythonSlot) {
+                // Someone has "stolen" existing python slot and stashed it into its slot field
+                // See TpSlots#fromNative where we need to solve the same issue
+                assert callable instanceof TpSlotWrapper;
+                TpSlotPython newPythonSlot = pythonSlot.forNewType(type);
+                if (newPythonSlot != pythonSlot) {
+                    managedCallable = ((TpSlotWrapper) callable).cloneWith(newPythonSlot);
+                } else {
+                    managedCallable = callable;
+                }
+                doArgAndResultConversion = true;
+            }
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, context.factory(), doArgAndResultConversion);
             return function != null ? function : castToPythonObject(managedCallable);
         }
 
@@ -2031,14 +2065,40 @@ public abstract class CExtNodes {
         @TruffleBoundary
         static PythonObject doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            /*
-             * This can happen if a native type inherits slots from a managed type. For example, if
-             * a native type inherits 'base->tp_richcompare' and this is '__truffle_richcompare__'
-             * and we are going to install it as '__eq__', we still need to have a wrapper around
-             * the managed callable since we need to bind the 3rd argument.
-             */
             PythonContext context = PythonContext.get(null);
             Object resolvedCallable = resolveClosurePointer(context, callable, lib);
+            assert !(resolvedCallable instanceof TpSlotNative);
+            if (resolvedCallable instanceof TpSlotBuiltin<?> builtinSlot) {
+                // CPython also creates a new wrapper descriptor even for slots that already
+                // have some wrapper descriptor. We can use the slot itself to create the right
+                // descriptor avoiding the delegation
+                var builtin = builtinSlot.createBuiltin(context, type, name, PExternalFunctionWrapper.fromValue(signature));
+                if (builtin != null) {
+                    return builtin;
+                }
+                // Otherwise fallback to wrapping the callable as if it was just opaque native call
+                resolvedCallable = null;
+            } else if (resolvedCallable instanceof TpSlotPython pythonSlot) {
+                // Someone has "stolen" existing python slot and stashed it into its slot field
+                // We will delegate to the native closure to be as compatible with whatever
+                // native call trickery the user intends to do
+                // Note: we do not have a simple way to write back the new slot if it changed,
+                // so TpSlots#fromNative will do this again and will write back the new slot to the
+                // PyTypeObject slot field
+                TpSlotPython newSlot = pythonSlot.forNewType(type);
+                try {
+                    Object wrapper = context.getCApiContext().getClosureExecutable(InteropLibrary.getUncached().asPointer(callable));
+                    if (wrapper instanceof TpSlotWrapper slotWrapper) {
+                        TpSlotWrapper newWrapper = newSlot != pythonSlot ? slotWrapper.cloneWith(newSlot) : slotWrapper;
+                        newWrapper.toNative(SignatureLibrary.getUncached());
+                        callable = context.getCApiContext().getClosureForExecutable(newWrapper);
+                    }
+                    resolvedCallable = null;
+                } catch (UnsupportedMessageException ignore) {
+                    // resolveClosurePointer gave non-null result, it must be a pointer
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
             boolean doArgAndResultConversion;
             if (resolvedCallable != null) {
                 doArgAndResultConversion = false;
@@ -2059,6 +2119,23 @@ public abstract class CExtNodes {
             throw shouldNotReachHere("Unexpected class of callable: " + callable.getClass());
         }
 
+        /**
+         * If possible resolves the pointer to a {@link PBuiltinFunction} (creating a fresh builtin
+         * from builtin slots).
+         */
+        @TruffleBoundary
+        public static Object resolveClosurePointerToBuiltinFun(PythonContext context, Object callable, InteropLibrary lib,
+                        Object type, TruffleString name, PExternalFunctionWrapper signature) {
+            Object delegate = resolveClosurePointer(context, callable, lib);
+            if (delegate instanceof TpSlotBuiltin<?> builtinSlot) {
+                return builtinSlot.createBuiltin(context, type, name, signature);
+            }
+            return delegate;
+        }
+
+        /**
+         * Returns either {@link PBuiltinFunction} or {@link TpSlotBuiltin}.
+         */
         @TruffleBoundary
         public static Object resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
             if (lib.isPointer(callable)) {

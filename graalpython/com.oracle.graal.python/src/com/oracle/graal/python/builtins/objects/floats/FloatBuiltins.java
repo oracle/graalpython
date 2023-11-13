@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -78,6 +77,8 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -89,6 +90,8 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProvid
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils.PFloatUnboxing;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -124,6 +127,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -136,6 +140,8 @@ import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFloat)
 public final class FloatBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = FloatBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FloatBuiltinsFactory.getFactories();
@@ -281,13 +287,24 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.nb_bool)
+    @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends AbstractNumericUnaryBuiltin {
-
-        @Override
-        protected Object op(double self) {
+    abstract static class BoolNode extends InquiryBuiltinNode {
+        static boolean op(double self) {
             return self != 0.0;
+        }
+
+        @Specialization
+        static boolean doDouble(double num) {
+            return op(num);
+        }
+
+        @Specialization(replaces = "doDouble")
+        static boolean doOther(Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToJavaDoubleNode cast) {
+            return op(castToDoubleChecked(inliningTarget, object, cast));
         }
     }
 

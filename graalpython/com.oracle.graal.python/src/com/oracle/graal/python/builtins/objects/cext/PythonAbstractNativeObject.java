@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -83,6 +84,7 @@ import com.oracle.truffle.api.utilities.TriState;
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final Object object;
+    public TpSlots slots;
     public NativeObjectReference ref;
 
     public PythonAbstractNativeObject(Object object) {
@@ -190,6 +192,14 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    public void setTpSlots(TpSlots slots) {
+        this.slots = slots;
+    }
+
+    public TpSlots getTpSlots() {
+        return slots;
     }
 
     @ExportMessage

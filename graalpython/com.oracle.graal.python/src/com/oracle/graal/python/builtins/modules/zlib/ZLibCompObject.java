@@ -318,7 +318,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         this.unconsumedTail = unconsumedTail;
     }
 
-    public static NativeZlibCompObject createNative(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNative(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
         return new NativeZlibCompObject(cls, instanceShape, zst, zlibSupport);
     }
 

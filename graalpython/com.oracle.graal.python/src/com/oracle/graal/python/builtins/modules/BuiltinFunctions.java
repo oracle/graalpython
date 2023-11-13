@@ -172,10 +172,12 @@ import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -1350,7 +1352,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "isNoValue(defaultValue)")
         static Object getAttrNoDefault(VirtualFrame frame, Object primary, Object name, @SuppressWarnings("unused") Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttr) {
+                        @Cached PyObjectGetAttrO getAttr) {
             return getAttr.execute(frame, inliningTarget, primary, name);
         }
 
@@ -1358,7 +1360,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static Object getAttrWithDefault(VirtualFrame frame, Object primary, Object name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
-                        @Cached PyObjectLookupAttr lookupAttr) {
+                        @Cached PyObjectLookupAttrO lookupAttr) {
             Object result = lookupAttr.execute(frame, inliningTarget, primary, name);
             if (noValueProfile.profile(inliningTarget, result == NO_VALUE)) {
                 return defaultValue;
@@ -2091,7 +2093,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         boolean hasAttr(VirtualFrame frame, Object object, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr pyObjectLookupAttr) {
+                        @Cached PyObjectLookupAttrO pyObjectLookupAttr) {
             return pyObjectLookupAttr.execute(frame, inliningTarget, object, key) != PNone.NO_VALUE;
         }
     }

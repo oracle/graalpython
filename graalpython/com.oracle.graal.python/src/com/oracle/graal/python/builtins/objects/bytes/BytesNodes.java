@@ -928,6 +928,7 @@ public abstract class BytesNodes {
     }
 
     @GenerateInline
+    @GenerateUncached
     @GenerateCached(false)
     public abstract static class GetBytesStorage extends Node {
         public abstract SequenceStorage execute(Node inliningTarget, Object bytes);
@@ -946,6 +947,7 @@ public abstract class BytesNodes {
     }
 
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class GetNativeBytesStorage extends Node {
         public abstract NativeByteSequenceStorage execute(PythonAbstractNativeObject tuple);
 

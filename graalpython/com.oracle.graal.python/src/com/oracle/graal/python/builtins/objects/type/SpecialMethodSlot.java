@@ -44,11 +44,9 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_LENGTH;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_SUBSCRIPT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_BOOL;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOOR_DIVIDE;
@@ -69,7 +67,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ASS_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ITEM;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_LENGTH;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -80,12 +77,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
@@ -94,10 +89,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
@@ -109,7 +101,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
@@ -143,7 +134,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
@@ -176,8 +166,8 @@ import com.oracle.graal.python.lib.GetMethodsFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -217,16 +207,10 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
  * initialized.
  */
 public enum SpecialMethodSlot {
-    GetAttribute(T___GETATTRIBUTE__),
-    GetAttr(T___GETATTR__),
     SetAttr(T___SETATTR__),
     DelAttr(T___DELATTR__),
 
     Dict(T___DICT__),
-
-    Get(T___GET__),
-    Set(T___SET__),
-    Delete(T___DELETE__),
 
     Iter(T___ITER__),
     Next(T___NEXT__),
@@ -252,10 +236,8 @@ public enum SpecialMethodSlot {
     Exit(T___EXIT__),
     Enter(T___ENTER__),
 
-    Len(T___LEN__, SQ_LENGTH | MP_LENGTH),
     LengthHint(T___LENGTH_HINT__),
     Contains(T___CONTAINS__, SQ_CONTAINS),
-    Bool(T___BOOL__, NB_BOOL),
     Hash(T___HASH__),
     Index(T___INDEX__, NB_INDEX),
     Float(T___FLOAT__, NB_FLOAT),
@@ -867,15 +849,6 @@ public enum SpecialMethodSlot {
         int x = codePointAtIndexNode.execute(name, 2, TS_ENCODING) * 26 + codePointAtIndexNode.execute(name, 3, TS_ENCODING);
         switch (x) {
             case 'g' * 26 + 'e':    // ge
-                if (eqNode.execute(name, T___GETATTRIBUTE__, TS_ENCODING)) {
-                    return GetAttribute;
-                }
-                if (eqNode.execute(name, T___GETATTR__, TS_ENCODING)) {
-                    return GetAttr;
-                }
-                if (eqNode.execute(name, T___GET__, TS_ENCODING)) {
-                    return Get;
-                }
                 if (eqNode.execute(name, T___GETITEM__, TS_ENCODING)) {
                     return GetItem;
                 }
@@ -887,9 +860,6 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___SETATTR__, TS_ENCODING)) {
                     return SetAttr;
                 }
-                if (eqNode.execute(name, T___SET__, TS_ENCODING)) {
-                    return Set;
-                }
                 if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
                     return SetName;
                 }
@@ -900,9 +870,6 @@ public enum SpecialMethodSlot {
             case 'd' * 26 + 'e':    // de
                 if (eqNode.execute(name, T___DELATTR__, TS_ENCODING)) {
                     return DelAttr;
-                }
-                if (eqNode.execute(name, T___DELETE__, TS_ENCODING)) {
-                    return Delete;
                 }
                 if (eqNode.execute(name, T___DELITEM__, TS_ENCODING)) {
                     return DelItem;
@@ -970,9 +937,6 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'l' * 26 + 'e':    // le
-                if (eqNode.execute(name, T___LEN__, TS_ENCODING)) {
-                    return Len;
-                }
                 if (eqNode.execute(name, T___LENGTH_HINT__, TS_ENCODING)) {
                     return LengthHint;
                 }
@@ -983,11 +947,6 @@ public enum SpecialMethodSlot {
             case 'c' * 26 + 'o':    // co
                 if (eqNode.execute(name, T___CONTAINS__, TS_ENCODING)) {
                     return Contains;
-                }
-                break;
-            case 'b' * 26 + 'o':    // bo
-                if (eqNode.execute(name, T___BOOL__, TS_ENCODING)) {
-                    return Bool;
                 }
                 break;
             case 'h' * 26 + 'a':    // ha

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HAS_NO_STGINFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -58,6 +56,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -80,7 +80,9 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
@@ -95,6 +97,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -115,6 +118,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CField)
 public final class CFieldBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = CFieldBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -141,12 +145,11 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = J___SET__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_descr_set, isComplex = true)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
-    public abstract static class SetNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "!isNone(value)")
-        static Object doit(VirtualFrame frame, CFieldObject self, Object inst, Object value,
+    public abstract static class DescrSet extends DescrSetBuiltinNode {
+        @Specialization(guards = "!isNoValue(value)")
+        static void doit(VirtualFrame frame, CFieldObject self, Object inst, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyCDataSetNode cDataSetNode,
@@ -154,23 +157,20 @@ public final class CFieldBuiltins extends PythonBuiltins {
             if (!pyTypeCheck.isCDataObject(inliningTarget, inst)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
-            if (value == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
-            }
             CDataObject dst = (CDataObject) inst;
             cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.withOffset(self.offset));
-            return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object doit(CFieldObject self, Object inst, PNone value,
+        @Specialization(guards = "!isNoValue(value)")
+        @InliningCutoff
+        static void doit(CFieldObject self, Object inst, Object value,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @Slot(SlotKind.tp_descr_get)
+    @GenerateUncached
     @GenerateNodeFactory
     abstract static class GetNode extends PythonTernaryBuiltinNode {
 

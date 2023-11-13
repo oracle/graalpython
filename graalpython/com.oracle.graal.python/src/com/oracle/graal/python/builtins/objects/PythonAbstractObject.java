@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.GetNextNode;
@@ -198,7 +199,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     // @ImportStatic doesn't work for this for some reason
     protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
     protected static final SpecialMethodSlot Next = SpecialMethodSlot.Next;
-    protected static final SpecialMethodSlot Len = SpecialMethodSlot.Len;
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
 
@@ -278,8 +278,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
+                    @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached PySequenceCheckNode sequenceCheck,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -289,7 +288,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
             } else {
-                return sequenceCheck.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
+                return sequenceCheck.execute(inliningTarget, this) && getSlotsNode.execute(inliningTarget, this).sq_mp_length() != null;
             }
         } finally {
             gil.release(mustRelease);
@@ -386,7 +385,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
@@ -400,7 +399,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
             } else {
                 try {
-                    return sequenceSizeNode.execute(this);
+                    return sequenceSizeNode.execute(null, inliningTarget, this);
                 } catch (PException pe) {
                     throw UnsupportedMessageException.create();
                 }
@@ -410,8 +409,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
-    private boolean isInBounds(long idx, PySequenceSizeNode sequenceSizeNode) {
-        long length = sequenceSizeNode.execute(this);
+    private boolean isInBounds(Node inliningTarget, long idx, PySequenceSizeNode sequenceSizeNode) {
+        long length = sequenceSizeNode.execute(null, inliningTarget, this);
         return 0 <= idx && idx < length;
     }
 
@@ -423,7 +422,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -435,7 +434,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
                 try {
-                    return isInBounds(idx, sequenceSizeNode);
+                    return isInBounds(inliningTarget, idx, sequenceSizeNode);
                 } catch (PException pe) {
                     return false;
                 }
@@ -453,7 +452,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -465,7 +464,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
                 try {
-                    return isInBounds(idx, sequenceSizeNode);
+                    return isInBounds(inliningTarget, idx, sequenceSizeNode);
                 } catch (PException pe) {
                     return false;
                 }
@@ -485,7 +484,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -495,7 +494,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
                 try {
-                    return !isInBounds(idx, sequenceSizeNode);
+                    return !isInBounds(inliningTarget, idx, sequenceSizeNode);
                 } catch (PException pe) {
                     return false;
                 }
@@ -515,7 +514,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -525,7 +524,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
                 try {
-                    return isInBounds(idx, sequenceSizeNode);
+                    return isInBounds(inliningTarget, idx, sequenceSizeNode);
                 } catch (PException pe) {
                     return false;
                 }

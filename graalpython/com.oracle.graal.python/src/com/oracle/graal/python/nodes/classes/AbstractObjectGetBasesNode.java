@@ -44,11 +44,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
@@ -82,10 +82,10 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     @Specialization(guards = "!isUncached()")
     static PTuple getBasesCached(VirtualFrame frame, Object cls,
                     @Bind("this") Node inliningTarget,
-                    @Cached("create(GetAttribute)") LookupAndCallBinaryNode getAttributeNode,
+                    @Cached PyObjectGetAttr getAttributeNode,
                     @Exclusive @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
         try {
-            Object bases = getAttributeNode.executeObject(frame, cls, T___BASES__);
+            Object bases = getAttributeNode.execute(frame, inliningTarget, cls, T___BASES__);
             if (bases instanceof PTuple) {
                 return (PTuple) bases;
             }

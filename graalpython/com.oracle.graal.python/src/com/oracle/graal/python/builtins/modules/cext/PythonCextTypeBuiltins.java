@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -196,6 +198,16 @@ public final class PythonCextTypeBuiltins {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") (without MRO) called");
             }
             SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), getLanguage());
+            // TODO: this is called from two places: at the end of PyType_Ready, and theoretically
+            // could be called from:
+            //
+            // void PyType_Modified(PyTypeObject* type) -> GraalPyTruffle_Type_Modified(type,
+            // type->tp_name, type->tp_mro);
+            //
+            // in unlikely (impossible?) case that type->tp_mro was NULL. Should we distinguish
+            // the two cases? As a cleanup if it is impossible situation (separate two different
+            // upcalls), or because at the end of PyType_Ready, we do not want to call
+            // TpSlots.updateAllSlots(clazz), but from PyType_Modified we do.
             return 0;
         }
 
@@ -216,6 +228,7 @@ public final class PythonCextTypeBuiltins {
                 throw new IllegalStateException("invalid MRO object for native type \"" + name.toJavaStringUncached() + "\"");
             }
             SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), getLanguage());
+            TpSlots.updateAllSlots(clazz);
             return 0;
         }
     }
@@ -310,7 +323,17 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         @TruffleBoundary
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
-            // create wrapper descriptor
+            // TruffleType_AddSlot is called from type_ready_graalpy_slot_conv, which is called
+            // before type_ready_inherit, so the only slots that we should see here are native
+            // slots declared on the PyTypeObject. However, one could maybe "steal" a manged slot
+            // and stash it into a native type, so we play it safe a check both eventualities in
+            // CreateFunctionNode
+            if (HashingStorageGetItem.hasKeyUncached(tpDict.getDictStorage(), memberName)) {
+                // Following typeobject.c:add_operators we skip a slot if we already create a
+                // function for it from another slot that was earlier or if the dict already
+                // contained the key
+                return 0;
+            }
             PythonObject wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
             WriteAttributeToPythonObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
