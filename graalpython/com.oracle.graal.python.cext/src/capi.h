@@ -789,7 +789,19 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
-#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & 0x8000000000000000L) != 0)
+#define HANDLE_BASE 0x8000000000000000ULL
+
+#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
+
+static MUST_INLINE PyObject *stub_to_pointer(PyObject *stub_ptr)
+{
+    return ((uintptr_t) stub_ptr) | HANDLE_BASE;
+}
+
+static MUST_INLINE PyObject *pointer_to_stub(PyObject *o)
+{
+    return ((uintptr_t) o) & ~HANDLE_BASE;
+}
 
 PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, const char* name);
 

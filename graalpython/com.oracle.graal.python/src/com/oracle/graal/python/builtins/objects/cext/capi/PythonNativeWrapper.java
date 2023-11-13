@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.util.PythonUtils;
@@ -210,14 +211,14 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         @Override
-        public final void updateRefCountFromNative(long pointer, int delta) {
-            refCount = CApiTransitions.readNativeRefCount(pointer) + delta;
+        public final void updateRefCountFromNative(@SuppressWarnings("unused") long pointer, int delta) {
+            refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer())) + delta;
         }
 
         @Override
         public void updateRefCountToNative() {
             assert isNative();
-            CApiTransitions.writeNativeRefCount(getNativePointer(), refCount);
+            CApiTransitions.writeNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()), refCount);
         }
     }
 
