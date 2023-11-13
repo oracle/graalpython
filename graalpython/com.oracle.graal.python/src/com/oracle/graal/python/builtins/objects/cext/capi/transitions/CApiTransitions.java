@@ -862,7 +862,7 @@ public abstract class CApiTransitions {
             }
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
-            } else {
+            } else if (obj != PNone.NO_VALUE) {
                 /*
                  * The reference count of the managed wrapper may have been modified, so we need to
                  * write the updated value to native.
