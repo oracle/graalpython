@@ -230,6 +230,9 @@ def full_python(args, **kwargs):
         args.remove("--hosted")
         return python(args)
 
+    if '--vm.da' not in args:
+        args.insert(0, '--vm.ea')
+
     if not any(arg.startswith('--experimental-options') for arg in args):
         args.insert(0, '--experimental-options')
 
