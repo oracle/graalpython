@@ -838,6 +838,11 @@ class TestSuite:
 
 if __name__ == "__main__":
     sys.modules["unittest"] = sys.modules["__main__"]
+
+    if sys.implementation.name == 'graalpy' and os.environ.get(b"GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != b"true":
+        if not __graalpython__.java_assert():
+            sys.exit("Java assertions are not enabled, refusing to run. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check")
+
     patterns = []
     argv = sys.argv[:]
     idx = 0
@@ -846,12 +851,12 @@ if __name__ == "__main__":
             argv.pop(idx)
             try:
                 import json
-            except:
+            except Exception:
                 print("--report needs working json module")
                 raise
             try:
                 reportfile = [argv.pop(idx),]
-            except:
+            except Exception:
                 print("--report needs argument path to the json output")
                 raise
         elif argv[idx] == "-k":
