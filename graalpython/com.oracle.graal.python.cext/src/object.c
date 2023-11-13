@@ -947,16 +947,61 @@ PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwarg
 
 // GraalPy additions
 Py_ssize_t _Py_REFCNT(const PyObject *obj) {
-	return PyObject_ob_refcnt(obj);
+    Py_ssize_t res;
+    if (points_to_py_handle_space(obj))
+    {
+        res = pointer_to_stub(obj)->ob_refcnt;
+#ifndef NDEBUG
+        if (PyTruffle_Debug_CAPI() && PyObject_ob_refcnt(obj) != res)
+        {
+            Py_FatalError("Refcount of native stub and managed object differ");
+        }
+#endif
+    }
+    else
+    {
+        res = obj->ob_refcnt;
+    }
+    return res;
 }
 
 Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-	set_PyObject_ob_refcnt(obj, cnt);
+    PyObject *dest;
+    if (points_to_py_handle_space(obj))
+    {
+        dest = pointer_to_stub(obj);
+#ifndef NDEBUG
+        if (PyTruffle_Debug_CAPI())
+        {
+            set_PyObject_ob_refcnt(obj, cnt);
+        }
+#endif
+    }
+    else
+    {
+        dest = obj;
+    }
+    dest->ob_refcnt = cnt;
 	return cnt;
 }
 
 PyTypeObject* _Py_TYPE(const PyObject *a) {
-	return PyObject_ob_type(a);
+    PyTypeObject *res;
+    if (points_to_py_handle_space(a))
+    {
+        res = pointer_to_stub(a)->ob_type;
+#ifndef NDEBUG
+        if (PyTruffle_Debug_CAPI() && PyObject_ob_type(a) != res)
+        {
+            Py_FatalError("Type of native stub and managed object differ");
+        }
+#endif
+    }
+    else
+    {
+        res = a->ob_type;
+    }
+    return res;
 }
 
 Py_ssize_t _Py_SIZE(const PyVarObject *a) {
