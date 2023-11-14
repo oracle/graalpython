@@ -1111,9 +1111,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
     args = args or []
-    args = ["--experimental-options=true",
-            "--python.EnableDebuggingBuiltins",
-            "--python.CatchAllExceptions=true"] + args
+    args = [
+        "--vm.ea",
+        "--experimental-options=true",
+        "--python.EnableDebuggingBuiltins",
+        "--python.CatchAllExceptions=true",
+        *args,
+    ]
     exclude = exclude or []
     if env is None:
         env = os.environ.copy()
