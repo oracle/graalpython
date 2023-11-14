@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WinapiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
@@ -510,6 +511,7 @@ public abstract class Python3Core {
                         new PosixModuleBuiltins(),
                         new NtModuleBuiltins(),
                         new WinregModuleBuiltins(),
+                        new WinapiModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
