@@ -208,11 +208,8 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
     @ExportMessage
     void toNative() {
         if (!isNative()) {
-            /*
-             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
-             * transition. Therefore, the wrapper is expected to be native already.
-             */
-            throw CompilerDirectives.shouldNotReachHere();
+            getReplacement(InteropLibrary.getUncached());
+            assert isNative();
         }
     }
 }
