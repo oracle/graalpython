@@ -584,7 +584,12 @@ public final class CApiContext extends CExtContext {
                      */
                     Object finalizeFunction = U.readMember(capiLibrary, "finalizeCAPI");
                     Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
-                    cApiContext.addNativeFinalizer(env, finalizeFunction, finalizeSignature);
+                    try {
+                        cApiContext.addNativeFinalizer(env, finalizeFunction, finalizeSignature);
+                    } catch (RuntimeException e) {
+                        // This can happen when other languages restrict multithreading
+                        LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
+                    }
                 }
 
                 return cApiContext;
