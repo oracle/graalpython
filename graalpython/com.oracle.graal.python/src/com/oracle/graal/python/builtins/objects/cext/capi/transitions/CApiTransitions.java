@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -772,7 +773,7 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    @ImportStatic(CApiGuards.class)
+    @ImportStatic({CApiGuards.class, PGuards.class})
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
         public final long executeLong(Object obj) {
@@ -812,8 +813,13 @@ public abstract class CApiTransitions {
             return getContext().getNativeNull().getPtr();
         }
 
+        @Specialization(guards = "isNoValue(obj)")
+        Object doNoValue(@SuppressWarnings("unused") PNone obj) {
+            return getContext().getNativeNull().getPtr();
+        }
+
         static boolean isOther(Object obj) {
-            return !(obj instanceof PythonAbstractNativeObject || obj instanceof PythonNativePointer || obj instanceof DescriptorDeleteMarker);
+            return !(obj instanceof PythonAbstractNativeObject || obj instanceof PythonNativePointer || obj instanceof DescriptorDeleteMarker || obj == PNone.NO_VALUE);
         }
 
         @Specialization(guards = "isOther(obj)")
@@ -844,7 +850,8 @@ public abstract class CApiTransitions {
             }
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
-            } else if (obj != PNone.NO_VALUE) {
+            } else {
+                assert obj != PNone.NO_VALUE;
                 /*
                  * The reference count of the managed wrapper may have been modified, so we need to
                  * write the updated value to native.
