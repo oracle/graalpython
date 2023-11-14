@@ -58,8 +58,6 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonNativeWrapper.class);
 
-    public static final long IMMORTAL_REFCNT = 256 * 256;
-
     private static final long UNINITIALIZED = -1;
 
     private Object delegate;
