@@ -412,9 +412,9 @@ public class JBangIntegration {
     /**
      * Ensures that the proxy url has a protocol.
      * 
-     * @param proxyAddress
-     * @param protocol
-     * @return
+     * @param proxyAddress proxy server address 
+     * @param protocol  usually http or https
+     * @return String representation of url of the proxy
      */
     private static String fixProtocol(String proxyAddress, String protocol) {
         return proxyAddress.startsWith(protocol) ? proxyAddress : protocol + "://" + proxyAddress;
