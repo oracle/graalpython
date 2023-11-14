@@ -166,7 +166,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             nativeWrapper = new PythonObjectNativeWrapper(object);
             // this should keep the native wrapper alive forever
-            CApiTransitions.incRef(nativeWrapper, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
+            nativeWrapper.makeImmortal();
             context.setSingletonNativeWrapper(object, nativeWrapper);
         }
         return nativeWrapper;

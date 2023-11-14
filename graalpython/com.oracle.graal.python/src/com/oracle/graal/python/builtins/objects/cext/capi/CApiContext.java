@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
@@ -215,7 +214,7 @@ public final class CApiContext extends CExtContext {
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
             PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
-            CApiTransitions.incRef(nativeWrapper, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
+            nativeWrapper.makeImmortal();
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
     }
@@ -521,15 +520,6 @@ public final class CApiContext extends CExtContext {
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
-
-    @TruffleBoundary
-    public static CApiContext ensureCapiWasLoaded() {
-        try {
-            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
-        } catch (Exception e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
-    }
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded() {

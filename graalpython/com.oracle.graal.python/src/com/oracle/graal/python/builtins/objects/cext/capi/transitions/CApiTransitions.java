@@ -184,6 +184,14 @@ public abstract class CApiTransitions {
             return new PythonObjectReference(referent, strong, pointer);
         }
 
+        public boolean isStrongReference() {
+            return strongReference != null;
+        }
+
+        public void setStrongReference(PythonNativeWrapper wrapper) {
+            strongReference = wrapper;
+        }
+
         @Override
         public String toString() {
             return "PythonObjectReference<" + (strongReference == null ? "" : "strong,") + Long.toHexString(pointer) + ">";
@@ -690,32 +698,6 @@ public abstract class CApiTransitions {
         return value;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public static long incRef(PythonAbstractObjectNativeWrapper nativeWrapper, long value) {
-        assert value > 0;
-        long refCount = nativeWrapper.getRefCount();
-        nativeWrapper.setRefCount(refCount + value);
-        // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
-        assert refCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(nativeWrapper.getNativePointer());
-        if (refCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && nativeWrapper.ref != null) {
-            nativeWrapper.ref.strongReference = nativeWrapper;
-        }
-        return refCount;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static long decRef(PythonAbstractObjectNativeWrapper nativeWrapper, long value) {
-        assert value > 0;
-        long refCount = nativeWrapper.getRefCount() - value;
-        nativeWrapper.setRefCount(refCount);
-        // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
-        assert refCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during decRef in " + Long.toHexString(nativeWrapper.getNativePointer());
-        if (refCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && nativeWrapper.ref != null) {
-            nativeWrapper.ref.strongReference = null;
-        }
-        return refCount;
-    }
-
     private static final InteropLibrary LIB = InteropLibrary.getUncached();
 
     /**
@@ -740,7 +722,7 @@ public abstract class CApiTransitions {
             PythonNativeWrapper wrapper = profile.profile(inliningTarget, pythonObjectReference.get());
             assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                incRef(objectNativeWrapper, 1);
+                objectNativeWrapper.incRef();
             }
             return wrapper;
         }
@@ -846,7 +828,7 @@ public abstract class CApiTransitions {
             PythonNativeWrapper wrapper = isReplacementProfile.profile(inliningTarget, getWrapper.execute(obj));
             if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 // native part needs to decRef to release
-                incRef(objectNativeWrapper, 1);
+                objectNativeWrapper.incRef();
             }
 
             // no profile for 'isReplacingWrapper' required since this should be constant for a type
@@ -1039,7 +1021,7 @@ public abstract class CApiTransitions {
             PythonNativeWrapper profiledWrapper = wrapperProfile.profile(node, wrapper);
             if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 assert objectNativeWrapper.getRefCount() >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
-                decRef(objectNativeWrapper, 1);
+                objectNativeWrapper.decRef();
             }
             if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
                 if (primitive.isBool()) {

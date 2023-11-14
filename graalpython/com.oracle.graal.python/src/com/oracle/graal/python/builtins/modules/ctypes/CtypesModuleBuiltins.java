@@ -1738,8 +1738,10 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("dec") @Cached SubRefCntNode decRefCntNode,
                         @Shared("inc") @Cached AddRefCntNode incRefCntNode) {
-            decRefCntNode.execute(inliningTarget, arg, 1 /* that's what this function is for */);
-            incRefCntNode.execute(inliningTarget, arg, 1 /* that for returning it */);
+            // that's what this function is for
+            decRefCntNode.dec(inliningTarget, arg);
+            // that for returning it
+            incRefCntNode.inc(inliningTarget, arg);
             return arg;
         }
 

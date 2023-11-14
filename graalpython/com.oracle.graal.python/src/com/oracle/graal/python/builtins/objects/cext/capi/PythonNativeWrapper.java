@@ -206,8 +206,52 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             return refCount;
         }
 
+        @TruffleBoundary(allowInlining = true)
         public final void setRefCount(long refCount) {
+            setRefCount(null, refCount, InlinedConditionProfile.getUncached());
+        }
+
+        public final void setRefCount(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
             this.refCount = refCount;
+            if (hasRefProfile.profile(inliningTarget, ref != null)) {
+                if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
+                    ref.setStrongReference(this);
+                } else if (refCount <= MANAGED_REFCNT && ref.isStrongReference()) {
+                    ref.setStrongReference(null);
+                }
+            }
+        }
+
+        public void makeImmortal() {
+            this.refCount = IMMORTAL_REFCNT;
+            if (ref != null) {
+                ref.setStrongReference(this);
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        public void incRef() {
+            long refCount = this.refCount++;
+            // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
+            assert refCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
+            if (refCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
+                // make strong
+                assert !ref.isStrongReference();
+                ref.setStrongReference(this);
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        public long decRef() {
+            long updatedRefCount = --this.refCount;
+            // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
+            assert updatedRefCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
+            if (updatedRefCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
+                // make weak
+                assert ref.isStrongReference();
+                ref.setStrongReference(null);
+            }
+            return updatedRefCount;
         }
 
         @Override
