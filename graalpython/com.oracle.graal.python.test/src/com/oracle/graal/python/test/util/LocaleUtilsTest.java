@@ -38,53 +38,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.integration.module;
+package com.oracle.graal.python.test.util;
 
-import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
-import static org.junit.Assert.assertEquals;
-
-import java.nio.charset.Charset;
 import java.util.Locale;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Value;
+import org.junit.Assert;
 import org.junit.Test;
 
-public class LocaleTest {
+import com.oracle.graal.python.runtime.locale.LocaleUtils;
+
+public class LocaleUtilsTest {
     @Test
-    public void getlocaleWithJvmLocale() {
-        String expectedEncoding = Charset.defaultCharset().displayName();
-        String expectedOutput = String.format("('it_IT', '%s')\n", expectedEncoding);
-        Locale currentDefault = Locale.getDefault();
-        try {
-            Locale.setDefault(Locale.ITALY);
-            assertPrints(expectedOutput, "import locale; print(locale.getlocale())");
-        } finally {
-            Locale.setDefault(currentDefault);
-        }
+    public void testFromPosix() {
+        assertEquals("en", null, "en");
+        assertEquals("en", "GB", "en_GB");
+        assertEquals("en", "GB", "en_GB.UTF-8");
+        assertEquals("en", null, "en.UTF-8");
+        assertEquals("en", null, "en@posix");
+        assertEquals("en", "GB", "en_GB@posix");
+        assertEquals("en", "GB", "en_GB.UTF-8@posix");
+
+        Assert.assertEquals(Locale.ROOT, LocaleUtils.fromPosix("C", null));
+        Assert.assertEquals(Locale.GERMANY, LocaleUtils.fromPosix("", Locale.GERMANY));
     }
 
     @Test
-    public void localeconvWithJvmLocale() {
-        Locale currentDefault = Locale.getDefault();
-        try {
-            Locale.setDefault(Locale.ITALY);
-            assertPrints("EUR\n", "import locale; print(locale.localeconv()['int_curr_symbol'])");
-        } finally {
-            Locale.setDefault(currentDefault);
-        }
+    public void testFromPosixErrors() {
+        assertDefault("q");
+        assertDefault("@posix");
+        assertDefault("UTF-8");
+        assertDefault(".UTF-8");
     }
 
-    @Test
-    public void getlocaleWithOption() {
-        String expectedEncoding = Charset.defaultCharset().displayName();
-        try (Context context = Context.newBuilder("python").option("python.InitialLocale", "en_GB").build()) {
-            Value tuple = context.eval("python", "import locale; locale.getlocale()");
-            assertEquals("en_GB", tuple.getArrayElement(0).asString());
-            assertEquals(expectedEncoding, tuple.getArrayElement(1).asString());
+    private static void assertDefault(String wrongId) {
+        Assert.assertNull(LocaleUtils.fromPosix(wrongId, Locale.ROOT));
+    }
 
-            Value currency = context.eval("python", "import locale; locale.localeconv()['int_curr_symbol']");
-            assertEquals("GBP", currency.asString());
+    private static void assertEquals(String expectedLanguage, String expectedCountry, String actualID) {
+        Locale l = LocaleUtils.fromPosix(actualID, null);
+        Assert.assertNotNull(l);
+        Assert.assertEquals(expectedLanguage, l.getLanguage());
+        if (expectedCountry != null) {
+            Assert.assertEquals(expectedCountry, l.getCountry());
         }
     }
 }

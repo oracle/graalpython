@@ -42,17 +42,26 @@ package com.oracle.graal.python.runtime.locale;
 
 import java.nio.charset.Charset;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.TruffleLogger;
 
 public final class LocaleUtils {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LocaleUtils.class);
+
+    // format: [language[_territory][.codeset][@modifier]]
+    // https://learn.microsoft.com/en-us/globalization/locale/other-locale-names
+    // we are a bit more lenient and also recognize "C" locale
+    private static final Pattern LOCALE_PATTERN = Pattern.compile("([a-zA-Z]{2,})(_(\\w{2,}))?(\\.([^@]*))?(@.*)?");
+
     private LocaleUtils() {
     }
 
     public static Locale fromPosix(String posixLocaleId, Locale defaultLocale) {
         CompilerAsserts.neverPartOfCompilation();
-        // format: [language[_territory][.variant][@modifier]]
-        // 2 lower _ 2 UPPER .
         if (posixLocaleId == null) {
             return null;
         }
@@ -61,37 +70,26 @@ public final class LocaleUtils {
             return defaultLocale;
         }
 
-        String language;
-        String country = "";
-        String variant = "";
-
-        int len = posixLocaleId.length();
-
-        // get the language
-        int posCountrySep = posixLocaleId.indexOf('_');
-        if (posCountrySep < 0) {
-            language = posixLocaleId;
-        } else {
-            language = posixLocaleId.substring(0, posCountrySep);
-
-            int posVariantSep = posixLocaleId.indexOf('.');
-            if (posVariantSep < 0) {
-                country = posixLocaleId.substring(posCountrySep + 1, len);
-            } else {
-                country = posixLocaleId.substring(posCountrySep + 1, posVariantSep);
-                variant = posixLocaleId.substring(posVariantSep + 1, len);
-            }
+        if (posixLocaleId.toUpperCase(Locale.ROOT).equals("C")) {
+            return Locale.ROOT;
         }
 
-        if (!language.isEmpty() && language.length() != 2) {
+        Matcher m = LOCALE_PATTERN.matcher(posixLocaleId);
+        if (!m.matches()) {
+            LOGGER.fine("Could not parse POSIX locale: " + posixLocaleId);
             return null;
         }
 
-        if (!country.isEmpty() && country.length() != 2) {
-            return null;
+        String language = m.group(1);
+        String country = m.group(3);
+
+        String codeset = m.group(5);
+        if (codeset != null && !codeset.isEmpty() && //
+                        !codeset.toUpperCase(Locale.ROOT).equals("UTF-8")) {
+            LOGGER.fine("Non UTF-8 encoding in: " + posixLocaleId);
         }
 
-        return Locale.of(language, country, variant);
+        return country == null ? Locale.of(language) : Locale.of(language, country);
     }
 
     public static String toPosix(Locale locale) {
@@ -99,6 +97,10 @@ public final class LocaleUtils {
         if (locale == null) {
             return null;
         }
+        if (locale.equals(Locale.ROOT)) {
+            return "C";
+        }
+
         StringBuilder builder = new StringBuilder();
         String language = locale.getLanguage();
         if (language.isEmpty()) {

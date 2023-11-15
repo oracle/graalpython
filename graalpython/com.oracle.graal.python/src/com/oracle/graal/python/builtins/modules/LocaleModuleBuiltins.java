@@ -162,8 +162,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
 
         private static PList getDecimalFormatGrouping(PythonObjectFactory factory, NumberFormat numberFormat) {
             if (numberFormat instanceof DecimalFormat decimalFormat) {
-                // TODO: this does not support groupings with variable size groups like for India
-                // locale
+                // TODO: this does not support groupings with variable size groups like in India
                 // Possible approach: decimalFormat.toPattern() gives a generic pattern (e.g.,
                 // #,#00.0#) that would have to be parsed to extract the group sizes from it
                 return factory.createList(new Object[]{decimalFormat.getGroupingSize(), 0});
