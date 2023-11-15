@@ -176,13 +176,11 @@ public abstract class CApiTransitions {
         }
 
         public static PythonObjectReference create(PythonAbstractObjectNativeWrapper referent, long pointer) {
-            boolean strong = referent.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
-            return new PythonObjectReference(referent, strong, pointer);
+            return new PythonObjectReference(referent, true, pointer);
         }
 
         public static PythonObjectReference create(PythonNativeWrapper referent, long pointer) {
-            boolean strong = !(referent instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) || objectNativeWrapper.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
-            return new PythonObjectReference(referent, strong, pointer);
+            return new PythonObjectReference(referent, true, pointer);
         }
 
         public boolean isStrongReference() {
@@ -829,6 +827,7 @@ public abstract class CApiTransitions {
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached InlinedExactClassProfile isReplacementProfile,
                         @Cached InlinedConditionProfile needsReplacementProfile,
+                        @Cached InlinedConditionProfile isStrongProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             pollReferenceQueue();
             PythonNativeWrapper wrapper = isReplacementProfile.profile(inliningTarget, getWrapper.execute(obj));
@@ -857,6 +856,21 @@ public abstract class CApiTransitions {
                  * write the updated value to native.
                  */
                 wrapper.updateRefCountToNative();
+
+                /*
+                 * If we are up to give out a borrowed reference, it may be that the refcount is
+                 * just MANAGED_REFCOUNT which means we would usually just have a weak reference to
+                 * the wrapper. However, native code may incref which we would not see on the
+                 * managed side and the object could die while the native pointer would still be
+                 * considered to be valid. Hence, we need to eagerly make the reference strong since
+                 * we don't know how it will be used. However, if native code decref's down to
+                 * MANAGED_REFCOUNT, we will be notified by an upcall and can make the reference
+                 * weak again.
+                 */
+                assert wrapper.ref != null;
+                if (!needsTransfer && isStrongProfile.profile(inliningTarget, !wrapper.ref.isStrongReference())) {
+                    wrapper.ref.setStrongReference(wrapper);
+                }
             }
             return wrapper;
         }

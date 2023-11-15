@@ -375,6 +375,7 @@ typedef struct {
     BUILTIN(PyTruffle_NoValue, PyObject*) \
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
+    BUILTIN(PyTruffle_NotifyRefCount, void, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffle_Object_Free, void, void*) \
     BUILTIN(PyTruffle_PyDateTime_GET_TZINFO, PyObject*, PyObject*) \
     BUILTIN(PyTruffle_PyUnicode_Find, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) \
@@ -789,6 +790,7 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
+#define MANAGED_REFCNT 10
 #define HANDLE_BASE 0x8000000000000000ULL
 
 #define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)

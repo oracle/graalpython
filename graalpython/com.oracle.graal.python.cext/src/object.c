@@ -35,6 +35,9 @@ void _Py_DecRef(PyObject *op) {
     Py_ssize_t cnt = Py_REFCNT(op) - 1;
     Py_SET_REFCNT(op, cnt);
     if (cnt != 0) {
+        if (points_to_py_handle_space(op) && cnt == MANAGED_REFCNT) {
+            GraalPyTruffle_NotifyRefCount(op, cnt);
+        }
     }
     else {
         _Py_Dealloc(op);
