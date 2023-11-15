@@ -297,18 +297,22 @@ public abstract class CApiTransitions {
                     count++;
                     if (entry instanceof PythonObjectReference reference) {
                         LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
-
-                        assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
-                        nativeLookupRemove(context, reference.pointer);
-                        if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer) && subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+                        if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
+                            assert nativeStubLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
+                            nativeStubLookupRemove(context, reference.pointer);
                             /*
                              * We may only free native object stubs if their reference count is
                              * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because we
                              * don't know if they are still used from native code. Those must be
                              * free'd at context finalization.
                              */
-                            LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(HandlePointerConverter.pointerToStub(reference.pointer))));
-                            CStructAccessFactory.FreeNodeGen.getUncached().free(HandlePointerConverter.pointerToStub(reference.pointer));
+                            if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+                                LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(HandlePointerConverter.pointerToStub(reference.pointer))));
+                                CStructAccessFactory.FreeNodeGen.getUncached().free(HandlePointerConverter.pointerToStub(reference.pointer));
+                            }
+                        } else {
+                            assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
+                            nativeLookupRemove(context, reference.pointer);
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
                         LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
