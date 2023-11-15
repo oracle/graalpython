@@ -153,7 +153,7 @@ def get_build_version():
     prefix = "MSC v."
     i = sys.version.find(prefix)
     if i == -1:
-        return 6
+        return 14 # Truffle change to 14
     i = i + len(prefix)
     s, rest = sys.version[i:].split(" ", 1)
     majorVersion = int(s[:-2]) - 6

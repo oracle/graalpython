@@ -159,6 +159,7 @@ if sys.platform == 'win32':
     def _alias_mbcs(encoding):
         try:
             import _winapi
+            return None # Truffle change: we don't support this method yet
             ansi_code_page = "cp%s" % _winapi.GetACP()
             if encoding == ansi_code_page:
                 import encodings.mbcs
