@@ -1001,7 +1001,7 @@ public abstract class CApiTransitions {
                  * In this case, the native object is a stub and we need to sync the reference count
                  * to keep it consistent with the wrapper's reference count.
                  */
-                wrapper.updateRefCountFromNative(pointer, 0);
+                wrapper.updateRefCountFromNative();
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
@@ -1043,6 +1043,7 @@ public abstract class CApiTransitions {
             if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 assert objectNativeWrapper.getRefCount() >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
                 objectNativeWrapper.decRef();
+                objectNativeWrapper.updateRefCountToNative();
             }
             if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
                 if (primitive.isBool()) {
@@ -1144,7 +1145,7 @@ public abstract class CApiTransitions {
                  * In this case, the native object is a stub and we need to sync the reference count
                  * to keep it consistent with the wrapper's reference count.
                  */
-                wrapper.updateRefCountFromNative(pointer, 0);
+                wrapper.updateRefCountFromNative();
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
@@ -1276,7 +1277,7 @@ public abstract class CApiTransitions {
                  * In this case, the native object is a stub and we need to sync the reference count
                  * to keep it consistent with the wrapper's reference count.
                  */
-                wrapper.updateRefCountFromNative(pointer, 0);
+                wrapper.updateRefCountFromNative();
                 return wrapper;
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);

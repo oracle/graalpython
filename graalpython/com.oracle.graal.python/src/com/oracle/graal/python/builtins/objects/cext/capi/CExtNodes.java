@@ -1324,8 +1324,9 @@ public abstract class CExtNodes {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    objectNativeWrapper.updateRefCountFromNative(pointer, 0);
+                    objectNativeWrapper.updateRefCountFromNative();
                     objectNativeWrapper.incRef();
+                    objectNativeWrapper.updateRefCountToNative();
                 }
                 return lookup;
             }
@@ -1350,8 +1351,9 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                        objectNativeWrapper.updateRefCountFromNative(pointer, 0);
+                        objectNativeWrapper.updateRefCountFromNative();
                         objectNativeWrapper.incRef();
+                        objectNativeWrapper.updateRefCountToNative();
                     }
                     return lookup;
                 }
@@ -2043,7 +2045,7 @@ public abstract class CExtNodes {
         public abstract void execute(Object pythonObject);
 
         @Specialization
-        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
+        static void doNativeWrapper(PythonAbstractObjectNativeWrapper nativeWrapper,
                         @Bind("this") Node inliningTarget,
                         @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
                         @Cached SubRefCntNode subRefCntNode) {
@@ -2051,6 +2053,7 @@ public abstract class CExtNodes {
             // if (subRefCntNode.dec(nativeWrapper) == 0) {
             // traverseNativeWrapperNode.execute(inliningTarget, nativeWrapper.getDelegate());
             // }
+            nativeWrapper.updateRefCountFromNative();
         }
 
         @Specialization(guards = "!isNativeWrapper(object)")
