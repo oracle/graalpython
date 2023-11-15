@@ -85,7 +85,6 @@ import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_HASH_ENTRY_M
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_HASH_ENTRY_READABLE;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_HASH_ENTRY_REMOVABLE;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_ITERATOR;
-import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_NULL;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_NUMBER;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_STRING;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_IS_TIME;
@@ -141,7 +140,6 @@ import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_HASH_ENTRY_M
 import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_HASH_ENTRY_READABLE;
 import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_HASH_ENTRY_REMOVABLE;
 import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_ITERATOR;
-import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_NULL;
 import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_NUMBER;
 import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_STRING;
 import static com.oracle.graal.python.nodes.InteropMethodNames.T_IS_TIME;
@@ -159,9 +157,7 @@ public enum InteropBehaviorMethod {
     is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN, true),
     is_date(J_IS_DATE, T_IS_DATE, true),
     is_duration(J_IS_DURATION, T_IS_DURATION, true),
-    is_exception(J_IS_DATE, T_IS_DATE, true),
     is_iterator(J_IS_ITERATOR, T_IS_ITERATOR, true),
-    is_null(J_IS_NULL, T_IS_NULL, true),
     is_number(J_IS_NUMBER, T_IS_NUMBER, true),
     is_string(J_IS_STRING, T_IS_STRING, true),
     is_time(J_IS_TIME, T_IS_TIME, true),

@@ -1597,7 +1597,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PInteropBehavior createHostInteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
-        return trace(new PInteropBehavior(PythonBuiltinClassType.PHostInteropBehavior, getShape(PythonBuiltinClassType.PHostInteropBehavior), receiver, functions, constants));
+        return trace(new PInteropBehavior(PythonBuiltinClassType.PInteropBehavior, getShape(PythonBuiltinClassType.PInteropBehavior), receiver, functions, constants));
     }
 
     @GenerateInline

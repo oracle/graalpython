@@ -51,12 +51,8 @@ public abstract class InteropMethodNames {
     public static final TruffleString T_IS_DATE = tsLiteral(J_IS_DATE);
     public static final String J_IS_DURATION = "is_duration";
     public static final TruffleString T_IS_DURATION = tsLiteral(J_IS_DURATION);
-    public static final String J_IS_EXCEPTION = "is_exception";
-    public static final TruffleString T_IS_EXCEPTION = tsLiteral(J_IS_EXCEPTION);
     public static final String J_IS_ITERATOR = "is_iterator";
     public static final TruffleString T_IS_ITERATOR = tsLiteral(J_IS_ITERATOR);
-    public static final String J_IS_NULL = "is_null";
-    public static final TruffleString T_IS_NULL = tsLiteral(J_IS_NULL);
     public static final String J_IS_NUMBER = "is_number";
     public static final TruffleString T_IS_NUMBER = tsLiteral(J_IS_NUMBER);
     public static final String J_IS_STRING = "is_string";

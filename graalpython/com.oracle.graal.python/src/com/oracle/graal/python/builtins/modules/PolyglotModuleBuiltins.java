@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTERO
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_S_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
@@ -79,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -94,7 +92,6 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -645,76 +642,135 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_REGISTER_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, doc = """
-                    Register python extensions for the Truffle (host) Interop 2.0 protocol.
-                    Almost all Truffle InteropLibrary messages (http://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/interop/InteropLibrary.html) are supported.
-                    Example extending the interop behavior for iterators:
+    @Builtin(name = J_REGISTER_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"is_boolean", "is_date",
+                    "is_duration", "is_iterator", "is_number", "is_string", "is_time", "is_time_zone", "is_executable", "fits_in_big_integer", "fits_in_byte", "fits_in_double", "fits_in_float",
+                    "fits_in_int", "fits_in_long", "fits_in_short", "as_big_integer", "as_boolean", "as_byte", "as_date", "as_double", "as_duration", "as_float", "as_int", "as_long", "as_short",
+                    "as_string", "as_time", "as_time_zone", "execute", "read_array_element", "get_array_size", "has_array_elements", "is_array_element_readable", "is_array_element_modifiable",
+                    "is_array_element_insertable", "is_array_element_removable", "remove_array_element", "write_array_element", "has_iterator", "has_iterator_next_element", "get_iterator",
+                    "get_iterator_next_element", "has_hash_entries", "get_hash_entries_iterator", "get_hash_keys_iterator", "get_hash_size", "get_hash_values_iterator", "is_hash_entry_readable",
+                    "is_hash_entry_modifiable", "is_hash_entry_insertable", "is_hash_entry_removable", "read_hash_value", "write_hash_entry",
+                    "remove_hash_entry"}, doc = """
+                                    register_interop_behavior(type, is_boolean=None, is_date=None, is_duration=None, is_iterator=None, is_number=None, is_string=None, is_time=None,
+                                    is_time_zone=None, is_executable=None, fits_in_big_integer=None, fits_in_byte=None, fits_in_double=None, fits_in_float=None, fits_in_int=None,
+                                    fits_in_long=None, fits_in_short=None, as_big_integer=None, as_boolean=None, as_byte=None, as_date=None, as_double=None, as_duration=None, as_float=None,
+                                    as_int=None, as_long=None, as_short=None, as_string=None, as_time=None, as_time_zone=None, execute=None, read_array_element=None, get_array_size=None,
+                                    has_array_elements=None, is_array_element_readable=None, is_array_element_modifiable=None, is_array_element_insertable=None, is_array_element_removable=None,
+                                    remove_array_element=None, write_array_element=None, has_iterator=None, has_iterator_next_element=None, get_iterator=None, get_iterator_next_element=None,
+                                    has_hash_entries=None, get_hash_entries_iterator=None, get_hash_keys_iterator=None, get_hash_size=None, get_hash_values_iterator=None, is_hash_entry_readable=None,
+                                    is_hash_entry_modifiable=None, is_hash_entry_insertable=None, is_hash_entry_removable=None, read_hash_value=None, write_hash_entry=None, remove_hash_entry=None)
 
-                        import polyglot
+                                    Registers the specified interop behavior with the passed type. The extensions are directly mapped to the Truffle (host) Interop 2.0 protocol.
+                                    Most Truffle InteropLibrary messages (http://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/interop/InteropLibrary.html) are supported (see keyword parameter list).
 
-                        class MyType(object):
-                            data = [0,1,2]
+                                    Example extending the interop behavior for iterators:
 
-                        polyglot.register_interop_behavior(MyType,
-                            is_iterator=False,
-                            has_iterator=True,
-                            get_iterator=lambda t: iter(t.data),
-                        )
+                                    >>> from polyglot import register_interop_behavior
 
-                    where the is_iterator arg corresponds to the isIterator message (in this case it is a constant bool as is has_iterator),
-                    while get_iterator extends the isIterator interop message with the passed lambda.
+                                    >>> class MyType(object):
+                                    ...     data = [0,1,2]
 
-                    Parameters:
-                    receiver (Any): the receiver type for which the truffle host interop behavior is to be extended. Must be type.
-                    *args: The name of the arguments must follow the snake case naming of the supported truffle InteropLibrary messages.
-                        Values must be pure functions, or constant bools (for is_??? messages)
-
-                    Returns:
-                    None
-                    """)
+                                    >>> register_interop_behavior(MyType, is_iterator=False, has_iterator=True, get_iterator=lambda t: iter(t.data))
+                                    """)
     @GenerateNodeFactory
-    public abstract static class RegisterInteropBehaviorNode extends PythonVarargsBuiltinNode {
+    public abstract static class RegisterInteropBehaviorNode extends PythonBuiltinNode {
         public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_INTEROP_BEHAVIOR__);
+
+        void handleArg(Object value, InteropBehaviorMethod method, boolean[] constants, PFunction[] functions, PRaiseNode raiseNode) {
+            if (method.constantBoolean && value instanceof Boolean boolValue) {
+                constants[method.ordinal()] = boolValue;
+            } else if (!method.constantBoolean && value instanceof PFunction function) {
+                functions[method.ordinal()] = function;
+                // validate the function
+                if (function.getKwDefaults().length != 0) {
+                    throw raiseNode.raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
+                } else if (function.getCode().getCellVars().length != 0) {
+                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, "function", "cell vars");
+                } else if (function.getCode().getFreeVars().length != 0) {
+                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, "function", "free vars");
+                }
+            }
+        }
 
         @Specialization
         @TruffleBoundary
-        Object register(PythonAbstractObject receiver, @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
+        Object register(PythonAbstractObject receiver, Object is_boolean, Object is_date, Object is_duration, Object is_iterator, Object is_number, Object is_string, Object is_time,
+                        Object is_time_zone, Object is_executable, Object fits_in_big_integer, Object fits_in_byte, Object fits_in_double, Object fits_in_float, Object fits_in_int,
+                        Object fits_in_long, Object fits_in_short, Object as_big_integer, Object as_boolean, Object as_byte, Object as_date, Object as_double, Object as_duration, Object as_float,
+                        Object as_int, Object as_long, Object as_short, Object as_string, Object as_time, Object as_time_zone, Object execute, Object read_array_element, Object get_array_size,
+                        Object has_array_elements, Object is_array_element_readable, Object is_array_element_modifiable, Object is_array_element_insertable, Object is_array_element_removable,
+                        Object remove_array_element, Object write_array_element, Object has_iterator, Object has_iterator_next_element, Object get_iterator, Object get_iterator_next_element,
+                        Object has_hash_entries, Object get_hash_entries_iterator, Object get_hash_keys_iterator, Object get_hash_size, Object get_hash_values_iterator, Object is_hash_entry_readable,
+                        Object is_hash_entry_modifiable, Object is_hash_entry_insertable, Object is_hash_entry_removable, Object read_hash_value, Object write_hash_entry, Object remove_hash_entry,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
                 final PFunction[] functions = new PFunction[InteropBehaviorMethod.getLength()];
                 final boolean[] constants = new boolean[InteropBehaviorMethod.getLength()];
 
-                for (PKeyword kw : keywords) {
-                    String name = castToJavaStringNode.execute(kw.getName());
-                    Object value = kw.getValue();
-                    InteropBehaviorMethod method = InteropBehaviorMethod.valueOf(name);
-
-                    if (method.constantBoolean && value instanceof Boolean boolValue) {
-                        constants[method.ordinal()] = boolValue;
-                    } else if (!method.constantBoolean && value instanceof PFunction function) {
-                        functions[method.ordinal()] = function;
-                        // validate the function
-                        if (function.getKwDefaults().length != 0) {
-                            throw raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
-                        } else if (function.getCode().getCellVars().length != 0) {
-                            throw raise(ValueError, S_CANNOT_HAVE_S, "function", "cell vars");
-                        } else if (function.getCode().getFreeVars().length != 0) {
-                            throw raise(ValueError, S_CANNOT_HAVE_S, "function", "free vars");
-                        }
-                    } else {
-                        throw raise(ValueError, ARG_S_MUST_BE_S_NOT_P, method.name, method.constantBoolean ? "a boolean" : "a pure function", value);
-                    }
-                }
+                handleArg(is_boolean, InteropBehaviorMethod.is_boolean, constants, functions, raiseNode);
+                handleArg(is_date, InteropBehaviorMethod.is_date, constants, functions, raiseNode);
+                handleArg(is_duration, InteropBehaviorMethod.is_duration, constants, functions, raiseNode);
+                handleArg(is_iterator, InteropBehaviorMethod.is_iterator, constants, functions, raiseNode);
+                handleArg(is_number, InteropBehaviorMethod.is_number, constants, functions, raiseNode);
+                handleArg(is_string, InteropBehaviorMethod.is_string, constants, functions, raiseNode);
+                handleArg(is_time, InteropBehaviorMethod.is_time, constants, functions, raiseNode);
+                handleArg(is_time_zone, InteropBehaviorMethod.is_time_zone, constants, functions, raiseNode);
+                handleArg(is_executable, InteropBehaviorMethod.is_executable, constants, functions, raiseNode);
+                handleArg(fits_in_big_integer, InteropBehaviorMethod.fits_in_big_integer, constants, functions, raiseNode);
+                handleArg(fits_in_byte, InteropBehaviorMethod.fits_in_byte, constants, functions, raiseNode);
+                handleArg(fits_in_double, InteropBehaviorMethod.fits_in_double, constants, functions, raiseNode);
+                handleArg(fits_in_float, InteropBehaviorMethod.fits_in_float, constants, functions, raiseNode);
+                handleArg(fits_in_int, InteropBehaviorMethod.fits_in_int, constants, functions, raiseNode);
+                handleArg(fits_in_long, InteropBehaviorMethod.fits_in_long, constants, functions, raiseNode);
+                handleArg(fits_in_short, InteropBehaviorMethod.fits_in_short, constants, functions, raiseNode);
+                handleArg(as_big_integer, InteropBehaviorMethod.as_big_integer, constants, functions, raiseNode);
+                handleArg(as_boolean, InteropBehaviorMethod.as_boolean, constants, functions, raiseNode);
+                handleArg(as_byte, InteropBehaviorMethod.as_byte, constants, functions, raiseNode);
+                handleArg(as_date, InteropBehaviorMethod.as_date, constants, functions, raiseNode);
+                handleArg(as_double, InteropBehaviorMethod.as_double, constants, functions, raiseNode);
+                handleArg(as_duration, InteropBehaviorMethod.as_duration, constants, functions, raiseNode);
+                handleArg(as_float, InteropBehaviorMethod.as_float, constants, functions, raiseNode);
+                handleArg(as_int, InteropBehaviorMethod.as_int, constants, functions, raiseNode);
+                handleArg(as_long, InteropBehaviorMethod.as_long, constants, functions, raiseNode);
+                handleArg(as_short, InteropBehaviorMethod.as_short, constants, functions, raiseNode);
+                handleArg(as_string, InteropBehaviorMethod.as_string, constants, functions, raiseNode);
+                handleArg(as_time, InteropBehaviorMethod.as_time, constants, functions, raiseNode);
+                handleArg(as_time_zone, InteropBehaviorMethod.as_time_zone, constants, functions, raiseNode);
+                handleArg(execute, InteropBehaviorMethod.execute, constants, functions, raiseNode);
+                handleArg(read_array_element, InteropBehaviorMethod.read_array_element, constants, functions, raiseNode);
+                handleArg(get_array_size, InteropBehaviorMethod.get_array_size, constants, functions, raiseNode);
+                handleArg(has_array_elements, InteropBehaviorMethod.has_array_elements, constants, functions, raiseNode);
+                handleArg(is_array_element_readable, InteropBehaviorMethod.is_array_element_readable, constants, functions, raiseNode);
+                handleArg(is_array_element_modifiable, InteropBehaviorMethod.is_array_element_modifiable, constants, functions, raiseNode);
+                handleArg(is_array_element_insertable, InteropBehaviorMethod.is_array_element_insertable, constants, functions, raiseNode);
+                handleArg(is_array_element_removable, InteropBehaviorMethod.is_array_element_removable, constants, functions, raiseNode);
+                handleArg(remove_array_element, InteropBehaviorMethod.remove_array_element, constants, functions, raiseNode);
+                handleArg(write_array_element, InteropBehaviorMethod.write_array_element, constants, functions, raiseNode);
+                handleArg(has_iterator, InteropBehaviorMethod.has_iterator, constants, functions, raiseNode);
+                handleArg(has_iterator_next_element, InteropBehaviorMethod.has_iterator_next_element, constants, functions, raiseNode);
+                handleArg(get_iterator, InteropBehaviorMethod.get_iterator, constants, functions, raiseNode);
+                handleArg(get_iterator_next_element, InteropBehaviorMethod.get_iterator_next_element, constants, functions, raiseNode);
+                handleArg(has_hash_entries, InteropBehaviorMethod.has_hash_entries, constants, functions, raiseNode);
+                handleArg(get_hash_entries_iterator, InteropBehaviorMethod.get_hash_entries_iterator, constants, functions, raiseNode);
+                handleArg(get_hash_keys_iterator, InteropBehaviorMethod.get_hash_keys_iterator, constants, functions, raiseNode);
+                handleArg(get_hash_size, InteropBehaviorMethod.get_hash_size, constants, functions, raiseNode);
+                handleArg(get_hash_values_iterator, InteropBehaviorMethod.get_hash_values_iterator, constants, functions, raiseNode);
+                handleArg(is_hash_entry_readable, InteropBehaviorMethod.is_hash_entry_readable, constants, functions, raiseNode);
+                handleArg(is_hash_entry_modifiable, InteropBehaviorMethod.is_hash_entry_modifiable, constants, functions, raiseNode);
+                handleArg(is_hash_entry_insertable, InteropBehaviorMethod.is_hash_entry_insertable, constants, functions, raiseNode);
+                handleArg(is_hash_entry_removable, InteropBehaviorMethod.is_hash_entry_removable, constants, functions, raiseNode);
+                handleArg(read_hash_value, InteropBehaviorMethod.read_hash_value, constants, functions, raiseNode);
+                handleArg(write_hash_entry, InteropBehaviorMethod.write_hash_entry, constants, functions, raiseNode);
+                handleArg(remove_hash_entry, InteropBehaviorMethod.remove_hash_entry, constants, functions, raiseNode);
 
                 PInteropBehavior behavior = factory.createHostInteropBehavior(receiver, functions, constants);
                 dylib.put(receiver, HOST_INTEROP_BEHAVIOR, behavior);
                 return PNone.NONE;
             }
-            throw raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
+            throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
         }
     }
 

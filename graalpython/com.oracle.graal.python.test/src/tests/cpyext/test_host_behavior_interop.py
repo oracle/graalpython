@@ -85,13 +85,9 @@ if sys.implementation.name == "graalpy":
 
             polyglot.register_interop_behavior(MyNativeType, is_number=True, fits_in_long=lambda t: True,
                                                as_long=lambda t: t.get_data())
-            expected = ['is_boolean', 'is_date', 'is_duration', 'is_date', 'is_iterator', 'is_null', 'is_number',
-                       'is_string', 'is_time', 'is_time_zone', 'is_executable', 'fits_in_long', 'as_long',
-                       'has_array_elements', 'has_iterator', 'has_hash_entries']
-            expected.sort()
             defined = polyglot.get_registered_interop_behavior(MyNativeType)
-            defined.sort()
-            assert defined == expected
+            for method in ['is_number', 'fits_in_long', 'as_long']:
+                assert method in defined, f"method: {method} not found in defined methods: {defined}"
             try:
                 bi = BigInteger.valueOf(instance)
                 assert int(bi) == instance.get_data()
