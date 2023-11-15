@@ -41,7 +41,10 @@
 package com.oracle.graal.python.nodes.util;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -61,6 +64,18 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline
 @GenerateCached(false)
 public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
+
+    public final long executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
+        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
+    }
+
+    public final long executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
+        try {
+            return execute(inliningTarget, x);
+        } catch (CannotCastException cce) {
+            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a long", x);
+        }
+    }
 
     public static long executeUncached(Object x) throws CannotCastException {
         return CastToJavaLongExactNodeGen.getUncached().execute(null, x);

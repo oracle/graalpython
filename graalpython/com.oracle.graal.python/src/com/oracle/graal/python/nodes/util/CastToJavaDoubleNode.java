@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -48,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -75,6 +78,18 @@ import com.oracle.truffle.api.strings.TruffleString;
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToJavaDoubleNode extends PNodeWithContext {
+
+    public final double executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
+        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
+    }
+
+    public final double executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
+        try {
+            return execute(inliningTarget, x);
+        } catch (CannotCastException cce) {
+            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a double", x);
+        }
+    }
 
     public abstract double execute(Node inliningTarget, Object x);
 

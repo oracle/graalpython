@@ -56,11 +56,26 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
+
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
 @ImportStatic(MathGuards.class)
 public abstract class CastToJavaShortNode extends PNodeWithContext {
+
+    public final short executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
+        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
+    }
+
+    public final short executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
+        try {
+            return execute(inliningTarget, x);
+        } catch (CannotCastException cce) {
+            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a short", x);
+        }
+    }
 
     public abstract short execute(Node inliningTarget, short x);
 
