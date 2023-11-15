@@ -243,6 +243,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Sets the language and territory, which will be used for initial locale. Format: 'language[_territory]', e.g., 'en_GB'. Leave empty to use the JVM default locale.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> InitialLocale = new OptionKey<>("");
+
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
                     "- 'default' means the 'check_source' flag in hash-based pycs" +
                     "  determines invalidation" +
