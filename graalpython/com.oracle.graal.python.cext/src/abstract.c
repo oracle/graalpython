@@ -221,7 +221,7 @@ Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
 
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PySequence_Check()"
-int PyTruffle_PySequence_Check(PyObject *s) {
+PyAPI_FUNC(int) PyTruffle_PySequence_Check(PyObject *s) {
     if (PyDict_Check(s))
         return 0;
     PySequenceMethods* seq = Py_TYPE(s)->tp_as_sequence;
@@ -230,7 +230,7 @@ int PyTruffle_PySequence_Check(PyObject *s) {
 
 // downcall for native python objects
 // partially taken from CPython "Objects/abstract.c/PySequence_GetItem"
-PyObject* PyTruffle_PySequence_GetItem(PyObject *s, Py_ssize_t i)
+PyAPI_FUNC(PyObject*) PyTruffle_PySequence_GetItem(PyObject *s, Py_ssize_t i)
 {
     PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
     if (m && m->sq_item) {
@@ -255,7 +255,7 @@ PyObject* PyTruffle_PySequence_GetItem(PyObject *s, Py_ssize_t i)
 
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/Py_Sequence_Size"
-Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_PySequence_Size(PyObject *s) {
     PySequenceMethods *seq;
     PyMappingMethods *m;
 
@@ -300,7 +300,7 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
 
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/PyObject_Size"
-Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_PyObject_Size(PyObject *o) {
     PySequenceMethods *m;
 
     if (o == NULL) {
@@ -320,7 +320,7 @@ Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
 
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PyMapping_Check"
-int PyTruffle_PyMapping_Check(PyObject *o) {
+PyAPI_FUNC(int) PyTruffle_PyMapping_Check(PyObject *o) {
     return o && Py_TYPE(o)->tp_as_mapping && Py_TYPE(o)->tp_as_mapping->mp_subscript;
 }
 
@@ -475,7 +475,7 @@ int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
 
 // PyMapping_Size downcall for native python objects
 // partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
-Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_PyMapping_Size(PyObject *o) {
     PyMappingMethods *m;
 
     if (o == NULL) {
