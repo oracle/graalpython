@@ -13,6 +13,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Expand support for the following modules: llvmlite, pydantic-core, catboost, ray, tensorflow, tensorflow-io, readme-renderer, safetensors, keras, pybind11, protbuf, grpcio, PyO3, cryptography, bcrypt, cramjam, libcst, orjson, rpds_py.
 * Support installing some packages with native extensions on Windows. Simple packages like `ujson` or `kiwisolver` will now work when installed from a venv inside a Visual Studio command prompt.
 * Raise `KeyboardInterrupt` exception when the process is interrupted. Enabled only when using the launcher.
+* Add option `python.InitialLocale` to change the default locale. If not set, then Java Locale#getDefault is used.
 
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
