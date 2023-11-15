@@ -138,7 +138,7 @@ public final class PythonLocale {
 
         Locale displayLocale = LocaleUtils.fromPosix(defaultLangOption, null);
         if (displayLocale == null) {
-            LOGGER.warning(() -> "Could not parse the value of --python.DefaultLocale='" + defaultLangOption + '\'');
+            LOGGER.warning(() -> "Could not parse the value of --python.InitialLocale='" + defaultLangOption + '\'');
             return fromJavaDefault();
         } else {
             LOGGER.fine(() -> "Selected locale: " + displayLocale);
