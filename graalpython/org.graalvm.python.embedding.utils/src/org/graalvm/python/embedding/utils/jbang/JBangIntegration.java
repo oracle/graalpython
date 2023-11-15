@@ -42,30 +42,12 @@
 package org.graalvm.python.embedding.utils.jbang;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.Proxy;
 import java.net.Proxy.Type;
 import java.net.ProxySelector;
@@ -201,7 +183,7 @@ public class JBangIntegration {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        String[] a = ret.toArray(new String[ret.size()]);
+        String[] a = ret.toArray(String[]::new);
         Arrays.sort(a);
         try (var wr = new FileWriter(filesList.toFile())) {
             for (String f : a) {
@@ -316,7 +298,7 @@ public class JBangIntegration {
         var newArgs = new ArrayList<String>();
         newArgs.add("-m");
         newArgs.add("pip");
-        // addProxy(newArgs);
+        addProxy(newArgs);
         newArgs.add(command);
         newArgs.add(pkg);
 
@@ -412,8 +394,8 @@ public class JBangIntegration {
     /**
      * Ensures that the proxy url has a protocol.
      * 
-     * @param proxyAddress proxy server address 
-     * @param protocol  usually http or https
+     * @param proxyAddress proxy server address
+     * @param protocol usually http or https
      * @return String representation of url of the proxy
      */
     private static String fixProtocol(String proxyAddress, String protocol) {
