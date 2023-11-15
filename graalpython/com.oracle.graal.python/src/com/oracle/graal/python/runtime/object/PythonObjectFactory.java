@@ -171,7 +171,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
+import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDictIterator;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
@@ -1596,8 +1596,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
     }
 
-    public PHostInteropBehavior createHostInteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
-        return trace(new PHostInteropBehavior(PythonBuiltinClassType.PHostInteropBehavior, getShape(PythonBuiltinClassType.PHostInteropBehavior), receiver, functions, constants));
+    public PInteropBehavior createHostInteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
+        return trace(new PInteropBehavior(PythonBuiltinClassType.PHostInteropBehavior, getShape(PythonBuiltinClassType.PHostInteropBehavior), receiver, functions, constants));
     }
 
     @GenerateInline

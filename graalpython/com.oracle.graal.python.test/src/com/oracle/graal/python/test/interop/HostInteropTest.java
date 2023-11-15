@@ -81,7 +81,7 @@ public class HostInteropTest extends PythonTests {
                         class MyType(object):
                             pass
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_boolean=False,
                             is_number=True,
                             is_string=False,
@@ -90,7 +90,7 @@ public class HostInteropTest extends PythonTests {
                             # is_instant=True,
                             # is_iterator=False,
                             # is_time=True,
-                            # is_time_zone=False
+                            # is_time_zone=False,
                         )
 
                         MyType()
@@ -98,13 +98,6 @@ public class HostInteropTest extends PythonTests {
         assertFalse(t.isBoolean());
         assertTrue(t.isNumber());
         assertFalse(t.isString());
-        // todo (cbasca): implement redefinition of behavior for the following
-        // assertFalse(t.isDate());
-        // assertFalse(t.isDuration());
-        // assertTrue(t.isInstant());
-        // assertFalse(t.isIterator());
-        // assertTrue(t.isTime());
-        // assertFalse(t.isTimeZone());
     }
 
     @Test
@@ -115,7 +108,7 @@ public class HostInteropTest extends PythonTests {
                         class MyType(object):
                             pass
 
-                        polyglot.register_host_interop_behavior(MyType, is_number=True)
+                        polyglot.register_interop_behavior(MyType, is_number=True)
 
                         MyType()
                         """);
@@ -136,9 +129,9 @@ public class HostInteropTest extends PythonTests {
                         def as_boolean(t):
                             return t._data == "x"
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_boolean=True,
-                            as_boolean=as_boolean
+                            as_boolean=as_boolean,
                         )
                         """;
         Value t = context.eval("python", source + "\nMyType('x')");
@@ -160,7 +153,7 @@ public class HostInteropTest extends PythonTests {
                         def get_data(t):
                             return t.data
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_number=True,
                             fits_in_byte=lambda t: polyglot.fits_in_byte(t.data),
                             fits_in_short=lambda t: polyglot.fits_in_short(t.data),
@@ -252,9 +245,9 @@ public class HostInteropTest extends PythonTests {
                         class MyType(object):
                             data = 10
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_string=True,
-                            as_string=lambda t: f"MyType({t.data})"
+                            as_string=lambda t: f"MyType({t.data})",
                         )
 
                         MyType()
@@ -279,7 +272,7 @@ public class HostInteropTest extends PythonTests {
                             else:
                                 t.data[i] = v
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             has_array_elements=True,
                             get_array_size=lambda t: len(t.data),
                             is_array_element_readable=lambda t, i: i < len(t.data),
@@ -288,7 +281,7 @@ public class HostInteropTest extends PythonTests {
                             remove_array_element=lambda t, i: t.data.pop(i),
                             is_array_element_insertable=lambda t, i: True,
                             is_array_element_modifiable=lambda t, i: i < len(t.data),
-                            write_array_element=write_array_element
+                            write_array_element=write_array_element,
                         )
 
                         MyType()
@@ -322,10 +315,10 @@ public class HostInteropTest extends PythonTests {
                         class MyType(object):
                             data = [0,1,2]
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_iterator=False,
                             has_iterator=True,
-                            get_iterator=lambda t: iter(t.data)
+                            get_iterator=lambda t: iter(t.data),
                         )
 
                         MyType()
@@ -356,10 +349,10 @@ public class HostInteropTest extends PythonTests {
                                 return v
                             raise StopIteration
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_iterator=True,
                             has_iterator_next_element=has_next_element,
-                            get_iterator_next_element=get_next_element
+                            get_iterator_next_element=get_next_element,
                         )
 
                         MyType()
@@ -382,9 +375,9 @@ public class HostInteropTest extends PythonTests {
                             def foobar(self, *a):
                                 return ",".join((str(e) for e in a))
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_executable=True,
-                            execute=lambda t, *a: t.foobar(*a)
+                            execute=lambda t, *a: t.foobar(*a),
                         )
 
                         MyType()
@@ -407,7 +400,7 @@ public class HostInteropTest extends PythonTests {
                             def put(self, k, v):
                                 self.data[k] = v
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             has_hash_entries=True,
                             get_hash_size=lambda t: len(t.data),
                             get_hash_entries_iterator=lambda t: iter(t.data.items()),
@@ -419,7 +412,7 @@ public class HostInteropTest extends PythonTests {
                             is_hash_entry_insertable=lambda t, k: k not in t.data,
                             read_hash_value=lambda t, k: t.data.get(k),
                             remove_hash_entry=lambda t, k: t.remove(k),
-                            write_hash_entry=lambda t, k, v: t.put(k, v)
+                            write_hash_entry=lambda t, k, v: t.put(k, v),
                         )
 
                         MyType()
@@ -471,13 +464,13 @@ public class HostInteropTest extends PythonTests {
                             second = 10
                             microsecond = 10
 
-                        polyglot.register_host_interop_behavior(MyType,
+                        polyglot.register_interop_behavior(MyType,
                             is_date=True,
                             as_date=lambda t: t,
                             is_time=True,
                             as_time=lambda t: t,
                             is_time_zone=True,
-                            as_time_zone=lambda t: t
+                            as_time_zone=lambda t: t,
                         )
 
                         MyType()

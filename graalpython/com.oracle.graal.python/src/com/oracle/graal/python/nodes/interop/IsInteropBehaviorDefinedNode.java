@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.interop;
 import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
+import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -58,25 +58,25 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
 @GenerateInline
-public abstract class IsHostInteropBehaviorDefinedNode extends Node {
-    public abstract boolean execute(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method);
+public abstract class IsInteropBehaviorDefinedNode extends Node {
+    public abstract boolean execute(Node inlineTarget, PythonAbstractObject receiver, InteropBehaviorMethod method);
 
     @Specialization
-    static boolean isDefined(Node inlineTarget, PythonAbstractObject receiver, HostInteropBehaviorMethod method,
+    static boolean isDefined(Node inlineTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
                     @Cached GetClassNode getClassNode,
                     @Cached InlinedConditionProfile isMethodDefined,
                     @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        return value instanceof PHostInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
+        return value instanceof PInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
     }
 
     @NeverDefault
-    public static IsHostInteropBehaviorDefinedNode create() {
-        return IsHostInteropBehaviorDefinedNodeGen.create();
+    public static IsInteropBehaviorDefinedNode create() {
+        return IsInteropBehaviorDefinedNodeGen.create();
     }
 
-    public static IsHostInteropBehaviorDefinedNode getUncached() {
-        return IsHostInteropBehaviorDefinedNodeGen.getUncached();
+    public static IsInteropBehaviorDefinedNode getUncached() {
+        return IsInteropBehaviorDefinedNodeGen.getUncached();
     }
 }

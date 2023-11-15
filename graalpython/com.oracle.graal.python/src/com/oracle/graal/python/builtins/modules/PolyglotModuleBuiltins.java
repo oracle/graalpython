@@ -40,22 +40,21 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_HOST_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_HOST_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_S_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_BIG_INTEGER;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_BYTE;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_DOUBLE;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_FLOAT;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_INT;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_LONG;
-import static com.oracle.graal.python.nodes.HostInteropMethodNames.J_FITS_IN_SHORT;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_BIG_INTEGER;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_BYTE;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_DOUBLE;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_FLOAT;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_INT;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_LONG;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WRITABLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -86,7 +85,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.polyglot.PHostInteropBehavior;
+import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -96,7 +95,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
+import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -625,10 +624,57 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_REGISTER_HOST_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J_GET_REGISTERED_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetRegisteredInteropBehaviorNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PList get(PythonAbstractObject klass,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+            if (isTypeNode.execute(inliningTarget, klass)) {
+                Object value = dylib.getOrDefault(klass, RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR, null);
+                if (value instanceof PInteropBehavior behavior) {
+                    return factory.createList(behavior.getDefinedMethods());
+                }
+                return factory.createList();
+            }
+            throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", klass);
+        }
+    }
+
+    @Builtin(name = J_REGISTER_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, doc = """
+                    Register python extensions for the Truffle (host) Interop 2.0 protocol.
+                    Almost all Truffle InteropLibrary messages (http://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/interop/InteropLibrary.html) are supported.
+                    Example extending the interop behavior for iterators:
+
+                        import polyglot
+
+                        class MyType(object):
+                            data = [0,1,2]
+
+                        polyglot.register_interop_behavior(MyType,
+                            is_iterator=False,
+                            has_iterator=True,
+                            get_iterator=lambda t: iter(t.data),
+                        )
+
+                    where the is_iterator arg corresponds to the isIterator message (in this case it is a constant bool as is has_iterator),
+                    while get_iterator extends the isIterator interop message with the passed lambda.
+
+                    Parameters:
+                    receiver (Any): the receiver type for which the truffle host interop behavior is to be extended. Must be type.
+                    *args: The name of the arguments must follow the snake case naming of the supported truffle InteropLibrary messages.
+                        Values must be pure functions, or constant bools (for is_??? messages)
+
+                    Returns:
+                    None
+                    """)
     @GenerateNodeFactory
     public abstract static class RegisterInteropBehaviorNode extends PythonVarargsBuiltinNode {
-        public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_HOST_INTEROP_BEHAVIOR__);
+        public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_INTEROP_BEHAVIOR__);
 
         @Specialization
         @TruffleBoundary
@@ -639,13 +685,13 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
-                final PFunction[] functions = new PFunction[HostInteropBehaviorMethod.getLength()];
-                final boolean[] constants = new boolean[HostInteropBehaviorMethod.getLength()];
+                final PFunction[] functions = new PFunction[InteropBehaviorMethod.getLength()];
+                final boolean[] constants = new boolean[InteropBehaviorMethod.getLength()];
 
                 for (PKeyword kw : keywords) {
                     String name = castToJavaStringNode.execute(kw.getName());
                     Object value = kw.getValue();
-                    HostInteropBehaviorMethod method = HostInteropBehaviorMethod.valueOf(name);
+                    InteropBehaviorMethod method = InteropBehaviorMethod.valueOf(name);
 
                     if (method.constantBoolean && value instanceof Boolean boolValue) {
                         constants[method.ordinal()] = boolValue;
@@ -664,7 +710,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                     }
                 }
 
-                PHostInteropBehavior behavior = factory.createHostInteropBehavior(receiver, functions, constants);
+                PInteropBehavior behavior = factory.createHostInteropBehavior(receiver, functions, constants);
                 dylib.put(receiver, HOST_INTEROP_BEHAVIOR, behavior);
                 return PNone.NONE;
             }

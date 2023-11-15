@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.interop.HostInteropBehaviorMethod;
+import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
@@ -53,18 +53,18 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 import java.util.ArrayList;
 
-public class PHostInteropBehavior extends PythonBuiltinObject {
+public class PInteropBehavior extends PythonBuiltinObject {
     private final PythonAbstractObject receiver;
 
-    private final CallTarget[] callTargets = new CallTarget[HostInteropBehaviorMethod.getLength()];
-    private final PythonObject[] globals = new PythonObject[HostInteropBehaviorMethod.getLength()];
+    private final CallTarget[] callTargets = new CallTarget[InteropBehaviorMethod.getLength()];
+    private final PythonObject[] globals = new PythonObject[InteropBehaviorMethod.getLength()];
     private final boolean[] constants;
 
-    public PHostInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
+    public PInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
         super(cls, instanceShape);
         this.receiver = receiver;
-        assert functions.length == HostInteropBehaviorMethod.getLength();
-        assert constants.length == HostInteropBehaviorMethod.getLength();
+        assert functions.length == InteropBehaviorMethod.getLength();
+        assert constants.length == InteropBehaviorMethod.getLength();
         this.constants = constants;
         for (int i = 0; i < functions.length; i++) {
             PFunction function = functions[i];
@@ -75,19 +75,19 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
         }
     }
 
-    public CallTarget getCallTarget(HostInteropBehaviorMethod method) {
+    public CallTarget getCallTarget(InteropBehaviorMethod method) {
         return callTargets[method.ordinal()];
     }
 
-    public PythonObject getGlobals(HostInteropBehaviorMethod method) {
+    public PythonObject getGlobals(InteropBehaviorMethod method) {
         return globals[method.ordinal()];
     }
 
-    public boolean isDefined(HostInteropBehaviorMethod method) {
+    public boolean isDefined(InteropBehaviorMethod method) {
         return method.constantBoolean || callTargets[method.ordinal()] != null;
     }
 
-    public Object[] createArguments(HostInteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments) {
+    public Object[] createArguments(InteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments) {
         assert method.checkArity(extraArguments);
         Object[] pArguments = PArguments.create(1 + (method.takesVarArgs ? 0 : method.extraArguments));
         PArguments.setGlobals(pArguments, getGlobals(method));
@@ -106,7 +106,7 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
         return receiver;
     }
 
-    public boolean getConstantValue(HostInteropBehaviorMethod method) {
+    public boolean getConstantValue(InteropBehaviorMethod method) {
         assert method.constantBoolean;
         return constants[method.ordinal()];
     }
@@ -115,7 +115,7 @@ public class PHostInteropBehavior extends PythonBuiltinObject {
     public Object[] getDefinedMethods() {
         ArrayList<TruffleString> defined = new ArrayList<>();
         for (int i = 0; i < callTargets.length; i++) {
-            HostInteropBehaviorMethod method = HostInteropBehaviorMethod.VALUES[i];
+            InteropBehaviorMethod method = InteropBehaviorMethod.VALUES[i];
             if (isDefined(method)) {
                 defined.add(method.tsName);
             }

@@ -44,7 +44,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-public abstract class HostInteropMethodNames {
+public abstract class InteropMethodNames {
     public static final String J_IS_BOOLEAN = "is_boolean";
     public static final TruffleString T_IS_BOOLEAN = tsLiteral(J_IS_BOOLEAN);
     public static final String J_IS_DATE = "is_date";
