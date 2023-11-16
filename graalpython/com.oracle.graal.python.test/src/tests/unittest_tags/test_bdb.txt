@@ -27,3 +27,4 @@
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_until_in_caller_frame
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_until_with_too_large_count
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_up
+*graalpython.lib-python.3.test.test_bdb.TestRegressions.test_format_stack_entry_no_lineno

@@ -1321,11 +1321,13 @@ class ReTests(unittest.TestCase):
                                        'nothing to repeat', 3)
 
     def test_multiple_repeat(self):
-        for outer_reps in '*', '+', '{1,2}':
-            for outer_mod in '', '?':
+        for outer_reps in '*', '+', '?', '{1,2}':
+            for outer_mod in '', '?', '+':
                 outer_op = outer_reps + outer_mod
                 for inner_reps in '*', '+', '?', '{1,2}':
-                    for inner_mod in '', '?':
+                    for inner_mod in '', '?', '+':
+                        if inner_mod + outer_reps in ('?', '+'):
+                            continue
                         inner_op = inner_reps + inner_mod
                         self.checkPatternError(r'x%s%s' % (inner_op, outer_op),
                                 'multiple repeat', 1 + len(inner_op))

@@ -101,6 +101,7 @@
 *graalpython.lib-python.3.test.test_typing.CollectionsCallableTests.test_repr
 *graalpython.lib-python.3.test.test_typing.CollectionsCallableTests.test_self_subclass
 *graalpython.lib-python.3.test.test_typing.CollectionsCallableTests.test_type_erasure
+*graalpython.lib-python.3.test.test_typing.CollectionsCallableTests.test_type_subst_error
 *graalpython.lib-python.3.test.test_typing.CollectionsCallableTests.test_var_substitution
 *graalpython.lib-python.3.test.test_typing.CollectionsCallableTests.test_weakref
 *graalpython.lib-python.3.test.test_typing.ConcatenateTests.test_basics
@@ -146,6 +147,7 @@
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_all_repr_eq_any
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_basics
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_chain_repr
+*graalpython.lib-python.3.test.test_typing.GenericTests.test_complex_subclasses
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_copy_and_deepcopy
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_copy_generic_instances
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_dict
@@ -179,6 +181,7 @@
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_new_with_args
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_new_with_args2
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_orig_bases
+*graalpython.lib-python.3.test.test_typing.GenericTests.test_parameter_detection
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_parameterized_slots
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_parameterized_slots_dict
 *graalpython.lib-python.3.test.test_typing.GenericTests.test_pickle
@@ -385,6 +388,7 @@
 *graalpython.lib-python.3.test.test_typing.TypingCallableTests.test_repr
 *graalpython.lib-python.3.test.test_typing.TypingCallableTests.test_self_subclass
 *graalpython.lib-python.3.test.test_typing.TypingCallableTests.test_type_erasure
+*graalpython.lib-python.3.test.test_typing.TypingCallableTests.test_type_subst_error
 *graalpython.lib-python.3.test.test_typing.TypingCallableTests.test_var_substitution
 *graalpython.lib-python.3.test.test_typing.TypingCallableTests.test_weakref
 *graalpython.lib-python.3.test.test_typing.UnionTests.test_base_class_kept

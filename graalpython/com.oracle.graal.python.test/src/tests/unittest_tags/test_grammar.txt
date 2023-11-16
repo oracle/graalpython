@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_additive_ops
+*graalpython.lib-python.3.test.test_grammar.GrammarTests.test_annotations_inheritance
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_assert
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_assert_failures
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_assert_syntax_warnings

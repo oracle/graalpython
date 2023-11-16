@@ -221,6 +221,7 @@
 *ctypes.test.test_parameters.SimpleTypesTestCase.test_byref_pointerpointer
 *ctypes.test.test_parameters.SimpleTypesTestCase.test_cstrings
 *ctypes.test.test_parameters.SimpleTypesTestCase.test_cw_strings
+*ctypes.test.test_parameters.SimpleTypesTestCase.test_from_param_result_refcount
 *ctypes.test.test_parameters.SimpleTypesTestCase.test_int_pointers
 *ctypes.test.test_parameters.SimpleTypesTestCase.test_issue31311
 *ctypes.test.test_parameters.SimpleTypesTestCase.test_subclasses
@@ -260,6 +261,7 @@
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyObj_FromPtr
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyString_FromString
 *ctypes.test.test_random_things.call_function_TestCase.test
+*ctypes.test.test_refcounts.AnotherLeak.test_callback_py_object_none_return
 *ctypes.test.test_refcounts.RefcountTestCase.test_1
 *ctypes.test.test_refcounts.RefcountTestCase.test_refcount
 *ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll

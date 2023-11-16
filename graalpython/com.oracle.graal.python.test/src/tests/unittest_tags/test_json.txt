@@ -29,7 +29,9 @@
 *test.test_json.test_decode.TestPyDecode.test_object_pairs_hook
 *test.test_json.test_decode.TestPyDecode.test_string_with_utf8_bom
 *test.test_json.test_default.TestCDefault.test_default
+*test.test_json.test_default.TestCDefault.test_ordereddict
 *test.test_json.test_default.TestPyDefault.test_default
+*test.test_json.test_default.TestPyDefault.test_ordereddict
 *test.test_json.test_dump.TestCDump.test_dump
 *test.test_json.test_dump.TestCDump.test_dump_skipkeys
 *test.test_json.test_dump.TestCDump.test_dumps

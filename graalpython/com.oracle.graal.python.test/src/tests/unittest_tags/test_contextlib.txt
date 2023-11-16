@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_finally
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_no_reraise
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_plain
+*graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_traceback
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_trap_yield_after_throw
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_instance_docstring_given_cm_docstring
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_keywords
