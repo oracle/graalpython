@@ -232,7 +232,10 @@ public class JBangIntegration {
                                 String.join(File.pathSeparator, classpath),
                                 "com.oracle.graal.python.shell.GraalPythonMain");
                 try {
-                    Files.createDirectories(launcher.getParent());
+                    Path parent = launcher.getParent();
+                    if (parent != null) {
+                        Files.createDirectories(parent);
+                    }
                     Files.writeString(launcher, script);
                     var perms = Files.getPosixFilePermissions(launcher);
                     perms.addAll(List.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
@@ -280,9 +283,13 @@ public class JBangIntegration {
             return;
         }
         Path venvDirectory = venv.toAbsolutePath();
-        generateLaunchers(dependencies, venvDirectory.getParent().toString());
-        runLauncher(venvDirectory.getParent().toString(), "-m", "venv", venvDirectory.toString(), "--without-pip");
-        runVenvBin(venvDirectory, "graalpy", List.of("-I", "-m", "ensurepip"));
+        Path parent = venv.getParent();
+        if (parent != null) {
+            String parentString = parent.toString();
+            generateLaunchers(dependencies, parentString);
+            runLauncher(parentString, "-m", "venv", venvDirectory.toString(), "--without-pip");
+            runVenvBin(venvDirectory, "graalpy", List.of("-I", "-m", "ensurepip"));
+        }
     }
 
     private static void runLauncher(String projectPath, String... args) {
@@ -408,9 +415,15 @@ public class JBangIntegration {
 
     private static void getGraalPyArtifact(List<Map.Entry<String, Path>> dependencies, String aid) {
         var projectArtifacts = resolveProjectDependencies(dependencies);
+        Path parent;
+        Path fileName;
         for (var a : projectArtifacts) {
-            if (a.getParent().toString().contains(GRAALPY_GROUP) && a.getFileName().toString().contains(aid)) {
-                return;
+            parent = a.getParent();
+            if (parent != null) {
+                fileName = a.getFileName();
+                if (fileName != null && parent.toString().contains(GRAALPY_GROUP) && fileName.toString().contains(aid)) {
+                    return;
+                }
             }
         }
         throw new RuntimeException(String.format("Missing GraalPy dependency %s:%s. Please add it to your pom", GRAALPY_GROUP, aid));
