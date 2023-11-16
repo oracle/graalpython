@@ -259,3 +259,94 @@ Types not listed in the below table have no special interpretation in Python rig
 | MetaObject   | Any Python `type`.                                                                                                                |
 | Executable   | Anything with a `__call__` method.                                                                                                |
 | Instantiable | Any Python `type`.                                                                                                                |
+
+## The interoperability extension mechanism
+
+It is possible to extend the Truffle Interoperability protocol directly from python via a simple API defined in the `polyglot` module. 
+The purpose of this API is to allow custom / user defined types to take part in the interop ecosystem. 
+This is particularly useful for external types which are not compatible by default with the interop protocol. 
+An example in this sense are the `numpy` numeric types (e.g., `numpy.int32`) which are not supported by default by the interop protocol. 
+
+### The API 
+
+| function                        | Description                                                                                                                                                               |
+|:--------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective Truffle Interop messages. Not All interop messages are supported. |
+| get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended Truffle Interop messages for the given type.                                                      |
+
+#### Supported messages 
+
+The naming convention for the `register_interop_behavior` keyword arguments follows _snake_case_ naming, i.e.: the Truffle Interop `fitsInLong` message 
+becomes `fits_in_long`. Following is the list of currently supported interop messages:
+
+| Truffle Message          | Extension argument name     | Argument type |
+|:-------------------------|:----------------------------|---------------|
+| isBoolean                | is_boolean                  | bool          |
+| isDate                   | is_date                     | bool          |
+| isDuration               | is_duration                 | bool          |
+| isIterator               | is_iterator                 | bool          |
+| isNumber                 | is_number                   | bool          |
+| isString                 | is_string                   | bool          |
+| isTime                   | is_time                     | bool          |
+| isTimeZone               | is_time_zone                | bool          |
+| isExecutable             | is_executable               | bool          |
+| fitsInBigInteger         | fits_in_big_integer         | function      |
+| fitsInByte               | fits_in_byte                | function      |
+| fitsInDouble             | fits_in_double              | function      |
+| fitsInFloat              | fits_in_float               | function      |
+| fitsInInt                | fits_in_int                 | function      |
+| fitsInLong               | fits_in_long                | function      |
+| fitsInShort              | fits_in_short               | function      |
+| asBigInteger             | as_big_integer              | function      |
+| asBoolean                | as_boolean                  | function      |
+| asByte                   | as_byte                     | function      |
+| asDate                   | as_date                     | function      |
+| asDouble                 | as_double                   | function      |
+| asDuration               | as_duration                 | function      |
+| asFloat                  | as_float                    | function      |
+| asInt                    | as_int                      | function      |
+| asLong                   | as_long                     | function      |
+| asShort                  | as_short                    | function      |
+| asString                 | as_string                   | function      |
+| asTime                   | as_time                     | function      |
+| asTimeZone               | as_time_zone                | function      |
+| execute                  | execute                     | function      |
+| readArrayElement         | read_array_element          | function      |
+| getArraySize             | get_array_size              | function      |
+| hasArrayElements         | has_array_elements          | bool          |
+| isArrayElementReadable   | is_array_element_readable   | function      |
+| isArrayElementModifiable | is_array_element_modifiable | function      |
+| isArrayElementInsertable | is_array_element_insertable | function      |
+| isArrayElementRemovable  | is_array_element_removable  | function      |
+| removeArrayElement       | remove_array_element        | function      |
+| writeArrayElement        | write_array_element         | function      |
+| hasIterator              | has_iterator                | bool          |
+| hasIteratorNextElement   | has_iterator_next_element   | function      |
+| getIterator              | get_iterator                | function      |
+| getIteratorNextElement   | get_iterator_next_element   | function      |
+| hasHashEntries           | has_hash_entries            | bool          |
+| getHashEntriesIterator   | get_hash_entries_iterator   | function      |
+| getHashKeysIterator      | get_hash_keys_iterator      | function      |
+| getHashSize              | get_hash_size               | function      |
+| getHashValuesIterator    | get_hash_values_iterator    | function      |
+| isHashEntryReadable      | is_hash_entry_readable      | function      |
+| isHashEntryModifiable    | is_hash_entry_modifiable    | function      |
+| isHashEntryInsertable    | is_hash_entry_insertable    | function      |
+| isHashEntryRemovable     | is_hash_entry_removable     | function      |
+| readHashValue            | read_hash_value             | function      |
+| writeHashEntry           | write_hash_entry            | function      |
+| removeHashEntry          | remove_hash_entry           | function      | 
+
+### Usage Example
+
+```python
+import polyglot
+
+class MyType(object):
+    data = 10
+
+polyglot.register_interop_behavior(MyType,
+    is_string=True,
+    as_string=lambda t: f"MyType({t.data})",
+)
+```
