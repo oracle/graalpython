@@ -682,7 +682,7 @@ public final class CApiContext extends CExtContext {
         try {
             nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
         } catch (UnsupportedMessageException e) {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+            Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
             Object bound = SignatureLibrary.getUncached().bind(signature, pyinitFunc);
             nativeResult = InteropLibrary.getUncached().execute(bound);
         } catch (ArityException e) {
@@ -754,8 +754,9 @@ public final class CApiContext extends CExtContext {
             int id = (int) arguments[0];
             try {
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                if (PythonContext.get(null).getCApiContext() != null) {
-                    Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+                if (cApiContext != null) {
+                    Object llvmLibrary = cApiContext.getLLVMLibrary();
                     assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin, llvmLibrary) : "name clash in builtin vs. CAPI library: " + builtin.name();
                 }
                 LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
@@ -805,8 +806,9 @@ public final class CApiContext extends CExtContext {
 
     public long registerClosure(String nfiSignature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
-        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
+        PythonContext context = getContext();
+        boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
+        Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);
