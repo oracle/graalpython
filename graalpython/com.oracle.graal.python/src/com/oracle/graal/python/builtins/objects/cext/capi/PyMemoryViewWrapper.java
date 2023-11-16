@@ -104,7 +104,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
         Object mem = CStructAccess.AllocateNode.getUncached().alloc(PyMemoryViewObject);
-        writeI64Node.write(mem, PyObject__ob_refcnt, 0x1000); // TODO: immortal for now
+        writeI64Node.write(mem, PyObject__ob_refcnt, IMMORTAL_REFCNT); // TODO: immortal for now
         writePointerNode.write(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeUncached(GetClassNode.executeUncached(object)));
         writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());
         writeI64Node.write(mem, PyMemoryViewObject__exports, object.getExports().get());
@@ -169,7 +169,6 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     @Override
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
-            setRefCount(IMMORTAL_REFCNT);
             Object pointerObject = allocate((PMemoryView) getDelegate());
             replacement = registerReplacement(pointerObject, lib);
         }

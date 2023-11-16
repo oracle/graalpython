@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeI64MemberInMRONodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeMemberInMRONodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
@@ -195,7 +196,6 @@ public abstract class ToNativeTypeNode {
         CompilerAsserts.neverPartOfCompilation();
 
         PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
-        obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
@@ -209,7 +209,8 @@ public abstract class ToNativeTypeNode {
         PythonObjectFactory factory = ctx.factory();
         Object nullValue = ctx.getNativeNull().getPtr();
 
-        writeI64Node.write(mem, PyObject__ob_refcnt, obj.getRefCount());
+        // make this object immortal
+        writeI64Node.write(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
         if (isType) {
             // self-reference
             writePtrNode.write(mem, PyObject__ob_type, mem);

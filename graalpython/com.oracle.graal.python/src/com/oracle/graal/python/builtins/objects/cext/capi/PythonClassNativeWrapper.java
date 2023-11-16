@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -51,6 +52,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
@@ -98,6 +101,15 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
      * Creates a wrapper that uses an existing native object as native replacement object.
      */
     public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
+        /*
+         * This is necessary to break the init cycle because type 'object' is initialized first but
+         * its type is 'type' so it will already transitively initialize 'type'. Later, 'type' is
+         * initialized explicitly.
+         */
+        if (clazz.getNativeWrapper() != null) {
+            return;
+        }
+
         // important: native wrappers are cached
         assert clazz.getClassNativeWrapper() == null;
         PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name);
@@ -172,7 +184,6 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     @TruffleBoundary
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
-            setRefCount(IMMORTAL_REFCNT); // make this object immortal
             /*
              * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it
              * to the wrapper before we do the type's initialization. Otherwise, we will run into an

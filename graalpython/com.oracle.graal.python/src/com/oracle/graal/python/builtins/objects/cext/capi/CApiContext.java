@@ -213,9 +213,9 @@ public final class CApiContext extends CExtContext {
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
-            PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
-            nativeWrapper.makeImmortal();
-            primitiveNativeWrapperCache[i] = nativeWrapper;
+            int value = i - 5;
+            assert CApiGuards.isSmallInteger(value);
+            primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
     }
 

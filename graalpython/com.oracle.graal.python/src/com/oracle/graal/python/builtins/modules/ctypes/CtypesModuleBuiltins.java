@@ -115,11 +115,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -132,6 +134,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1333,13 +1336,13 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-
+        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-
+        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
@@ -1706,24 +1709,23 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class PyINCREFNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isNativeWrapper(arg)")
-        static Object doNative(Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("ref") @Cached AddRefCntNode incRefCntNode) {
-            incRefCntNode.execute(inliningTarget, arg, 1 /* that's what this function is for */ + //
-                            1 /* that for returning it */);
-            return arg;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(arg)")
-        static Object other(Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("ref") @Cached AddRefCntNode incRefCntNode,
-                        @CachedLibrary(limit = "2") InteropLibrary ilib) {
-            if (!ilib.isNull(arg) && ilib.isPointer(arg) && ilib.hasMembers(arg)) {
-                return doNative(arg, inliningTarget, incRefCntNode);
+        @Specialization
+        @TruffleBoundary
+        static Object doGeneric(Object arg) {
+            
+            Object pointerObject = null;
+            if (arg instanceof PythonAbstractNativeObject nativeObject) {
+               pointerObject = nativeObject.getPtr();
+            } else if (arg instanceof PythonObject managedObject){
+                pointerObject = managedObject.getNativeWrapper();
             }
-            // do nothing and return object
+            // ignore other cases; also: don't allocate wrappers just because of this
+            
+            if (pointerObject != null) {
+                AddRefCntNode.executeUncached(pointerObject, //
+                        1 /* that's what this function is for */ + //
+                        1 /* that for returning it */);
+            }
             return arg;
         }
     }
@@ -1733,28 +1735,24 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class PyDECREFNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isNativeWrapper(arg)")
-        static Object doNative(Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("dec") @Cached SubRefCntNode decRefCntNode,
-                        @Shared("inc") @Cached AddRefCntNode incRefCntNode) {
-            // that's what this function is for
-            decRefCntNode.dec(inliningTarget, arg);
-            // that for returning it
-            incRefCntNode.inc(inliningTarget, arg);
-            return arg;
-        }
+        @Specialization
+        @TruffleBoundary
+        static Object doGeneric(Object arg) {
 
-        @Specialization(guards = "!isNativeWrapper(arg)")
-        static Object other(Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("dec") @Cached SubRefCntNode decRefCntNode,
-                        @Shared("inc") @Cached AddRefCntNode incRefCntNode,
-                        @CachedLibrary(limit = "2") InteropLibrary ilib) {
-            if (!ilib.isNull(arg) && ilib.isPointer(arg) && ilib.hasMembers(arg)) {
-                return doNative(arg, inliningTarget, decRefCntNode, incRefCntNode);
+            Object pointerObject = null;
+            if (arg instanceof PythonAbstractNativeObject nativeObject) {
+                pointerObject = nativeObject.getPtr();
+            } else if (arg instanceof PythonObject managedObject){
+                pointerObject = managedObject.getNativeWrapper();
             }
-            // do nothing and return object
+            // ignore other cases; also: don't allocate wrappers just because of this
+
+            if (pointerObject != null) {
+                // that's what this function is for
+                SubRefCntNode.executeUncached(pointerObject, 1);
+                // that for returning it
+                AddRefCntNode.executeUncached(pointerObject, 1 );
+            }
             return arg;
         }
     }

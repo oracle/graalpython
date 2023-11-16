@@ -186,11 +186,6 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         public static final long IMMORTAL_REFCNT = Long.MAX_VALUE / 2;
 
-        /**
-         * Equivalent to {@code ob_refcnt}.
-         */
-        private long refCount = MANAGED_REFCNT;
-
         protected PythonAbstractObjectNativeWrapper() {
         }
 
@@ -199,16 +194,25 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         public final long getRefCount() {
-            return refCount;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        public final void setRefCount(long refCount) {
-            setRefCount(null, refCount, InlinedConditionProfile.getUncached());
+            if (isNative()) {
+                return CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()));
+            }
+            return MANAGED_REFCNT;
         }
 
         public final void setRefCount(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
-            this.refCount = refCount;
+            CApiTransitions.writeNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()), refCount);
+            updateRef(inliningTarget, refCount, hasRefProfile);
+        }
+
+        /**
+         * Adjusts the native wrapper's reference to be weak (if {@code refCount <= MANAGED_REFCNT})
+         * or to be strong (if {@code refCount > MANAGED_REFCNT}) if there is a reference. This
+         * method should be called at appropriate points in the program, e.g., method
+         * {@link #setRefCount(Node, long, InlinedConditionProfile)} uses it, or it should be called
+         * from native code if the refcount falls below {@link #MANAGED_REFCNT}.
+         */
+        public final void updateRef(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
             if (hasRefProfile.profile(inliningTarget, ref != null)) {
                 if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
                     ref.setStrongReference(this);
@@ -218,28 +222,21 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             }
         }
 
-        public void makeImmortal() {
-            this.refCount = IMMORTAL_REFCNT;
-            if (ref != null) {
-                ref.setStrongReference(this);
-            }
-        }
-
         @TruffleBoundary(allowInlining = true)
         public void incRef() {
-            long refCount = this.refCount++;
+            assert isNative();
+            long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
+            long refCount = CApiTransitions.readNativeRefCount(pointer);
+            CApiTransitions.writeNativeRefCount(pointer, refCount + 1);
             // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
             assert refCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
-            if (refCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
-                // make strong
-                assert !ref.isStrongReference();
-                ref.setStrongReference(this);
-            }
         }
 
         @TruffleBoundary(allowInlining = true)
         public long decRef() {
-            long updatedRefCount = --this.refCount;
+            long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
+            long updatedRefCount = CApiTransitions.readNativeRefCount(pointer) - 1;
+            CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
             // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
             assert updatedRefCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
             if (updatedRefCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
@@ -252,13 +249,15 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         @Override
         public final void updateRefCountFromNative() {
-            refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()));
+            // refCount =
+            // CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()));
         }
 
         @Override
         public void updateRefCountToNative() {
             assert isNative();
-            CApiTransitions.writeNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()), refCount);
+            // CApiTransitions.writeNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()),
+            // refCount);
         }
     }
 

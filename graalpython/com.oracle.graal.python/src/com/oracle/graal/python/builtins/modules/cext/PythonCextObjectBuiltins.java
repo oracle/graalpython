@@ -157,7 +157,7 @@ public abstract class PythonCextObjectBuiltins {
                                 @Bind("this") Node inliningTarget,
                                 @Cached InlinedConditionProfile hasRefProfile) {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
-            wrapper.setRefCount(inliningTarget, refCount, hasRefProfile);
+            wrapper.updateRef(inliningTarget, refCount, hasRefProfile);
             return PNone.NO_VALUE;
         }
     }
@@ -615,7 +615,11 @@ public abstract class PythonCextObjectBuiltins {
             long refCnt;
             // We need again check if 'resolved' is a wrapper in case we resolved a handle.
             if (resolved instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                refCnt = objectNativeWrapper.getRefCount();
+                if (objectNativeWrapper.isNative()) {
+                    refCnt = objectNativeWrapper.getRefCount();
+                } else {
+                    refCnt = PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                }
             } else {
                 refCnt = readI64.read(PythonToNativeNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
             }

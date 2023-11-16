@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeD
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -254,7 +255,12 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
                     @Bind("$node") Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
-            setNativePointer(firstToNativeNode.execute(inliningTarget, this));
+            // small int values are cached and will be immortal
+            boolean immortal = isIntLike() && CApiGuards.isSmallLong(value);
+            // if this wrapper wraps a small int value, this wrapper is one of the cached primitive
+            // native wrappers
+            assert !immortal || (PythonContext.get(inliningTarget).getCApiContext().getCachedPrimitiveNativeWrapper(value) == this);
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }
 }

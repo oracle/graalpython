@@ -41,10 +41,12 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -102,7 +104,13 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
                     @Bind("$node") Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (getDelegate() != PNone.NO_VALUE && !isNative()) {
-            setNativePointer(firstToNativeNode.execute(inliningTarget, this));
+            /*
+             * If the wrapped object is a special singleton (e.g. None, True, False, ...) then it
+             * should be immortal.
+             */
+            boolean immortal = CApiGuards.isSpecialSingleton(getDelegate());
+            assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getSingletonNativeWrapper(po) == this);
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }
 }

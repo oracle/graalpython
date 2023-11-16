@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -308,7 +309,7 @@ public abstract class CApiTransitions {
                              */
                             if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
                                 LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(HandlePointerConverter.pointerToStub(reference.pointer))));
-                                CStructAccessFactory.FreeNodeGen.getUncached().free(HandlePointerConverter.pointerToStub(reference.pointer));
+                                FreeNode.executeUncached(HandlePointerConverter.pointerToStub(reference.pointer));
                             }
                         } else {
                             assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
@@ -559,14 +560,18 @@ public abstract class CApiTransitions {
     @GenerateCached(false)
     public abstract static class FirstToNativeNode extends Node {
 
-        public static long executeUncached(PythonNativeWrapper wrapper) {
-            return FirstToNativeNodeGen.getUncached().execute(null, wrapper);
+        public static long executeUncached(PythonAbstractObjectNativeWrapper wrapper, boolean immortal) {
+            return FirstToNativeNodeGen.getUncached().execute(null, wrapper, immortal);
         }
 
-        public abstract long execute(Node inliningTarget, PythonNativeWrapper wrapper);
+        public final long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper) {
+            return execute(inliningTarget, wrapper, false);
+        }
+
+        public abstract long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal);
 
         @Specialization
-        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper,
+        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal,
                         @Cached GilNode gil,
                         @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
@@ -581,12 +586,13 @@ public abstract class CApiTransitions {
                 assert !(wrapper instanceof TruffleObjectNativeWrapper);
                 pollReferenceQueue();
 
-                long refCount = wrapper.getRefCount();
+                long initialRefCount = immortal ? PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT : PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+
                 Object type = getClassNode.execute(inliningTarget, NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper));
 
                 // allocate a native stub object (C type: PyObject)
                 Object nativeObjectStub = allocateNode.alloc(CStructs.PyObject);
-                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, refCount);
+                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
                 HandleContext handleContext = getContext();
                 long pointer = PythonUtils.coerceToLong(nativeObjectStub, lib);
@@ -833,50 +839,53 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile needsReplacementProfile,
                         @Cached InlinedConditionProfile isStrongProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
+            CompilerAsserts.partialEvaluationConstant(needsTransfer);
             pollReferenceQueue();
             PythonNativeWrapper wrapper = isReplacementProfile.profile(inliningTarget, getWrapper.execute(obj));
-            if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                // native part needs to decRef to release
-                objectNativeWrapper.incRef();
-            }
+            Object result;
 
             // no profile for 'isReplacingWrapper' required since this should be constant for a type
             // and the type is already profiled
             if (wrapper.isReplacingWrapper()) {
-                Object replacement = wrapper.getReplacement(lib);
-                if (needsReplacementProfile.profile(inliningTarget, replacement == null)) {
+                result = wrapper.getReplacement(lib);
+                if (needsReplacementProfile.profile(inliningTarget, result == null)) {
                     lib.toNative(wrapper);
-                    replacement = wrapper.getReplacement(lib);
+                    result = wrapper.getReplacement(lib);
                 }
-                assert replacement != null;
-                return replacement;
-            }
-            if (!lib.isPointer(wrapper)) {
-                lib.toNative(wrapper);
             } else {
-                assert obj != PNone.NO_VALUE;
-                /*
-                 * The reference count of the managed wrapper may have been modified, so we need to
-                 * write the updated value to native.
-                 */
-                wrapper.updateRefCountToNative();
+                result = wrapper;
+                if (!lib.isPointer(wrapper)) {
+                    lib.toNative(wrapper);
+                } else {
+                    assert obj != PNone.NO_VALUE;
+                    /*
+                     * The reference count of the managed wrapper may have been modified, so we need
+                     * to write the updated value to native.
+                     */
+                    wrapper.updateRefCountToNative();
 
-                /*
-                 * If we are up to give out a borrowed reference, it may be that the refcount is
-                 * just MANAGED_REFCOUNT which means we would usually just have a weak reference to
-                 * the wrapper. However, native code may incref which we would not see on the
-                 * managed side and the object could die while the native pointer would still be
-                 * considered to be valid. Hence, we need to eagerly make the reference strong since
-                 * we don't know how it will be used. However, if native code decref's down to
-                 * MANAGED_REFCOUNT, we will be notified by an upcall and can make the reference
-                 * weak again.
-                 */
-                assert wrapper.ref != null;
-                if (!needsTransfer && isStrongProfile.profile(inliningTarget, !wrapper.ref.isStrongReference())) {
-                    wrapper.ref.setStrongReference(wrapper);
+                    /*
+                     * If we are up to give out a borrowed reference, it may be that the refcount is
+                     * just MANAGED_REFCOUNT which means we would usually just have a weak reference
+                     * to the wrapper. However, native code may incref which we would not see on the
+                     * managed side and the object could die while the native pointer would still be
+                     * considered to be valid. Hence, we need to eagerly make the reference strong
+                     * since we don't know how it will be used. However, if native code decref's
+                     * down to MANAGED_REFCOUNT, we will be notified by an upcall and can make the
+                     * reference weak again.
+                     */
+                    assert wrapper.ref != null;
+                    if (!needsTransfer && isStrongProfile.profile(inliningTarget, !wrapper.ref.isStrongReference())) {
+                        wrapper.ref.setStrongReference(wrapper);
+                    }
+                }
+                if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                    // native part needs to decRef to release
+                    objectNativeWrapper.incRef();
                 }
             }
-            return wrapper;
+            assert result != null;
+            return result;
         }
     }
 

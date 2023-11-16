@@ -78,13 +78,14 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AddRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.SubRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -189,7 +190,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1180,35 +1180,46 @@ public abstract class CExtNodes {
     @ImportStatic(CApiGuards.class)
     public abstract static class AddRefCntNode extends PNodeWithContext {
 
-        public final Object inc(Node inliningTarget, Object object) {
-            return execute(inliningTarget, object, 1);
+        public static Object executeUncached(Object object, long value) {
+            return AddRefCntNodeGen.getUncached().execute(null, object, value);
         }
 
         public abstract Object execute(Node inliningTarget, Object object, long value);
 
         @Specialization(guards = "value == 1")
-        static PythonAbstractObjectNativeWrapper doNativeWrapperIncByOne(PythonAbstractObjectNativeWrapper nativeWrapper, @SuppressWarnings("unnused") long value) {
-            nativeWrapper.incRef();
+        static PythonAbstractObjectNativeWrapper doNativeWrapperIncByOne(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") long value,
+                        @Shared @Cached InlinedConditionProfile isNativeProfile) {
+            if (nativeWrapper.isNative(inliningTarget, isNativeProfile)) {
+                nativeWrapper.incRef();
+            }
             return nativeWrapper;
         }
 
-        @Specialization
+        @Specialization(replaces = "doNativeWrapperIncByOne")
         static PythonAbstractObjectNativeWrapper doNativeWrapper(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, long value,
+                        @Shared @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedConditionProfile hasRefProfile) {
             assert value >= 0 : "adding negative reference count; dealloc might not happen";
-            nativeWrapper.setRefCount(inliningTarget, nativeWrapper.getRefCount() + value, hasRefProfile);
+            if (nativeWrapper.isNative(inliningTarget, isNativeProfile)) {
+                nativeWrapper.setRefCount(inliningTarget, nativeWrapper.getRefCount() + value, hasRefProfile);
+            }
             return nativeWrapper;
         }
 
         @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
         static Object doNativeObject(Object object, long value,
-                        @Cached(inline = false) PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            CApiContext cApiContext = PythonContext.get(callAddRefCntNode).getCApiContext();
-            if (!lib.isNull(object) && cApiContext != null) {
+            CApiContext cApiContext = PythonContext.get(lib).getCApiContext();
+            if (cApiContext != null && !lib.isNull(object)) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
-                cApiContext.checkAccess(object, lib);
-                callAddRefCntNode.call(NativeCAPISymbol.FUN_ADDREF, object, value);
+                try {
+                    long pointer = lib.asPointer(object);
+                    cApiContext.checkAccess(object, lib);
+                    long refCount = CApiTransitions.readNativeRefCount(pointer);
+                    CApiTransitions.writeNativeRefCount(pointer, refCount + value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
             }
             return object;
         }
@@ -1221,6 +1232,10 @@ public abstract class CExtNodes {
     public abstract static class SubRefCntNode extends PNodeWithContext {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(SubRefCntNode.class);
 
+        public static long executeUncached(Object object, long value) {
+            return SubRefCntNodeGen.getUncached().execute(null, object, value);
+        }
+
         public final long dec(Node inliningTarget, Object object) {
             return execute(inliningTarget, object, 1);
         }
@@ -1228,26 +1243,36 @@ public abstract class CExtNodes {
         public abstract long execute(Node inliningTarget, Object object, long value);
 
         @Specialization(guards = "value == 1")
-        static long doNativeWrapperDecByOne(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") long value,
-                        @Exclusive @Cached FreeNode freeNode,
-                        @Exclusive @Cached InlinedBranchProfile negativeProfile) {
+        static long doNativeWrapperDecByOne(PythonAbstractObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") long value) {
             long refCount = nativeWrapper.decRef();
-            checkRefCountZero(inliningTarget, nativeWrapper, freeNode, negativeProfile, refCount);
+            // TODO(fa): see comment in 'doNativeWrapper'
+            // checkRefCountZero(inliningTarget, nativeWrapper, freeNode, negativeProfile,
+            // refCount);
             return refCount;
         }
 
         @Specialization
         static long doNativeWrapper(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, long value,
-                        @Exclusive @Cached FreeNode freeNode,
-                        @Exclusive @Cached InlinedBranchProfile negativeProfile,
                         @Exclusive @Cached InlinedConditionProfile hasRefProfile) {
             long updatedRefCount = nativeWrapper.getRefCount() - value;
             nativeWrapper.setRefCount(inliningTarget, updatedRefCount, hasRefProfile);
-            checkRefCountZero(inliningTarget, nativeWrapper, freeNode, negativeProfile, updatedRefCount);
+            /*
+             * TODO(fa): Investigate if call to 'checkRefCountZero' is beneficial or necessary.
+             * 
+             * I think it is not strictly necessary because 'setRefCount' will make the wrapper's
+             * reference weak and as soon as there is no more reference from managed, the object
+             * will be free'd. However, if the refcount is 0, we already know that it can be free'd
+             * and we could safe the overhead of going through the reference queue and such. OTOH, I
+             * think this will rarely happen and would need some special treatment in the reference
+             * queue processor.
+             */
+            // checkRefCountZero(inliningTarget, nativeWrapper, freeNode, negativeProfile,
+            // updatedRefCount);
             return updatedRefCount;
         }
 
-        private static void checkRefCountZero(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, FreeNode freeNode, InlinedBranchProfile negativeProfile, long refCount) {
+        /*-
+        private static void checkRefCountZero(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, PyTruffleObjectFree freeNode, InlinedBranchProfile negativeProfile, long refCount) {
             if (refCount == 0) {
                 // 'freeNode' acts as a branch profile
                 freeNode.execute(inliningTarget, nativeWrapper);
@@ -1256,6 +1281,7 @@ public abstract class CExtNodes {
                 LOGGER.severe(() -> "native wrapper has negative ref count: " + nativeWrapper);
             }
         }
+        */
     }
 
     @GenerateInline

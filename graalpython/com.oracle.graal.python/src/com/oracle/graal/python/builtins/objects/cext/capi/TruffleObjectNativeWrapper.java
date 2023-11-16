@@ -71,7 +71,7 @@ public final class TruffleObjectNativeWrapper extends PythonAbstractObjectNative
     @ExportMessage
     void toNative() {
         if (!isNative()) {
-            setNativePointer(CApiTransitions.FirstToNativeNode.executeUncached(this));
+            setNativePointer(CApiTransitions.FirstToNativeNode.executeUncached(this, false));
         }
     }
 }

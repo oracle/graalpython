@@ -797,12 +797,8 @@ public final class PythonCextSlotBuiltins {
         static Object set(PythonAbstractObjectNativeWrapper wrapper, long value) {
             /*
              * We are allocating native object stubs for each wrapper. Therefore, reference counting
-             * should only be done on the native side. However, we allow access for debugging
-             * purposes.
+             * should only be done on the native side.
              */
-            if (PythonContext.DEBUG_CAPI) {
-                wrapper.setRefCount(value);
-            }
             throw CompilerDirectives.shouldNotReachHere();
         }
     }

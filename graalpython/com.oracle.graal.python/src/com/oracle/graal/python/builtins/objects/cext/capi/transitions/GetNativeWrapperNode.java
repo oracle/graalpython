@@ -165,8 +165,6 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
             // this will happen just once per context and special singleton
             CompilerDirectives.transferToInterpreterAndInvalidate();
             nativeWrapper = new PythonObjectNativeWrapper(object);
-            // this should keep the native wrapper alive forever
-            nativeWrapper.makeImmortal();
             context.setSingletonNativeWrapper(object, nativeWrapper);
         }
         return nativeWrapper;

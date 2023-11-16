@@ -110,18 +110,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
@@ -1315,7 +1312,7 @@ public final class PythonCextBuiltins {
         static PNone doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @Bind("this") Node inliningTarget,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
-                        @Cached PCallCapiFunction callReleaseHandleNode) {
+                        @Cached PyTruffleObjectFree freeNode) {
             // if (nativeWrapper.getRefCount() > 0) {
             // CompilerDirectives.transferToInterpreterAndInvalidate();
             // throw new IllegalStateException("deallocating native object with refcnt > 0");
@@ -1325,7 +1322,7 @@ public final class PythonCextBuiltins {
             Object delegate = nativeWrapper.getDelegate();
             clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
 
-            doNativeWrapper(nativeWrapper, callReleaseHandleNode);
+            freeNode.execute(inliningTarget, nativeWrapper);
             return PNone.NO_VALUE;
         }
 
@@ -1343,28 +1340,6 @@ public final class PythonCextBuiltins {
 
         protected static boolean isCArrayWrapper(Object obj) {
             return obj instanceof CArrayWrapper;
-        }
-
-        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @Cached PCallCapiFunction callReleaseHandleNode) {
-
-            // If wrapper already received toNative, release the handle or free the native
-            // memory.
-            if (nativeWrapper.isNative()) {
-                // We do not call 'truffle_release_handle' directly because we still want to
-                // support
-                // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
-                // necessary distinction.
-                long nativePointer = nativeWrapper.getNativePointer();
-                if (LOGGER.isLoggable(Level.FINER)) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("Releasing handle: %x (object: %s)", nativePointer, nativeWrapper));
-                }
-                if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
-                    HandleReleaser.release(nativePointer);
-                } else {
-                    callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
-                }
-            }
         }
     }
 

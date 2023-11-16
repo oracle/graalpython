@@ -43,14 +43,15 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -122,16 +123,20 @@ public final class PyErrStackItem extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    public long asPointer() {
-        return getNativePointer();
+    public long asPointer() throws UnsupportedMessageException {
+        if (isNative()) {
+            return getNativePointer();
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    void toNative(
-                    @Bind("$node") Node inliningTarget,
+    void toNative(@Bind("$node") Node inliningTarget,
                     @Cached InlinedConditionProfile isNativeProfile) {
         if (!isNative(inliningTarget, isNativeProfile)) {
-            setNativePointer(CApiTransitions.FirstToNativeNode.executeUncached(this));
+            // TODO(fa): not yet implemented
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }

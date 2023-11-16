@@ -149,6 +149,10 @@ public class CStructAccess {
     @GenerateUncached
     public abstract static class FreeNode extends Node {
 
+        public static void executeUncached(Object pointer) {
+            CStructAccessFactory.FreeNodeGen.getUncached().execute(pointer);
+        }
+
         abstract void execute(Object pointer);
 
         public final void free(Object pointer) {
