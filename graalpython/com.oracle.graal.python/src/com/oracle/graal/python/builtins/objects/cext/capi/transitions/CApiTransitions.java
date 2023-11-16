@@ -451,47 +451,6 @@ public abstract class CApiTransitions {
         return context.nativeStubLookup.remove(pointer);
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class HandleReleaser implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args,
-                        @CachedLibrary(limit = "5") InteropLibrary lib) {
-            assert args.length == 1;
-            Object arg = args[0];
-            if (arg instanceof PythonNativeWrapper || arg instanceof PythonAbstractObject) {
-                return 0;
-            }
-            long pointer;
-            if (arg instanceof Long) {
-                pointer = (long) arg;
-            } else {
-                if (!lib.isPointer(arg)) {
-                    return 0;
-                }
-                try {
-                    pointer = lib.asPointer(arg);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
-            release(pointer);
-            return 0;
-        }
-
-        public static void release(long pointer) {
-            LOGGER.finer(() -> PythonUtils.formatJString("releasing handle %016x\n", pointer));
-            // TODO: release handle
-        }
-    }
-
     public static final class HandlePointerConverter {
 
         private static final long HANDLE_BASE = 0x8000_0000_0000_0000L;
