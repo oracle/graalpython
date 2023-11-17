@@ -861,7 +861,9 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
 
     out = mx.OutputCapture()
-    mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out)
+    # note: 'quiet=True' is important otherwise if the outer MX runs verbose,
+    # this might fail because of additional output
+    mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out, quiet=True)
     python_home = out.data.splitlines()[-1].strip()
     return python_home
 
