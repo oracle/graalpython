@@ -1684,7 +1684,6 @@ public final class PythonContext extends Python3Core {
     }
 
     private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
-    private TruffleFile homeResourcesFile;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -1722,8 +1721,7 @@ public final class PythonContext extends Python3Core {
                         () -> {
                             try {
                                 TruffleFile internalResource = newEnv.getInternalResource("python-home");
-                                homeResourcesFile = internalResource == null ? null : internalResource.getAbsoluteFile();
-                                return homeResourcesFile;
+                                return internalResource == null ? null : internalResource.getAbsoluteFile();
                             } catch (IOException e) {
                                 // fall through
                             }
@@ -2298,15 +2296,6 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     public TruffleFile getPublicTruffleFileRelaxed(TruffleString path, TruffleString... allowedSuffixes) {
-        if (homeResourcesFile != null && !env.isFileIOAllowed()) {
-            // XXX: Workaround for Truffle resources not being considered internal truffle files
-            String jlPath = path.toJavaStringUncached();
-            String jlHome = langHome.toJavaStringUncached();
-            if (jlPath.startsWith(jlHome)) {
-                String homeRelativePath = jlPath.substring(jlHome.length() + 1);
-                return homeResourcesFile.resolve(homeRelativePath);
-            }
-        }
         TruffleFile f = env.getInternalTruffleFile(path.toJavaStringUncached());
         // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
         // escape the language home directory.
