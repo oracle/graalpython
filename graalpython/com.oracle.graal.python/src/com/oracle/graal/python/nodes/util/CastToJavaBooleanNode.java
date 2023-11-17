@@ -40,15 +40,11 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -74,18 +70,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 public abstract class CastToJavaBooleanNode extends PNodeWithContext {
 
     public abstract boolean execute(Node inliningTarget, Object x) throws CannotCastException;
-
-    public final boolean executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
-    }
-
-    public final boolean executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(inliningTarget, x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a bool", x);
-        }
-    }
 
     public static boolean executeUncached(Object x) throws CannotCastException {
         return CastToJavaBooleanNodeGen.getUncached().execute(null, x);

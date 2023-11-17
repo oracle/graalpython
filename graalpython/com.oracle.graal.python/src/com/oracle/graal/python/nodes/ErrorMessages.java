@@ -538,7 +538,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MUST_BE_REAL_NUMBER = tsLiteral("must be real number, not %p");
     public static final TruffleString MUST_BE_SEQ_OF_LENGTH_D_NOT_D = tsLiteral("must be sequence of length %d, not %d");
     public static final TruffleString MUST_BE_STR_NOT_P = tsLiteral("must be str, not %p");
-    public static final TruffleString S_MUST_BE_S_NOT_P = tsLiteral("%s must be a %s, not %p");
+    public static final TruffleString S_MUST_BE_S_NOT_P = tsLiteral("%s must be %s, not %p");
     public static final TruffleString MUST_BE_S_NOT_NONE = tsLiteral("must be %s, not None");
     public static final TruffleString MUST_BE_S_NOT_P = tsLiteral("must be %s, not %p");
     public static final TruffleString MUST_BE_S_OR_S = tsLiteral("%s must be %s or %s");

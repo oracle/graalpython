@@ -48,39 +48,52 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class InteropBehavior {
+    @ValueType
+    private record InteropBehaviorMethodRecord(CallTarget callTarget, PythonObject globals, boolean constant) {
+    }
+
     private final PythonAbstractObject receiver;
 
-    private final CallTarget[] callTargets = new CallTarget[InteropBehaviorMethod.getLength()];
-    private final PythonObject[] globals = new PythonObject[InteropBehaviorMethod.getLength()];
-    private final boolean[] constants;
+    private final InteropBehaviorMethodRecord[] records = new InteropBehaviorMethodRecord[InteropBehaviorMethod.getLength()];
 
-    public InteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
+    public InteropBehavior(PythonAbstractObject receiver) {
         this.receiver = receiver;
-        assert functions.length == InteropBehaviorMethod.getLength();
-        assert constants.length == InteropBehaviorMethod.getLength();
-        this.constants = constants;
-        for (int i = 0; i < functions.length; i++) {
-            PFunction function = functions[i];
-            if (function != null) {
-                callTargets[i] = functions[i].getCode().getRootCallTarget();
-                globals[i] = functions[i].getGlobals();
-            }
-        }
     }
 
-    public CallTarget getCallTarget(InteropBehaviorMethod method) {
-        return callTargets[method.ordinal()];
+    public void defineBehavior(InteropBehaviorMethod method, PFunction function) {
+        records[method.ordinal()] = new InteropBehaviorMethodRecord(function.getCode().getRootCallTarget(), function.getGlobals(), false);
     }
 
-    public PythonObject getGlobals(InteropBehaviorMethod method) {
-        return globals[method.ordinal()];
+    public void defineBehavior(InteropBehaviorMethod method, boolean constant) {
+        records[method.ordinal()] = new InteropBehaviorMethodRecord(null, null, constant);
     }
 
     public boolean isDefined(InteropBehaviorMethod method) {
-        return method.constantBoolean || callTargets[method.ordinal()] != null;
+        return records[method.ordinal()] != null;
+    }
+
+    public CallTarget getCallTarget(InteropBehaviorMethod method) {
+        assert isDefined(method) : "interop behavior method not defined";
+        return records[method.ordinal()].callTarget;
+    }
+
+    public PythonObject getGlobals(InteropBehaviorMethod method) {
+        assert isDefined(method) : "interop behavior method not defined";
+        return records[method.ordinal()].globals;
+    }
+
+    public boolean isConstant(InteropBehaviorMethod method) {
+        assert isDefined(method) : "interop behavior method not defined";
+        return records[method.ordinal()].callTarget == null;
+    }
+
+    public boolean getConstantValue(InteropBehaviorMethod method) {
+        assert isConstant(method) : "interop behavior method not constant";
+        return records[method.ordinal()].constant;
     }
 
     public Object[] createArguments(InteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments) {
@@ -102,15 +115,10 @@ public class InteropBehavior {
         return receiver;
     }
 
-    public boolean getConstantValue(InteropBehaviorMethod method) {
-        assert method.constantBoolean;
-        return constants[method.ordinal()];
-    }
-
     @CompilerDirectives.TruffleBoundary
     public Object[] getDefinedMethods() {
         ArrayList<TruffleString> defined = new ArrayList<>();
-        for (int i = 0; i < callTargets.length; i++) {
+        for (int i = 0; i < records.length; i++) {
             InteropBehaviorMethod method = InteropBehaviorMethod.VALUES[i];
             if (isDefined(method)) {
                 defined.add(method.tsName);

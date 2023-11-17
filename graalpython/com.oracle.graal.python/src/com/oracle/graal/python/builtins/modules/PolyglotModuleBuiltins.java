@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -92,6 +91,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -675,11 +675,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterInteropBehaviorNode extends PythonBuiltinNode {
         public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_INTEROP_BEHAVIOR__);
 
-        void handleArg(Object value, InteropBehaviorMethod method, boolean[] constants, PFunction[] functions, PRaiseNode raiseNode) {
-            if (method.constantBoolean && value instanceof Boolean boolValue) {
-                constants[method.ordinal()] = boolValue;
-            } else if (!method.constantBoolean && value instanceof PFunction function) {
-                functions[method.ordinal()] = function;
+        void handleArg(Object value, InteropBehaviorMethod method, InteropBehavior interopBehavior, PRaiseNode raiseNode) {
+            if (value instanceof Boolean boolValue) {
+                interopBehavior.defineBehavior(method, boolValue);
+            } else if (value instanceof PFunction function) {
+                interopBehavior.defineBehavior(method, function);
                 // validate the function
                 if (function.getKwDefaults().length != 0) {
                     throw raiseNode.raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
@@ -703,70 +703,68 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         Object is_hash_entry_modifiable, Object is_hash_entry_insertable, Object is_hash_entry_removable, Object read_hash_value, Object write_hash_entry, Object remove_hash_entry,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
-                final PFunction[] functions = new PFunction[InteropBehaviorMethod.getLength()];
-                final boolean[] constants = new boolean[InteropBehaviorMethod.getLength()];
+                final InteropBehavior interopBehavior = new InteropBehavior(receiver);
 
-                handleArg(is_boolean, InteropBehaviorMethod.is_boolean, constants, functions, raiseNode);
-                handleArg(is_date, InteropBehaviorMethod.is_date, constants, functions, raiseNode);
-                handleArg(is_duration, InteropBehaviorMethod.is_duration, constants, functions, raiseNode);
-                handleArg(is_iterator, InteropBehaviorMethod.is_iterator, constants, functions, raiseNode);
-                handleArg(is_number, InteropBehaviorMethod.is_number, constants, functions, raiseNode);
-                handleArg(is_string, InteropBehaviorMethod.is_string, constants, functions, raiseNode);
-                handleArg(is_time, InteropBehaviorMethod.is_time, constants, functions, raiseNode);
-                handleArg(is_time_zone, InteropBehaviorMethod.is_time_zone, constants, functions, raiseNode);
-                handleArg(is_executable, InteropBehaviorMethod.is_executable, constants, functions, raiseNode);
-                handleArg(fits_in_big_integer, InteropBehaviorMethod.fits_in_big_integer, constants, functions, raiseNode);
-                handleArg(fits_in_byte, InteropBehaviorMethod.fits_in_byte, constants, functions, raiseNode);
-                handleArg(fits_in_double, InteropBehaviorMethod.fits_in_double, constants, functions, raiseNode);
-                handleArg(fits_in_float, InteropBehaviorMethod.fits_in_float, constants, functions, raiseNode);
-                handleArg(fits_in_int, InteropBehaviorMethod.fits_in_int, constants, functions, raiseNode);
-                handleArg(fits_in_long, InteropBehaviorMethod.fits_in_long, constants, functions, raiseNode);
-                handleArg(fits_in_short, InteropBehaviorMethod.fits_in_short, constants, functions, raiseNode);
-                handleArg(as_big_integer, InteropBehaviorMethod.as_big_integer, constants, functions, raiseNode);
-                handleArg(as_boolean, InteropBehaviorMethod.as_boolean, constants, functions, raiseNode);
-                handleArg(as_byte, InteropBehaviorMethod.as_byte, constants, functions, raiseNode);
-                handleArg(as_date, InteropBehaviorMethod.as_date, constants, functions, raiseNode);
-                handleArg(as_double, InteropBehaviorMethod.as_double, constants, functions, raiseNode);
-                handleArg(as_duration, InteropBehaviorMethod.as_duration, constants, functions, raiseNode);
-                handleArg(as_float, InteropBehaviorMethod.as_float, constants, functions, raiseNode);
-                handleArg(as_int, InteropBehaviorMethod.as_int, constants, functions, raiseNode);
-                handleArg(as_long, InteropBehaviorMethod.as_long, constants, functions, raiseNode);
-                handleArg(as_short, InteropBehaviorMethod.as_short, constants, functions, raiseNode);
-                handleArg(as_string, InteropBehaviorMethod.as_string, constants, functions, raiseNode);
-                handleArg(as_time, InteropBehaviorMethod.as_time, constants, functions, raiseNode);
-                handleArg(as_time_zone, InteropBehaviorMethod.as_time_zone, constants, functions, raiseNode);
-                handleArg(execute, InteropBehaviorMethod.execute, constants, functions, raiseNode);
-                handleArg(read_array_element, InteropBehaviorMethod.read_array_element, constants, functions, raiseNode);
-                handleArg(get_array_size, InteropBehaviorMethod.get_array_size, constants, functions, raiseNode);
-                handleArg(has_array_elements, InteropBehaviorMethod.has_array_elements, constants, functions, raiseNode);
-                handleArg(is_array_element_readable, InteropBehaviorMethod.is_array_element_readable, constants, functions, raiseNode);
-                handleArg(is_array_element_modifiable, InteropBehaviorMethod.is_array_element_modifiable, constants, functions, raiseNode);
-                handleArg(is_array_element_insertable, InteropBehaviorMethod.is_array_element_insertable, constants, functions, raiseNode);
-                handleArg(is_array_element_removable, InteropBehaviorMethod.is_array_element_removable, constants, functions, raiseNode);
-                handleArg(remove_array_element, InteropBehaviorMethod.remove_array_element, constants, functions, raiseNode);
-                handleArg(write_array_element, InteropBehaviorMethod.write_array_element, constants, functions, raiseNode);
-                handleArg(has_iterator, InteropBehaviorMethod.has_iterator, constants, functions, raiseNode);
-                handleArg(has_iterator_next_element, InteropBehaviorMethod.has_iterator_next_element, constants, functions, raiseNode);
-                handleArg(get_iterator, InteropBehaviorMethod.get_iterator, constants, functions, raiseNode);
-                handleArg(get_iterator_next_element, InteropBehaviorMethod.get_iterator_next_element, constants, functions, raiseNode);
-                handleArg(has_hash_entries, InteropBehaviorMethod.has_hash_entries, constants, functions, raiseNode);
-                handleArg(get_hash_entries_iterator, InteropBehaviorMethod.get_hash_entries_iterator, constants, functions, raiseNode);
-                handleArg(get_hash_keys_iterator, InteropBehaviorMethod.get_hash_keys_iterator, constants, functions, raiseNode);
-                handleArg(get_hash_size, InteropBehaviorMethod.get_hash_size, constants, functions, raiseNode);
-                handleArg(get_hash_values_iterator, InteropBehaviorMethod.get_hash_values_iterator, constants, functions, raiseNode);
-                handleArg(is_hash_entry_readable, InteropBehaviorMethod.is_hash_entry_readable, constants, functions, raiseNode);
-                handleArg(is_hash_entry_modifiable, InteropBehaviorMethod.is_hash_entry_modifiable, constants, functions, raiseNode);
-                handleArg(is_hash_entry_insertable, InteropBehaviorMethod.is_hash_entry_insertable, constants, functions, raiseNode);
-                handleArg(is_hash_entry_removable, InteropBehaviorMethod.is_hash_entry_removable, constants, functions, raiseNode);
-                handleArg(read_hash_value, InteropBehaviorMethod.read_hash_value, constants, functions, raiseNode);
-                handleArg(write_hash_entry, InteropBehaviorMethod.write_hash_entry, constants, functions, raiseNode);
-                handleArg(remove_hash_entry, InteropBehaviorMethod.remove_hash_entry, constants, functions, raiseNode);
+                handleArg(is_boolean, InteropBehaviorMethod.is_boolean, interopBehavior, raiseNode);
+                handleArg(is_date, InteropBehaviorMethod.is_date, interopBehavior, raiseNode);
+                handleArg(is_duration, InteropBehaviorMethod.is_duration, interopBehavior, raiseNode);
+                handleArg(is_iterator, InteropBehaviorMethod.is_iterator, interopBehavior, raiseNode);
+                handleArg(is_number, InteropBehaviorMethod.is_number, interopBehavior, raiseNode);
+                handleArg(is_string, InteropBehaviorMethod.is_string, interopBehavior, raiseNode);
+                handleArg(is_time, InteropBehaviorMethod.is_time, interopBehavior, raiseNode);
+                handleArg(is_time_zone, InteropBehaviorMethod.is_time_zone, interopBehavior, raiseNode);
+                handleArg(is_executable, InteropBehaviorMethod.is_executable, interopBehavior, raiseNode);
+                handleArg(fits_in_big_integer, InteropBehaviorMethod.fits_in_big_integer, interopBehavior, raiseNode);
+                handleArg(fits_in_byte, InteropBehaviorMethod.fits_in_byte, interopBehavior, raiseNode);
+                handleArg(fits_in_double, InteropBehaviorMethod.fits_in_double, interopBehavior, raiseNode);
+                handleArg(fits_in_float, InteropBehaviorMethod.fits_in_float, interopBehavior, raiseNode);
+                handleArg(fits_in_int, InteropBehaviorMethod.fits_in_int, interopBehavior, raiseNode);
+                handleArg(fits_in_long, InteropBehaviorMethod.fits_in_long, interopBehavior, raiseNode);
+                handleArg(fits_in_short, InteropBehaviorMethod.fits_in_short, interopBehavior, raiseNode);
+                handleArg(as_big_integer, InteropBehaviorMethod.as_big_integer, interopBehavior, raiseNode);
+                handleArg(as_boolean, InteropBehaviorMethod.as_boolean, interopBehavior, raiseNode);
+                handleArg(as_byte, InteropBehaviorMethod.as_byte, interopBehavior, raiseNode);
+                handleArg(as_date, InteropBehaviorMethod.as_date, interopBehavior, raiseNode);
+                handleArg(as_double, InteropBehaviorMethod.as_double, interopBehavior, raiseNode);
+                handleArg(as_duration, InteropBehaviorMethod.as_duration, interopBehavior, raiseNode);
+                handleArg(as_float, InteropBehaviorMethod.as_float, interopBehavior, raiseNode);
+                handleArg(as_int, InteropBehaviorMethod.as_int, interopBehavior, raiseNode);
+                handleArg(as_long, InteropBehaviorMethod.as_long, interopBehavior, raiseNode);
+                handleArg(as_short, InteropBehaviorMethod.as_short, interopBehavior, raiseNode);
+                handleArg(as_string, InteropBehaviorMethod.as_string, interopBehavior, raiseNode);
+                handleArg(as_time, InteropBehaviorMethod.as_time, interopBehavior, raiseNode);
+                handleArg(as_time_zone, InteropBehaviorMethod.as_time_zone, interopBehavior, raiseNode);
+                handleArg(execute, InteropBehaviorMethod.execute, interopBehavior, raiseNode);
+                handleArg(read_array_element, InteropBehaviorMethod.read_array_element, interopBehavior, raiseNode);
+                handleArg(get_array_size, InteropBehaviorMethod.get_array_size, interopBehavior, raiseNode);
+                handleArg(has_array_elements, InteropBehaviorMethod.has_array_elements, interopBehavior, raiseNode);
+                handleArg(is_array_element_readable, InteropBehaviorMethod.is_array_element_readable, interopBehavior, raiseNode);
+                handleArg(is_array_element_modifiable, InteropBehaviorMethod.is_array_element_modifiable, interopBehavior, raiseNode);
+                handleArg(is_array_element_insertable, InteropBehaviorMethod.is_array_element_insertable, interopBehavior, raiseNode);
+                handleArg(is_array_element_removable, InteropBehaviorMethod.is_array_element_removable, interopBehavior, raiseNode);
+                handleArg(remove_array_element, InteropBehaviorMethod.remove_array_element, interopBehavior, raiseNode);
+                handleArg(write_array_element, InteropBehaviorMethod.write_array_element, interopBehavior, raiseNode);
+                handleArg(has_iterator, InteropBehaviorMethod.has_iterator, interopBehavior, raiseNode);
+                handleArg(has_iterator_next_element, InteropBehaviorMethod.has_iterator_next_element, interopBehavior, raiseNode);
+                handleArg(get_iterator, InteropBehaviorMethod.get_iterator, interopBehavior, raiseNode);
+                handleArg(get_iterator_next_element, InteropBehaviorMethod.get_iterator_next_element, interopBehavior, raiseNode);
+                handleArg(has_hash_entries, InteropBehaviorMethod.has_hash_entries, interopBehavior, raiseNode);
+                handleArg(get_hash_entries_iterator, InteropBehaviorMethod.get_hash_entries_iterator, interopBehavior, raiseNode);
+                handleArg(get_hash_keys_iterator, InteropBehaviorMethod.get_hash_keys_iterator, interopBehavior, raiseNode);
+                handleArg(get_hash_size, InteropBehaviorMethod.get_hash_size, interopBehavior, raiseNode);
+                handleArg(get_hash_values_iterator, InteropBehaviorMethod.get_hash_values_iterator, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_readable, InteropBehaviorMethod.is_hash_entry_readable, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_modifiable, InteropBehaviorMethod.is_hash_entry_modifiable, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_insertable, InteropBehaviorMethod.is_hash_entry_insertable, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_removable, InteropBehaviorMethod.is_hash_entry_removable, interopBehavior, raiseNode);
+                handleArg(read_hash_value, InteropBehaviorMethod.read_hash_value, interopBehavior, raiseNode);
+                handleArg(write_hash_entry, InteropBehaviorMethod.write_hash_entry, interopBehavior, raiseNode);
+                handleArg(remove_hash_entry, InteropBehaviorMethod.remove_hash_entry, interopBehavior, raiseNode);
 
-                dylib.put(receiver, HOST_INTEROP_BEHAVIOR, new InteropBehavior(receiver, functions, constants));
+                dylib.put(receiver, HOST_INTEROP_BEHAVIOR, interopBehavior);
                 return PNone.NONE;
             }
             throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);

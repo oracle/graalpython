@@ -154,15 +154,15 @@ import static com.oracle.graal.python.nodes.InteropMethodNames.T_WRITE_HASH_ENTR
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum InteropBehaviorMethod {
-    is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN, true),
-    is_date(J_IS_DATE, T_IS_DATE, true),
-    is_duration(J_IS_DURATION, T_IS_DURATION, true),
-    is_iterator(J_IS_ITERATOR, T_IS_ITERATOR, true),
-    is_number(J_IS_NUMBER, T_IS_NUMBER, true),
-    is_string(J_IS_STRING, T_IS_STRING, true),
-    is_time(J_IS_TIME, T_IS_TIME, true),
-    is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE, true),
-    is_executable(J_IS_EXECUTABLE, T_IS_EXECUTABLE, true),
+    is_boolean(J_IS_BOOLEAN, T_IS_BOOLEAN),
+    is_date(J_IS_DATE, T_IS_DATE),
+    is_duration(J_IS_DURATION, T_IS_DURATION),
+    is_iterator(J_IS_ITERATOR, T_IS_ITERATOR),
+    is_number(J_IS_NUMBER, T_IS_NUMBER),
+    is_string(J_IS_STRING, T_IS_STRING),
+    is_time(J_IS_TIME, T_IS_TIME),
+    is_time_zone(J_IS_TIME_ZONE, T_IS_TIME_ZONE),
+    is_executable(J_IS_EXECUTABLE, T_IS_EXECUTABLE),
     fits_in_big_integer(J_FITS_IN_BIG_INTEGER, T_FITS_IN_BIG_INTEGER),
     fits_in_byte(J_FITS_IN_BYTE, T_FITS_IN_BYTE),
     fits_in_double(J_FITS_IN_DOUBLE, T_FITS_IN_DOUBLE),
@@ -187,7 +187,7 @@ public enum InteropBehaviorMethod {
     // array
     read_array_element(J_READ_ARRAY_ELEMENT, T_READ_ARRAY_ELEMENT, 1),
     get_array_size(J_GET_ARRAY_SIZE, T_GET_ARRAY_SIZE),
-    has_array_elements(J_HAS_ARRAY_ELEMENTS, T_HAS_ARRAY_ELEMENTS, true),
+    has_array_elements(J_HAS_ARRAY_ELEMENTS, T_HAS_ARRAY_ELEMENTS),
     is_array_element_readable(J_IS_ARRAY_ELEMENT_READABLE, T_IS_ARRAY_ELEMENT_READABLE, 1),
     is_array_element_modifiable(J_IS_ARRAY_ELEMENT_MODIFIABLE, T_IS_ARRAY_ELEMENT_MODIFIABLE, 1),
     is_array_element_insertable(J_IS_ARRAY_ELEMENT_INSERTABLE, T_IS_ARRAY_ELEMENT_INSERTABLE, 1),
@@ -195,12 +195,12 @@ public enum InteropBehaviorMethod {
     remove_array_element(J_REMOVE_ARRAY_ELEMENT, T_REMOVE_ARRAY_ELEMENT, 1),
     write_array_element(J_WRITE_ARRAY_ELEMENT, T_WRITE_ARRAY_ELEMENT, 2),
     // iterator
-    has_iterator(J_HAS_ITERATOR, T_HAS_ITERATOR, true),
+    has_iterator(J_HAS_ITERATOR, T_HAS_ITERATOR),
     has_iterator_next_element(J_HAS_ITERATOR_NEXT_ELEMENT, T_HAS_ITERATOR_NEXT_ELEMENT),
     get_iterator(J_GET_ITERATOR, T_GET_ITERATOR),
     get_iterator_next_element(J_GET_ITERATOR_NEXT_ELEMENT, T_GET_ITERATOR_NEXT_ELEMENT),
     // hash
-    has_hash_entries(J_HAS_HASH_ENTRIES, T_HAS_HASH_ENTRIES, true),
+    has_hash_entries(J_HAS_HASH_ENTRIES, T_HAS_HASH_ENTRIES),
     get_hash_entries_iterator(J_GET_HASH_ENTRIES_ITERATOR, T_GET_HASH_ENTRIES_ITERATOR),
     get_hash_keys_iterator(J_GET_HASH_KEYS_ITERATOR, T_GET_HASH_KEYS_ITERATOR),
     get_hash_size(J_GET_HASH_SIZE, T_GET_HASH_SIZE),
@@ -221,42 +221,23 @@ public enum InteropBehaviorMethod {
 
     public final String name;
     public final TruffleString tsName;
-    public final boolean constantBoolean;
     public final int extraArguments;
 
     public final boolean takesVarArgs;
 
-    InteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean, int extraArguments, boolean takesVarArgs) {
-        assert !(constantBoolean && extraArguments > 0) : "constant HostInteropBehaviorMethods cannot have extra arguments!";
+    InteropBehaviorMethod(String name, TruffleString tsName, int extraArguments, boolean takesVarArgs) {
         this.name = name;
         this.tsName = tsName;
-        this.constantBoolean = constantBoolean;
         this.extraArguments = extraArguments;
         this.takesVarArgs = takesVarArgs;
     }
 
-    InteropBehaviorMethod(String name, TruffleString tsName, int extraArguments, boolean takesVarArgs) {
-        this(name, tsName, false, extraArguments, takesVarArgs);
-    }
-
-    InteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean, int extraArguments) {
-        this(name, tsName, constantBoolean, extraArguments, false);
-    }
-
-    InteropBehaviorMethod(String name, TruffleString tsName, boolean constantBoolean) {
-        this(name, tsName, constantBoolean, 0);
-    }
-
     InteropBehaviorMethod(String name, TruffleString tsName, int extraArguments) {
-        this(name, tsName, false, extraArguments);
+        this(name, tsName, extraArguments, false);
     }
 
     InteropBehaviorMethod(String name, TruffleString tsName) {
-        this(name, tsName, false, 0);
-    }
-
-    public boolean isConstantBoolean() {
-        return constantBoolean;
+        this(name, tsName, 0);
     }
 
     public boolean checkArity(Object[] extraArguments) {
@@ -267,7 +248,6 @@ public enum InteropBehaviorMethod {
     public String toString() {
         return "InteropBehaviorMethod{" +
                         "name='" + name + '\'' +
-                        ", constantBoolean=" + constantBoolean +
                         ", extraArguments=" + extraArguments +
                         ", takesVarArgs=" + takesVarArgs +
                         '}';

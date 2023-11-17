@@ -276,66 +276,68 @@ An example in this sense are the `numpy` numeric types (e.g., `numpy.int32`) whi
 
 #### Supported messages 
 
-The naming convention for the `register_interop_behavior` keyword arguments follows _snake_case_ naming, i.e.: the Truffle Interop `fitsInLong` message 
-becomes `fits_in_long`. Following is the list of currently supported interop messages:
+The majority (with some exceptions) of the Truffle Interop messages are supported by the interop behavior extension API, as seen in the table below.  
+The naming convention for the `register_interop_behavior` keyword arguments follows the _snake_case_ naming convention, i.e.: the Truffle Interop `fitsInLong` message 
+becomes `fits_in_long` and so on. Each message can be extended with a **pure python function** (default keyword arguments, free vars and cell vars are not allowed) or a **boolean constant**. 
+Following is the list of currently supported interop messages:
 
-| Truffle Message          | Extension argument name     | Argument type |
-|:-------------------------|:----------------------------|---------------|
-| isBoolean                | is_boolean                  | bool          |
-| isDate                   | is_date                     | bool          |
-| isDuration               | is_duration                 | bool          |
-| isIterator               | is_iterator                 | bool          |
-| isNumber                 | is_number                   | bool          |
-| isString                 | is_string                   | bool          |
-| isTime                   | is_time                     | bool          |
-| isTimeZone               | is_time_zone                | bool          |
-| isExecutable             | is_executable               | bool          |
-| fitsInBigInteger         | fits_in_big_integer         | function      |
-| fitsInByte               | fits_in_byte                | function      |
-| fitsInDouble             | fits_in_double              | function      |
-| fitsInFloat              | fits_in_float               | function      |
-| fitsInInt                | fits_in_int                 | function      |
-| fitsInLong               | fits_in_long                | function      |
-| fitsInShort              | fits_in_short               | function      |
-| asBigInteger             | as_big_integer              | function      |
-| asBoolean                | as_boolean                  | function      |
-| asByte                   | as_byte                     | function      |
-| asDate                   | as_date                     | function      |
-| asDouble                 | as_double                   | function      |
-| asDuration               | as_duration                 | function      |
-| asFloat                  | as_float                    | function      |
-| asInt                    | as_int                      | function      |
-| asLong                   | as_long                     | function      |
-| asShort                  | as_short                    | function      |
-| asString                 | as_string                   | function      |
-| asTime                   | as_time                     | function      |
-| asTimeZone               | as_time_zone                | function      |
-| execute                  | execute                     | function      |
-| readArrayElement         | read_array_element          | function      |
-| getArraySize             | get_array_size              | function      |
-| hasArrayElements         | has_array_elements          | bool          |
-| isArrayElementReadable   | is_array_element_readable   | function      |
-| isArrayElementModifiable | is_array_element_modifiable | function      |
-| isArrayElementInsertable | is_array_element_insertable | function      |
-| isArrayElementRemovable  | is_array_element_removable  | function      |
-| removeArrayElement       | remove_array_element        | function      |
-| writeArrayElement        | write_array_element         | function      |
-| hasIterator              | has_iterator                | bool          |
-| hasIteratorNextElement   | has_iterator_next_element   | function      |
-| getIterator              | get_iterator                | function      |
-| getIteratorNextElement   | get_iterator_next_element   | function      |
-| hasHashEntries           | has_hash_entries            | bool          |
-| getHashEntriesIterator   | get_hash_entries_iterator   | function      |
-| getHashKeysIterator      | get_hash_keys_iterator      | function      |
-| getHashSize              | get_hash_size               | function      |
-| getHashValuesIterator    | get_hash_values_iterator    | function      |
-| isHashEntryReadable      | is_hash_entry_readable      | function      |
-| isHashEntryModifiable    | is_hash_entry_modifiable    | function      |
-| isHashEntryInsertable    | is_hash_entry_insertable    | function      |
-| isHashEntryRemovable     | is_hash_entry_removable     | function      |
-| readHashValue            | read_hash_value             | function      |
-| writeHashEntry           | write_hash_entry            | function      |
-| removeHashEntry          | remove_hash_entry           | function      | 
+| Truffle Message          | Extension argument name     |
+|:-------------------------|:----------------------------|
+| isBoolean                | is_boolean                  |
+| isDate                   | is_date                     |
+| isDuration               | is_duration                 |
+| isIterator               | is_iterator                 |
+| isNumber                 | is_number                   |
+| isString                 | is_string                   |
+| isTime                   | is_time                     |
+| isTimeZone               | is_time_zone                |
+| isExecutable             | is_executable               |
+| fitsInBigInteger         | fits_in_big_integer         |
+| fitsInByte               | fits_in_byte                |
+| fitsInDouble             | fits_in_double              |
+| fitsInFloat              | fits_in_float               |
+| fitsInInt                | fits_in_int                 |
+| fitsInLong               | fits_in_long                |
+| fitsInShort              | fits_in_short               |
+| asBigInteger             | as_big_integer              |
+| asBoolean                | as_boolean                  |
+| asByte                   | as_byte                     |
+| asDate                   | as_date                     |
+| asDouble                 | as_double                   |
+| asDuration               | as_duration                 |
+| asFloat                  | as_float                    |
+| asInt                    | as_int                      |
+| asLong                   | as_long                     |
+| asShort                  | as_short                    |
+| asString                 | as_string                   |
+| asTime                   | as_time                     |
+| asTimeZone               | as_time_zone                |
+| execute                  | execute                     |
+| readArrayElement         | read_array_element          |
+| getArraySize             | get_array_size              |
+| hasArrayElements         | has_array_elements          |
+| isArrayElementReadable   | is_array_element_readable   |
+| isArrayElementModifiable | is_array_element_modifiable |
+| isArrayElementInsertable | is_array_element_insertable |
+| isArrayElementRemovable  | is_array_element_removable  |
+| removeArrayElement       | remove_array_element        |
+| writeArrayElement        | write_array_element         |
+| hasIterator              | has_iterator                |
+| hasIteratorNextElement   | has_iterator_next_element   |
+| getIterator              | get_iterator                |
+| getIteratorNextElement   | get_iterator_next_element   |
+| hasHashEntries           | has_hash_entries            |
+| getHashEntriesIterator   | get_hash_entries_iterator   |
+| getHashKeysIterator      | get_hash_keys_iterator      |
+| getHashSize              | get_hash_size               |
+| getHashValuesIterator    | get_hash_values_iterator    |
+| isHashEntryReadable      | is_hash_entry_readable      |
+| isHashEntryModifiable    | is_hash_entry_modifiable    |
+| isHashEntryInsertable    | is_hash_entry_insertable    |
+| isHashEntryRemovable     | is_hash_entry_removable     |
+| readHashValue            | read_hash_value             |
+| writeHashEntry           | write_hash_entry            |
+| removeHashEntry          | remove_hash_entry           | 
 
 ### Usage Example
 

@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -64,18 +61,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached(false)
 @ImportStatic(MathGuards.class)
 public abstract class CastToJavaByteNode extends PNodeWithContext {
-
-    public final byte executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
-    }
-
-    public final byte executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(inliningTarget, x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a byte", x);
-        }
-    }
 
     public abstract byte execute(Node inliningTarget, byte x);
 

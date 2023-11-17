@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,45 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.nodes.interop;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S_NOT_P;
+import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
-public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
+@GenerateUncached
+@GenerateInline
+public abstract class GetInteropBehaviorNode extends PNodeWithContext {
+    public abstract InteropBehavior execute(Node inliningTarget, PythonAbstractObject receiver, InteropBehaviorMethod method);
+
     @Specialization
-    static Object[] doNone(@SuppressWarnings("unused") PNone none) {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
+    static InteropBehavior getInteropBehavior(Node inliningTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
+                    @Cached GetClassNode getClassNode,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+        Object klass = getClassNode.execute(inliningTarget, receiver);
+        if (klass instanceof PythonBuiltinClassType pythonBuiltinClassType) {
+            klass = PythonContext.get(getClassNode).lookupType(pythonBuiltinClassType);
+        }
+        Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
+        if (value instanceof InteropBehavior behavior && behavior.isDefined(method)) {
+            return behavior;
+        }
+        return null;
     }
 
-    @Specialization
-    static Object[] doTuple(PTuple t,
-                    @Bind("this") Node inliningTarget,
-                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
-        return getInternalArrayNode.execute(inliningTarget, t.getSequenceStorage());
-    }
-
-    @Fallback
-    Object doOthers(Object value) {
-        throw raise(PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "a tuple", value);
-    }
-
-    @ClinicConverterFactory
     @NeverDefault
-    public static TupleConversionNode create() {
-        return TupleConversionNodeGen.create();
+    public static GetInteropBehaviorNode create() {
+        return GetInteropBehaviorNodeGen.create();
+    }
+
+    public static GetInteropBehaviorNode getUncached() {
+        return GetInteropBehaviorNodeGen.getUncached();
     }
 }

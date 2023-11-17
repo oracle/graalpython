@@ -122,7 +122,9 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
+import com.oracle.graal.python.nodes.interop.GetInteropBehaviorNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorValueNode;
+import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -264,6 +266,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean hasArrayElements(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
@@ -273,9 +276,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.has_array_elements);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.has_array_elements;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -290,13 +294,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public Object readArrayElement(long key,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.read_array_element, key);
-        if (value != PNone.NO_VALUE) {
-            return value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.read_array_element;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.execute(inliningTarget, behavior, method, this, key);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -318,12 +324,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public void writeArrayElement(long key, Object value,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        Object interopValue = getValue.execute(inliningTarget, this, InteropBehaviorMethod.write_array_element, key, value);
-        if (interopValue == PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.write_array_element;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            getValue.execute(inliningTarget, behavior, method, this, key, value);
+        } else {
             boolean mustRelease = gil.acquire();
             try {
                 if (interopLib.hasArrayElements(this)) {
@@ -344,12 +354,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public void removeArrayElement(long key,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.remove_array_element, key);
-        if (value == PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.remove_array_element;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            getValue.execute(inliningTarget, behavior, method, this, key);
+        } else {
             boolean mustRelease = gil.acquire();
             try {
                 if (interopLib.hasArrayElements(this)) {
@@ -370,6 +384,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getArraySize(
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
@@ -380,9 +395,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_array_size);
-        if (value != PNone.NO_VALUE) {
-            return toIntNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.get_array_size;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            // todo: cbasca - once we remove the default behavior, we should probably use a cast to
+            // long node
+            return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
         } else {
             boolean mustRelease = gil.acquire();
             if (!interopLib.hasArrayElements(this)) {
@@ -413,11 +431,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_array_element_readable, idx);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_readable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
         } else {
             boolean mustRelease = gil.acquire();
             if (!interopLib.hasArrayElements(this)) {
@@ -443,11 +463,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_array_element_modifiable, idx);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_modifiable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
         } else {
             boolean mustRelease = gil.acquire();
             if (!interopLib.hasArrayElements(this)) {
@@ -464,6 +486,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementInsertable(long idx,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
@@ -475,9 +498,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_array_element_insertable, idx);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_insertable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
         } else {
             boolean mustRelease = gil.acquire();
             if (!interopLib.hasArrayElements(this)) {
@@ -494,6 +518,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementRemovable(long idx,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
@@ -505,9 +530,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_array_element_removable, idx);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_removable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
         } else {
             boolean mustRelease = gil.acquire();
             if (!interopLib.hasArrayElements(this)) {
@@ -634,12 +660,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean isExecutable(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Cached PyCallableCheckNode callableCheck) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_executable);
-        if (value != PNone.NO_VALUE) {
-            assert InteropBehaviorMethod.is_executable.isConstantBoolean();
-            return (boolean) value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_executable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             return callableCheck.execute(inliningTarget, this);
         }
@@ -649,12 +680,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public Object execute(Object[] arguments,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.execute, arguments);
-        if (value != PNone.NO_VALUE) {
-            return value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.execute;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.execute(inliningTarget, behavior, method, this, arguments);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -829,7 +862,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean isDate(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     // GR-44020: use inlined:
@@ -841,10 +879,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_date);
-        if (value != PNone.NO_VALUE) {
-            assert InteropBehaviorMethod.is_date.isConstantBoolean();
-            return (boolean) value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_date;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -894,6 +932,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public LocalDate asDate(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
@@ -910,8 +949,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
                     @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_date);
-        if (value != PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
             return constructDate(castToIntNode, inliningTarget, lib, value, raiseNode);
         } else {
             boolean mustRelease = gil.acquire();
@@ -942,7 +983,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean isTime(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     // GR-44020: use inlined:
@@ -954,10 +1000,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_time);
-        if (value != PNone.NO_VALUE) {
-            assert InteropBehaviorMethod.is_time.isConstantBoolean();
-            return (boolean) value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_time;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -1013,6 +1059,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public LocalTime asTime(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
@@ -1030,8 +1077,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
                     @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_time);
-        if (value != PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
             return constructTime(value, castToIntNode, inliningTarget, lib, raiseNode);
         } else {
             boolean mustRelease = gil.acquire();
@@ -1062,7 +1111,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean isTimeZone(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
@@ -1074,10 +1128,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
                     @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_time_zone);
-        if (value != PNone.NO_VALUE) {
-            assert InteropBehaviorMethod.is_time_zone.isConstantBoolean();
-            return (boolean) value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             boolean mustRelease = gil.acquire();
             try {
@@ -1159,6 +1213,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public ZoneId asTimeZone(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: use inlined:
                     @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
@@ -1176,8 +1231,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                     @Exclusive @Cached GilNode gil,
                     @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_time_zone);
-        if (value != PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
             return constructZoneId(value, castToIntNode, toJavaStringNode, inliningTarget, lib, raiseNode);
         } else {
             boolean mustRelease = gil.acquire();
@@ -1256,25 +1313,40 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean isDuration(
                     @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        return getValue.executeBoolean(inliningTarget, this, InteropBehaviorMethod.is_duration, false);
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_duration;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Duration asDuration(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_duration);
-        if (value != PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
             return constructDuration(value, toLongNode, inliningTarget, lib, raiseNode);
+        } else {
+            throw UnsupportedMessageException.create();
         }
-        throw UnsupportedMessageException.create();
     }
 
     private static Duration constructDuration(Object receiver, CastToJavaLongExactNode castToLongNode, Node inliningTarget, InteropLibrary lib, PRaiseNode.Lazy raiseNode)
@@ -1912,6 +1984,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean hasIterator(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
@@ -1919,9 +1992,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.has_iterator);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             return !(lookupIter.execute(getClassNode.executeCached(this)) instanceof PNone);
         }
@@ -1931,14 +2005,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public Object getIterator(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached PyObjectGetIter getIter,
                     @Exclusive @Cached GilNode gil,
                     @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
         if (lib.hasIterator(this)) {
-            Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_iterator);
-            if (value != PNone.NO_VALUE) {
-                return value;
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_iterator;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this);
             } else {
                 boolean mustRelease = gil.acquire();
                 try {
@@ -1956,13 +2032,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean isIterator(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_iterator);
-        if (value != PNone.NO_VALUE) {
-            assert InteropBehaviorMethod.is_iterator.isConstantBoolean();
-            return (boolean) value;
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_iterator;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
         } else {
             return lookupNext.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
         }
@@ -1974,6 +2055,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public boolean hasIteratorNextElement(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
@@ -1985,9 +2067,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") InteropLibrary ilib,
                     @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws UnsupportedMessageException {
         if (ilib.isIterator(this)) {
-            Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.has_iterator_next_element);
-            if (value != PNone.NO_VALUE) {
-                return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+            InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator_next_element;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
             } else {
                 Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
                 if (nextElement != null) {
@@ -2013,13 +2096,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public Object getIteratorNextElement(
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary ilib,
                     @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws StopIterationException, UnsupportedMessageException {
         if (ilib.hasIteratorNextElement(this)) {
-            Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_iterator_next_element);
-            if (value != PNone.NO_VALUE) {
-                return value;
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_iterator_next_element;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this);
             } else {
                 Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
                 dylib.put(this, NEXT_ELEMENT, null);
@@ -2033,414 +2118,541 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isBoolean(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        return getValue.executeBoolean(inliningTarget, this, InteropBehaviorMethod.is_boolean, false);
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_boolean;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isNumber(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        return getValue.executeBoolean(inliningTarget, this, InteropBehaviorMethod.is_number, false);
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_number;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isString(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        return getValue.executeBoolean(inliningTarget, this, InteropBehaviorMethod.is_string, false);
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_string;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInByte(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_byte);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_byte;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInShort(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_short);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_short;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInInt(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_int);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_int;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInLong(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_long);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_long;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInFloat(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_float);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_float;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInDouble(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_double);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_double;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInBigInteger(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.fits_in_big_integer);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_big_integer;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean asBoolean(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_boolean);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public byte asByte(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaByteNode toByteNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_byte);
-        if (value != PNone.NO_VALUE) {
-            return toByteNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public short asShort(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaShortNode toShortNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_short);
-        if (value != PNone.NO_VALUE) {
-            return toShortNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public int asInt(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_int);
-        if (value != PNone.NO_VALUE) {
-            return toIntNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public long asLong(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_long);
-        if (value != PNone.NO_VALUE) {
-            return toLongNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public float asFloat(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_float);
-        if (value != PNone.NO_VALUE) {
-            return (float) toDoubleNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public double asDouble(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_double);
-        if (value != PNone.NO_VALUE) {
-            return toDoubleNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaBigIntegerNode toBigIntegerNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_big_integer);
-        if (value != PNone.NO_VALUE) {
-            return toBigIntegerNode.execute(inliningTarget, value);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public String asString(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaStringNode toStringNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.as_string);
-        if (value != PNone.NO_VALUE) {
-            return toStringNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public boolean hasHashEntries(@Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        return getValue.executeBoolean(inliningTarget, this, InteropBehaviorMethod.has_hash_entries, false);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public long getHashSize(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_hash_size);
-        if (value != PNone.NO_VALUE) {
-            return toIntNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public Object getHashEntriesIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_hash_entries_iterator);
-        if (value != PNone.NO_VALUE) {
-            return value;
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public Object getHashKeysIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_hash_keys_iterator);
-        if (value != PNone.NO_VALUE) {
-            return value;
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public Object getHashValuesIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.get_hash_values_iterator);
-        if (value != PNone.NO_VALUE) {
-            return value;
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public Object readHashValue(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.read_hash_value, key);
-        if (value != PNone.NO_VALUE) {
-            return value;
-        }
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public boolean isHashEntryReadable(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_hash_entry_readable, key);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public boolean isHashEntryRemovable(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object value = getValue.execute(inliningTarget, this,
-                        InteropBehaviorMethod.is_hash_entry_removable, key);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
-        }
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-inlining")
-    public void removeHashEntry(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.remove_hash_entry, key);
-        if (value == PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_boolean;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
             throw UnsupportedMessageException.create();
         }
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean isHashEntryModifiable(@SuppressWarnings("unused") Object key,
-                    @Bind("$node") Node inliningTarget,
+    public byte asByte(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    @Exclusive @Cached CastToJavaByteNode toByteNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_hash_entry_modifiable, key);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_byte;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeByte(inliningTarget, behavior, method, toByteNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
         }
-        return false;
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean isHashEntryInsertable(@SuppressWarnings("unused") Object key,
+    public short asShort(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaShortNode toShortNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_short;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeShort(inliningTarget, behavior, method, toShortNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public int asInt(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_int;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public long asLong(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_long;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public float asFloat(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_float;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return (float) getValue.executeDouble(inliningTarget, behavior, method, toDoubleNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public double asDouble(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_double;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeDouble(inliningTarget, behavior, method, toDoubleNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaBigIntegerNode toBigIntegerNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_big_integer;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
+            return toBigIntegerNode.execute(inliningTarget, value);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public String asString(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    @Cached CastToJavaStringNode toStringNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_string;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeString(inliningTarget, behavior, method, toStringNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean hasHashEntries(@Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.has_hash_entries;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public long getHashSize(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_size;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object getHashEntriesIterator(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.execute(inliningTarget, behavior, method, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object getHashKeysIterator(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.execute(inliningTarget, behavior, method, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object getHashValuesIterator(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_values_iterator;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.execute(inliningTarget, behavior, method, this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public Object readHashValue(Object key,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.read_hash_value;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.execute(inliningTarget, behavior, method, this, key);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean isHashEntryReadable(Object key,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_readable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean isHashEntryRemovable(Object key,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_removable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void removeHashEntry(Object key,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.remove_hash_entry;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            getValue.execute(inliningTarget, behavior, method, this, key);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean isHashEntryModifiable(Object key,
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        Object value = getValue.execute(inliningTarget, this, InteropBehaviorMethod.is_hash_entry_insertable, key);
-        if (value != PNone.NO_VALUE) {
-            return toBooleanNode.executeWithThrowSystemError(inliningTarget, value, raiseNode);
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_modifiable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+        } else {
+            return false;
         }
-        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public boolean isHashEntryInsertable(Object key,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_insertable;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+        } else {
+            return false;
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeHashEntry(Object key, Object value,
                     @Bind("$node") Node inliningTarget,
+                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        Object interopValue = getValue.execute(inliningTarget, this, InteropBehaviorMethod.write_hash_entry, key, value);
-        if (interopValue == PNone.NO_VALUE) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.write_hash_entry;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            getValue.execute(inliningTarget, behavior, method, this, key, value);
+        } else {
             throw UnsupportedMessageException.create();
         }
     }

@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode.ReadNativeStringNode;
@@ -59,9 +58,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
-
 /**
  * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails,
  * because the object is not a Python string, the node will throw a {@link CannotCastException}.
@@ -70,18 +66,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
 @ImportStatic(PGuards.class)
 @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class CastToJavaStringNode extends PNodeWithContext {
-
-    public final String executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
-    }
-
-    public final String executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a string", x);
-        }
-    }
 
     public abstract String execute(Object x) throws CannotCastException;
 
