@@ -72,11 +72,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -576,7 +576,7 @@ public final class CApiContext extends CExtContext {
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
                     U.execute(initFunction, new GetBuiltin());
                 } else {
-                    U.execute(initFunction, new PointerContainer(0), new GetBuiltin());
+                    U.execute(initFunction, new NativePointer(0), new GetBuiltin());
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);

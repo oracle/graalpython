@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -76,12 +75,12 @@ public interface NativeCExtSymbol {
              * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM pointer
              * (that is still not executable). To avoid unnecessary indirections, we test
              * 'isPointer(callable)' and if so, we retrieve the bare long value using
-             * 'asPointer(callable)' and wrap it in our own PointerContainer.
+             * 'asPointer(callable)' and wrap it in our own NativePointer.
              */
             Object funPtr;
             if (lib.isPointer(callable)) {
                 try {
-                    funPtr = new PointerContainer(lib.asPointer(callable));
+                    funPtr = new NativePointer(lib.asPointer(callable));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }

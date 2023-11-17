@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -77,5 +78,11 @@ public final class NativePointer implements TruffleObject {
     @ExportMessage
     public boolean isNull() {
         return ptr == 0;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<0x%016x>", ptr);
     }
 }

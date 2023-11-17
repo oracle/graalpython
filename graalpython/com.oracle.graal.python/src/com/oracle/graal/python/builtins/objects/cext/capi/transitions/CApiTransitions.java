@@ -99,11 +99,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -474,43 +471,6 @@ public abstract class CApiTransitions {
 
         public static boolean pointsToPyHandleSpace(long pointer) {
             return (pointer & HANDLE_BASE) != 0;
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class PointerContainer implements TruffleObject {
-
-        private final long pointer;
-
-        public PointerContainer(long pointer) {
-            this.pointer = pointer;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isPointer() {
-            return true;
-        }
-
-        @ExportMessage
-        public long asPointer() {
-            return pointer;
-        }
-
-        @ExportMessage
-        public void toNative() {
-            // nothing to do
-        }
-
-        @ExportMessage
-        public boolean isNull() {
-            return pointer == 0;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("<0x%016x>", pointer);
         }
     }
 
@@ -1201,7 +1161,7 @@ public abstract class CApiTransitions {
 
     @TruffleBoundary
     public static boolean isBackendPointerObject(Object obj) {
-        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("PointerContainer"));
+        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("NativePointer"));
     }
 
     @GenerateUncached

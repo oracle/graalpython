@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -657,7 +656,7 @@ public class CStructAccess {
         @Specialization
         static Object readLong(long pointer, long offset) {
             assert offset >= 0;
-            return new PointerContainer(UNSAFE.getLong(pointer + offset));
+            return new NativePointer(UNSAFE.getLong(pointer + offset));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
