@@ -855,7 +855,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     else:
         mx_args = ['-p', vm_suite_path, '--env', env_file]
 
-    if build and not DISABLE_REBUILD:
+    if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
         # Example of a string we're building here: PYTHON_JAVA_STANDALONE_SVM_SVMEE_JAVA21
         mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
@@ -870,7 +870,7 @@ def graalpy_standalone(standalone_type, managed=False, enterprise=None, dev=Fals
     assert standalone_type in ['native', 'jvm']
     ee = managed if not enterprise else enterprise
     if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
-        return graalpy_standalone('jvm', managed, enterprise, dev, build)
+        return graalpy_standalone('jvm', managed=managed, enterprise=enterprise, dev=dev, build=build)
 
     home = graalpy_standalone_home(standalone_type, enterprise=ee, dev=dev, build=build)
     launcher = os.path.join(home, 'bin', _graalpy_launcher(managed))
