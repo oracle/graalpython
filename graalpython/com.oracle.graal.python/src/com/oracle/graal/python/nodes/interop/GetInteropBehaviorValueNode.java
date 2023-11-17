@@ -47,7 +47,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -117,7 +116,7 @@ public abstract class GetInteropBehaviorValueNode extends PNodeWithContext {
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClass(inliningTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        if (value instanceof PInteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
+        if (value instanceof InteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
             return behavior.getConstantValue(method);
         }
         return PNone.NO_VALUE;
@@ -133,7 +132,7 @@ public abstract class GetInteropBehaviorValueNode extends PNodeWithContext {
                     @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClass(inliningTarget, receiver, getClassNode);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        if (value instanceof PInteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
+        if (value instanceof InteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method))) {
             CallTarget callTarget = behavior.getCallTarget(method);
             Object[] pArguments = behavior.createArguments(method, receiver, convertArgs.execute(inliningTarget, extraArguments));
             boolean mustRelease = gil.acquire();

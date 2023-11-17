@@ -83,7 +83,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
+import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -633,7 +633,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             if (isTypeNode.execute(inliningTarget, klass)) {
                 Object value = dylib.getOrDefault(klass, RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR, null);
-                if (value instanceof PInteropBehavior behavior) {
+                if (value instanceof InteropBehavior behavior) {
                     return factory.createList(behavior.getDefinedMethods());
                 }
                 return factory.createList();
@@ -766,8 +766,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 handleArg(write_hash_entry, InteropBehaviorMethod.write_hash_entry, constants, functions, raiseNode);
                 handleArg(remove_hash_entry, InteropBehaviorMethod.remove_hash_entry, constants, functions, raiseNode);
 
-                PInteropBehavior behavior = factory.createHostInteropBehavior(receiver, functions, constants);
-                dylib.put(receiver, HOST_INTEROP_BEHAVIOR, behavior);
+                dylib.put(receiver, HOST_INTEROP_BEHAVIOR, new InteropBehavior(receiver, functions, constants));
                 return PNone.NONE;
             }
             throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);

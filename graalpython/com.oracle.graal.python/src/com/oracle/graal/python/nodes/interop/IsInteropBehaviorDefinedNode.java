@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.interop;
 import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -68,7 +67,7 @@ public abstract class IsInteropBehaviorDefinedNode extends Node {
                     @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         Object klass = getClassNode.execute(inlineTarget, receiver);
         Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        return value instanceof PInteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
+        return value instanceof InteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
     }
 
     @NeverDefault

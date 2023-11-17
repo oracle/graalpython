@@ -38,30 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.polyglot;
+package com.oracle.graal.python.nodes.interop;
+
+import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import java.util.ArrayList;
-
-public class PInteropBehavior extends PythonBuiltinObject {
+public class InteropBehavior {
     private final PythonAbstractObject receiver;
 
     private final CallTarget[] callTargets = new CallTarget[InteropBehaviorMethod.getLength()];
     private final PythonObject[] globals = new PythonObject[InteropBehaviorMethod.getLength()];
     private final boolean[] constants;
 
-    public PInteropBehavior(Object cls, Shape instanceShape, PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
-        super(cls, instanceShape);
+    public InteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
         this.receiver = receiver;
         assert functions.length == InteropBehaviorMethod.getLength();
         assert constants.length == InteropBehaviorMethod.getLength();

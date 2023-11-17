@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend;
@@ -171,7 +170,6 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.polyglot.PInteropBehavior;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDictIterator;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
@@ -1594,10 +1592,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {
         return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
-    }
-
-    public PInteropBehavior createHostInteropBehavior(PythonAbstractObject receiver, PFunction[] functions, boolean[] constants) {
-        return trace(new PInteropBehavior(PythonBuiltinClassType.PInteropBehavior, getShape(PythonBuiltinClassType.PInteropBehavior), receiver, functions, constants));
     }
 
     @GenerateInline
