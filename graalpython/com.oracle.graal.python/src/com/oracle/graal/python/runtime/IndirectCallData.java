@@ -59,6 +59,8 @@ public final class IndirectCallData {
 
     private IndirectCallData() {
         this.nodeRef = new TruffleWeakReference<>(null);
+        nativeCodeDoesntNeedMyFrame = Assumption.ALWAYS_VALID;
+        nativeCodeDoesntNeedExceptionState = Assumption.ALWAYS_VALID;
     }
 
     public IndirectCallData(Node node) {
@@ -124,7 +126,6 @@ public final class IndirectCallData {
     }
 
     private Assumption needNotPassFrameAssumption() {
-        assert !isUncached();
         if (nativeCodeDoesntNeedMyFrame == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -133,7 +134,6 @@ public final class IndirectCallData {
     }
 
     private Assumption needNotPassExceptionAssumption() {
-        assert !isUncached();
         if (nativeCodeDoesntNeedExceptionState == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
