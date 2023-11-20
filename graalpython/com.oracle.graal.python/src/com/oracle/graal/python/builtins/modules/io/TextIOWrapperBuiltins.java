@@ -492,7 +492,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             TruffleStringBuilder chunks = null;
             /* Keep reading chunks until we have n characters to return */
             while (remaining > 0) {
-                boolean res = readChunkNode.execute(frame, self, remaining);
+                boolean res = readChunkNode.execute(frame, inliningTarget, self, remaining);
                 // TODO: _PyIO_trap_eintr()
                 if (!res) /* EOF */ {
                     break;

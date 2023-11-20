@@ -386,7 +386,7 @@ public abstract class TextIOWrapperNodes {
                 /* First, get some data if necessary */
                 boolean res = true;
                 while (!self.hasDecodedCharsAvailable()) {
-                    res = readChunkNode.execute(frame, self, 0);
+                    res = readChunkNode.execute(frame, inliningTarget, self, 0);
                     /*
                      * if (res < 0) { / * NOTE: PyErr_SetFromErrno() calls PyErr_CheckSignals() when
                      * EINTR occurs so we needn't do it ourselves. / // TODO:_PyIO_trap_eintr() }
@@ -488,21 +488,21 @@ public abstract class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:textiowrapper_read_chunk
      */
-    @GenerateInline(false)      // needs indirect call data
+    @GenerateInline
+    @GenerateCached(false)
     protected abstract static class ReadChunkNode extends Node {
 
-        public abstract boolean execute(VirtualFrame frame, PTextIO self, int size_hint);
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, PTextIO self, int size_hint);
 
         @Specialization(guards = "self.hasDecoder()")
-        static boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
-                        @Bind("this") Node inliningTarget,
+        static boolean readChunk(VirtualFrame frame, Node inliningTarget, PTextIO self, int hint,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
-                        @Cached DecodeNode decodeNode,
+                        @Cached(inline = false) DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -598,8 +598,8 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = "!self.hasDecoder()")
-        boolean error(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int size_hint,
-                        @Cached PRaiseNode raiseNode) {
+        static boolean error(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int size_hint,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
             throw raiseNode.raise(IOUnsupportedOperation, NOT_READABLE);
         }
     }

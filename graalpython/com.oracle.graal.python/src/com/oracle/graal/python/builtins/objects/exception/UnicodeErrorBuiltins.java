@@ -65,6 +65,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -106,14 +107,15 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateInline(false)      // needs indirect call data
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetArgAsBytesNode extends PNodeWithContext {
-        abstract PBytes execute(VirtualFrame frame, Object val);
+        abstract PBytes execute(VirtualFrame frame, Node inliningTarget, Object val);
 
         @Specialization
         @TruffleBoundary
         static PBytes doString(TruffleString value,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             // TODO GR-37601: cbasca cPython works directly with bytes while we have Java strings
             // which are encoded, here we decode using the system encoding but this might not be the
             // correct / ideal case
@@ -129,7 +131,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         static PBytes doOther(VirtualFrame frame, Object value,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             try {
                 final byte[] buffer = bufferLib.getInternalOrCopiedByteArray(value);
                 final int bufferLength = bufferLib.getBufferLength(value);
@@ -144,7 +146,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         if (args.length < index + 1) {
             throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
         } else {
-            return getArgAsBytesNode.execute(frame, args[index]);
+            return getArgAsBytesNode.execute(frame, inliningTarget, args[index]);
         }
     }
 

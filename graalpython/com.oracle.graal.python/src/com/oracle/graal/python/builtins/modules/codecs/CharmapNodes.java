@@ -243,7 +243,7 @@ public final class CharmapNodes {
                         @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
                         @Cached GetErrorHandlerNode getErrorHandlerNode,
                         @Cached CallEncodingErrorHandlerNode callEncodingErrorHandlerNode,
-                        @Cached(inline = false) ByteArrayBuilder.AppendBytesNode appendBytesNode,
+                        @Cached ByteArrayBuilder.AppendBytesNode appendBytesNode,
                         @Cached CharmapEncodeOutputNode charmapEncodeOutputNode,
                         @Cached RaiseEncodeException raiseEncodeException) {
             int errEnd = pos;
@@ -266,7 +266,7 @@ public final class CharmapNodes {
             // TODO switch (cache.errorHandlerEnum)
             EncodingErrorHandlerResult result = callEncodingErrorHandlerNode.execute(frame, inliningTarget, cache, errors, T_CHARMAP, src, pos, errEnd, CHARACTER_MAPS_TO_UNDEFINED);
             if (!result.isUnicode) {
-                appendBytesNode.execute(frame, builder, result.replacement);
+                appendBytesNode.execute(frame, inliningTarget, builder, result.replacement);
                 return result.newPos;
             }
             TruffleString replacement = castToTruffleStringNode.execute(inliningTarget, result.replacement);
@@ -301,7 +301,7 @@ public final class CharmapNodes {
         @Fallback
         static boolean doGenericMapping(VirtualFrame frame, Node inliningTarget, int cp, Object mapping, ByteArrayBuilder builder,
                         @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
-                        @Cached(inline = false) ByteArrayBuilder.AppendBytesNode appendBytesNode) {
+                        @Cached ByteArrayBuilder.AppendBytesNode appendBytesNode) {
             Object rep = charmapEncodeLookupNode.execute(frame, inliningTarget, cp, mapping);
             if (rep == PNone.NONE) {
                 return false;
@@ -310,7 +310,7 @@ public final class CharmapNodes {
                 assert value >= 0 && value <= 255;
                 builder.add(value.byteValue());
             } else {
-                appendBytesNode.execute(frame, builder, rep);
+                appendBytesNode.execute(frame, inliningTarget, builder, rep);
             }
             return true;
         }
