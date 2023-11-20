@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -174,7 +174,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     private static final TruffleString T_PRIVATE_PREFIX = tsLiteral("__");
     private static final int PRIVATE_PREFIX_LENGTH = T_PRIVATE_PREFIX.codePointLengthUncached(TS_ENCODING);
-    private PythonNativeWrapper nativeWrapper;
+    private PythonAbstractObjectNativeWrapper nativeWrapper;
 
     // @ImportStatic doesn't work for this for some reason
     protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
@@ -191,11 +191,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         super(ABSTRACT_SHAPE);
     }
 
-    public final PythonNativeWrapper getNativeWrapper() {
+    public final PythonAbstractObjectNativeWrapper getNativeWrapper() {
         return nativeWrapper;
     }
 
-    public final void setNativeWrapper(PythonNativeWrapper nativeWrapper) {
+    public final void setNativeWrapper(PythonAbstractObjectNativeWrapper nativeWrapper) {
         assert this.nativeWrapper == null;
 
         // we must not set the native wrapper for one of the context-insensitive singletons

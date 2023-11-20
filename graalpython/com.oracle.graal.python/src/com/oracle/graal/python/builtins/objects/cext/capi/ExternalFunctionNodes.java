@@ -153,6 +153,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ExternalFunctionNodes {
@@ -281,13 +282,14 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         public Object replace(Object object,
                         @Bind("$node") Node inliningTarget,
-                        @Cached InlinedConditionProfile profile,
+                        @Cached InlinedExactClassProfile profile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            if (profile.profile(inliningTarget, object instanceof PythonReplacingNativeWrapper)) {
+            Object profiled = profile.profile(inliningTarget, object);
+            if (profiled instanceof PythonNativeWrapper nativeWrapper && nativeWrapper.isReplacingWrapper()) {
                 if (!lib.isPointer(object)) {
                     lib.toNative(object);
                 }
-                return ((PythonReplacingNativeWrapper) object).getReplacement();
+                return nativeWrapper.getReplacement(lib);
             }
             return object;
         }
@@ -321,14 +323,6 @@ public abstract class ExternalFunctionNodes {
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-    }
-
-    public static final class ToPythonWrapperNode extends CExtToJavaNode {
-
-        @Override
-        public PythonNativeWrapper execute(Object object) {
-            return CApiTransitions.nativeToPythonWrapper(object);
         }
     }
 

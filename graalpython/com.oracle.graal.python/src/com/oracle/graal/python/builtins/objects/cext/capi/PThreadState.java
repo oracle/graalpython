@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -51,28 +52,21 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Emulates CPython's {@code PyThreadState} struct.
  */
-public final class PThreadState extends PythonReplacingNativeWrapper {
-    public static final String J_CUR_EXC_TYPE = "curexc_type";
-    public static final String J_CUR_EXC_VALUE = "curexc_value";
-    public static final String J_CUR_EXC_TRACEBACK = "curexc_traceback";
-    public static final String J_EXC_TYPE = "exc_type";
-    public static final String J_EXC_VALUE = "exc_value";
-    public static final String J_EXC_INFO = "exc_info";
-    public static final String J_EXC_TRACEBACK = "exc_traceback";
-    public static final String J_DICT = "dict";
-    public static final String J_PREV = "prev";
-    public static final String J_RECURSION_DEPTH = "recursion_depth";
-    public static final String J_OVERFLOWED = "overflowed";
-    public static final String J_INTERP = "interp";
-    public static final String J_USE_TRACING = "use_tracing";
-    public static final String J_GILSTATE_COUNTER = "gilstate_counter";
+@ExportLibrary(InteropLibrary.class)
+public final class PThreadState extends PythonStructNativeWrapper {
 
     private final PythonThreadState threadState;
+
+    private Object replacement;
 
     private PThreadState(PythonThreadState threadState) {
         this.threadState = threadState;
@@ -93,19 +87,53 @@ public final class PThreadState extends PythonReplacingNativeWrapper {
         return threadState;
     }
 
-    @Override
-    protected Object allocateReplacememtObject() {
+    @TruffleBoundary
+    private Object allocateReplacementObject() {
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
         Object ptr = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyThreadState, true);
         CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
-        Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
+        PythonContext pythonContext = PythonContext.get(null);
+        Object nullValue = pythonContext.getNativeNull().getPtr();
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict == null) {
-            threadStateDict = PythonObjectFactory.getUncached().createDict();
+            threadStateDict = pythonContext.factory().createDict();
             threadState.setDict(threadStateDict);
         }
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
         writePtrNode.write(ptr, CFields.PyThreadState__interp, nullValue);
         return ptr;
+    }
+
+    @Override
+    public boolean isReplacingWrapper() {
+        return true;
+    }
+
+    @Override
+    public Object getReplacement(InteropLibrary lib) {
+        if (replacement == null) {
+            replacement = registerReplacement(allocateReplacementObject(), lib);
+        }
+        return replacement;
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() {
+        assert getNativePointer() != -1;
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    protected void toNative(
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+        if (!isNative()) {
+            getReplacement(lib);
+        }
     }
 }

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
@@ -106,7 +108,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -122,6 +123,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
+
+import sun.misc.Unsafe;
 
 public final class CApiContext extends CExtContext {
 
@@ -212,7 +215,7 @@ public final class CApiContext extends CExtContext {
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
             PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
-            CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
+            CApiTransitions.incRef(nativeWrapper, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
     }
@@ -520,6 +523,15 @@ public final class CApiContext extends CExtContext {
     private Thread nativeFinalizerShutdownHook;
 
     @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded() {
+        try {
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+        } catch (Exception e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
@@ -582,10 +594,11 @@ public final class CApiContext extends CExtContext {
                      * is terminated by a signal, the context exit is skipped. For that case we set
                      * up the shutdown hook.
                      */
-                    Object finalizeFunction = U.readMember(capiLibrary, "finalizeCAPI");
-                    Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
+                    Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer_array");
+                    Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+                    Object resetFunctionPointerArray = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                     try {
-                        cApiContext.addNativeFinalizer(env, finalizeFunction, finalizeSignature);
+                        cApiContext.addNativeFinalizer(env, resetFunctionPointerArray);
                     } catch (RuntimeException e) {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
@@ -611,16 +624,40 @@ public final class CApiContext extends CExtContext {
         return context.getCApiContext();
     }
 
-    private void addNativeFinalizer(Env env, Object finalizeFunction, Object finalizeSignature) {
-        nativeFinalizerRunnable = () -> {
+    /**
+     * Registers a VM shutdown hook, that resets certain C API function to NOP functions to avoid
+     * segfaults due to improper Python context shutdown. In particular, the shutdown hook reads
+     * pairs of {@code variable address} and {@code reset value} provided in a native array and
+     * writes the {@code reset value} to the {@code variable address}. Currently, this is used to
+     * change the incref and decref upcall functions which would crash if they are called after the
+     * Python context was closed. The format of the array is:
+     * 
+     * <pre>
+     *     [ var_addr, reset_val, var_addr1, reset_val1, ..., NULL ]
+     * </pre>
+     */
+    private void addNativeFinalizer(Env env, Object resetFunctionPointerArray) {
+        final Unsafe unsafe = getContext().getUnsafe();
+        InteropLibrary lib = InteropLibrary.getUncached(resetFunctionPointerArray);
+        if (!lib.isNull(resetFunctionPointerArray) && lib.isPointer(resetFunctionPointerArray)) {
             try {
-                SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
-            } catch (InteropException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                long lresetFunctionPointerArray = lib.asPointer(resetFunctionPointerArray);
+                nativeFinalizerRunnable = () -> {
+                    long resetFunctionPointerLocation;
+                    long curElemAddr = lresetFunctionPointerArray;
+                    while ((resetFunctionPointerLocation = unsafe.getLong(curElemAddr)) != 0) {
+                        curElemAddr += Long.BYTES;
+                        long replacingFunctionPointer = unsafe.getLong(curElemAddr);
+                        unsafe.putAddress(resetFunctionPointerLocation, replacingFunctionPointer);
+                        curElemAddr += Long.BYTES;
+                    }
+                };
+                nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
+                Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
+            } catch (UnsupportedMessageException e) {
+                throw new RuntimeException(e);
             }
-        };
-        nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
-        Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
+        }
     }
 
     @TruffleBoundary

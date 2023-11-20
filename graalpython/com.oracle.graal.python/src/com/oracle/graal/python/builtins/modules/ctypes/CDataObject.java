@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -142,7 +142,7 @@ public class CDataObject extends PythonBuiltinObject {
 
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)
-    public static class CDataObjectWrapper extends PythonNativeWrapper {
+    public static final class CDataObjectWrapper extends PythonStructNativeWrapper {
 
         final byte[] storage;
         final StgDictObject stgDict;
@@ -192,13 +192,13 @@ public class CDataObject extends PythonBuiltinObject {
         }
 
         @ExportMessage
-        final boolean isMemberModifiable(String member,
+        boolean isMemberModifiable(String member,
                         @Shared @Cached CastToJavaStringNode toJavaStringNode) {
             return isMemberReadable(member, toJavaStringNode);
         }
 
         @ExportMessage
-        final boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
             return false;
         }
 

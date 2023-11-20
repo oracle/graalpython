@@ -82,8 +82,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolvePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
@@ -142,7 +142,10 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class PythonCextObjectBuiltins {
+public abstract class PythonCextObjectBuiltins {
+
+    private PythonCextObjectBuiltins() {
+    }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Direct)
     abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
@@ -592,13 +595,12 @@ public class PythonCextObjectBuiltins {
              * At this point we don't know if the pointer is invalid, so we try to resolve it to an
              * object.
              */
-            Object resolved = isWrapper ? ptrObject : ResolveHandleNode.executeUncached(ptrObject);
+            Object resolved = isWrapper ? ptrObject : ResolvePointerNode.executeUncached(ptrObject);
             Object pythonObject;
             long refCnt;
             // We need again check if 'resolved' is a wrapper in case we resolved a handle.
-            if (CApiGuards.isNativeWrapper(resolved)) {
-                PythonNativeWrapper wrapper = (PythonNativeWrapper) resolved;
-                refCnt = wrapper.getRefCount();
+            if (resolved instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                refCnt = objectNativeWrapper.getRefCount();
             } else {
                 refCnt = readI64.read(PythonToNativeNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
             }

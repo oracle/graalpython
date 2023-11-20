@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -668,7 +669,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonNativeWrapper wrapper) {
+        static Object get(PythonAbstractObjectNativeWrapper wrapper) {
             return wrapper.getRefCount();
         }
     }
@@ -777,7 +778,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_set_PyObject_ob_refcnt extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object set(PythonNativeWrapper wrapper, long value) {
+        static Object set(PythonAbstractObjectNativeWrapper wrapper, long value) {
             CApiTransitions.setRefCount(wrapper, value);
             return PNone.NONE;
         }

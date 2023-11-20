@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.c
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -72,7 +73,7 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class ManagedMethodWrappers {
 
     @ExportLibrary(InteropLibrary.class)
-    public abstract static class MethodWrapper extends PythonNativeWrapper {
+    public abstract static class MethodWrapper extends PythonStructNativeWrapper {
 
         public MethodWrapper(Object method) {
             super(method);

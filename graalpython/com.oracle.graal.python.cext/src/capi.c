@@ -456,7 +456,7 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) 
 
 /** to be used from Java code only and only at exit; calls _Py_Dealloc */
 PyAPI_FUNC(Py_ssize_t) PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
-    /* some objects depends on others which might get deallocated in the process 
+    /* some objects depends on others which might get deallocated in the process
         of an earlier deallocation of the other object. To avoid double deallocations,
         we, temporarly, make all objects immortal artificially */
 	for (int i = 0; i < len; i++) {
@@ -883,12 +883,41 @@ So we rebind them to no-ops when exiting.
 Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
  return 100; // large dummy refcount
 }
+
 void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
  // do nothing
 }
-PyAPI_FUNC(void) finalizeCAPI() {
- GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
- GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
+
+/*
+ * This array contains pairs of variable address and "reset value".
+ * The variable location is usually the address of a function pointer variable
+ * and the reset value is a new value to set at VM shutdown.
+ * For further explanation why this is required, see Java method
+ * 'CApiContext.ensureCapiWasLoaded'.
+ *
+ * Array format: [ var_addr, reset_val, var_addr1, reset_val1, ..., NULL ]
+ *
+ * ATTENTION: If the structure of the array's content is changed, method
+ *            'CApiContext.addNativeFinalizer' *MUST BE* adopted.
+ *
+ * ATTENTION: the array is expected to be NULL-terminated !
+ *
+ */
+static int64_t reset_func_ptrs[] = {
+        &GraalPy_get_PyObject_ob_refcnt,
+        nop_GraalPy_get_PyObject_ob_refcnt,
+        &GraalPy_set_PyObject_ob_refcnt,
+        nop_GraalPy_set_PyObject_ob_refcnt,
+        /* sentinel (required) */
+        NULL
+};
+
+/*
+ * This function is called from Java during C API initialization to get the
+ * pointer to array 'reset_func_pts'.
+ */
+PyAPI_FUNC(int64_t *) GraalPy_get_finalize_capi_pointer_array() {
+    return reset_func_ptrs;
 }
 
 static void unimplemented(const char* name) {

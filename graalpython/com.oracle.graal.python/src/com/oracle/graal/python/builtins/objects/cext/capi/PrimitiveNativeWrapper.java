@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -56,7 +57,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PrimitiveNativeWrapper extends PythonNativeWrapper {
+public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrapper {
 
     public static final byte PRIMITIVE_STATE_BOOL = 1;
     public static final byte PRIMITIVE_STATE_INT = 1 << 2;

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -62,7 +63,10 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -93,7 +97,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  * } PyDateTime_CAPI
  * </pre>
  */
-public final class PyDateTimeCAPIWrapper extends PythonReplacingNativeWrapper {
+@ExportLibrary(InteropLibrary.class)
+public final class PyDateTimeCAPIWrapper extends PythonStructNativeWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
     static final TruffleString T_PYDATETIME_CAPSULE_NAME = tsLiteral("datetime.datetime_CAPI");
@@ -106,6 +111,8 @@ public final class PyDateTimeCAPIWrapper extends PythonReplacingNativeWrapper {
     public static final TruffleString T_FOLD = tsLiteral("fold");
 
     private final Object datetimeModule;
+
+    private Object replacement;
 
     public PyDateTimeCAPIWrapper(Object datetimeModule) {
         super(PythonObjectFactory.getUncached().createPythonObject(PythonBuiltinClassType.PythonObject));
@@ -125,15 +132,13 @@ public final class PyDateTimeCAPIWrapper extends PythonReplacingNativeWrapper {
 
         PyDateTimeCAPIWrapper wrapper = new PyDateTimeCAPIWrapper(datetimeModule);
         InteropLibrary.getUncached().toNative(wrapper);
-        Object replacement = wrapper.getReplacement();
+        Object replacement = wrapper.getReplacement(InteropLibrary.getUncached());
 
         setAttr.execute(null, datetimeModule, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(replacement, T_PYDATETIME_CAPSULE_NAME, null));
         assert getAttr.execute(null, datetimeModule, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
     }
 
-    @Override
-    protected Object allocateReplacememtObject() {
-        setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+    private Object allocateReplacememtObject() {
         CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
         CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
 
@@ -178,5 +183,38 @@ public final class PyDateTimeCAPIWrapper extends PythonReplacingNativeWrapper {
         writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTimeAndFold);
 
         return mem;
+    }
+
+    @Override
+    public boolean isReplacingWrapper() {
+        return true;
+    }
+
+    @Override
+    public Object getReplacement(InteropLibrary lib) {
+        if (replacement == null) {
+            Object pointerObject = allocateReplacememtObject();
+            replacement = registerReplacement(pointerObject, lib);
+        }
+        return replacement;
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() {
+        assert getNativePointer() != -1;
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    void toNative() {
+        if (!isNative()) {
+            getReplacement(InteropLibrary.getUncached());
+        }
     }
 }

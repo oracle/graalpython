@@ -81,16 +81,17 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
@@ -170,6 +171,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -866,7 +868,14 @@ public abstract class CExtNodes {
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
-                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
+                PythonContext pythonContext = PythonContext.get(inliningTarget);
+                CApiContext cApiContext;
+                if (!pythonContext.hasCApiContext()) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cApiContext = CApiContext.ensureCapiWasLoaded();
+                } else {
+                    cApiContext = pythonContext.getCApiContext();
+                }
                 // TODO review EnsureTruffleStringNode with GR-37896
                 return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -1175,7 +1184,7 @@ public abstract class CExtNodes {
         public abstract Object execute(Node inliningTarget, Object object, long value);
 
         @Specialization
-        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
+        static Object doNativeWrapper(PythonAbstractObjectNativeWrapper nativeWrapper, long value) {
             assert value >= 0 : "adding negative reference count; dealloc might not happen";
             CApiTransitions.incRef(nativeWrapper, value);
             return nativeWrapper;
@@ -1209,7 +1218,7 @@ public abstract class CExtNodes {
         public abstract long execute(Node inliningTarget, Object object, long value);
 
         @Specialization
-        static long doNativeWrapper(Node inliningTarget, PythonNativeWrapper nativeWrapper, long value,
+        static long doNativeWrapper(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, long value,
                         @Cached FreeNode freeNode,
                         @Cached InlinedBranchProfile negativeProfile) {
             long refCount = CApiTransitions.decRef(nativeWrapper, value);
@@ -1289,34 +1298,36 @@ public abstract class CExtNodes {
         }
     }
 
+    @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class ResolveHandleNode extends PNodeWithContext {
-
-        public abstract Object execute(Node inliningTarget, Object pointerObject);
+    public abstract static class ResolvePointerNode extends PNodeWithContext {
 
         public static Object executeUncached(Object pointerObject) {
-            return ResolveHandleNodeGen.getUncached().execute(null, pointerObject);
+            return ResolvePointerNodeGen.getUncached().execute(null, pointerObject);
         }
+
+        public abstract Object execute(Node inliningTarget, Object pointerObject);
 
         public abstract Object executeLong(Node inliningTarget, long pointer);
 
         @Specialization
-        static Object resolveLongCached(long pointer) {
+        static Object resolveLongCached(Node inliningTarget, long pointer,
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 return lookup;
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                return HandleResolver.resolve(pointer);
+                return resolveHandleNode.execute(inliningTarget, pointer);
             }
             return pointer;
         }
 
         @Specialization(guards = "!isLong(pointerObject)")
-        static Object resolveGeneric(Object pointerObject,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+        static Object resolveGeneric(Node inliningTarget, Object pointerObject,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;
@@ -1330,7 +1341,7 @@ public abstract class CExtNodes {
                     return lookup;
                 }
                 if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                    return HandleResolver.resolve(pointer);
+                    return resolveHandleNode.execute(inliningTarget, pointer);
                 }
             }
             // In this case, it cannot be a handle so we can just return the pointer object. It

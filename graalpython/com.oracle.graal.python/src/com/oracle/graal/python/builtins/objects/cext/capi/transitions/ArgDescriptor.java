@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FinishArgNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrappedPointerToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
@@ -51,14 +50,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.ToPythonWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -68,7 +68,7 @@ enum ArgBehavior {
     PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, PythonToNativeNewRefNodeGen::create, NativeToPythonStealingNodeGen::create, null),
     PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, null, null, null),
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
-    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::new, null, null, null),
+    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
     ReplacedPointer("POINTER", "J", "jlong", "long", ToNativeReplacedNodeGen::create, null, null),
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNode::new, null),

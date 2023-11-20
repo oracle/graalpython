@@ -38,49 +38,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
 
-    /**
-     * Reference count of an object that is only referenced by the Java heap - this is larger than 1
-     * since native code sometimes special cases for low refcounts.
-     */
-    public static final long MANAGED_REFCNT = 10;
-
-    public static final long IMMORTAL_REFCNT = 256 * 256;
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonNativeWrapper.class);
 
     private static final long UNINITIALIZED = -1;
 
     private Object delegate;
     private long nativePointer = UNINITIALIZED;
 
-    /**
-     * Equivalent to {@code ob_refcnt}.
-     */
-    private long refCount = MANAGED_REFCNT;
-
     public PythonObjectReference ref;
 
-    public PythonNativeWrapper() {
+    private PythonNativeWrapper() {
     }
 
-    public PythonNativeWrapper(Object delegate) {
+    private PythonNativeWrapper(Object delegate) {
         this.delegate = delegate;
-    }
-
-    public final long getRefCount() {
-        return refCount;
-    }
-
-    public final void setRefCount(long refCount) {
-        this.refCount = refCount;
     }
 
     public final Object getDelegate() {
@@ -108,5 +97,106 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     public final boolean isNative() {
         return nativePointer != UNINITIALIZED;
+    }
+
+    /**
+     * Determines if the native wrapper should always be materialized in native memory.
+     * <p>
+     * Native wrappers are usually materialized lazily if they receive
+     * {@link InteropLibrary#toNative(Object)}. Sometimes, e.g., when using LLVM runtime, this may
+     * never happen if the pointer never floats into real native code or memory. However, some
+     * native wrappers emulate data structures where it does not make sense to emulate them and it
+     * is more efficient to just allocate the native memory and write data to it. Also, in some
+     * cases it is just necessary to enable byte-wise access (e.g. when using {@code memcpy}).
+     * </p>
+     * <p>
+     * Therefore, wrappers may return {@code true} and the appropriate <it>Python-to-native</it>
+     * transition code will consider that and eagerly return the pointer object. If {@code true} is
+     * returned, the wrapper must also implement {@link #getReplacement(InteropLibrary)} which
+     * returns the pointer object. Furthermore, wrappers must use
+     * {@link #registerReplacement(Object, InteropLibrary)} to register the allocated native memory
+     * in order that the native pointer can be resolved to the managed wrapper in the
+     * <it>native-to-Python</it> transition.
+     * </p>
+     * 
+     * @return {@code true} if the wrapper should be materialized eagerly, {@code false} otherwise.
+     */
+    public boolean isReplacingWrapper() {
+        return false;
+    }
+
+    public Object getReplacement(@SuppressWarnings("unused") InteropLibrary lib) {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @TruffleBoundary
+    protected final Object registerReplacement(Object pointer, InteropLibrary lib) {
+        LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
+        Object result;
+        if (pointer instanceof Long) {
+            // need to convert to actual pointer
+            result = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_CONVERT_POINTER, pointer);
+            CApiTransitions.firstToNative(this, (long) pointer);
+        } else {
+            result = pointer;
+            if (lib.isPointer(pointer)) {
+                assert pointer.getClass() == NativePointer.class || pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
+                try {
+                    CApiTransitions.firstToNative(this, lib.asPointer(pointer));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else {
+                assert pointer.getClass().getSimpleName().contains("LLVMPointer");
+                CApiTransitions.firstToNativeManaged(getDelegate(), pointer);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * A wrapper for a reference counted object.
+     */
+    public abstract static class PythonAbstractObjectNativeWrapper extends PythonNativeWrapper {
+        /**
+         * Reference count of an object that is only referenced by the Java heap - this is larger
+         * than 1 since native code sometimes special cases for low refcounts.
+         */
+        public static final long MANAGED_REFCNT = 10;
+
+        public static final long IMMORTAL_REFCNT = Long.MAX_VALUE / 2;
+
+        /**
+         * Equivalent to {@code ob_refcnt}.
+         */
+        private long refCount = MANAGED_REFCNT;
+
+        protected PythonAbstractObjectNativeWrapper() {
+        }
+
+        protected PythonAbstractObjectNativeWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        public final long getRefCount() {
+            return refCount;
+        }
+
+        public final void setRefCount(long refCount) {
+            this.refCount = refCount;
+        }
+    }
+
+    /**
+     * A wrapper for data objects usually reprsented as C structures without reference counting.
+     */
+    public abstract static class PythonStructNativeWrapper extends PythonNativeWrapper {
+
+        protected PythonStructNativeWrapper() {
+        }
+
+        protected PythonStructNativeWrapper(Object delegate) {
+            super(delegate);
+        }
     }
 }

@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
-public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
+public final class TruffleObjectNativeWrapper extends PythonAbstractObjectNativeWrapper {
 
     public TruffleObjectNativeWrapper(Object foreignObject) {
         super(foreignObject);

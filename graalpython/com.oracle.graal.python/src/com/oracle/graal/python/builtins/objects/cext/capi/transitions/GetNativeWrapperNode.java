@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -79,18 +80,18 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     public abstract PythonNativeWrapper execute(Object value);
 
     @Specialization
-    static PythonNativeWrapper doString(TruffleString str,
+    static PythonAbstractObjectNativeWrapper doString(TruffleString str,
                     @Cached PythonObjectFactory factory,
                     @Exclusive @Cached ConditionProfile noWrapperProfile) {
         return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
     }
 
     @Specialization
-    PythonNativeWrapper doBoolean(boolean b,
+    PythonAbstractObjectNativeWrapper doBoolean(boolean b,
                     @Exclusive @Cached ConditionProfile profile) {
         Python3Core core = PythonContext.get(this);
         PInt boxed = b ? core.getTrue() : core.getFalse();
-        PythonNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+        PythonAbstractObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
         if (profile.profile(nativeWrapper == null)) {
             CompilerDirectives.transferToInterpreter();
             nativeWrapper = PrimitiveNativeWrapper.createBool(b);
@@ -131,14 +132,14 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isNaN(d)")
-    static PythonNativeWrapper doDouble(double d) {
+    static PrimitiveNativeWrapper doDouble(double d) {
         return PrimitiveNativeWrapper.createDouble(d);
     }
 
     @Specialization(guards = "isNaN(d)")
     PythonNativeWrapper doDoubleNaN(@SuppressWarnings("unused") double d) {
         PFloat boxed = getContext().getNaN();
-        PythonNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+        PythonAbstractObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
         // Use a counting profile since we should enter the branch just once per context.
         if (nativeWrapper == null) {
             // This deliberately uses 'CompilerDirectives.transferToInterpreter()' because this
@@ -150,14 +151,14 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         return nativeWrapper;
     }
 
-    static PythonNativeWrapper doSingleton(@SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
-        PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
+    static PythonAbstractObjectNativeWrapper doSingleton(@SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
+        PythonAbstractObjectNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
         if (nativeWrapper == null) {
             // this will happen just once per context and special singleton
             CompilerDirectives.transferToInterpreterAndInvalidate();
             nativeWrapper = new PythonObjectNativeWrapper(object);
             // this should keep the native wrapper alive forever
-            CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
+            CApiTransitions.incRef(nativeWrapper, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
             context.setSingletonNativeWrapper(object, nativeWrapper);
         }
         return nativeWrapper;
@@ -203,42 +204,4 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     protected static boolean isNaN(double d) {
         return Double.isNaN(d);
     }
-    /*-
-
-    Remaining contents of ToSulongNode:
-
-    @Specialization
-    static Object doNativeObject(PythonAbstractNativeObject nativeObject) {
-        return nativeObject.getPtr();
-    }
-
-    @Specialization
-    static Object doNativeNull(PythonNativePointer object) {
-        return object.getPtr();
-    }
-
-    @Specialization
-    Object doDeleteMarker(DescriptorDeleteMarker marker) {
-        assert marker == DescriptorDeleteMarker.INSTANCE;
-        return getNativeNullPtr(this);
-    }
-
-    @Specialization(guards = "isFallback(object, isForeignObjectNode)")
-    static Object run(Object object,
-                    @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
-        assert object != null : "Java 'null' cannot be a Sulong value";
-        assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
-        return object;
-    }
-
-    static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
-        return !(object instanceof TruffleString || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
-                        object instanceof PythonBuiltinClassType || object instanceof PythonNativePointer || object == DescriptorDeleteMarker.INSTANCE ||
-                        object instanceof PythonAbstractObject) && !(isForeignObjectNode.execute(object) && !CApiGuards.isNativeWrapper(object));
-    }
-
-    private static Object getNativeNullPtr(Node node) {
-        return PythonContext.get(node).getNativeNull().getPtr();
-    }
-    */
 }

@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
@@ -805,7 +804,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PBytesLike bytes) {
-            ensureCapi();
+            CApiContext.ensureCapiWasLoaded();
             NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(bytes.getSequenceStorage(), true);
             bytes.setSequenceStorage(newStorage);
             return bytes;
@@ -814,7 +813,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PArray array) {
-            ensureCapi();
+            CApiContext.ensureCapiWasLoaded();
             NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true);
             array.setSequenceStorage(newStorage);
             return array;
@@ -823,18 +822,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PSequence sequence) {
-            ensureCapi();
+            CApiContext.ensureCapiWasLoaded();
             NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), false);
             sequence.setSequenceStorage(newStorage);
             return sequence;
-        }
-
-        private void ensureCapi() {
-            try {
-                CApiContext.ensureCapiWasLoaded(null, getContext(), T_EMPTY_STRING, T_EMPTY_STRING);
-            } catch (Exception e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
     }
 

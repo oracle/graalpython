@@ -165,7 +165,7 @@ import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.Tex
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -934,13 +934,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetrefcountNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected long doGeneric(PythonAbstractObject object,
+        static long doGeneric(PythonAbstractObject object,
                         @Cached CStructAccess.ReadI64Node read) {
             if (object instanceof PythonAbstractNativeObject nativeKlass) {
                 return read.readFromObj(nativeKlass, PyObject__ob_refcnt);
             }
 
-            PythonNativeWrapper wrapper = object.getNativeWrapper();
+            PythonAbstractObjectNativeWrapper wrapper = object.getNativeWrapper();
             if (wrapper == null) {
                 return -1;
             } else {
