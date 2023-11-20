@@ -1296,10 +1296,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             final int beginBci = bci;
             tracingOrProfilingEnabled = checkTracingAndProfilingEnabled(noTraceOrProfile, mutableData);
             if (isTracingEnabled(tracingOrProfilingEnabled)) {
-                int newBci = traceLine(virtualFrame, mutableData, localBC, bci);
-                if (newBci != bci) {
-                    setCurrentBci(virtualFrame, bciSlot, newBci);
-                    bci = newBci;
+                int stackDiff = traceLine(virtualFrame, mutableData, localBC, bci);
+                if (stackDiff <= 0) {
+                    // traceLine already set the correct bci
+                    bci = virtualFrame.getInt(bciSlot);
+                    stackTop += stackDiff;
                     continue; // todo code in big loop
                 }
             }
@@ -2886,10 +2887,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    // returns new bci
+    // returns the change in stackTop after the jump, or 1 if no jump happened
     @InliningCutoff
     private int traceLine(VirtualFrame virtualFrame, MutableLoopData mutableData, byte[] localBC, int bci) {
         int thisLine = bciToLine(bci);
+        int ret = 1;
         boolean onANewLine = thisLine != mutableData.getPastLine();
         mutableData.setPastLine(thisLine);
         OpCodes c = OpCodes.fromOpCode(localBC[mutableData.getPastBci()]);
@@ -2932,24 +2934,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.LINE,
                                 mutableData.getPastLine(), true);
                 if (pyFrame.didJump()) {
-                    long[] blocks = new long[getCodeUnit().code.length + 1];
-                    int[] stacks = new int[getCodeUnit().code.length];
-                    getCodeUnit().computeStackLevels(blocks, stacks);
-                    System.out.println(getCodeUnit());
-                    mutableData.setPastBci(bci);
                     int newBci = lineToBci(pyFrame.getJumpDestLine());
+                    String error = co.checkJump(bci, newBci);
+                    if (error != null) {
+                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
+                    }
+                    mutableData.setPastBci(bci);
                     if (newBci == -1) {
                         throw PRaiseNode.getUncached().raise(ValueError); // todo
                     } else if (newBci == -2) {
                         throw PRaiseNode.getUncached().raise(ValueError); // todo
                     } else {
-                        bci = newBci;
+                        int[] stacks = co.computeStackLevels();
+                        ret = stacks[newBci] - stacks[bci];
+                        setCurrentBci(virtualFrame, bcioffset, newBci);
                     }
                 }
             }
         }
         mutableData.setPastBci(bci);
-        return bci;
+        return ret;
     }
 
     private int bytecodeBinarySubscrAdaptive(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int bciSlot) {

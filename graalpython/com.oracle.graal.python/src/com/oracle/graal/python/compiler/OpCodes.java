@@ -996,6 +996,8 @@ public enum OpCodes {
             case JUMP_IF_TRUE_OR_POP:
             case FOR_ITER:
             case MATCH_EXC_OR_JUMP:
+            case SEND:
+            case THROW:
                 return withJump ? bci + oparg : bci + length();
             case RETURN_VALUE:
             case RAISE_VARARGS:
