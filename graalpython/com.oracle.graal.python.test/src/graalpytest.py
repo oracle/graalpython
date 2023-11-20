@@ -400,6 +400,8 @@ class TestCase(object):
                     func(*arg_vec)
             else:
                 func()
+        except KeyboardInterrupt:
+            raise
         except BaseException as e:
             if isinstance(e, SkipTest):
                 return _skipped_marker
@@ -718,6 +720,8 @@ class TestRunner(object):
                 for p in pkg[1:]:
                     test_module = getattr(test_module, p)
                 test_module = getattr(test_module, name)
+            except KeyboardInterrupt:
+                raise
             except BaseException as e:
                 _, _, tb = sys.exc_info()
                 try:
@@ -738,6 +742,8 @@ class TestRunner(object):
                 with _io.FileIO(path, "r") as f:
                     test_module.__file__ = path
                     exec(compile(f.readall(), path, "exec"), test_module.__dict__)
+            except KeyboardInterrupt:
+                raise
             except BaseException as e:
                 self.exceptions.append((path, e))
             else:
