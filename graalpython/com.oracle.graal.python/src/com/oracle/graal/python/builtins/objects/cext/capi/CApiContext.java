@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -177,6 +178,7 @@ public final class CApiContext extends CExtContext {
     private final AtomicLong nextTssKey = new AtomicLong();
 
     public Object timezoneType;
+    private PyCapsule pyDateTimeCAPICapsule;
 
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
@@ -580,7 +582,7 @@ public final class CApiContext extends CExtContext {
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
-                PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
+                cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
 
                 if (useNative) {
@@ -661,6 +663,9 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public void finalizeCapi() {
+        if (pyDateTimeCAPICapsule != null) {
+            PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
+        }
         if (nativeFinalizerShutdownHook != null) {
             Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
             nativeFinalizerRunnable.run();

@@ -47,9 +47,10 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
@@ -106,7 +107,7 @@ public abstract class PyDateTimeCAPIWrapper {
     private PyDateTimeCAPIWrapper() {
     }
 
-    public static void initWrapper(PythonContext context, CApiContext capiContext) {
+    public static PyCapsule initWrapper(PythonContext context, CApiContext capiContext) {
         CompilerAsserts.neverPartOfCompilation();
 
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
@@ -117,8 +118,20 @@ public abstract class PyDateTimeCAPIWrapper {
 
         Object pointerObject = allocatePyDatetimeCAPI(datetimeModule);
 
-        PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, context.factory().createCapsule(pointerObject, T_PYDATETIME_CAPSULE_NAME, null));
+        PyCapsule capsule = context.factory().createCapsule(pointerObject, T_PYDATETIME_CAPSULE_NAME, null);
+        PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
         assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
+        return capsule;
+    }
+
+    /**
+     * Deallocates the allocated resources for the {@code PyDateTime_CAPI} structure. Currently,
+     * this will only free struct and nothing else. The used objects should be free'd when cleaning
+     * all the immortal objects.
+     */
+    public static void destroyWrapper(PyCapsule capsule) {
+        CompilerAsserts.neverPartOfCompilation();
+        CStructAccess.FreeNode.executeUncached(capsule.getPointer());
     }
 
     private static Object allocatePyDatetimeCAPI(Object datetimeModule) {
@@ -126,7 +139,7 @@ public abstract class PyDateTimeCAPIWrapper {
         CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
 
         PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
-        PythonToNativeNode toNativeNode = PythonToNativeNodeGen.getUncached();
+        PythonToNativeNewRefNode toNativeNode = PythonToNativeNewRefNodeGen.getUncached();
 
         PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATE);
         SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
