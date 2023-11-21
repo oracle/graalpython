@@ -368,6 +368,7 @@ typedef struct {
     BUILTIN(PyTruffle_GetMMapData, char*, PyObject*) \
     BUILTIN(PyTruffle_GetMaxNativeMemory, size_t) \
     BUILTIN(PyTruffle_HashConstant, long, int) \
+    BUILTIN(PyTruffle_InitBuiltinTypesAndStructs, void, void*) \
     BUILTIN(PyTruffle_LogString, void, int, const char*) \
     BUILTIN(PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
     BUILTIN(PyTruffle_Native_Options, int) \
@@ -380,7 +381,6 @@ typedef struct {
     BUILTIN(PyTruffle_PyDateTime_GET_TZINFO, PyObject*, PyObject*) \
     BUILTIN(PyTruffle_PyUnicode_Find, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
-    BUILTIN(PyTruffle_SetTypeStore, void, const char*, void*) \
     BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
     BUILTIN(PyTruffle_ToNative, int, void*) \
     BUILTIN(PyTruffle_Trace_Type, int, void*, void*) \
@@ -804,8 +804,6 @@ static MUST_INLINE PyObject *pointer_to_stub(PyObject *o)
 {
     return ((uintptr_t) o) & ~HANDLE_BASE;
 }
-
-PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, const char* name);
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 

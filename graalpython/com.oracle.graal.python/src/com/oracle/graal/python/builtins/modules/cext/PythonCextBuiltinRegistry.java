@@ -329,19 +329,19 @@ public abstract class PythonCextBuiltinRegistry {
     public static final CApiBuiltinExecutable PyTruffle_GetMMapData = new CApiBuiltinExecutable("PyTruffle_GetMMapData", CApiCallPath.Ignored, ArgDescriptor.CHAR_PTR, new ArgDescriptor[]{ArgDescriptor.PyObject}, 268);
     public static final CApiBuiltinExecutable PyTruffle_GetMaxNativeMemory = new CApiBuiltinExecutable("PyTruffle_GetMaxNativeMemory", CApiCallPath.Ignored, ArgDescriptor.SIZE_T, new ArgDescriptor[]{}, 269);
     public static final CApiBuiltinExecutable PyTruffle_HashConstant = new CApiBuiltinExecutable("PyTruffle_HashConstant", CApiCallPath.Ignored, ArgDescriptor.Long, new ArgDescriptor[]{ArgDescriptor.Int}, 270);
-    public static final CApiBuiltinExecutable PyTruffle_LogString = new CApiBuiltinExecutable("PyTruffle_LogString", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.ConstCharPtrAsTruffleString}, 271);
-    public static final CApiBuiltinExecutable PyTruffle_MemoryViewFromBuffer = new CApiBuiltinExecutable("PyTruffle_MemoryViewFromBuffer", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Int, ArgDescriptor.Py_ssize_t, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Int, ArgDescriptor.Pointer, ArgDescriptor.Pointer, ArgDescriptor.Pointer, ArgDescriptor.Pointer}, 272);
-    public static final CApiBuiltinExecutable PyTruffle_Native_Options = new CApiBuiltinExecutable("PyTruffle_Native_Options", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{}, 273);
-    public static final CApiBuiltinExecutable PyTruffle_NewTypeDict = new CApiBuiltinExecutable("PyTruffle_NewTypeDict", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyTypeObject}, 274);
-    public static final CApiBuiltinExecutable PyTruffle_NoValue = new CApiBuiltinExecutable("PyTruffle_NoValue", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 275);
-    public static final CApiBuiltinExecutable PyTruffle_None = new CApiBuiltinExecutable("PyTruffle_None", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 276);
-    public static final CApiBuiltinExecutable PyTruffle_NotImplemented = new CApiBuiltinExecutable("PyTruffle_NotImplemented", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 277);
-    public static final CApiBuiltinExecutable PyTruffle_NotifyRefCount = new CApiBuiltinExecutable("PyTruffle_NotifyRefCount", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.PyObjectWrapper, ArgDescriptor.Py_ssize_t}, 278);
-    public static final CApiBuiltinExecutable PyTruffle_Object_Free = new CApiBuiltinExecutable("PyTruffle_Object_Free", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 279);
-    public static final CApiBuiltinExecutable PyTruffle_PyDateTime_GET_TZINFO = new CApiBuiltinExecutable("PyTruffle_PyDateTime_GET_TZINFO", CApiCallPath.Direct, ArgDescriptor.PyObjectBorrowed, new ArgDescriptor[]{ArgDescriptor.PyObject}, 280);
-    public static final CApiBuiltinExecutable PyTruffle_PyUnicode_Find = new CApiBuiltinExecutable("PyTruffle_PyUnicode_Find", CApiCallPath.Ignored, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t, ArgDescriptor.Int}, 281);
-    public static final CApiBuiltinExecutable PyTruffle_Register_NULL = new CApiBuiltinExecutable("PyTruffle_Register_NULL", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 282);
-    public static final CApiBuiltinExecutable PyTruffle_SetTypeStore = new CApiBuiltinExecutable("PyTruffle_SetTypeStore", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer}, 283);
+    public static final CApiBuiltinExecutable PyTruffle_InitBuiltinTypesAndStructs = new CApiBuiltinExecutable("PyTruffle_InitBuiltinTypesAndStructs", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 271);
+    public static final CApiBuiltinExecutable PyTruffle_LogString = new CApiBuiltinExecutable("PyTruffle_LogString", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.ConstCharPtrAsTruffleString}, 272);
+    public static final CApiBuiltinExecutable PyTruffle_MemoryViewFromBuffer = new CApiBuiltinExecutable("PyTruffle_MemoryViewFromBuffer", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Int, ArgDescriptor.Py_ssize_t, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Int, ArgDescriptor.Pointer, ArgDescriptor.Pointer, ArgDescriptor.Pointer, ArgDescriptor.Pointer}, 273);
+    public static final CApiBuiltinExecutable PyTruffle_Native_Options = new CApiBuiltinExecutable("PyTruffle_Native_Options", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{}, 274);
+    public static final CApiBuiltinExecutable PyTruffle_NewTypeDict = new CApiBuiltinExecutable("PyTruffle_NewTypeDict", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyTypeObject}, 275);
+    public static final CApiBuiltinExecutable PyTruffle_NoValue = new CApiBuiltinExecutable("PyTruffle_NoValue", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 276);
+    public static final CApiBuiltinExecutable PyTruffle_None = new CApiBuiltinExecutable("PyTruffle_None", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 277);
+    public static final CApiBuiltinExecutable PyTruffle_NotImplemented = new CApiBuiltinExecutable("PyTruffle_NotImplemented", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 278);
+    public static final CApiBuiltinExecutable PyTruffle_NotifyRefCount = new CApiBuiltinExecutable("PyTruffle_NotifyRefCount", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.PyObjectWrapper, ArgDescriptor.Py_ssize_t}, 279);
+    public static final CApiBuiltinExecutable PyTruffle_Object_Free = new CApiBuiltinExecutable("PyTruffle_Object_Free", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 280);
+    public static final CApiBuiltinExecutable PyTruffle_PyDateTime_GET_TZINFO = new CApiBuiltinExecutable("PyTruffle_PyDateTime_GET_TZINFO", CApiCallPath.Direct, ArgDescriptor.PyObjectBorrowed, new ArgDescriptor[]{ArgDescriptor.PyObject}, 281);
+    public static final CApiBuiltinExecutable PyTruffle_PyUnicode_Find = new CApiBuiltinExecutable("PyTruffle_PyUnicode_Find", CApiCallPath.Ignored, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t, ArgDescriptor.Int}, 282);
+    public static final CApiBuiltinExecutable PyTruffle_Register_NULL = new CApiBuiltinExecutable("PyTruffle_Register_NULL", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 283);
     public static final CApiBuiltinExecutable PyTruffle_Set_Native_Slots = new CApiBuiltinExecutable("PyTruffle_Set_Native_Slots", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyTypeObject, ArgDescriptor.Pointer, ArgDescriptor.Pointer}, 284);
     public static final CApiBuiltinExecutable PyTruffle_ToNative = new CApiBuiltinExecutable("PyTruffle_ToNative", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.Pointer}, 285);
     public static final CApiBuiltinExecutable PyTruffle_Trace_Type = new CApiBuiltinExecutable("PyTruffle_Trace_Type", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.Pointer}, 286);
@@ -779,6 +779,7 @@ public abstract class PythonCextBuiltinRegistry {
                     PyTruffle_GetMMapData,
                     PyTruffle_GetMaxNativeMemory,
                     PyTruffle_HashConstant,
+                    PyTruffle_InitBuiltinTypesAndStructs,
                     PyTruffle_LogString,
                     PyTruffle_MemoryViewFromBuffer,
                     PyTruffle_Native_Options,
@@ -791,7 +792,6 @@ public abstract class PythonCextBuiltinRegistry {
                     PyTruffle_PyDateTime_GET_TZINFO,
                     PyTruffle_PyUnicode_Find,
                     PyTruffle_Register_NULL,
-                    PyTruffle_SetTypeStore,
                     PyTruffle_Set_Native_Slots,
                     PyTruffle_ToNative,
                     PyTruffle_Trace_Type,
@@ -1503,31 +1503,31 @@ public abstract class PythonCextBuiltinRegistry {
             case 270:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory.PyTruffle_HashConstantNodeGen.create();
             case 271:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_LogStringNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_InitBuiltinTypesAndStructsNodeGen.create();
             case 272:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_MemoryViewFromBufferNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_LogStringNodeGen.create();
             case 273:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Native_OptionsNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_MemoryViewFromBufferNodeGen.create();
             case 274:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_NewTypeDictNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Native_OptionsNodeGen.create();
             case 275:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NoValueNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_NewTypeDictNodeGen.create();
             case 276:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NoneNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NoValueNodeGen.create();
             case 277:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NotImplementedNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NoneNodeGen.create();
             case 278:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NotifyRefCountNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NotImplementedNodeGen.create();
             case 279:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_FreeNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NotifyRefCountNodeGen.create();
             case 280:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffle_PyDateTime_GET_TZINFONodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_FreeNodeGen.create();
             case 281:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_PyUnicode_FindNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffle_PyDateTime_GET_TZINFONodeGen.create();
             case 282:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Register_NULLNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_PyUnicode_FindNodeGen.create();
             case 283:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_SetTypeStoreNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Register_NULLNodeGen.create();
             case 284:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_Native_SlotsNodeGen.create();
             case 285:

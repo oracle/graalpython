@@ -200,22 +200,20 @@ CAPI_BUILTINS
 
 uint32_t Py_Truffle_Options;
 
-void initialize_type_structure(PyTypeObject* structure, const char* name) {
-    // Store the Sulong struct type id to be used for instances of this class
-
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINEST, "initialize_type_structure: %s", structure->tp_name);
-	GraalPyTruffle_SetTypeStore(name, structure);
-}
-
 #undef bool
 static void initialize_builtin_types_and_structs() {
 	clock_t t = clock();
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) initialize_type_structure(&GLOBAL_NAME, #__TYPE_NAME__);
+	static int64_t builtin_types[] = {
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, #__TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
+        NULL, NULL
+	};
+
+	GraalPyTruffle_InitBuiltinTypesAndStructs(builtin_types);
 
 	// fix up for circular dependency:
 	PyType_Type.tp_base = &PyBaseObject_Type;

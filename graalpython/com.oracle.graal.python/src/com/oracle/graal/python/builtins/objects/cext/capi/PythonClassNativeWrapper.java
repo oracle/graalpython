@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -52,8 +51,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
@@ -102,16 +99,14 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
      */
     public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
         /*
-         * This is necessary to break the init cycle because type 'object' is initialized first but
-         * its type is 'type' so it will already transitively initialize 'type'. Later, 'type' is
-         * initialized explicitly.
+         * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
+         * the native pointer of the wrapper would not be equal to the corresponding native global
+         * variable. E.g. 'Py_TYPE(PyBaseObjec_Type) != &PyType_Type'.
          */
         if (clazz.getNativeWrapper() != null) {
-            return;
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
-        // important: native wrappers are cached
-        assert clazz.getClassNativeWrapper() == null;
         PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name);
         clazz.setNativeWrapper(wrapper);
 
@@ -165,8 +160,14 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
          */
         wrapper.replacement = pointer;
         wrapper.registerReplacement(pointer, lib);
+    }
 
-        ToNativeTypeNode.initializeType(wrapper, pointer);
+    public static void initNative(PythonManagedClass clazz, Object pointer) {
+        PythonClassNativeWrapper classNativeWrapper = clazz.getClassNativeWrapper();
+        if (classNativeWrapper == null) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+        ToNativeTypeNode.initializeType(classNativeWrapper, pointer);
     }
 
     @Override

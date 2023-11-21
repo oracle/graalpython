@@ -93,7 +93,11 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
+
+import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -111,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
@@ -1631,48 +1636,124 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
-    abstract static class PyTruffle_SetTypeStore extends CApiBinaryBuiltinNode {
+    /**
+     * Initializes the native type structures.
+     * <p>
+     * This C API built-in function is called during C API initialization. The caller provides an
+     * array of pointers to native type structures (i.e. {@code PyTypeObject *}) and the
+     * corresponding built-in type names (see below for a detailed array format specification).
+     * </p>
+     * <p>
+     * The initialization is then done in two phases:
+     * <ol>
+     * <li>The built-in types are looked up by name and native wrappers are created whereas we set
+     * the pointer of the native wrapper to the one provided in the array.</li>
+     * <li>Write all information to the native type structures.</li>
+     * </ol>
+     * The initialization must be done in two phases because before we write the actual values to
+     * the native type structure's fields, we first need to have the pointers available. This is
+     * because there are dependency cycles between objects. For example, the Python type
+     * {@code type} has slot {@code tp_mro} which contains a tuple. The tuple then has Python type
+     * {@code tuple} and the type of the type {@code tuple} is again Python type {@code type}.
+     * Hence, we cannot initialize type if the pointer is not already available.
+     * </p>
+     * <b>ATTENTION: KEEP THIS IN SYNC WITH {@code capi.c: initialize_builtin_types_and_structs}</b>
+     * <p>
+     * Array format:
+     * </p>
+     *
+     * <pre>
+     *     void *builtin_types[] = {
+     *         // (PyTypeObject *)native_type_store_address, (const char *)python_builtin_type_name
+     *         &PyBaseObject_Type, "object",
+     *         &PyType_Type, "type",
+     *         // ...
+     *         NULL, NULL
+     *     }
+     * </pre>
+     */
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffle_InitBuiltinTypesAndStructs extends CApiUnaryBuiltinNode {
 
         @TruffleBoundary
         @Specialization
-        Object set(TruffleString tsName, Object pointer) {
+        Object doGeneric(Object builtinTypesArrayPointer) {
+            List<Pair<PythonManagedClass, Object>> builtinTypes = new LinkedList<>();
+            PythonContext context = getContext();
+            CStructAccess.ReadPointerNode readPointerNode = CStructAccess.ReadPointerNode.getUncached();
             try {
-                LOGGER.fine(() -> "initializing built-in class " + tsName + " at " + PythonUtils.formatPointer(pointer));
-                Python3Core core = getCore();
-                PythonManagedClass clazz = null;
-                String name = tsName.toJavaStringUncached();
-                // see if we're dealing with a type from a specific module
-                int index = name.indexOf('.');
-                if (index == -1) {
-                    for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                        if (type.getName().equalsUncached(tsName, TS_ENCODING)) {
-                            clazz = core.lookupType(type);
-                            break;
-                        }
+                // first phase: lookup built-in type by name, create wrappers and set native pointer
+                InteropLibrary lib = null;
+                for (int i = 0;; i += 2) {
+                    Object typeStructPtr = readPointerNode.readArrayElement(builtinTypesArrayPointer, i);
+                    if (lib == null) {
+                        lib = InteropLibrary.getUncached(typeStructPtr);
                     }
-                } else {
-                    String module = name.substring(0, index);
-                    name = name.substring(index + 1);
-                    Object moduleObject = core.lookupBuiltinModule(toTruffleStringUncached(module));
-                    if (moduleObject == null) {
-                        moduleObject = AbstractImportNode.importModule(toTruffleStringUncached(module));
+                    // if we reach the sentinel, stop the loop
+                    if (lib.isNull(typeStructPtr)) {
+                        break;
                     }
-                    Object attribute = PyObjectGetAttr.getUncached().execute(null, moduleObject, toTruffleStringUncached(name));
-                    if (attribute != PNone.NO_VALUE) {
-                        clazz = (PythonManagedClass) attribute;
-                    }
+                    Object namePtr = readPointerNode.readArrayElement(builtinTypesArrayPointer, i + 1);
+                    TruffleString name = FromCharPointerNodeGen.getUncached().execute(namePtr, false);
 
-                }
-                if (clazz == null) {
-                    throw CompilerDirectives.shouldNotReachHere("cannot find class " + name);
+                    // lookup the built-in type by name
+                    PythonManagedClass clazz = lookupBuiltinTypeWithName(context, name);
+
+                    // create the wrapper and register the pointer
+                    LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
+                    PythonClassNativeWrapper.wrapNative(clazz, TypeNodes.GetNameNode.executeUncached(clazz), typeStructPtr);
+
+                    builtinTypes.add(Pair.create(clazz, typeStructPtr));
                 }
 
-                PythonClassNativeWrapper.wrapNative(clazz, TypeNodes.GetNameNode.executeUncached(clazz), pointer);
+                // second phase: initialize the native type store
+                for (Pair<PythonManagedClass, Object> pair : builtinTypes) {
+                    LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.getLeft()));
+                    PythonClassNativeWrapper.initNative(pair.getLeft(), pair.getRight());
+                }
+
                 return PNone.NO_VALUE;
             } catch (PException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
+        }
+
+        /**
+         * Looks up a built-in type by name. This method may throw a Python exception (i.e.
+         * {@code PException}) because if the type belongs to a built-in module, it needs to read an
+         * attribute from the module.
+         */
+        private static PythonManagedClass lookupBuiltinTypeWithName(PythonContext context, TruffleString tsName) {
+            Python3Core core = context.getCore();
+            PythonManagedClass clazz = null;
+            String name = tsName.toJavaStringUncached();
+            // see if we're dealing with a type from a specific module
+            int index = name.indexOf('.');
+            if (index == -1) {
+                for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
+                    if (type.getName().equalsUncached(tsName, TS_ENCODING)) {
+                        clazz = core.lookupType(type);
+                        break;
+                    }
+                }
+            } else {
+                String module = name.substring(0, index);
+                name = name.substring(index + 1);
+                Object moduleObject = core.lookupBuiltinModule(toTruffleStringUncached(module));
+                if (moduleObject == null) {
+                    moduleObject = AbstractImportNode.importModule(toTruffleStringUncached(module));
+                }
+                Object attribute = PyObjectGetAttr.getUncached().execute(null, moduleObject, toTruffleStringUncached(name));
+                if (attribute != PNone.NO_VALUE) {
+                    clazz = (PythonManagedClass) attribute;
+                }
+
+            }
+            if (clazz == null) {
+                throw CompilerDirectives.shouldNotReachHere("cannot find class " + name);
+            }
+
+            return clazz;
         }
     }
 
