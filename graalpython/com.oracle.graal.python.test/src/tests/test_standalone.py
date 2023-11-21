@@ -123,6 +123,13 @@ def test_polyglot_app():
                     graalvmVersion,
                     f"{archetypeArtifactId}-{graalvmVersion}.jar",
                 )
+                pom = os.path.join(
+                    url.path,
+                    archetypeGroupId.replace(".", os.path.sep),
+                    archetypeArtifactId,
+                    graalvmVersion,
+                    f"{archetypeArtifactId}-{graalvmVersion}.pom",
+                )
                 cmd = MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
@@ -130,6 +137,7 @@ def test_polyglot_app():
                     f"-DartifactId={archetypeArtifactId}",
                     f"-Dversion={graalvmVersion}",
                     "-Dpackaging=jar",
+                    f"-DpomFile={pom}",
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, env)
@@ -142,13 +150,23 @@ def test_polyglot_app():
                     graalvmVersion,
                     f"{pluginArtifactId}-{graalvmVersion}.jar",
                 )
+
+                pom = os.path.join(
+                    url.path,
+                    archetypeGroupId.replace(".", os.path.sep),
+                    pluginArtifactId,
+                    graalvmVersion,
+                    f"{pluginArtifactId}-{graalvmVersion}.pom",
+                )
+
                 cmd = MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
                     f"-DgroupId={archetypeGroupId}",
                     f"-DartifactId={pluginArtifactId}",
                     f"-Dversion={graalvmVersion}",
-                    "-Dpackaging=jar",
+                    "-Dpackaging=jar",                    
+                    f"-DpomFile={pom}",
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, env)
@@ -182,7 +200,7 @@ def test_polyglot_app():
                         <snapshots>
                             <enabled>true</enabled>
                         </snapshots>
-                    </repository>
+                    </repository>                
                 """)
             with open(os.path.join(target_dir, "pom.xml"), "r") as f:
                 contents = f.read()
@@ -197,7 +215,7 @@ def test_polyglot_app():
         env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"])
         cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
         run_cmd(cmd, env, cwd=target_dir)
-        try:
+        try:                
             cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
             out, return_code = run_cmd(cmd, env, cwd=target_dir)
             assert "BUILD SUCCESS" in out
