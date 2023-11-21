@@ -348,6 +348,10 @@ public class AsyncHandler {
 
         @Override
         public void run() {
+            if (!ctx.gilHasQueuedThreads()) {
+                // Don't release the gil if nobody is waiting for it
+                return;
+            }
             Thread gilOwner = ctx.getGilOwner();
             if (gilOwner != null) {
                 synchronized (this) {
