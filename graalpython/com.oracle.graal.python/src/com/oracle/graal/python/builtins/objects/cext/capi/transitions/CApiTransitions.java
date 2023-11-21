@@ -976,7 +976,17 @@ public abstract class CApiTransitions {
         static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, boolean transfer, PythonNativeWrapper wrapper) {
             PythonNativeWrapper profiledWrapper = wrapperProfile.profile(node, wrapper);
             if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                assert objectNativeWrapper.getRefCount() >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                /*
+                 * If 'transfer' is true, this means the ownership is transferred (in this case to
+                 * the "interpreter"). We don't do reference counting in the interpreter, therefore
+                 * we set the managed refcount once and never touch it again. Since the receiving
+                 * object is a managed object, the refcount has already been initialized to
+                 * MANAGED_REFCNT at the time the object was handed out to the C extension. If now
+                 * the ownership is again transferred to the interpreter, then the native code
+                 * *MUST* have done an incref and so the refcount must be greater than
+                 * MANAGED_REFCNT.
+                 */
+                assert objectNativeWrapper.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
                 objectNativeWrapper.decRef();
                 objectNativeWrapper.updateRefCountToNative();
             }
