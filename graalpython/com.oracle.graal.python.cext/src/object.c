@@ -12,35 +12,45 @@
 #include "pycore_pymem.h"         // _PyMem_IsPtrFreed()
 
 // 134
-void Py_IncRef(PyObject *op) {
-	if (op != NULL) {
-		_Py_IncRef(op);
-	}
+void Py_IncRef(PyObject *op)
+{
+    if (op != NULL) {
+        _Py_IncRef(op);
+    }
 }
 
 // 141
-void Py_DecRef(PyObject *op) {
-	if (op != NULL) {
-		_Py_DecRef(op);
-	}
+void Py_DecRef(PyObject *op)
+{
+    if (op != NULL) {
+        _Py_DecRef(op);
+    }
 }
 
 // 146
 void _Py_IncRef(PyObject *op) {
-    Py_SET_REFCNT(op, Py_REFCNT(op) + 1);
+    const Py_ssize_t refcnt = Py_REFCNT(op);
+    if (refcnt != IMMORTAL_REFCNT)
+    {
+        Py_SET_REFCNT(op, refcnt + 1);
+    }
 }
 
 // 152
 void _Py_DecRef(PyObject *op) {
-    Py_ssize_t cnt = Py_REFCNT(op) - 1;
-    Py_SET_REFCNT(op, cnt);
-    if (cnt != 0) {
-        if (points_to_py_handle_space(op) && cnt == MANAGED_REFCNT) {
-            GraalPyTruffle_NotifyRefCount(op, cnt);
+    const Py_ssize_t refcnt = Py_REFCNT(op);
+    if (refcnt != IMMORTAL_REFCNT)
+    {
+        const Py_ssize_t updated_refcnt = refcnt - 1;
+        Py_SET_REFCNT(op, updated_refcnt);
+        if (updated_refcnt != 0) {
+            if (points_to_py_handle_space(op) && updated_refcnt == MANAGED_REFCNT) {
+                GraalPyTruffle_NotifyRefCount(op, updated_refcnt);
+            }
         }
-    }
-    else {
-        _Py_Dealloc(op);
+        else {
+            _Py_Dealloc(op);
+        }
     }
 }
 

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -505,7 +507,7 @@ public abstract class CApiTransitions {
                 assert !(wrapper instanceof TruffleObjectNativeWrapper);
                 pollReferenceQueue();
 
-                long initialRefCount = immortal ? PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT : PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                long initialRefCount = immortal ? IMMORTAL_REFCNT : PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 
                 Object type = getClassNode.execute(inliningTarget, NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper));
 
@@ -1131,7 +1133,7 @@ public abstract class CApiTransitions {
 
     public static long readNativeRefCount(long pointer) {
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
-        assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value for %016x (%d %016x)\n", pointer, refCount, refCount);
+        assert refCount == IMMORTAL_REFCNT || (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value for %016x (%d %016x)\n", pointer, refCount, refCount);
         if (LOGGER.isLoggable(Level.FINEST)) {
             LOGGER.finest(PythonUtils.formatJString("readNativeRefCount(%x) = %d (%x)", pointer, refCount, refCount));
         }

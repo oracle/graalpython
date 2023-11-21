@@ -792,6 +792,7 @@ static inline int get_method_flags_wrapper(int flags) {
 
 #define MANAGED_REFCNT 10
 #define HANDLE_BASE 0x8000000000000000ULL
+#define IMMORTAL_REFCNT (INT64_MAX >> 1)
 
 #define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
 
