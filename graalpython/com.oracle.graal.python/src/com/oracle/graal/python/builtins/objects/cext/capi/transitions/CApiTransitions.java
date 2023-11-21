@@ -781,12 +781,6 @@ public abstract class CApiTransitions {
                 } else {
                     assert obj != PNone.NO_VALUE;
                     /*
-                     * The reference count of the managed wrapper may have been modified, so we need
-                     * to write the updated value to native.
-                     */
-                    wrapper.updateRefCountToNative();
-
-                    /*
                      * If we are up to give out a borrowed reference, it may be that the refcount is
                      * just MANAGED_REFCOUNT which means we would usually just have a weak reference
                      * to the wrapper. However, native code may incref which we would not see on the
@@ -932,11 +926,6 @@ public abstract class CApiTransitions {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
-                /*
-                 * In this case, the native object is a stub and we need to sync the reference count
-                 * to keep it consistent with the wrapper's reference count.
-                 */
-                wrapper.updateRefCountFromNative();
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
@@ -988,7 +977,6 @@ public abstract class CApiTransitions {
                  */
                 assert objectNativeWrapper.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
                 objectNativeWrapper.decRef();
-                objectNativeWrapper.updateRefCountToNative();
             }
             if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
                 if (primitive.isBool()) {
@@ -1086,11 +1074,6 @@ public abstract class CApiTransitions {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
-                /*
-                 * In this case, the native object is a stub and we need to sync the reference count
-                 * to keep it consistent with the wrapper's reference count.
-                 */
-                wrapper.updateRefCountFromNative();
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
@@ -1218,11 +1201,6 @@ public abstract class CApiTransitions {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
-                /*
-                 * In this case, the native object is a stub and we need to sync the reference count
-                 * to keep it consistent with the wrapper's reference count.
-                 */
-                wrapper.updateRefCountFromNative();
                 return wrapper;
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);

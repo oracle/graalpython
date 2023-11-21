@@ -1350,9 +1350,7 @@ public abstract class CExtNodes {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    objectNativeWrapper.updateRefCountFromNative();
                     objectNativeWrapper.incRef();
-                    objectNativeWrapper.updateRefCountToNative();
                 }
                 return lookup;
             }
@@ -1377,9 +1375,7 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                        objectNativeWrapper.updateRefCountFromNative();
                         objectNativeWrapper.incRef();
-                        objectNativeWrapper.updateRefCountToNative();
                     }
                     return lookup;
                 }
@@ -2079,7 +2075,6 @@ public abstract class CExtNodes {
             // if (subRefCntNode.dec(nativeWrapper) == 0) {
             // traverseNativeWrapperNode.execute(inliningTarget, nativeWrapper.getDelegate());
             // }
-            nativeWrapper.updateRefCountFromNative();
         }
 
         @Specialization(guards = "!isNativeWrapper(object)")
