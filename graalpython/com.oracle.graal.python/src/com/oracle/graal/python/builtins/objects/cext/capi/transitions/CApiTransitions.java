@@ -170,7 +170,7 @@ public abstract class CApiTransitions {
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
             if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer(PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strong ? "weak" : "strong"), Long.toHexString(pointer), referent));
+                LOGGER.finer(PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strong ? "strong" : "weak"), Long.toHexString(pointer), referent));
             }
             referent.ref = this;
         }
@@ -306,9 +306,10 @@ public abstract class CApiTransitions {
                              * don't know if they are still used from native code. Those must be
                              * free'd at context finalization.
                              */
-                            if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
-                                LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(HandlePointerConverter.pointerToStub(reference.pointer))));
-                                FreeNode.executeUncached(HandlePointerConverter.pointerToStub(reference.pointer));
+                            long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
+                            if (subNativeRefCount(stubPointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+                                LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(stubPointer)));
+                                FreeNode.executeUncached(stubPointer);
                             }
                         } else {
                             assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
@@ -517,8 +518,8 @@ public abstract class CApiTransitions {
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
                 HandleContext handleContext = getContext();
                 long pointer = PythonUtils.coerceToLong(nativeObjectStub, lib);
-                PythonObjectReference ref = PythonObjectReference.create(wrapper, pointer);
                 long stubPointer = HandlePointerConverter.stubToPointer(pointer);
+                PythonObjectReference ref = PythonObjectReference.create(wrapper, stubPointer);
                 nativeStubLookupPut(handleContext, stubPointer, ref);
                 return logResult(stubPointer);
             } finally {
