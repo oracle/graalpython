@@ -529,10 +529,10 @@ class TestGIL(unittest.TestCase):
         # Test that a thread runing a tight loop without sleeps cannot completely starve other threads
         program = dedent("""\
         import threading, time
-        thread_count = 5
+        thread_count = 5000
         done = 0
         def target():
-            time.sleep(0.5)
+            time.sleep(0.01)
             global done
             done += 1
         threads = []
