@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CF
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -126,7 +126,7 @@ public final class PythonCextModuleBuiltins {
                         @Cached CallNode callNode,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached EndsWithNode endsWithNode,
+                        @Cached PrefixSuffixNode prefixSuffixNode,
                         @Cached TruffleString.LastIndexOfCodePointNode lastIndexNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             // see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
@@ -134,7 +134,7 @@ public final class PythonCextModuleBuiltins {
             TruffleString newModuleName = name;
             PythonContext ctx = getContext();
             TruffleString pyPackageContext = ctx.getPyPackageContext() == null ? null : ctx.getPyPackageContext();
-            if (pyPackageContext != null && endsWithNode.executeBoolean(null, pyPackageContext, newModuleName, 0, codePointLengthNode.execute(pyPackageContext, TS_ENCODING))) {
+            if (pyPackageContext != null && prefixSuffixNode.endsWith(pyPackageContext, newModuleName, 0, codePointLengthNode.execute(pyPackageContext, TS_ENCODING))) {
                 newModuleName = pyPackageContext;
                 ctx.setPyPackageContext(null);
             }
