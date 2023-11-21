@@ -189,6 +189,7 @@ def test_polyglot_app():
 
         if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
             repos = []
+            pluginRepos = []
             for idx, custom_repo in enumerate(custom_repos.split(",")):
                 repos.append(f"""
                     <repository>
@@ -202,6 +203,21 @@ def test_polyglot_app():
                         </snapshots>
                     </repository>                
                 """)
+                pluginRepos.append(f"""
+                    <pluginRepository>
+                        <id>myrepo{idx}</id>
+                        <url>{custom_repo}</url>
+                        <releases>
+                            <enabled>true</enabled>
+                            <updatePolicy>always</updatePolicy>
+                        </releases>
+                        <snapshots>
+                            <enabled>true</enabled>
+                            <updatePolicy>always</updatePolicy>
+                        </snapshots>
+                    </pluginRepository>            
+                """)
+
             with open(os.path.join(target_dir, "pom.xml"), "r") as f:
                 contents = f.read()
             with open(os.path.join(target_dir, "pom.xml"), "w") as f:
@@ -209,6 +225,9 @@ def test_polyglot_app():
                 <repositories>
                 """ + '\n'.join(repos) + """
                 </repositories>
+                <pluginRepositories>
+                """ + '\n'.join(pluginRepos) + """
+                </pluginRepositories>
                 </project>
                 """))
 
