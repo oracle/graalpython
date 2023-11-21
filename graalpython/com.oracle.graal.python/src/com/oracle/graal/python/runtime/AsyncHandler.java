@@ -53,7 +53,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -75,7 +74,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -339,51 +337,74 @@ public class AsyncHandler {
         }
     }
 
+    private static class GilReleaseScheduler implements Runnable {
+        private final PythonContext ctx;
+        private volatile boolean gilReleaseRequested;
+        private Thread lastGilOwner;
+
+        private GilReleaseScheduler(PythonContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void run() {
+            Thread gilOwner = ctx.getGilOwner();
+            if (gilOwner != null) {
+                synchronized (this) {
+                    if (!gilReleaseRequested) {
+                        gilReleaseRequested = true;
+                        /*
+                         * There is a race, but that's no problem. The gil owner may release the gil
+                         * before getting to run this safepoint. In that case, it just ignores it.
+                         * Some other thread will run and eventually get another gil release
+                         * request.
+                         */
+                        ctx.getEnv().submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(false, false) {
+                            @Override
+                            protected void perform(ThreadLocalAction.Access access) {
+                                // it may happen that we request a GIL release and no thread is
+                                // currently holding the GIL (e.g. all are sleeping). We still need
+                                // to tick again later, so we reset the gilReleaseRequested flag
+                                // even
+                                // when the thread in question isn't actually holding it.
+                                gilReleaseRequested = false;
+                                RootNode rootNode = access.getLocation().getRootNode();
+                                if (rootNode instanceof PRootNode) {
+                                    if (rootNode.isInternal()) {
+                                        return;
+                                    }
+                                    if (((PRootNode) rootNode).isPythonInternal()) {
+                                        return;
+                                    }
+                                    // we only release the gil in ordinary Python code nodes
+                                    GilNode gil = GilNode.getUncached();
+                                    if (gil.tryRelease()) {
+                                        gil.acquire(access.getLocation());
+                                    }
+                                }
+                            }
+                        });
+                    } else if (gilOwner != lastGilOwner) {
+                        /*
+                         * If the gil changed owner since the last time we observed it, clear the
+                         * flag to make sure we don't get stuck if the last owner exits before
+                         * executing the safepoint.
+                         */
+                        gilReleaseRequested = false;
+                    }
+                    lastGilOwner = gilOwner;
+                }
+            }
+        }
+    }
+
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
         final PythonContext ctx = context.get();
         if (ctx == null) {
             return;
         }
-        final Env env = ctx.getEnv();
-        final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
-        final Runnable gilReleaseRunnable = () -> {
-            if (gilReleaseRequested.compareAndSet(false, true)) {
-                Thread gilOwner = ctx.getGilOwner();
-                // There is a race, but that's no problem. The gil owner may release the gil before
-                // getting to run this safepoint. In that case, it just ignores it. Some other
-                // thread will run and eventually get another gil release request.
-                if (gilOwner != null) {
-                    env.submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(false, false) {
-                        @Override
-                        protected void perform(ThreadLocalAction.Access access) {
-                            // it may happen that we request a GIL release and no thread is
-                            // currently holding the GIL (e.g. all are sleeping). We still need
-                            // to tick again later, so we reset the gilReleaseRequested flag even
-                            // when the thread in question isn't actually holding it.
-                            gilReleaseRequested.set(false);
-                            RootNode rootNode = access.getLocation().getRootNode();
-                            if (rootNode instanceof PRootNode) {
-                                if (rootNode.isInternal()) {
-                                    return;
-                                }
-                                if (((PRootNode) rootNode).isPythonInternal()) {
-                                    return;
-                                }
-                                // we only release the gil in ordinary Python code nodes
-                                GilNode gil = GilNode.getUncached();
-                                if (gil.tryRelease()) {
-                                    Thread.yield();
-                                    gil.acquire(access.getLocation());
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    gilReleaseRequested.set(false);
-                }
-            }
-        };
+        final Runnable gilReleaseRunnable = new GilReleaseScheduler(ctx);
         if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
             executorService.scheduleWithFixedDelay(gilReleaseRunnable, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
         } else {
