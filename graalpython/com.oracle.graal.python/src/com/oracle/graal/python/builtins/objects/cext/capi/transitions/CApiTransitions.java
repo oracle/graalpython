@@ -797,7 +797,7 @@ public abstract class CApiTransitions {
                      * reference weak again.
                      */
                     assert wrapper.ref != null;
-                    if (!needsTransfer && isStrongProfile.profile(inliningTarget, !wrapper.ref.isStrongReference())) {
+                    if (isStrongProfile.profile(inliningTarget, !wrapper.ref.isStrongReference())) {
                         wrapper.ref.setStrongReference(wrapper);
                     }
                 }
