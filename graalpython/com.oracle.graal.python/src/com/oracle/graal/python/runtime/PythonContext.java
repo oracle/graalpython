@@ -2244,6 +2244,13 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
+     * Should not be used outside of {@link AsyncHandler}
+     */
+    boolean gilHasQueuedThreads() {
+        return globalInterpreterLock.hasQueuedThreads();
+    }
+
+    /**
      * Should not be called directly.
      *
      * @see GilNode
