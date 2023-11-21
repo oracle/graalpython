@@ -196,102 +196,102 @@ public abstract class PythonCextBuiltinRegistry {
     public static final CApiBuiltinExecutable PyObject_DelItem = new CApiBuiltinExecutable("PyObject_DelItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 135);
     public static final CApiBuiltinExecutable PyObject_Dir = new CApiBuiltinExecutable("PyObject_Dir", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 136);
     public static final CApiBuiltinExecutable PyObject_Format = new CApiBuiltinExecutable("PyObject_Format", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 137);
-    public static final CApiBuiltinExecutable PyObject_GC_Track = new CApiBuiltinExecutable("PyObject_GC_Track", CApiCallPath.Direct, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 138);
-    public static final CApiBuiltinExecutable PyObject_GC_UnTrack = new CApiBuiltinExecutable("PyObject_GC_UnTrack", CApiCallPath.Direct, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 139);
-    public static final CApiBuiltinExecutable PyObject_GetDoc = new CApiBuiltinExecutable("PyObject_GetDoc", CApiCallPath.Direct, ArgDescriptor.ConstCharPtr, new ArgDescriptor[]{ArgDescriptor.PyObject}, 140);
-    public static final CApiBuiltinExecutable PyObject_GetItem = new CApiBuiltinExecutable("PyObject_GetItem", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 141);
-    public static final CApiBuiltinExecutable PyObject_GetIter = new CApiBuiltinExecutable("PyObject_GetIter", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 142);
-    public static final CApiBuiltinExecutable PyObject_HasAttr = new CApiBuiltinExecutable("PyObject_HasAttr", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 143);
-    public static final CApiBuiltinExecutable PyObject_HasAttrString = new CApiBuiltinExecutable("PyObject_HasAttrString", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 144);
-    public static final CApiBuiltinExecutable PyObject_Hash = new CApiBuiltinExecutable("PyObject_Hash", CApiCallPath.Direct, ArgDescriptor.Py_hash_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 145);
-    public static final CApiBuiltinExecutable PyObject_HashNotImplemented = new CApiBuiltinExecutable("PyObject_HashNotImplemented", CApiCallPath.Direct, ArgDescriptor.Py_hash_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 146);
-    public static final CApiBuiltinExecutable PyObject_IsInstance = new CApiBuiltinExecutable("PyObject_IsInstance", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 147);
-    public static final CApiBuiltinExecutable PyObject_IsSubclass = new CApiBuiltinExecutable("PyObject_IsSubclass", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 148);
-    public static final CApiBuiltinExecutable PyObject_IsTrue = new CApiBuiltinExecutable("PyObject_IsTrue", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject}, 149);
-    public static final CApiBuiltinExecutable PyObject_LengthHint = new CApiBuiltinExecutable("PyObject_LengthHint", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 150);
-    public static final CApiBuiltinExecutable PyObject_Repr = new CApiBuiltinExecutable("PyObject_Repr", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 151);
-    public static final CApiBuiltinExecutable PyObject_RichCompare = new CApiBuiltinExecutable("PyObject_RichCompare", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int}, 152);
-    public static final CApiBuiltinExecutable PyObject_SetDoc = new CApiBuiltinExecutable("PyObject_SetDoc", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 153);
-    public static final CApiBuiltinExecutable PyObject_SetItem = new CApiBuiltinExecutable("PyObject_SetItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 154);
-    public static final CApiBuiltinExecutable PyObject_Size = new CApiBuiltinExecutable("PyObject_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 155);
-    public static final CApiBuiltinExecutable PyObject_Str = new CApiBuiltinExecutable("PyObject_Str", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 156);
-    public static final CApiBuiltinExecutable PyObject_Type = new CApiBuiltinExecutable("PyObject_Type", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 157);
-    public static final CApiBuiltinExecutable PyRun_StringFlags = new CApiBuiltinExecutable("PyRun_StringFlags", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PY_COMPILER_FLAGS}, 158);
-    public static final CApiBuiltinExecutable PySeqIter_New = new CApiBuiltinExecutable("PySeqIter_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 159);
-    public static final CApiBuiltinExecutable PySequence_Check = new CApiBuiltinExecutable("PySequence_Check", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject}, 160);
-    public static final CApiBuiltinExecutable PySequence_Concat = new CApiBuiltinExecutable("PySequence_Concat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 161);
-    public static final CApiBuiltinExecutable PySequence_Contains = new CApiBuiltinExecutable("PySequence_Contains", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 162);
-    public static final CApiBuiltinExecutable PySequence_Count = new CApiBuiltinExecutable("PySequence_Count", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 163);
-    public static final CApiBuiltinExecutable PySequence_DelItem = new CApiBuiltinExecutable("PySequence_DelItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 164);
-    public static final CApiBuiltinExecutable PySequence_DelSlice = new CApiBuiltinExecutable("PySequence_DelSlice", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t}, 165);
-    public static final CApiBuiltinExecutable PySequence_GetItem = new CApiBuiltinExecutable("PySequence_GetItem", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 166);
-    public static final CApiBuiltinExecutable PySequence_GetSlice = new CApiBuiltinExecutable("PySequence_GetSlice", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t}, 167);
-    public static final CApiBuiltinExecutable PySequence_InPlaceConcat = new CApiBuiltinExecutable("PySequence_InPlaceConcat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 168);
-    public static final CApiBuiltinExecutable PySequence_InPlaceRepeat = new CApiBuiltinExecutable("PySequence_InPlaceRepeat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 169);
-    public static final CApiBuiltinExecutable PySequence_Index = new CApiBuiltinExecutable("PySequence_Index", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 170);
-    public static final CApiBuiltinExecutable PySequence_Length = new CApiBuiltinExecutable("PySequence_Length", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 171);
-    public static final CApiBuiltinExecutable PySequence_List = new CApiBuiltinExecutable("PySequence_List", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 172);
-    public static final CApiBuiltinExecutable PySequence_Repeat = new CApiBuiltinExecutable("PySequence_Repeat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 173);
-    public static final CApiBuiltinExecutable PySequence_SetItem = new CApiBuiltinExecutable("PySequence_SetItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.PyObject}, 174);
-    public static final CApiBuiltinExecutable PySequence_SetSlice = new CApiBuiltinExecutable("PySequence_SetSlice", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t, ArgDescriptor.PyObject}, 175);
-    public static final CApiBuiltinExecutable PySequence_Size = new CApiBuiltinExecutable("PySequence_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 176);
-    public static final CApiBuiltinExecutable PySequence_Tuple = new CApiBuiltinExecutable("PySequence_Tuple", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 177);
-    public static final CApiBuiltinExecutable PySet_Add = new CApiBuiltinExecutable("PySet_Add", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 178);
-    public static final CApiBuiltinExecutable PySet_Clear = new CApiBuiltinExecutable("PySet_Clear", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject}, 179);
-    public static final CApiBuiltinExecutable PySet_Contains = new CApiBuiltinExecutable("PySet_Contains", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 180);
-    public static final CApiBuiltinExecutable PySet_Discard = new CApiBuiltinExecutable("PySet_Discard", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 181);
-    public static final CApiBuiltinExecutable PySet_New = new CApiBuiltinExecutable("PySet_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 182);
-    public static final CApiBuiltinExecutable PySet_Pop = new CApiBuiltinExecutable("PySet_Pop", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 183);
-    public static final CApiBuiltinExecutable PySet_Size = new CApiBuiltinExecutable("PySet_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 184);
-    public static final CApiBuiltinExecutable PySlice_New = new CApiBuiltinExecutable("PySlice_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 185);
-    public static final CApiBuiltinExecutable PyStaticMethod_New = new CApiBuiltinExecutable("PyStaticMethod_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 186);
-    public static final CApiBuiltinExecutable PyStructSequence_New = new CApiBuiltinExecutable("PyStructSequence_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyTypeObject}, 187);
-    public static final CApiBuiltinExecutable PySys_GetObject = new CApiBuiltinExecutable("PySys_GetObject", CApiCallPath.Direct, ArgDescriptor.PyObjectBorrowed, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString}, 188);
-    public static final CApiBuiltinExecutable PyThreadState_Get = new CApiBuiltinExecutable("PyThreadState_Get", CApiCallPath.Direct, ArgDescriptor.PyThreadState, new ArgDescriptor[]{}, 189);
-    public static final CApiBuiltinExecutable PyThreadState_GetDict = new CApiBuiltinExecutable("PyThreadState_GetDict", CApiCallPath.Direct, ArgDescriptor.PyObjectBorrowed, new ArgDescriptor[]{}, 190);
-    public static final CApiBuiltinExecutable PyThread_acquire_lock = new CApiBuiltinExecutable("PyThread_acquire_lock", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PY_THREAD_TYPE_LOCK, ArgDescriptor.Int}, 191);
-    public static final CApiBuiltinExecutable PyThread_allocate_lock = new CApiBuiltinExecutable("PyThread_allocate_lock", CApiCallPath.Direct, ArgDescriptor.PY_THREAD_TYPE_LOCK, new ArgDescriptor[]{}, 192);
-    public static final CApiBuiltinExecutable PyThread_get_thread_ident = new CApiBuiltinExecutable("PyThread_get_thread_ident", CApiCallPath.Direct, ArgDescriptor.UNSIGNED_LONG, new ArgDescriptor[]{}, 193);
-    public static final CApiBuiltinExecutable PyThread_release_lock = new CApiBuiltinExecutable("PyThread_release_lock", CApiCallPath.Direct, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.PY_THREAD_TYPE_LOCK}, 194);
-    public static final CApiBuiltinExecutable PyTraceBack_Here = new CApiBuiltinExecutable("PyTraceBack_Here", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyFrameObject}, 195);
-    public static final CApiBuiltinExecutable PyTraceMalloc_Track = new CApiBuiltinExecutable("PyTraceMalloc_Track", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.UNSIGNED_INT, ArgDescriptor.UINTPTR_T, ArgDescriptor.SIZE_T}, 196);
-    public static final CApiBuiltinExecutable PyTraceMalloc_Untrack = new CApiBuiltinExecutable("PyTraceMalloc_Untrack", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.UNSIGNED_INT, ArgDescriptor.UINTPTR_T}, 197);
-    public static final CApiBuiltinExecutable PyTruffleByteArray_FromStringAndSize = new CApiBuiltinExecutable("PyTruffleByteArray_FromStringAndSize", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtr, ArgDescriptor.Py_ssize_t}, 198);
-    public static final CApiBuiltinExecutable PyTruffleBytes_Concat = new CApiBuiltinExecutable("PyTruffleBytes_Concat", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 199);
-    public static final CApiBuiltinExecutable PyTruffleBytes_FromFormat = new CApiBuiltinExecutable("PyTruffleBytes_FromFormat", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.PyObject}, 200);
-    public static final CApiBuiltinExecutable PyTruffleBytes_FromStringAndSize = new CApiBuiltinExecutable("PyTruffleBytes_FromStringAndSize", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtr, ArgDescriptor.Py_ssize_t}, 201);
-    public static final CApiBuiltinExecutable PyTruffleCMethod_NewEx = new CApiBuiltinExecutable("PyTruffleCMethod_NewEx", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyMethodDef, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyTypeObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 202);
-    public static final CApiBuiltinExecutable PyTruffleComplex_AsCComplex = new CApiBuiltinExecutable("PyTruffleComplex_AsCComplex", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 203);
-    public static final CApiBuiltinExecutable PyTruffleContextVar_Get = new CApiBuiltinExecutable("PyTruffleContextVar_Get", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Pointer}, 204);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_DateTime_FromDateAndTime = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_DateTime_FromDateAndTime", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyTypeObject}, 205);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 206);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_DateTime_FromTimestamp = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_DateTime_FromTimestamp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 207);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Date_FromDate = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Date_FromDate", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 208);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Date_FromTimestamp = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Date_FromTimestamp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 209);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Delta_FromDelta = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Delta_FromDelta", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 210);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_TimeZone_FromTimeZone = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_TimeZone_FromTimeZone", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 211);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Time_FromTime = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Time_FromTime", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyTypeObject}, 212);
-    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Time_FromTimeAndFold = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Time_FromTimeAndFold", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 213);
-    public static final CApiBuiltinExecutable PyTruffleDescr_NewClassMethod = new CApiBuiltinExecutable("PyTruffleDescr_NewClassMethod", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Pointer, ArgDescriptor.PyTypeObject}, 214);
-    public static final CApiBuiltinExecutable PyTruffleDescr_NewGetSet = new CApiBuiltinExecutable("PyTruffleDescr_NewGetSet", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.PyTypeObject, ArgDescriptor.Pointer, ArgDescriptor.Pointer, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer}, 215);
-    public static final CApiBuiltinExecutable PyTruffleDict_Next = new CApiBuiltinExecutable("PyTruffleDict_Next", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 216);
-    public static final CApiBuiltinExecutable PyTruffleErr_Fetch = new CApiBuiltinExecutable("PyTruffleErr_Fetch", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 217);
-    public static final CApiBuiltinExecutable PyTruffleErr_GetExcInfo = new CApiBuiltinExecutable("PyTruffleErr_GetExcInfo", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 218);
-    public static final CApiBuiltinExecutable PyTruffleErr_WarnExplicit = new CApiBuiltinExecutable("PyTruffleErr_WarnExplicit", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 219);
-    public static final CApiBuiltinExecutable PyTruffleFloat_AsDouble = new CApiBuiltinExecutable("PyTruffleFloat_AsDouble", CApiCallPath.Ignored, ArgDescriptor.Double, new ArgDescriptor[]{ArgDescriptor.PyObject}, 220);
-    public static final CApiBuiltinExecutable PyTruffleGILState_Ensure = new CApiBuiltinExecutable("PyTruffleGILState_Ensure", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{}, 221);
-    public static final CApiBuiltinExecutable PyTruffleGILState_Release = new CApiBuiltinExecutable("PyTruffleGILState_Release", CApiCallPath.Direct, ArgDescriptor.Void, new ArgDescriptor[]{}, 222);
-    public static final CApiBuiltinExecutable PyTruffleHash_InitSecret = new CApiBuiltinExecutable("PyTruffleHash_InitSecret", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.INT8_T_PTR}, 223);
-    public static final CApiBuiltinExecutable PyTruffleLong_AsPrimitive = new CApiBuiltinExecutable("PyTruffleLong_AsPrimitive", CApiCallPath.Ignored, ArgDescriptor.Long, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.Long}, 224);
-    public static final CApiBuiltinExecutable PyTruffleLong_FromString = new CApiBuiltinExecutable("PyTruffleLong_FromString", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObjectAsTruffleString, ArgDescriptor.Int, ArgDescriptor.Int}, 225);
-    public static final CApiBuiltinExecutable PyTruffleLong_One = new CApiBuiltinExecutable("PyTruffleLong_One", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 226);
-    public static final CApiBuiltinExecutable PyTruffleLong_Zero = new CApiBuiltinExecutable("PyTruffleLong_Zero", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 227);
-    public static final CApiBuiltinExecutable PyTruffleModule_AddFunctionToModule = new CApiBuiltinExecutable("PyTruffleModule_AddFunctionToModule", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.ConstCharPtrAsTruffleString}, 228);
-    public static final CApiBuiltinExecutable PyTruffleNumber_BinOp = new CApiBuiltinExecutable("PyTruffleNumber_BinOp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int}, 229);
-    public static final CApiBuiltinExecutable PyTruffleNumber_InPlaceBinOp = new CApiBuiltinExecutable("PyTruffleNumber_InPlaceBinOp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int}, 230);
-    public static final CApiBuiltinExecutable PyTruffleNumber_UnaryOp = new CApiBuiltinExecutable("PyTruffleNumber_UnaryOp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Int}, 231);
-    public static final CApiBuiltinExecutable PyTruffleObject_CallFunctionObjArgs = new CApiBuiltinExecutable("PyTruffleObject_CallFunctionObjArgs", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.VA_LIST_PTR}, 232);
-    public static final CApiBuiltinExecutable PyTruffleObject_CallMethodObjArgs = new CApiBuiltinExecutable("PyTruffleObject_CallMethodObjArgs", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.VA_LIST_PTR}, 233);
+    public static final CApiBuiltinExecutable PyObject_GetDoc = new CApiBuiltinExecutable("PyObject_GetDoc", CApiCallPath.Direct, ArgDescriptor.ConstCharPtr, new ArgDescriptor[]{ArgDescriptor.PyObject}, 138);
+    public static final CApiBuiltinExecutable PyObject_GetItem = new CApiBuiltinExecutable("PyObject_GetItem", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 139);
+    public static final CApiBuiltinExecutable PyObject_GetIter = new CApiBuiltinExecutable("PyObject_GetIter", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 140);
+    public static final CApiBuiltinExecutable PyObject_HasAttr = new CApiBuiltinExecutable("PyObject_HasAttr", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 141);
+    public static final CApiBuiltinExecutable PyObject_HasAttrString = new CApiBuiltinExecutable("PyObject_HasAttrString", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 142);
+    public static final CApiBuiltinExecutable PyObject_Hash = new CApiBuiltinExecutable("PyObject_Hash", CApiCallPath.Direct, ArgDescriptor.Py_hash_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 143);
+    public static final CApiBuiltinExecutable PyObject_HashNotImplemented = new CApiBuiltinExecutable("PyObject_HashNotImplemented", CApiCallPath.Direct, ArgDescriptor.Py_hash_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 144);
+    public static final CApiBuiltinExecutable PyObject_IsInstance = new CApiBuiltinExecutable("PyObject_IsInstance", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 145);
+    public static final CApiBuiltinExecutable PyObject_IsSubclass = new CApiBuiltinExecutable("PyObject_IsSubclass", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 146);
+    public static final CApiBuiltinExecutable PyObject_IsTrue = new CApiBuiltinExecutable("PyObject_IsTrue", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject}, 147);
+    public static final CApiBuiltinExecutable PyObject_LengthHint = new CApiBuiltinExecutable("PyObject_LengthHint", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 148);
+    public static final CApiBuiltinExecutable PyObject_Repr = new CApiBuiltinExecutable("PyObject_Repr", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 149);
+    public static final CApiBuiltinExecutable PyObject_RichCompare = new CApiBuiltinExecutable("PyObject_RichCompare", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int}, 150);
+    public static final CApiBuiltinExecutable PyObject_SetDoc = new CApiBuiltinExecutable("PyObject_SetDoc", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 151);
+    public static final CApiBuiltinExecutable PyObject_SetItem = new CApiBuiltinExecutable("PyObject_SetItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 152);
+    public static final CApiBuiltinExecutable PyObject_Size = new CApiBuiltinExecutable("PyObject_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 153);
+    public static final CApiBuiltinExecutable PyObject_Str = new CApiBuiltinExecutable("PyObject_Str", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 154);
+    public static final CApiBuiltinExecutable PyObject_Type = new CApiBuiltinExecutable("PyObject_Type", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 155);
+    public static final CApiBuiltinExecutable PyRun_StringFlags = new CApiBuiltinExecutable("PyRun_StringFlags", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PY_COMPILER_FLAGS}, 156);
+    public static final CApiBuiltinExecutable PySeqIter_New = new CApiBuiltinExecutable("PySeqIter_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 157);
+    public static final CApiBuiltinExecutable PySequence_Check = new CApiBuiltinExecutable("PySequence_Check", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject}, 158);
+    public static final CApiBuiltinExecutable PySequence_Concat = new CApiBuiltinExecutable("PySequence_Concat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 159);
+    public static final CApiBuiltinExecutable PySequence_Contains = new CApiBuiltinExecutable("PySequence_Contains", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 160);
+    public static final CApiBuiltinExecutable PySequence_Count = new CApiBuiltinExecutable("PySequence_Count", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 161);
+    public static final CApiBuiltinExecutable PySequence_DelItem = new CApiBuiltinExecutable("PySequence_DelItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 162);
+    public static final CApiBuiltinExecutable PySequence_DelSlice = new CApiBuiltinExecutable("PySequence_DelSlice", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t}, 163);
+    public static final CApiBuiltinExecutable PySequence_GetItem = new CApiBuiltinExecutable("PySequence_GetItem", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 164);
+    public static final CApiBuiltinExecutable PySequence_GetSlice = new CApiBuiltinExecutable("PySequence_GetSlice", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t}, 165);
+    public static final CApiBuiltinExecutable PySequence_InPlaceConcat = new CApiBuiltinExecutable("PySequence_InPlaceConcat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 166);
+    public static final CApiBuiltinExecutable PySequence_InPlaceRepeat = new CApiBuiltinExecutable("PySequence_InPlaceRepeat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 167);
+    public static final CApiBuiltinExecutable PySequence_Index = new CApiBuiltinExecutable("PySequence_Index", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 168);
+    public static final CApiBuiltinExecutable PySequence_Length = new CApiBuiltinExecutable("PySequence_Length", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 169);
+    public static final CApiBuiltinExecutable PySequence_List = new CApiBuiltinExecutable("PySequence_List", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 170);
+    public static final CApiBuiltinExecutable PySequence_Repeat = new CApiBuiltinExecutable("PySequence_Repeat", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 171);
+    public static final CApiBuiltinExecutable PySequence_SetItem = new CApiBuiltinExecutable("PySequence_SetItem", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.PyObject}, 172);
+    public static final CApiBuiltinExecutable PySequence_SetSlice = new CApiBuiltinExecutable("PySequence_SetSlice", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t, ArgDescriptor.Py_ssize_t, ArgDescriptor.PyObject}, 173);
+    public static final CApiBuiltinExecutable PySequence_Size = new CApiBuiltinExecutable("PySequence_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 174);
+    public static final CApiBuiltinExecutable PySequence_Tuple = new CApiBuiltinExecutable("PySequence_Tuple", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 175);
+    public static final CApiBuiltinExecutable PySet_Add = new CApiBuiltinExecutable("PySet_Add", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 176);
+    public static final CApiBuiltinExecutable PySet_Clear = new CApiBuiltinExecutable("PySet_Clear", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject}, 177);
+    public static final CApiBuiltinExecutable PySet_Contains = new CApiBuiltinExecutable("PySet_Contains", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 178);
+    public static final CApiBuiltinExecutable PySet_Discard = new CApiBuiltinExecutable("PySet_Discard", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 179);
+    public static final CApiBuiltinExecutable PySet_New = new CApiBuiltinExecutable("PySet_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 180);
+    public static final CApiBuiltinExecutable PySet_Pop = new CApiBuiltinExecutable("PySet_Pop", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 181);
+    public static final CApiBuiltinExecutable PySet_Size = new CApiBuiltinExecutable("PySet_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 182);
+    public static final CApiBuiltinExecutable PySlice_New = new CApiBuiltinExecutable("PySlice_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 183);
+    public static final CApiBuiltinExecutable PyStaticMethod_New = new CApiBuiltinExecutable("PyStaticMethod_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 184);
+    public static final CApiBuiltinExecutable PyStructSequence_New = new CApiBuiltinExecutable("PyStructSequence_New", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyTypeObject}, 185);
+    public static final CApiBuiltinExecutable PySys_GetObject = new CApiBuiltinExecutable("PySys_GetObject", CApiCallPath.Direct, ArgDescriptor.PyObjectBorrowed, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString}, 186);
+    public static final CApiBuiltinExecutable PyThreadState_Get = new CApiBuiltinExecutable("PyThreadState_Get", CApiCallPath.Direct, ArgDescriptor.PyThreadState, new ArgDescriptor[]{}, 187);
+    public static final CApiBuiltinExecutable PyThreadState_GetDict = new CApiBuiltinExecutable("PyThreadState_GetDict", CApiCallPath.Direct, ArgDescriptor.PyObjectBorrowed, new ArgDescriptor[]{}, 188);
+    public static final CApiBuiltinExecutable PyThread_acquire_lock = new CApiBuiltinExecutable("PyThread_acquire_lock", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PY_THREAD_TYPE_LOCK, ArgDescriptor.Int}, 189);
+    public static final CApiBuiltinExecutable PyThread_allocate_lock = new CApiBuiltinExecutable("PyThread_allocate_lock", CApiCallPath.Direct, ArgDescriptor.PY_THREAD_TYPE_LOCK, new ArgDescriptor[]{}, 190);
+    public static final CApiBuiltinExecutable PyThread_get_thread_ident = new CApiBuiltinExecutable("PyThread_get_thread_ident", CApiCallPath.Direct, ArgDescriptor.UNSIGNED_LONG, new ArgDescriptor[]{}, 191);
+    public static final CApiBuiltinExecutable PyThread_release_lock = new CApiBuiltinExecutable("PyThread_release_lock", CApiCallPath.Direct, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.PY_THREAD_TYPE_LOCK}, 192);
+    public static final CApiBuiltinExecutable PyTraceBack_Here = new CApiBuiltinExecutable("PyTraceBack_Here", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyFrameObject}, 193);
+    public static final CApiBuiltinExecutable PyTraceMalloc_Track = new CApiBuiltinExecutable("PyTraceMalloc_Track", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.UNSIGNED_INT, ArgDescriptor.UINTPTR_T, ArgDescriptor.SIZE_T}, 194);
+    public static final CApiBuiltinExecutable PyTraceMalloc_Untrack = new CApiBuiltinExecutable("PyTraceMalloc_Untrack", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.UNSIGNED_INT, ArgDescriptor.UINTPTR_T}, 195);
+    public static final CApiBuiltinExecutable PyTruffleByteArray_FromStringAndSize = new CApiBuiltinExecutable("PyTruffleByteArray_FromStringAndSize", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtr, ArgDescriptor.Py_ssize_t}, 196);
+    public static final CApiBuiltinExecutable PyTruffleBytes_Concat = new CApiBuiltinExecutable("PyTruffleBytes_Concat", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 197);
+    public static final CApiBuiltinExecutable PyTruffleBytes_FromFormat = new CApiBuiltinExecutable("PyTruffleBytes_FromFormat", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.PyObject}, 198);
+    public static final CApiBuiltinExecutable PyTruffleBytes_FromStringAndSize = new CApiBuiltinExecutable("PyTruffleBytes_FromStringAndSize", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtr, ArgDescriptor.Py_ssize_t}, 199);
+    public static final CApiBuiltinExecutable PyTruffleCMethod_NewEx = new CApiBuiltinExecutable("PyTruffleCMethod_NewEx", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyMethodDef, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyTypeObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 200);
+    public static final CApiBuiltinExecutable PyTruffleComplex_AsCComplex = new CApiBuiltinExecutable("PyTruffleComplex_AsCComplex", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 201);
+    public static final CApiBuiltinExecutable PyTruffleContextVar_Get = new CApiBuiltinExecutable("PyTruffleContextVar_Get", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Pointer}, 202);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_DateTime_FromDateAndTime = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_DateTime_FromDateAndTime", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyTypeObject}, 203);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 204);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_DateTime_FromTimestamp = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_DateTime_FromTimestamp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 205);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Date_FromDate = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Date_FromDate", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 206);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Date_FromTimestamp = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Date_FromTimestamp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 207);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Delta_FromDelta = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Delta_FromDelta", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 208);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_TimeZone_FromTimeZone = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_TimeZone_FromTimeZone", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 209);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Time_FromTime = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Time_FromTime", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyTypeObject}, 210);
+    public static final CApiBuiltinExecutable PyTruffleDateTimeCAPI_Time_FromTimeAndFold = new CApiBuiltinExecutable("PyTruffleDateTimeCAPI_Time_FromTimeAndFold", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.PyTypeObject}, 211);
+    public static final CApiBuiltinExecutable PyTruffleDescr_NewClassMethod = new CApiBuiltinExecutable("PyTruffleDescr_NewClassMethod", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.Pointer, ArgDescriptor.PyTypeObject}, 212);
+    public static final CApiBuiltinExecutable PyTruffleDescr_NewGetSet = new CApiBuiltinExecutable("PyTruffleDescr_NewGetSet", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.PyTypeObject, ArgDescriptor.Pointer, ArgDescriptor.Pointer, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer}, 213);
+    public static final CApiBuiltinExecutable PyTruffleDict_Next = new CApiBuiltinExecutable("PyTruffleDict_Next", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 214);
+    public static final CApiBuiltinExecutable PyTruffleErr_Fetch = new CApiBuiltinExecutable("PyTruffleErr_Fetch", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 215);
+    public static final CApiBuiltinExecutable PyTruffleErr_GetExcInfo = new CApiBuiltinExecutable("PyTruffleErr_GetExcInfo", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 216);
+    public static final CApiBuiltinExecutable PyTruffleErr_WarnExplicit = new CApiBuiltinExecutable("PyTruffleErr_WarnExplicit", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 217);
+    public static final CApiBuiltinExecutable PyTruffleFloat_AsDouble = new CApiBuiltinExecutable("PyTruffleFloat_AsDouble", CApiCallPath.Ignored, ArgDescriptor.Double, new ArgDescriptor[]{ArgDescriptor.PyObject}, 218);
+    public static final CApiBuiltinExecutable PyTruffleGILState_Ensure = new CApiBuiltinExecutable("PyTruffleGILState_Ensure", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{}, 219);
+    public static final CApiBuiltinExecutable PyTruffleGILState_Release = new CApiBuiltinExecutable("PyTruffleGILState_Release", CApiCallPath.Direct, ArgDescriptor.Void, new ArgDescriptor[]{}, 220);
+    public static final CApiBuiltinExecutable PyTruffleHash_InitSecret = new CApiBuiltinExecutable("PyTruffleHash_InitSecret", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.INT8_T_PTR}, 221);
+    public static final CApiBuiltinExecutable PyTruffleLong_AsPrimitive = new CApiBuiltinExecutable("PyTruffleLong_AsPrimitive", CApiCallPath.Ignored, ArgDescriptor.Long, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Int, ArgDescriptor.Long}, 222);
+    public static final CApiBuiltinExecutable PyTruffleLong_FromString = new CApiBuiltinExecutable("PyTruffleLong_FromString", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObjectAsTruffleString, ArgDescriptor.Int, ArgDescriptor.Int}, 223);
+    public static final CApiBuiltinExecutable PyTruffleLong_One = new CApiBuiltinExecutable("PyTruffleLong_One", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 224);
+    public static final CApiBuiltinExecutable PyTruffleLong_Zero = new CApiBuiltinExecutable("PyTruffleLong_Zero", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{}, 225);
+    public static final CApiBuiltinExecutable PyTruffleModule_AddFunctionToModule = new CApiBuiltinExecutable("PyTruffleModule_AddFunctionToModule", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.Pointer, ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString, ArgDescriptor.Pointer, ArgDescriptor.Int, ArgDescriptor.Int, ArgDescriptor.ConstCharPtrAsTruffleString}, 226);
+    public static final CApiBuiltinExecutable PyTruffleNumber_BinOp = new CApiBuiltinExecutable("PyTruffleNumber_BinOp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int}, 227);
+    public static final CApiBuiltinExecutable PyTruffleNumber_InPlaceBinOp = new CApiBuiltinExecutable("PyTruffleNumber_InPlaceBinOp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.Int}, 228);
+    public static final CApiBuiltinExecutable PyTruffleNumber_UnaryOp = new CApiBuiltinExecutable("PyTruffleNumber_UnaryOp", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Int}, 229);
+    public static final CApiBuiltinExecutable PyTruffleObject_CallFunctionObjArgs = new CApiBuiltinExecutable("PyTruffleObject_CallFunctionObjArgs", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.VA_LIST_PTR}, 230);
+    public static final CApiBuiltinExecutable PyTruffleObject_CallMethodObjArgs = new CApiBuiltinExecutable("PyTruffleObject_CallMethodObjArgs", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.VA_LIST_PTR}, 231);
+    public static final CApiBuiltinExecutable PyTruffleObject_GC_Track = new CApiBuiltinExecutable("PyTruffleObject_GC_Track", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 232);
+    public static final CApiBuiltinExecutable PyTruffleObject_GC_UnTrack = new CApiBuiltinExecutable("PyTruffleObject_GC_UnTrack", CApiCallPath.Ignored, ArgDescriptor.Void, new ArgDescriptor[]{ArgDescriptor.Pointer}, 233);
     public static final CApiBuiltinExecutable PyTruffleObject_GenericGetAttr = new CApiBuiltinExecutable("PyTruffleObject_GenericGetAttr", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 234);
     public static final CApiBuiltinExecutable PyTruffleObject_GenericSetAttr = new CApiBuiltinExecutable("PyTruffleObject_GenericSetAttr", CApiCallPath.Ignored, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.PyObject, ArgDescriptor.PyObject}, 235);
     public static final CApiBuiltinExecutable PyTruffleObject_GetItemString = new CApiBuiltinExecutable("PyTruffleObject_GetItemString", CApiCallPath.Ignored, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.ConstCharPtrAsTruffleString}, 236);
@@ -645,8 +645,6 @@ public abstract class PythonCextBuiltinRegistry {
                     PyObject_DelItem,
                     PyObject_Dir,
                     PyObject_Format,
-                    PyObject_GC_Track,
-                    PyObject_GC_UnTrack,
                     PyObject_GetDoc,
                     PyObject_GetItem,
                     PyObject_GetIter,
@@ -741,6 +739,8 @@ public abstract class PythonCextBuiltinRegistry {
                     PyTruffleNumber_UnaryOp,
                     PyTruffleObject_CallFunctionObjArgs,
                     PyTruffleObject_CallMethodObjArgs,
+                    PyTruffleObject_GC_Track,
+                    PyTruffleObject_GC_UnTrack,
                     PyTruffleObject_GenericGetAttr,
                     PyTruffleObject_GenericSetAttr,
                     PyTruffleObject_GetItemString,
@@ -1235,197 +1235,197 @@ public abstract class PythonCextBuiltinRegistry {
             case 137:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_FormatNodeGen.create();
             case 138:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_TrackNodeGen.create();
-            case 139:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_UnTrackNodeGen.create();
-            case 140:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_GetDocNodeGen.create();
-            case 141:
+            case 139:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_GetItemNodeGen.create();
-            case 142:
+            case 140:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_GetIterNodeGen.create();
+            case 141:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_HasAttrNodeGen.create();
+            case 142:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_HasAttrNodeGen.create();
             case 143:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_HasAttrNodeGen.create();
-            case 144:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_HasAttrNodeGen.create();
-            case 145:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_HashNodeGen.create();
-            case 146:
+            case 144:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_HashNotImplementedNodeGen.create();
-            case 147:
+            case 145:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_IsInstanceNodeGen.create();
-            case 148:
+            case 146:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_IsSubclassNodeGen.create();
-            case 149:
+            case 147:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_IsTrueNodeGen.create();
-            case 150:
+            case 148:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_LengthHintNodeGen.create();
-            case 151:
+            case 149:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_ReprNodeGen.create();
-            case 152:
+            case 150:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_RichCompareNodeGen.create();
-            case 153:
+            case 151:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_SetDocNodeGen.create();
-            case 154:
+            case 152:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_SetItemNodeGen.create();
-            case 155:
+            case 153:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_SizeNodeGen.create();
-            case 156:
+            case 154:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_StrNodeGen.create();
-            case 157:
+            case 155:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_TypeNodeGen.create();
-            case 158:
+            case 156:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltinsFactory.PyRun_StringFlagsNodeGen.create();
-            case 159:
+            case 157:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltinsFactory.PySeqIter_NewNodeGen.create();
-            case 160:
+            case 158:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_CheckNodeGen.create();
-            case 161:
+            case 159:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_ConcatNodeGen.create();
-            case 162:
+            case 160:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_ContainsNodeGen.create();
-            case 163:
+            case 161:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_CountNodeGen.create();
-            case 164:
+            case 162:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_DelItemNodeGen.create();
-            case 165:
+            case 163:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_DelSliceNodeGen.create();
-            case 166:
+            case 164:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_GetItemNodeGen.create();
-            case 167:
+            case 165:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_GetSliceNodeGen.create();
-            case 168:
+            case 166:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_InPlaceConcatNodeGen.create();
-            case 169:
+            case 167:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_InPlaceRepeatNodeGen.create();
-            case 170:
+            case 168:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_IndexNodeGen.create();
-            case 171:
+            case 169:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_SizeNodeGen.create();
-            case 172:
+            case 170:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_ListNodeGen.create();
-            case 173:
+            case 171:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_RepeatNodeGen.create();
-            case 174:
+            case 172:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_SetItemNodeGen.create();
-            case 175:
+            case 173:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_SetSliceNodeGen.create();
-            case 176:
+            case 174:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_SizeNodeGen.create();
-            case 177:
+            case 175:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PySequence_TupleNodeGen.create();
-            case 178:
+            case 176:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_AddNodeGen.create();
-            case 179:
+            case 177:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_ClearNodeGen.create();
-            case 180:
+            case 178:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_ContainsNodeGen.create();
-            case 181:
+            case 179:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_DiscardNodeGen.create();
-            case 182:
+            case 180:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_NewNodeGen.create();
-            case 183:
+            case 181:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_PopNodeGen.create();
-            case 184:
+            case 182:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PySet_SizeNodeGen.create();
-            case 185:
+            case 183:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltinsFactory.PySlice_NewNodeGen.create();
-            case 186:
+            case 184:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextFuncBuiltinsFactory.PyStaticMethod_NewNodeGen.create();
-            case 187:
+            case 185:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextStructSeqBuiltinsFactory.PyStructSequence_NewNodeGen.create();
-            case 188:
+            case 186:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltinsFactory.PySys_GetObjectNodeGen.create();
-            case 189:
+            case 187:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyThreadState_GetNodeGen.create();
-            case 190:
+            case 188:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyThreadState_GetDictNodeGen.create();
-            case 191:
+            case 189:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_acquire_lockNodeGen.create();
-            case 192:
+            case 190:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_allocate_lockNodeGen.create();
-            case 193:
+            case 191:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_get_thread_identNodeGen.create();
-            case 194:
+            case 192:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_release_lockNodeGen.create();
-            case 195:
+            case 193:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTracebackBuiltinsFactory.PyTraceBack_HereNodeGen.create();
-            case 196:
+            case 194:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_TrackNodeGen.create();
-            case 197:
+            case 195:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_UntrackNodeGen.create();
-            case 198:
+            case 196:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffleByteArray_FromStringAndSizeNodeGen.create();
-            case 199:
+            case 197:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffleBytes_ConcatNodeGen.create();
-            case 200:
+            case 198:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffleBytes_FromFormatNodeGen.create();
-            case 201:
+            case 199:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffleBytes_FromStringAndSizeNodeGen.create();
-            case 202:
+            case 200:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltinsFactory.PyTruffleCMethod_NewExNodeGen.create();
-            case 203:
+            case 201:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltinsFactory.PyTruffleComplex_AsCComplexNodeGen.create();
-            case 204:
+            case 202:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextContextBuiltinsFactory.PyTruffleContextVar_GetNodeGen.create();
-            case 205:
+            case 203:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeNodeGen.create();
-            case 206:
+            case 204:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFoldNodeGen.create();
-            case 207:
+            case 205:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_DateTime_FromTimestampNodeGen.create();
-            case 208:
+            case 206:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_Date_FromDateNodeGen.create();
-            case 209:
+            case 207:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_Date_FromTimestampNodeGen.create();
-            case 210:
+            case 208:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_Delta_FromDeltaNodeGen.create();
-            case 211:
+            case 209:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_TimeZone_FromTimeZoneNodeGen.create();
-            case 212:
+            case 210:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_Time_FromTimeNodeGen.create();
-            case 213:
+            case 211:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltinsFactory.PyTruffleDateTimeCAPI_Time_FromTimeAndFoldNodeGen.create();
-            case 214:
+            case 212:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltinsFactory.PyTruffleDescr_NewClassMethodNodeGen.create();
-            case 215:
+            case 213:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltinsFactory.PyTruffleDescr_NewGetSetNodeGen.create();
-            case 216:
+            case 214:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltinsFactory.PyTruffleDict_NextNodeGen.create();
-            case 217:
+            case 215:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory.PyTruffleErr_FetchNodeGen.create();
-            case 218:
+            case 216:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory.PyTruffleErr_GetExcInfoNodeGen.create();
-            case 219:
+            case 217:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextWarnBuiltinsFactory.PyTruffleErr_WarnExplicitNodeGen.create();
-            case 220:
+            case 218:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltinsFactory.PyTruffleFloat_AsDoubleNodeGen.create();
-            case 221:
+            case 219:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyTruffleGILState_EnsureNodeGen.create();
-            case 222:
+            case 220:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyTruffleGILState_ReleaseNodeGen.create();
-            case 223:
+            case 221:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory.PyTruffleHash_InitSecretNodeGen.create();
-            case 224:
+            case 222:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyTruffleLong_AsPrimitiveNodeGen.create();
-            case 225:
+            case 223:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyTruffleLong_FromStringNodeGen.create();
-            case 226:
+            case 224:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyTruffleLong_OneNodeGen.create();
-            case 227:
+            case 225:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyTruffleLong_ZeroNodeGen.create();
-            case 228:
+            case 226:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory.PyTruffleModule_AddFunctionToModuleNodeGen.create();
-            case 229:
+            case 227:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyTruffleNumber_BinOpNodeGen.create();
-            case 230:
+            case 228:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyTruffleNumber_InPlaceBinOpNodeGen.create();
-            case 231:
+            case 229:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyTruffleNumber_UnaryOpNodeGen.create();
-            case 232:
+            case 230:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffleObject_CallFunctionObjArgsNodeGen.create();
-            case 233:
+            case 231:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffleObject_CallMethodObjArgsNodeGen.create();
+            case 232:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleObject_GC_TrackNodeGen.create();
+            case 233:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleObject_GC_UnTrackNodeGen.create();
             case 234:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffleObject_GenericGetAttrNodeGen.create();
             case 235:

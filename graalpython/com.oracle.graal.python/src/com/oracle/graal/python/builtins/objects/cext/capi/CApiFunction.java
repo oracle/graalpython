@@ -537,6 +537,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyModule_GetState", ret = Pointer, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModuleDef_Init", ret = PyObject, args = {PYMODULEDEF_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyObject_SelfIter", ret = PyObject, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_GC_Track", ret = Void, args = {Pointer}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_GC_UnTrack", ret = Void, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyMethodDescrObject_GetMethod", ret = PyMethodDef, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewClassMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewGetSet", ret = PyObject, args = {PyTypeObject, PyGetSetDef}, call = CImpl)

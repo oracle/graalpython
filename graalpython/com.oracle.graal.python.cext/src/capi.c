@@ -2207,14 +2207,6 @@ PyAPI_FUNC(int) PyObject_GC_IsFinalized(PyObject* a) {
 PyAPI_FUNC(int) PyObject_GC_IsTracked(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyObject_GC_Track
-PyAPI_FUNC(void) PyObject_GC_Track(void* a) {
-    GraalPyObject_GC_Track(a);
-}
-#undef PyObject_GC_UnTrack
-PyAPI_FUNC(void) PyObject_GC_UnTrack(void* a) {
-    GraalPyObject_GC_UnTrack(a);
-}
 #undef PyObject_GET_WEAKREFS_LISTPTR
 PyAPI_FUNC(PyObject**) PyObject_GET_WEAKREFS_LISTPTR(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
