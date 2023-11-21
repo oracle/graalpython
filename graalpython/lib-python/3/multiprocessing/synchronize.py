@@ -14,7 +14,9 @@ __all__ = [
 import threading
 import sys
 import tempfile
-import _multiprocessing
+# Begin Truffle change
+# import _multiprocessing
+# End Truffle change
 import time
 
 from . import context
@@ -24,20 +26,30 @@ from . import util
 # Try to import the mp.synchronize module cleanly, if it fails
 # raise ImportError for platforms lacking a working sem_open implementation.
 # See issue 3770
-try:
-    from _multiprocessing import SemLock, sem_unlink
-except (ImportError):
-    raise ImportError("This platform lacks a functioning sem_open" +
-                      " implementation, therefore, the required" +
-                      " synchronization primitives needed will not" +
-                      " function, see issue 3770.")
+# Begin Truffle change
+# try:
+#     from _multiprocessing import SemLock, sem_unlink
+# except (ImportError):
+#     raise ImportError("This platform lacks a functioning sem_open" +
+#                       " implementation, therefore, the required" +
+#                       " synchronization primitives needed will not" +
+#                       " function, see issue 3770.")
+# Begin Truffle change
 
 #
 # Constants
 #
 
 RECURSIVE_MUTEX, SEMAPHORE = list(range(2))
-SEM_VALUE_MAX = _multiprocessing.SemLock.SEM_VALUE_MAX
+# Begin Truffle change
+try:
+    import _multiprocessing
+    SEM_VALUE_MAX = _multiprocessing.SemLock.SEM_VALUE_MAX
+except ImportError:
+    import _multiprocessing_graalpy
+    SEM_VALUE_MAX = _multiprocessing_graalpy.SemLock.SEM_VALUE_MAX
+
+# Begin Truffle change
 
 #
 # Base class for semaphores and mutexes; wraps `_multiprocessing.SemLock`
@@ -54,9 +66,11 @@ class SemLock(object):
         unlink_now = sys.platform == 'win32' or name == 'fork'
         for i in range(100):
             try:
-                sl = self._semlock = _multiprocessing.SemLock(
+                # Begin Truffle change
+                sl = self._semlock = ctx._SemLock(
                     kind, value, maxvalue, self._make_name(),
                     unlink_now)
+                # End Truffle change
             except FileExistsError:
                 pass
             else:
@@ -84,7 +98,9 @@ class SemLock(object):
     @staticmethod
     def _cleanup(name):
         from .resource_tracker import unregister
-        sem_unlink(name)
+        # Begin Truffle change
+        context._default_context._sem_unlink(name)
+        # End Truffle change
         unregister(name, "semaphore")
 
     def _make_methods(self):
@@ -107,7 +123,10 @@ class SemLock(object):
         return (h, sl.kind, sl.maxvalue, sl.name)
 
     def __setstate__(self, state):
-        self._semlock = _multiprocessing.SemLock._rebuild(*state)
+        # Begin Truffle change
+        ctx = context._default_context.get_context()
+        self._semlock = ctx._SemLock_rebuild(*state)
+        # End Truffle change
         util.debug('recreated blocker with handle %r' % state[0])
         self._make_methods()
 

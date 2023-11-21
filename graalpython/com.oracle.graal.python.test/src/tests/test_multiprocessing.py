@@ -37,41 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import multiprocessing
+
 import sys
-import time
-from multiprocessing.connection import wait
-
-
-def test_wait_timeout():
-    timeout = 3
-    a, b = multiprocessing.Pipe()
-    x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe
-    for fds in [[a, b], [x, y], [a, b, x, y]]:
-        start = time.monotonic()
-        res = wait(fds, timeout)
-        delta = time.monotonic() - start
-        assert not res
-        assert delta < timeout * 2
-        assert delta > timeout / 2
-
-
-def test_wait():
-    a, b = multiprocessing.Pipe()
-    x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe
-    a.send(42)
-    res = wait([b, y], 3)
-    assert res == [b], "res1"
-    assert b.recv() == 42, "res2"
-    y.send(33)
-    res = wait([b, x], 3)
-    assert res == [x], "res3"
-    assert x.recv() == 33, "res4"
-    a.send(1)
-    y.send(2)
-    res = wait([b, x], 3)
-    assert set(res) == set([b, x])
-    assert b.recv() == 1
-    assert x.recv() == 2
 
 
 def test_array_read():

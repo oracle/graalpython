@@ -73,6 +73,8 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder;
 import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
+import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
+import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -195,7 +197,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
-import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -1221,8 +1222,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PThread(cls, getShape(cls), thread));
     }
 
-    public final PSemLock createSemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
+    public final PSemLock createSemLock(Object cls, long handle, int kind, int maxValue, TruffleString name) {
+        return trace(new PSemLock(cls, getShape(cls), handle, kind, maxValue, name));
+    }
+
+    public final PGraalPySemLock createGraalPySemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
+        return trace(new PGraalPySemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
     public final PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {

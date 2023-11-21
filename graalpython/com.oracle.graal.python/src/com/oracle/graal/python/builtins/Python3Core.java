@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
@@ -199,6 +198,10 @@ import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingGraalPyModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -332,7 +335,6 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.SemLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
@@ -698,8 +700,12 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
-                        new MultiprocessingModuleBuiltins(),
-                        new SemLockBuiltins(),
+                        // _multiprocessing
+                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new MultiprocessingModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new SemLockBuiltins(),
+                        new MultiprocessingGraalPyModuleBuiltins(),
+                        new GraalPySemLockBuiltins(),
+
                         new WarningsModuleBuiltins(),
                         new GraalPythonModuleBuiltins(),
 

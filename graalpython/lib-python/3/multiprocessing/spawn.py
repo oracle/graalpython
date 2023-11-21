@@ -18,12 +18,6 @@ from . import process
 from .context import reduction
 from . import util
 
-import io
-
-# Begin Truffle change
-from _multiprocessing import _read
-# End Truffle change
-
 __all__ = ['_main', 'freeze_support', 'set_executable', 'get_executable',
            'get_preparation_data', 'get_command_line', 'import_main_path']
 
@@ -134,18 +128,6 @@ def _main(fd, parent_sentinel):
             del process.current_process()._inheriting
     return self._bootstrap(parent_sentinel)
 
-# Begin Truffle change
-def spawn_truffleprocess(fd, parent_sentinel):   
-    process.current_process()._inheriting = True
-    try:
-        bytesIO = io.BytesIO(_read(fd, 1024))
-        preparation_data = reduction.pickle.load(bytesIO)
-        prepare(preparation_data)
-        self = reduction.pickle.load(bytesIO)
-    finally:
-        del process.current_process()._inheriting
-    return self._bootstrap(parent_sentinel)
-# End Truffle change
 
 def _check_not_importing_main():
     if getattr(process.current_process(), '_inheriting', False):

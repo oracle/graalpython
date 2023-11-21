@@ -113,12 +113,6 @@ public final class LockBuiltins extends PythonBuiltins {
             return self.acquireNonBlocking();
         }
 
-        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "!blocking"})
-        static boolean nonBlocking(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout) {
-            // acquire lock
-            return self.acquireNonBlocking();
-        }
-
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
         boolean acBlocking(PLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
                         @Cached.Shared("g") @Cached GilNode gil) {
@@ -133,18 +127,6 @@ public final class LockBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
         boolean acBlocking(PRLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
-                        @Cached.Shared("g") @Cached GilNode gil) {
-            // acquire lock
-            gil.release(true);
-            try {
-                return self.acquireBlocking(this);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
-        boolean acBlocking(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
                         @Cached.Shared("g") @Cached GilNode gil) {
             // acquire lock
             gil.release(true);

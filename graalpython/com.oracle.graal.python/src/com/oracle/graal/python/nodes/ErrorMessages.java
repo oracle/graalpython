@@ -1006,6 +1006,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
+    public static final TruffleString SEMAPHORE_RELEASED_TOO_MANY_TIMES = tsLiteral("semaphore or lock released too many times");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

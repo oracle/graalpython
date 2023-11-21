@@ -18,13 +18,17 @@ import time
 import tempfile
 import itertools
 
-import _multiprocessing
+# Begin Truffle change
+# import _multiprocessing
+import weakref
+# End Truffle change
 
-import threading
 from . import util
 
 from . import AuthenticationError, BufferTooShort
-from .context import reduction
+# Begin Truffle change
+from .context import reduction, _default_context
+# End Truffle change
 _ForkingPickler = reduction.ForkingPickler
 
 try:
@@ -49,8 +53,8 @@ default_family = 'AF_INET'
 families = ['AF_INET']
 
 if hasattr(socket, 'AF_UNIX'):
-   default_family = 'AF_UNIX'
-   families += ['AF_UNIX']
+    default_family = 'AF_UNIX'
+    families += ['AF_UNIX']
 
 if sys.platform == 'win32':
     default_family = 'AF_PIPE'
@@ -77,8 +81,8 @@ def arbitrary_address(family):
         return tempfile.mktemp(prefix='listener-', dir=util.get_temp_dir())
     elif family == 'AF_PIPE':
         # GraalVM change: add thread ID, we may be in the same process
-        return tempfile.mktemp(prefix=r'\\.\pipe\pyc-%d-%d-%d-' %
-                               (os.getpid(), threading.current_thread().native_id, next(_mmap_counter)), dir="")
+        return tempfile.mktemp(prefix=r'\\.\pipe\pyc-%d-%d-' %
+                               (_default_context._get_id(), next(_mmap_counter)), dir="")
     else:
         raise ValueError('unrecognized family')
 
@@ -113,14 +117,32 @@ def address_type(address):
 # Connection classes
 #
 
+
+# Begin Truffle change
+class _ConnectionFinalizer:
+    def __init__(self, fd):
+        self.fd = fd
+
+    def close(self):
+        if self.fd:
+            try:
+                _default_context._close(self.fd)
+            finally:
+                self.fd = None
+# End Truffle change
+
+
 class _ConnectionBase:
     _handle = None
 
     def __init__(self, handle, readable=True, writable=True):
         handle = handle.__index__()
         # Begin Truffle change
-        # if handle < 0:
-        #    raise ValueError("invalid handle")
+        if handle < 0 and not _default_context._is_graalpy():
+            raise ValueError("invalid handle")
+        # Use finalize instead of __del__
+        self._finalizer = _ConnectionFinalizer(handle)
+        weakref.finalize(self, self._finalizer.close)
         # End Truffle change
         if not readable and not writable:
             raise ValueError(
@@ -178,7 +200,9 @@ class _ConnectionBase:
         """Close the connection"""
         if self._handle is not None:
             try:
-                self._close()
+                # Begin Truffle change
+                self._finalizer.close()
+                # End Truffle change
             finally:
                 self._handle = None
 
@@ -364,17 +388,14 @@ class Connection(_ConnectionBase):
         def _close(self, _close=os.close):
             # Begin Truffle change
             # _close(self._handle)
-            if(self._handle < 0):
-                _multiprocessing._close(self._handle)
-            else:
-                _close(self._handle)
+            _default_context._close(self._handle)
             # End Truffle change
         _write = os.write
         _read = os.read
 
     def _send(self, buf, write=_write):
         # Begin Truffle change
-        if(self._handle < 0):
+        if self._handle < 0 and _default_context._is_graalpy():
             self._send_mp_write(buf.tobytes())
             return
         # End Truffle change
@@ -388,7 +409,7 @@ class Connection(_ConnectionBase):
 
     def _recv(self, size, read=_read):
         # Begin Truffle change
-        if(self._handle < 0):
+        if self._handle < 0 and _default_context._is_graalpy():
             return self._recv_mp_read(size)
         # End Truffle change
         buf = io.BytesIO()
@@ -408,7 +429,7 @@ class Connection(_ConnectionBase):
 
     def _send_bytes(self, buf):
         # Begin Truffle change
-        if self._handle < 0:
+        if self._handle < 0 and _default_context._is_graalpy():
             self._send_mp_write(buf.tobytes())
             return
         # End Truffle change
@@ -436,7 +457,7 @@ class Connection(_ConnectionBase):
 
     def _recv_bytes(self, maxsize=None):
         # Begin Truffle change
-        if(self._handle < 0):
+        if self._handle < 0 and _default_context._is_graalpy():
             return self._recv_mp_read(maxsize)
         # End Truffle change
         buf = self._recv(4)
@@ -452,16 +473,19 @@ class Connection(_ConnectionBase):
     def _recv_mp_read(self, size):
         # size is irelevant, _multiprocessing._read returns
         # the whole byte array at once
-        chunk = _multiprocessing._read(self._handle, size)
+        from _multiprocessing_graalpy import _read
+        chunk = _read(self._handle, size)
         return io.BytesIO(chunk)
 
     def _send_mp_write(self, bytes):
-        _multiprocessing._write(self._handle, bytes)
+        from _multiprocessing_graalpy import _write
+        _write(self._handle, bytes)
     # End Truffle change
 
     def _poll(self, timeout):
         r = wait([self], timeout)
         return bool(r)
+
 
 #
 # Public functions
@@ -564,7 +588,7 @@ if sys.platform != 'win32':
         else:
             # Begin Truffle change
             # fd1, fd2 = os.pipe()
-            fd1, fd2 = _multiprocessing._pipe()
+            fd1, fd2 = _default_context._pipe()
             # End Truffle change
             c1 = Connection(fd1, writable=False)
             c2 = Connection(fd2, readable=False)
@@ -956,12 +980,12 @@ else:
     else:
         _WaitSelector = selectors.SelectSelector
 
-    def original_wait(object_list, timeout=None):
+    def _original_wait(object_list, timeout=None):
         '''
         Wait till an object in object_list is ready/readable.
 
         Returns list of those objects in object_list which are ready/readable.
-        #'''
+        '''
         with _WaitSelector() as selector:
             for obj in object_list:
                 selector.register(obj, selectors.EVENT_READ)
@@ -987,6 +1011,8 @@ else:
         Returns list of those objects in object_list which are ready/readable.
         #'''
 
+        if not _default_context._is_graalpy():
+            return _original_wait(object_list, timeout)
         mp_select_list = []
         mp_original_objs = []
         selectors_list = []
@@ -1000,7 +1026,7 @@ else:
 
         # If there are no "fake" multiprocessing fds, then just use the original implementation
         if not mp_select_list:
-            return original_wait(object_list, timeout)
+            return _original_wait(object_list, timeout)
 
         # From the docs:
         # timeout is None -> block until ready
@@ -1013,7 +1039,8 @@ else:
         else:
             t = float(timeout)
             normalized_timeout = -1 if t == 0 else t
-        return _multiprocessing._select(mp_select_list, mp_original_objs, selectors_list, normalized_timeout)
+        from _multiprocessing_graalpy import _select
+        return _select(mp_select_list, mp_original_objs, selectors_list, normalized_timeout)
 # End Truffle change
 
 #

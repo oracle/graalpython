@@ -64,7 +64,9 @@ SKIPLIST = (
     (None, "arm", "test_smtplib"),
     (None, "aarch64", "test_imaplib"),
     (None, "arm", "test_multiprocessing_spawn"),
+    (None, "arm", "test_multiprocessing_graalpy"),
     (None, "aarch64", "test_multiprocessing_spawn"),
+    (None, "aarch64", "test_multiprocessing_graalpy"),
 )
 
 

@@ -1909,7 +1909,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("static-method")
-    protected static final class CastFunction implements TruffleObject {
+    protected static class CastFunction implements TruffleObject {
 
         protected static NativeFunction create() {
             Object f = new CastFunction();
@@ -1947,7 +1947,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("static-method")
-    protected static final class MemMoveFunction implements TruffleObject {
+    protected static class MemMoveFunction implements TruffleObject {
 
         final Object nativeMemmove;
 
@@ -2025,7 +2025,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("static-method")
-    protected static final class MemSetFunction implements TruffleObject {
+    protected static class MemSetFunction implements TruffleObject {
 
         final Object nativeMemset;
 
@@ -2091,7 +2091,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("static-method")
-    protected static final class StringAtFunction implements TruffleObject {
+    protected static class StringAtFunction implements TruffleObject {
 
         protected static NativeFunction create() {
             Object f = new StringAtFunction();
@@ -2138,7 +2138,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("static-method")
-    protected static final class WStringAtFunction implements TruffleObject {
+    protected static class WStringAtFunction implements TruffleObject {
 
         protected static NativeFunction create() {
             Object f = new WStringAtFunction();

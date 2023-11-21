@@ -1198,7 +1198,7 @@ public final class PythonContext extends Python3Core {
     private static class ChildContextThread implements Runnable {
         private static final TruffleLogger MULTIPROCESSING_LOGGER = PythonLanguage.getLogger(ChildContextThread.class);
         private static final Source MULTIPROCESSING_SOURCE = Source.newBuilder(PythonLanguage.ID,
-                        "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
+                        "from multiprocessing.popen_truffleprocess import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
                         "<spawned-child-context>").internal(true).build();
 
         private final int fd;

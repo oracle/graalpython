@@ -632,16 +632,16 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill',
         # Disabled due to transient failure
         'graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.*',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_error_on_stdio_flush_1',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_parent_process',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_timeout',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLogging.*',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.TestNoForkBomb.test_noforkbomb',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_active_children',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_error_on_stdio_flush_1',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_parent_process',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_error_on_stdio_flush_1',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_error_on_stdio_flush_2',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy._TestImportStar.test_import',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_default_timeout',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_timeout',
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestLogging.*',
         'graalpython.lib-python.3.test.test_pty.PtyTest.test_openpty',
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
         'graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance',
@@ -678,12 +678,13 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
         # GC-related transients
         'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
-        # Transiently ends up with 2 processes
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_all_completed',
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_first_completed',
         # Flaky buffer capi tests
         '*graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_assign_multidim',
+        # Too unreliable in the CI
+        'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_many_processes',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_many_processes',
+        # Transiently ends up with 2 processes
+        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
     ]
 
     result_tags = linux_tags & darwin_tags
@@ -711,7 +712,7 @@ def update_unittest_tags(args):
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
-AOT_ONLY_TESTS = ["test_patched_pip.py"]
+AOT_ONLY_TESTS = ["test_patched_pip.py", "test_multiprocessing_spawn.py"]
 
 GINSTALL_GATE_PACKAGES = {
     "numpy": "numpy",
@@ -1302,6 +1303,7 @@ def graalpython_gate_runner(args, tasks):
             "test_memoryview.py",
             "test_mmap.py", # sys.getwindowsversion
             "test_multiprocessing.py", # import _winapi
+            "test_multiprocessing_graalpy.py", # import _winapi
             "test_patched_pip.py",
             "test_pathlib.py",
             "test_posix.py", # import posix
@@ -2380,7 +2382,7 @@ def python_coverage(args):
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
             env['ENABLE_THREADED_GRAALPYTEST'] = "false"
             # deselect some tagged unittests that hang with coverage enabled
-            env['TAGGED_UNITTEST_SELECTION'] = "~test_multiprocessing_spawn,test_multiprocessing_main_handling"
+            env['TAGGED_UNITTEST_SELECTION'] = "~test_multiprocessing_spawn,test_multiprocessing_main_handling,test_multiprocessing_graalpy"
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
             elif kwds.pop("hpy", False):

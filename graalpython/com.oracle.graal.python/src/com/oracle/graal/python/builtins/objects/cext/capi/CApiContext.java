@@ -663,8 +663,12 @@ public final class CApiContext extends CExtContext {
     @TruffleBoundary
     public void finalizeCapi() {
         if (nativeFinalizerShutdownHook != null) {
-            Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
-            nativeFinalizerRunnable.run();
+            try {
+                Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
+                nativeFinalizerRunnable.run();
+            } catch (IllegalStateException e) {
+                // Shutdown already in progress, let it do the finalization then
+            }
         }
     }
 

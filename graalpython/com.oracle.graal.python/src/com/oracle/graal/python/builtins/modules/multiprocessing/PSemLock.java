@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,57 +38,69 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins;
+package com.oracle.graal.python.builtins.modules.multiprocessing;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public enum PythonOS {
-    PLATFORM_JAVA("java"),
-    PLATFORM_CYGWIN("cygwin"),
-    PLATFORM_LINUX("linux"),
-    PLATFORM_DARWIN("darwin"),
-    PLATFORM_WIN32("win32"),
-    PLATFORM_SUNOS("sunos"),
-    PLATFORM_FREEBSD("freebsd"),
-    PLATFORM_ANY(null);
+public class PSemLock extends PythonBuiltinObject {
+    public static final int RECURSIVE_MUTEX = 0;
+    public static final int SEMAPHORE = 1;
 
+    private final long handle;
+    private long lastThreadId;
+    private int count;
+    private final int maxValue;
+    private final int kind;
     private final TruffleString name;
 
-    PythonOS(String name) {
-        this.name = toTruffleStringUncached(name);
+    public PSemLock(Object cls, Shape instanceShape, long handle, int kind, int maxValue, TruffleString name) {
+        super(cls, instanceShape);
+        this.handle = handle;
+        this.maxValue = maxValue;
+        this.kind = kind;
+        this.name = name;
+    }
+
+    public long getHandle() {
+        return handle;
+    }
+
+    public int getKind() {
+        return kind;
     }
 
     public TruffleString getName() {
         return name;
     }
 
-    private static final PythonOS current;
-
-    static {
-        String property = System.getProperty("os.name");
-        PythonOS os = PLATFORM_JAVA;
-        if (property != null) {
-            property = property.toLowerCase();
-            if (property.contains("cygwin")) {
-                os = PLATFORM_CYGWIN;
-            } else if (property.contains("linux")) {
-                os = PLATFORM_LINUX;
-            } else if (property.contains("mac")) {
-                os = PLATFORM_DARWIN;
-            } else if (property.contains("windows")) {
-                os = PLATFORM_WIN32;
-            } else if (property.contains("sunos")) {
-                os = PLATFORM_SUNOS;
-            } else if (property.contains("freebsd")) {
-                os = PLATFORM_FREEBSD;
-            }
-        }
-        current = os;
+    public int getMaxValue() {
+        return maxValue;
     }
 
-    public static PythonOS getPythonOS() {
-        return current;
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    public void increaseCount() {
+        count++;
+    }
+
+    public void decreaseCount() {
+        count--;
+    }
+
+    public void setLastThreadId(long lastThreadId) {
+        this.lastThreadId = lastThreadId;
+    }
+
+    public boolean isMine() {
+        return count > 0 && lastThreadId == PThread.getThreadId(Thread.currentThread());
     }
 }
