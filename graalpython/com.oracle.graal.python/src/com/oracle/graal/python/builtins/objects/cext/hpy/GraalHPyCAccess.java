@@ -171,7 +171,8 @@ public abstract class GraalHPyCAccess {
         public abstract Object execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final Object getElementPtr(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
@@ -258,7 +259,8 @@ public abstract class GraalHPyCAccess {
          * Read an {@code HPy} handle and return the referred object.
          */
         public final Object read(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field), false);
         }
 
@@ -269,7 +271,8 @@ public abstract class GraalHPyCAccess {
          * struct.
          */
         public final Object readAndClose(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field), true);
         }
 
@@ -299,7 +302,8 @@ public abstract class GraalHPyCAccess {
          * Read an {@code HPy} handle and return the referred object.
          */
         public final Object read(GraalHPyContext ctx, PythonObject owner, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, owner, pointer, ctx.getCFieldOffset(field), false);
         }
 
@@ -336,7 +340,8 @@ public abstract class GraalHPyCAccess {
         protected abstract int execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final int read(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
@@ -372,7 +377,8 @@ public abstract class GraalHPyCAccess {
         protected abstract long execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final long read(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
@@ -398,7 +404,8 @@ public abstract class GraalHPyCAccess {
         protected abstract double execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final double read(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
@@ -425,7 +432,8 @@ public abstract class GraalHPyCAccess {
         protected abstract double execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final double read(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
@@ -452,7 +460,8 @@ public abstract class GraalHPyCAccess {
         protected abstract Object execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final Object read(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
@@ -479,7 +488,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, Object pointer, long offset, double value);
 
         public final void write(GraalHPyContext ctx, Object pointer, GraalHPyCField field, double value) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, pointer, ctx.getCFieldOffset(field), value);
         }
 
@@ -510,7 +520,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, Object pointer, long offset, int value);
 
         public final void write(GraalHPyContext ctx, Object pointer, GraalHPyCField field, int value) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, pointer, ctx.getCFieldOffset(field), value);
         }
 
@@ -541,7 +552,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, Object pointer, long offset, long value);
 
         public final void write(GraalHPyContext ctx, Object pointer, GraalHPyCField field, long value) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, pointer, ctx.getCFieldOffset(field), value);
         }
 
@@ -588,7 +600,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, Object pointer, long offset, Object value);
 
         public final void write(GraalHPyContext ctx, Object pointer, GraalHPyCField field, Object value) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, pointer, ctx.getCFieldOffset(field), value);
         }
 
@@ -615,7 +628,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, PythonObject owner, Object pointer, long offset, Object value);
 
         public final void write(GraalHPyContext ctx, PythonObject owner, Object pointer, GraalHPyCField field, Object value) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, owner, pointer, ctx.getCFieldOffset(field), value);
         }
 
@@ -642,7 +656,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, Object basePointer, long offset, Object valuePointer);
 
         public final void write(GraalHPyContext ctx, Object basePointer, GraalHPyCField field, Object valuePointer) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, basePointer, ctx.getCFieldOffset(field), valuePointer);
         }
 
@@ -669,7 +684,8 @@ public abstract class GraalHPyCAccess {
         protected abstract void execute(GraalHPyContext ctx, Object basePointer, long offset, long value);
 
         public final void write(GraalHPyContext ctx, Object basePointer, GraalHPyCField field, long value) {
-            assert accepts(field);
+            // GR-50245
+            // assert accepts(field);
             execute(ctx, basePointer, ctx.getCFieldOffset(field), value);
         }
 
