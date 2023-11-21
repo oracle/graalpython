@@ -1198,7 +1198,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doNativeWrapperIncByOne")
         static PythonAbstractObjectNativeWrapper doNativeWrapper(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, long value,
                         @Shared @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedConditionProfile hasRefProfile) {
+                        @Exclusive @Cached InlinedConditionProfile hasRefProfile) {
             assert value >= 0 : "adding negative reference count; dealloc might not happen";
             if (nativeWrapper.isNative(inliningTarget, isNativeProfile)) {
                 nativeWrapper.setRefCount(inliningTarget, nativeWrapper.getRefCount() + value, hasRefProfile);
