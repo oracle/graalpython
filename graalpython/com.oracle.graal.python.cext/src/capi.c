@@ -879,11 +879,15 @@ _Py_DECREF. The destructors get called by libc during exit during which we canno
 So we rebind them to no-ops when exiting.
 */
 Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
- return 100; // large dummy refcount
+    return IMMORTAL_REFCNT; // large dummy refcount
 }
 
 void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
- // do nothing
+    // do nothing
+}
+
+void nop_GraalPyTruffle_NotifyRefCount(PyObject*, Py_ssize_t) {
+    // do nothing
 }
 
 /*
@@ -906,6 +910,8 @@ static int64_t reset_func_ptrs[] = {
         nop_GraalPy_get_PyObject_ob_refcnt,
         &GraalPy_set_PyObject_ob_refcnt,
         nop_GraalPy_set_PyObject_ob_refcnt,
+        &GraalPyTruffle_NotifyRefCount,
+        nop_GraalPyTruffle_NotifyRefCount,
         /* sentinel (required) */
         NULL
 };
