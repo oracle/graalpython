@@ -341,7 +341,6 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialSetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
         static Object setState(VirtualFrame frame, PPartial self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDictNode,

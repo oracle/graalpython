@@ -504,7 +504,6 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = "fromkeys", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "iterable", "value"}, isClassmethod = true)
     @ImportStatic(SpecialMethodSlot.class)
     @GenerateNodeFactory
-    @SuppressWarnings("truffle-static-method")
     public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isBuiltinDict(inliningTarget, cls, isSameTypeNode)", limit = "1")

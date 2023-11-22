@@ -76,16 +76,15 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
     @Specialization
     TruffleString doString(TruffleString object,
                     @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
-        return checkString(object, byteIndexOfCodePointNode);
+        return checkString(this, object, byteIndexOfCodePointNode);
     }
 
     @Specialization
-    @SuppressWarnings("truffle-static-method")
-    TruffleString doPString(PString object,
+    static TruffleString doPString(PString object,
                     @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode cast,
                     @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
-        return checkString(cast.execute(inliningTarget, object), byteIndexOfCodePointNode);
+        return checkString(inliningTarget, cast.execute(inliningTarget, object), byteIndexOfCodePointNode);
     }
 
     @Specialization(limit = "1")
@@ -96,12 +95,11 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
                     @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
         // TODO PyUnicode_DecodeFSDefault
         TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(object), Encoding.UTF_8, false);
-        return checkString(switchEncodingNode.execute(utf8, TS_ENCODING), byteIndexOfCodePointNode);
+        return checkString(this, switchEncodingNode.execute(utf8, TS_ENCODING), byteIndexOfCodePointNode);
     }
 
     @Fallback
-    @SuppressWarnings("truffle-static-method")
-    TruffleString doPathLike(VirtualFrame frame, Object object,
+    static TruffleString doPathLike(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
                     @Cached PyOSFSPathNode fspathNode,
                     @Cached PyUnicodeFSDecoderNode recursive) {
@@ -110,9 +108,9 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
         return recursive.execute(frame, path);
     }
 
-    private TruffleString checkString(TruffleString str, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
+    private static TruffleString checkString(Node raisingNode, TruffleString str, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
         if (byteIndexOfCodePointNode.execute(str, 0, 0, str.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-            throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
         }
         return str;
     }

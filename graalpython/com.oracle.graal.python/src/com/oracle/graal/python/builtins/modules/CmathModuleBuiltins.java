@@ -273,23 +273,22 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     abstract static class PhaseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        double doL(long value) {
+        static double doL(long value) {
             return value < 0 ? Math.PI : 0;
         }
 
         @Specialization
-        double doD(double value) {
+        static double doD(double value) {
             return value < 0 ? Math.PI : 0;
         }
 
         @Specialization
-        double doC(PComplex value) {
+        static double doC(PComplex value) {
             return Math.atan2(value.getImag(), value.getReal());
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        double doGeneral(VirtualFrame frame, Object value,
+        static double doGeneral(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, inliningTarget, value));
@@ -315,15 +314,14 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple doC(PComplex value,
+        static PTuple doC(PComplex value,
                         @Shared @Cached ComplexBuiltins.AbsNode absNode,
                         @Shared @Cached PythonObjectFactory factory) {
             return toPolar(value, absNode, factory);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        PTuple doGeneral(VirtualFrame frame, Object value,
+        static PTuple doGeneral(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Shared @Cached ComplexBuiltins.AbsNode absNode,
@@ -358,41 +356,40 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doLL(long r, long phi) {
-            return rect(r, phi);
+            return rect(this, r, phi);
         }
 
         @Specialization
         PComplex doLD(long r, double phi) {
-            return rect(r, phi);
+            return rect(this, r, phi);
         }
 
         @Specialization
         PComplex doDL(double r, long phi) {
-            return rect(r, phi);
+            return rect(this, r, phi);
         }
 
         @Specialization
         PComplex doDD(double r, double phi) {
-            return rect(r, phi);
+            return rect(this, r, phi);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        PComplex doGeneral(VirtualFrame frame, Object r, Object phi,
+        static PComplex doGeneral(VirtualFrame frame, Object r, Object phi,
                         @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode rAsDoubleNode,
                         @Cached PyFloatAsDoubleNode phiAsDoubleNode) {
-            return rect(rAsDoubleNode.execute(frame, inliningTarget, r), phiAsDoubleNode.execute(frame, inliningTarget, phi));
+            return rect(inliningTarget, rAsDoubleNode.execute(frame, inliningTarget, r), phiAsDoubleNode.execute(frame, inliningTarget, phi));
         }
 
         @TruffleBoundary
-        private PComplex rect(double r, double phi) {
+        private static PComplex rect(Node raisingNode, double r, double phi) {
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             // deal with special values
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
                 // need to raise an exception if r is a nonzero number and phi is infinite
                 if (r != 0.0 && !Double.isNaN(r) && Double.isInfinite(phi)) {
-                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
 
                 // if r is +/-infinity and phi is finite but nonzero then

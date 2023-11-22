@@ -487,8 +487,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean doObject(VirtualFrame frame, Object object,
+        static boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
@@ -508,7 +507,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 } finally {
-                    LoopNode.reportLoopCount(this, nbrIter);
+                    LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
             }
 
@@ -545,8 +544,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean doObject(VirtualFrame frame, Object object,
+        static boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
@@ -566,7 +564,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 } finally {
-                    LoopNode.reportLoopCount(this, nbrIter);
+                    LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
             }
 

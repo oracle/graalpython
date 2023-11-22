@@ -172,7 +172,6 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @SuppressWarnings("truffle-static-method")
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getReversedKeysViewIter(PDictKeysView self,

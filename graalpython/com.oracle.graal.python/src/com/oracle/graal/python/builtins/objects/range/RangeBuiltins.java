@@ -330,8 +330,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean eqIntBig(VirtualFrame frame, PIntRange left, PBigRange right,
+        static boolean eqIntBig(VirtualFrame frame, PIntRange left, PBigRange right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached RangeNodes.CoerceToBigRange intToBigRange,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode) {
@@ -346,8 +345,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean eqIntBig(VirtualFrame frame, PBigRange left, PIntRange right,
+        static boolean eqIntBig(VirtualFrame frame, PBigRange left, PIntRange right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached RangeNodes.CoerceToBigRange intToBigRange,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode) {

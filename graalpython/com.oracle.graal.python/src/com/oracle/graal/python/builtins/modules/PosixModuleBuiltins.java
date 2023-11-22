@@ -490,7 +490,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "execv", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "argv"})
     @ArgumentClinic(name = "pathname", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @GenerateNodeFactory
-    @SuppressWarnings("truffle-static-method")
     public abstract static class ExecvNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
