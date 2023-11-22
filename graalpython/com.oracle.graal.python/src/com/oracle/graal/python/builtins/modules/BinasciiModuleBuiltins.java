@@ -71,7 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -104,7 +104,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         return BinasciiModuleBuiltinsFactory.getFactories();
     }
 
-    abstract static class AsciiBufferConverter extends ArgumentCastNodeWithRaise {
+    abstract static class AsciiBufferConverter extends ArgumentCastNode {
         @Specialization(guards = "acquireLib.hasBuffer(value)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object doObject(VirtualFrame frame, Object value,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -143,35 +143,37 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isAscii(value, getCodeRangeNode)")
-        Object asciiString(TruffleString value,
+        static Object asciiString(TruffleString value,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             return new AsciiStringBuffer(value);
         }
 
         @Specialization(guards = "!isAscii(value, getCodeRangeNode)")
-        Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
-                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            throw raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
+        static Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object string(PString value,
+        static Object string(PString value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached InlinedConditionProfile asciiProfile) {
+                        @Cached InlinedConditionProfile asciiProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString ts = cast.execute(inliningTarget, value);
             if (asciiProfile.profile(inliningTarget, isAscii(ts, getCodeRangeNode))) {
                 return asciiString(ts, getCodeRangeNode);
             } else {
-                return nonAsciiString(ts, getCodeRangeNode);
+                return nonAsciiString(ts, getCodeRangeNode, raiseNode.get(inliningTarget));
             }
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
+        static Object error(@SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
         }
 
         @ClinicConverterFactory

@@ -489,7 +489,7 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class ExpectStringNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectStringNode extends ArgumentCastNode {
         private final int argNum;
         private final String className;
 
@@ -519,8 +519,9 @@ public abstract class BytesNodes {
         }
 
         @Fallback
-        Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
+        Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
         }
 
         @ClinicConverterFactory

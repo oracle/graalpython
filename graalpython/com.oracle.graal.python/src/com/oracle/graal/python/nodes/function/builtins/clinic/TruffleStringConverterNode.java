@@ -44,7 +44,7 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -54,7 +54,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public abstract class TruffleStringConverterNode extends ArgumentCastNodeWithRaise {
+public abstract class TruffleStringConverterNode extends ArgumentCastNode {
     private final String builtinName;
 
     public TruffleStringConverterNode(String builtinName) {
@@ -67,13 +67,15 @@ public abstract class TruffleStringConverterNode extends ArgumentCastNodeWithRai
     }
 
     @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
+    @SuppressWarnings("truffle-static-method")
     Object doOthers(Object value,
                     @Bind("this") Node inliningTarget,
-                    @Cached CastToTruffleStringNode castToStringNode) {
+                    @Cached CastToTruffleStringNode castToStringNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return castToStringNode.execute(inliningTarget, value);
         } catch (CannotCastException ex) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
         }
     }
 

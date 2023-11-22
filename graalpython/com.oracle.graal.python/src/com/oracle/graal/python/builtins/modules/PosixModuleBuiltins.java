@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -3134,7 +3132,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     // ------------------
     // Converters
 
-    public abstract static class FsConverterNode extends ArgumentCastNodeWithRaise {
+    public abstract static class FsConverterNode extends ArgumentCastNode {
         @Specialization
         static PBytes convert(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
@@ -3154,7 +3152,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code dir_fd_converter()}. Always returns an {@code int}. If the
      * parameter is omitted, returns {@link PosixConstants#AT_FDCWD}.
      */
-    public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class DirFdConversionNode extends ArgumentCastNode {
 
         @Specialization
         static int doNone(@SuppressWarnings("unused") PNone value) {
@@ -3172,15 +3170,19 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doFdLong(long value) {
-            return longToFd(value, getRaiseNode());
+        int doFdLong(long value,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return longToFd(inliningTarget, value, raiseNode);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         int doFdPInt(PInt value,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
-            return doFdLong(castToLongNode.execute(inliningTarget, value));
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return doFdLong(castToLongNode.execute(inliningTarget, value), inliningTarget, raiseNode);
         }
 
         @Specialization(guards = {"!isPNone(value)", "!canBeInteger(value)"})
@@ -3189,21 +3191,22 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (indexCheckNode.execute(inliningTarget, value)) {
                 Object o = indexNode.execute(frame, inliningTarget, value);
-                return doFdLong(castToLongNode.execute(inliningTarget, o));
+                return doFdLong(castToLongNode.execute(inliningTarget, o), inliningTarget, raiseNode);
             } else {
-                throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
             }
         }
 
-        private static int longToFd(long value, PRaiseNode raiseNode) {
+        private static int longToFd(Node inliningTarget, long value, PRaiseNode.Lazy raiseNode) {
             if (value > Integer.MAX_VALUE) {
-                throw raiseNode.raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
             }
             if (value < Integer.MIN_VALUE) {
-                throw raiseNode.raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
             }
             return (int) value;
         }
@@ -3219,7 +3222,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
      * {@link PosixFileHandle}.
      */
-    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class PathConversionNode extends ArgumentCastNode {
 
         private final String functionNameWithColon;
         private final String argumentName;
@@ -3235,8 +3238,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "nullable")
         PosixFileHandle doNone(@SuppressWarnings("unused") PNone value,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
-            return new PosixPath(null, checkPath(posixLib.createPathFromString(getPosixSupport(), T_DOT)), false);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object path = posixLib.createPathFromString(PosixSupport.get(inliningTarget), T_DOT);
+            return new PosixPath(null, checkPath(inliningTarget, path, raiseNode), false);
         }
 
         @Specialization(guards = "allowFd")
@@ -3250,52 +3256,59 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "allowFd")
-        PosixFileHandle doFdLong(long value) {
-            return new PosixFd(value, DirFdConversionNode.longToFd(value, getRaiseNode()));
+        static PosixFileHandle doFdLong(long value,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return new PosixFd(value, DirFdConversionNode.longToFd(inliningTarget, value, raiseNode));
         }
 
         @Specialization(guards = "allowFd")
-        PosixFileHandle doFdPInt(PInt value,
+        static PosixFileHandle doFdPInt(PInt value,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
-            return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(inliningTarget, value), getRaiseNode()));
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return new PosixFd(value, DirFdConversionNode.longToFd(inliningTarget, castToLongNode.execute(inliningTarget, value), raiseNode));
         }
 
-        @Specialization
-        PosixFileHandle doUnicode(TruffleString value,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
-            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), value)), false);
+        @Specialization(guards = "isString(value)")
+        @SuppressWarnings("truffle-static-method")
+        PosixFileHandle doUnicode(Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString str = castToStringNode.execute(inliningTarget, value);
+            Object path = posixLib.createPathFromString(PosixSupport.get(inliningTarget), str);
+            return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), false);
         }
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        PosixFileHandle doUnicode(PString value,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
-            TruffleString str = castToStringNode.execute(inliningTarget, value);
-            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)), false);
-        }
-
-        @Specialization
         PosixFileHandle doBytes(PBytes value,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
-            return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))), true);
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object path = posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), toByteArrayNode.execute(value));
+            return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), true);
         }
 
         @Specialization(guards = {"!isHandled(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
+        @SuppressWarnings("truffle-static-method")
         PosixFileHandle doBuffer(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached WarningsModuleBuiltins.WarnNode warningNode) {
+                        @Cached WarningsModuleBuiltins.WarnNode warningNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), indirectCallData);
             try {
                 warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
-                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
+                Object path = posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), bufferLib.getCopiedByteArray(value));
+                return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), true);
             } finally {
                 bufferLib.release(buffer, frame, getContext(), getLanguage(), indirectCallData);
             }
@@ -3304,42 +3317,41 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(this, value)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object o = indexNode.execute(frame, inliningTarget, value);
-            return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(inliningTarget, o), getRaiseNode()));
+            return new PosixFd(value, DirFdConversionNode.longToFd(inliningTarget, castToLongNode.execute(inliningTarget, o), raiseNode));
         }
 
         @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(this, value)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath,
                         @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,
                         @Exclusive @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object pathObject = callFSPath.executeObject(frame, value);
             if (pathObject == PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
                                 getAllowedTypes(), value);
             }
             // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
             // by design
             if (pathObject instanceof PBytes) {
-                return doBytes((PBytes) pathObject, toByteArrayNode, posixLib);
+                return doBytes((PBytes) pathObject, inliningTarget, toByteArrayNode, posixLib, raiseNode);
             }
-            if (pathObject instanceof PString) {
-                return doUnicode((PString) pathObject, inliningTarget, castToStringNode, posixLib);
+            if (PGuards.isString(pathObject)) {
+                return doUnicode(pathObject, inliningTarget, castToStringNode, posixLib, raiseNode);
             }
-            if (pathObject instanceof TruffleString) {
-                return doUnicode((TruffleString) pathObject, posixLib);
-            }
-            throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
         }
 
         protected boolean isHandled(Object value) {
@@ -3351,15 +3363,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                             : allowFd ? "string, bytes, os.PathLike or integer" : nullable ? "string, bytes, os.PathLike or None" : "string, bytes or os.PathLike";
         }
 
-        private Object checkPath(Object path) {
+        private Object checkPath(Node inliningTarget, Object path, PRaiseNode.Lazy raiseNode) {
             if (path == null) {
-                throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
             }
             return path;
-        }
-
-        protected final Object getPosixSupport() {
-            return PythonContext.get(this).getPosixSupport();
         }
 
         @ClinicConverterFactory
@@ -3372,7 +3380,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     /**
      * Equivalent of CPython's {@code Py_off_t_converter()}. Always returns a {@code long}.
      */
-    public abstract static class OffsetConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class OffsetConversionNode extends ArgumentCastNode {
 
         @Specialization
         static long doInt(int i) {
@@ -3421,7 +3429,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     /**
      * Emulates CPython's {@code pid_t_converter()}. Always returns an {@code long}.
      */
-    public abstract static class PidtConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class PidtConversionNode extends ArgumentCastNode {
 
         @Specialization
         static long doInt(int value) {
@@ -3450,20 +3458,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateCached(false)
-    public abstract static class AbstractIdConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class AbstractIdConversionNode extends ArgumentCastNode {
 
         private static final long MAX_UINT32 = (1L << 32) - 1;
 
         public abstract long executeLong(VirtualFrame frame, Object value);
 
         @Specialization
-        long doInt(int value) {
-            return checkValue(value);
+        long doInt(int value,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return checkValue(inliningTarget, value, raiseNode);
         }
 
         @Specialization
-        long doLong(long value) {
-            return checkValue(value);
+        long doLong(long value,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return checkValue(inliningTarget, value, raiseNode);
         }
 
         @Specialization(guards = "!isInteger(value)")
@@ -3471,28 +3483,29 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         long doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode pyNumberIndexNode,
-                        @Cached PyLongAsLongNode asLongNode) {
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object index;
             try {
                 index = pyNumberIndexNode.execute(frame, inliningTarget, value);
             } catch (PException ex) {
-                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_INTEGER_NOT_P, getIdName(), value);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_INTEGER_NOT_P, getIdName(), value);
             }
             /*
              * We have no means to distinguish overflow/underflow, so we just let any OverflowError
              * from asLongNode fall through. It will not have the same message as CPython, but still
              * correct type.
              */
-            return checkValue(asLongNode.execute(frame, inliningTarget, index));
+            return checkValue(inliningTarget, asLongNode.execute(frame, inliningTarget, index), raiseNode);
         }
 
-        private long checkValue(long value) {
+        private long checkValue(Node inliningTarget, long value, PRaiseNode.Lazy raiseNode) {
             // Note that -1 is intentionally allowed
             if (value < -1) {
-                throw raise(OverflowError, ErrorMessages.S_IS_LESS_THAN_MINIMUM, getIdName());
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_IS_LESS_THAN_MINIMUM, getIdName());
             } else if (value > MAX_UINT32) {
                 /* uid_t is uint32_t on Linux */
-                throw raise(OverflowError, ErrorMessages.S_IS_GREATER_THAN_MAXIUMUM, getIdName());
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_IS_GREATER_THAN_MAXIUMUM, getIdName());
             }
             return value;
         }

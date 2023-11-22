@@ -240,7 +240,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class ExpectUINT32Node extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectUINT32Node extends ArgumentCastNode {
         private final Object defaultValue;
 
         protected ExpectUINT32Node(Object defaultValue) {

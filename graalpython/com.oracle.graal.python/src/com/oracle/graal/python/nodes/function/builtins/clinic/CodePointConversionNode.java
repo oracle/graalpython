@@ -49,18 +49,17 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise {
+public abstract class CodePointConversionNode extends ArgumentCastNode {
     private final String builtinName;
     private final int defaultValue;
     protected final boolean useDefaultForNone;
@@ -81,29 +80,23 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
         return defaultValue;
     }
 
-    @Specialization
-    int doString(TruffleString value,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        if (codePointLengthNode.execute(value, TS_ENCODING) == 1) {
-            return codePointAtIndexNode.execute(value, 0, TS_ENCODING);
-        } else {
-            throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
-        }
-    }
-
-    @Specialization(guards = {"!isHandledPNone(useDefaultForNone, value)"}, replaces = "doString")
+    @Specialization(guards = "!isHandledPNone(useDefaultForNone, value)")
     @SuppressWarnings("truffle-static-method")
     int doOthers(Object value,
                     @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castToStringNode,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            return doString(castToStringNode.execute(inliningTarget, value), codePointLengthNode, codePointAtIndexNode);
+            TruffleString str = castToStringNode.execute(inliningTarget, value);
+            if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
+                return codePointAtIndexNode.execute(str, 0, TS_ENCODING);
+            }
         } catch (CannotCastException ex) {
-            throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
+            // handled below
         }
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
     }
 
     @ClinicConverterFactory
