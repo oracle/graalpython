@@ -74,6 +74,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -153,7 +154,6 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ArgumentClinic(name = "block", conversion = ClinicConversion.Boolean, defaultValue = "true")
     public abstract static class SimpleQueueGetNode extends PythonTernaryClinicBuiltinNode {
-        @Child private GilNode gil;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -161,8 +161,9 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!withTimeout(block, timeout)")
-        Object doNoTimeout(PSimpleQueue self, boolean block, @SuppressWarnings("unused") Object timeout,
+        static Object doNoTimeout(PSimpleQueue self, boolean block, @SuppressWarnings("unused") Object timeout,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GilNode gil,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // CPython first tries a non-blocking get without releasing the GIL
             Object result = self.poll();
@@ -171,25 +172,25 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
             }
             if (block) {
                 try {
-                    ensureGil().release(true);
+                    gil.release(true);
                     return self.get();
                 } catch (InterruptedException e) {
                     CompilerDirectives.transferToInterpreter();
                     Thread.currentThread().interrupt();
                     return PNone.NONE;
                 } finally {
-                    ensureGil().acquire();
+                    gil.acquire();
                 }
             }
             throw raiseNode.get(inliningTarget).raise(Empty);
         }
 
         @Specialization(guards = "withTimeout(block, timeout)")
-        @SuppressWarnings("truffle-static-method")
-        Object doTimeout(VirtualFrame frame, PSimpleQueue self, boolean block, Object timeout,
+        static Object doTimeout(VirtualFrame frame, PSimpleQueue self, boolean block, Object timeout,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode asLongNode,
                         @Cached CastToJavaDoubleNode castToDouble,
+                        @Shared @Cached GilNode gil,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             assert block;
 
@@ -216,7 +217,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
             }
 
             try {
-                ensureGil().release(true);
+                gil.release(true);
                 result = self.get(ltimeout);
                 if (result != null) {
                     return result;
@@ -225,17 +226,9 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreter();
                 Thread.currentThread().interrupt();
             } finally {
-                ensureGil().acquire();
+                gil.acquire();
             }
             throw raiseNode.get(inliningTarget).raise(Empty);
-        }
-
-        private GilNode ensureGil() {
-            if (gil == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                gil = insert(GilNode.create());
-            }
-            return gil;
         }
 
         static boolean withTimeout(boolean block, Object timeout) {
