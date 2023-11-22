@@ -889,6 +889,10 @@ void nop_GraalPyTruffle_NotifyRefCount(PyObject* obj, Py_ssize_t refcnt) {
     // do nothing
 }
 
+void nop_GraalPyTruffle_BulkNotifyRefCount(void *, int) {
+    // do nothing
+}
+
 /*
  * This array contains pairs of variable address and "reset value".
  * The variable location is usually the address of a function pointer variable
@@ -910,6 +914,8 @@ static int64_t reset_func_ptrs[] = {
         &GraalPy_set_PyObject_ob_refcnt,
         nop_GraalPy_set_PyObject_ob_refcnt,
         &GraalPyTruffle_NotifyRefCount,
+        nop_GraalPyTruffle_NotifyRefCount,
+        &GraalPyTruffle_BulkNotifyRefCount,
         nop_GraalPyTruffle_NotifyRefCount,
         /* sentinel (required) */
         NULL

@@ -1148,6 +1148,8 @@ public abstract class CApiTransitions {
     @ImportStatic(CApiGuards.class)
     public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
 
+        public abstract PythonNativeWrapper executeWrapper(Object obj);
+
         @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
         static PythonNativeWrapper doNonWrapper(Object obj,
                         @Bind("this") Node inliningTarget,

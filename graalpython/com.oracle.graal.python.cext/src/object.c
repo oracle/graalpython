@@ -39,6 +39,23 @@ void _Py_IncRef(PyObject *op) {
     }
 }
 
+#define DEFERRED_NOTIFY_SIZE 16
+static PyObject *deferred_notify_ops[DEFERRED_NOTIFY_SIZE];
+static int deferred_notify_cur = 0;
+
+static inline void
+_decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
+{
+    if (points_to_py_handle_space(op) && updated_refcnt == MANAGED_REFCNT) {
+        if (deferred_notify_cur >= DEFERRED_NOTIFY_SIZE) {
+            deferred_notify_cur = 0;
+            GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
+        }
+        assert(deferred_notify_cur < DEFERRED_NOTIFY_SIZE);
+        deferred_notify_ops[deferred_notify_cur++] = op;
+    }
+}
+
 // 152
 void _Py_DecRef(PyObject *op) {
     const Py_ssize_t refcnt = Py_REFCNT(op);
@@ -47,9 +64,7 @@ void _Py_DecRef(PyObject *op) {
         const Py_ssize_t updated_refcnt = refcnt - 1;
         Py_SET_REFCNT(op, updated_refcnt);
         if (updated_refcnt != 0) {
-            if (points_to_py_handle_space(op) && updated_refcnt == MANAGED_REFCNT) {
-                GraalPyTruffle_NotifyRefCount(op, updated_refcnt);
-            }
+            _decref_notify(op, refcnt);
         }
         else {
             _Py_Dealloc(op);

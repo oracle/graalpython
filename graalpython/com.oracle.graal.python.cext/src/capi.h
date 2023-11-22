@@ -358,6 +358,7 @@ typedef struct {
     BUILTIN(PyTruffle_Arg_ParseTupleAndKeywords, int, PyObject*, PyObject*, const char*, void*, void*) \
     BUILTIN(PyTruffle_Array_getbuffer, int, PyObject*, Py_buffer*, int) \
     BUILTIN(PyTruffle_Array_releasebuffer, void, PyObject*, Py_buffer*) \
+    BUILTIN(PyTruffle_BulkNotifyRefCount, void, void*, int) \
     BUILTIN(PyTruffle_ByteArray_EmptyWithCapacity, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffle_Bytes_CheckEmbeddedNull, int, PyObject*) \
     BUILTIN(PyTruffle_Bytes_EmptyWithCapacity, PyObject*, long) \
