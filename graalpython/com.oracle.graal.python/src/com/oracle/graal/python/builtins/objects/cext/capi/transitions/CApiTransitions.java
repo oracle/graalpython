@@ -175,8 +175,8 @@ public abstract class CApiTransitions {
             referent.ref = this;
         }
 
-        public static PythonObjectReference create(PythonAbstractObjectNativeWrapper referent, long pointer) {
-            return new PythonObjectReference(referent, true, pointer);
+        public static PythonObjectReference create(PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer) {
+            return new PythonObjectReference(referent, strong, pointer);
         }
 
         public static PythonObjectReference create(PythonNativeWrapper referent, long pointer) {
@@ -519,7 +519,7 @@ public abstract class CApiTransitions {
                 HandleContext handleContext = getContext();
                 long pointer = PythonUtils.coerceToLong(nativeObjectStub, lib);
                 long stubPointer = HandlePointerConverter.stubToPointer(pointer);
-                PythonObjectReference ref = PythonObjectReference.create(wrapper, stubPointer);
+                PythonObjectReference ref = PythonObjectReference.create(wrapper, immortal, stubPointer);
                 nativeStubLookupPut(handleContext, stubPointer, ref);
                 return logResult(stubPointer);
             } finally {
@@ -775,29 +775,25 @@ public abstract class CApiTransitions {
                     result = wrapper.getReplacement(lib);
                 }
             } else {
+                assert obj != PNone.NO_VALUE;
                 result = wrapper;
                 if (!lib.isPointer(wrapper)) {
                     lib.toNative(wrapper);
-                } else {
-                    assert obj != PNone.NO_VALUE;
-                    /*
-                     * If we are up to give out a borrowed reference, it may be that the refcount is
-                     * just MANAGED_REFCOUNT which means we would usually just have a weak reference
-                     * to the wrapper. However, native code may incref which we would not see on the
-                     * managed side and the object could die while the native pointer would still be
-                     * considered to be valid. Hence, we need to eagerly make the reference strong
-                     * since we don't know how it will be used. However, if native code decref's
-                     * down to MANAGED_REFCOUNT, we will be notified by an upcall and can make the
-                     * reference weak again.
-                     */
-                    assert wrapper.ref != null;
-                    if (isStrongProfile.profile(inliningTarget, !wrapper.ref.isStrongReference())) {
-                        wrapper.ref.setStrongReference(wrapper);
-                    }
                 }
                 if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                     // native part needs to decRef to release
                     objectNativeWrapper.incRef();
+                    /*
+                     * This creates a new reference to the object and the ownership is transferred
+                     * to the C extension. Therefore, we need to make the reference strong such that
+                     * we do not deallocate the object if it's no longer referenced in the
+                     * interpreter. The interpreter will be notified by an upcall as soon as the
+                     * object's refcount goes down to MANAGED_RECOUNT again.
+                     */
+                    assert wrapper.ref != null;
+                    if (isStrongProfile.profile(inliningTarget, !objectNativeWrapper.ref.isStrongReference())) {
+                        objectNativeWrapper.ref.setStrongReference(objectNativeWrapper);
+                    }
                 }
             }
             assert result != null;

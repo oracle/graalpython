@@ -33,6 +33,9 @@ void _Py_IncRef(PyObject *op) {
     if (refcnt != IMMORTAL_REFCNT)
     {
         Py_SET_REFCNT(op, refcnt + 1);
+        if (points_to_py_handle_space(op) && refcnt == MANAGED_REFCNT) {
+            GraalPyTruffle_NotifyRefCount(op, refcnt + 1);
+        }
     }
 }
 
