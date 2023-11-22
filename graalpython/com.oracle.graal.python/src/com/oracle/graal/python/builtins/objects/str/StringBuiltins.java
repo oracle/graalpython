@@ -121,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlic
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EqNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.LtNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
@@ -173,6 +172,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -355,20 +355,23 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class StringEqOpBaseNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class StringEqOpHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object self, Object other, boolean negate);
+
         @Specialization
-        boolean doStrings(TruffleString self, TruffleString other,
-                        @Shared("equal") @Cached TruffleString.EqualNode equalNode) {
-            return processResult(equalNode.execute(self, other, TS_ENCODING));
+        static boolean doStrings(TruffleString self, TruffleString other, boolean negate,
+                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
+            return equalNode.execute(self, other, TS_ENCODING) != negate;
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doGeneric(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+        static Object doGeneric(Node inliningTarget, Object self, Object other, boolean negate,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Cached CastToTruffleStringNode castOtherNode,
-                        @Shared("equal") @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode,
                         @Cached InlinedBranchProfile noStringBranch) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___EQ__, self);
             TruffleString otherStr;
@@ -378,13 +381,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 noStringBranch.enter(inliningTarget);
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doStrings(selfStr, otherStr, equalNode);
-        }
-
-        @SuppressWarnings("unused")
-        boolean processResult(boolean eqResult) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
+            return doStrings(selfStr, otherStr, negate, equalNode);
         }
     }
 
@@ -440,24 +437,25 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends StringEqOpBaseNode {
-        @Override
-        boolean processResult(boolean eqResult) {
-            return eqResult;
-        }
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @NeverDefault
-        public static EqNode create() {
-            return EqNodeFactory.create();
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
+            return stringEqOpHelperNode.execute(inliningTarget, self, other, false);
         }
     }
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NeNode extends StringEqOpBaseNode {
-        @Override
-        boolean processResult(boolean eqResult) {
-            return !eqResult;
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
+            return stringEqOpHelperNode.execute(inliningTarget, self, other, true);
         }
     }
 
