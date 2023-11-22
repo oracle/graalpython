@@ -121,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlic
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.LtNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
@@ -164,6 +163,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.IntPredicate;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -177,7 +177,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -385,20 +384,23 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class StringCmpOpBaseNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class StringCmpOpHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object self, Object other, IntPredicate resultProcessor);
+
         @Specialization
-        boolean doStrings(TruffleString self, TruffleString other,
-                        @Shared("compareIntsUtf32") @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return processResult(StringUtils.compareStrings(self, other, compareIntsUTF32Node));
+        static boolean doStrings(TruffleString self, TruffleString other, IntPredicate resultProcessor,
+                        @Shared @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return resultProcessor.test(StringUtils.compareStrings(self, other, compareIntsUTF32Node));
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doGeneric(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+        static Object doGeneric(Node inliningTarget, Object self, Object other, IntPredicate resultProcessor,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Cached CastToTruffleStringNode castOtherNode,
-                        @Shared("compareIntsUtf32") @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node,
+                        @Shared @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node,
                         @Cached InlinedBranchProfile noStringBranch) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___EQ__, self);
             TruffleString otherStr;
@@ -408,13 +410,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 noStringBranch.enter(inliningTarget);
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doStrings(selfStr, otherStr, compareIntsUTF32Node);
-        }
-
-        @SuppressWarnings("unused")
-        boolean processResult(int cmpResult) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
+            return doStrings(selfStr, otherStr, resultProcessor, compareIntsUTF32Node);
         }
     }
 
@@ -461,42 +457,49 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class LtNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult < 0;
-        }
+    public abstract static class LtNode extends PythonBinaryBuiltinNode {
 
-        @NeverDefault
-        public static LtNode create() {
-            return LtNodeFactory.create();
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r < 0);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class LeNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult <= 0;
+    public abstract static class LeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r <= 0);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GtNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult > 0;
+    public abstract static class GtNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r > 0);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GeNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult >= 0;
+    public abstract static class GeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r >= 0);
         }
     }
 
