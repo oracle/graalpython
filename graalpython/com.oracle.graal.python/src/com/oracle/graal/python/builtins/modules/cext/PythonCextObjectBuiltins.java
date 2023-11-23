@@ -154,8 +154,8 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class PyTruffle_NotifyRefCount extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
-                                @Bind("this") Node inliningTarget,
-                                @Cached InlinedConditionProfile hasRefProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasRefProfile) {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
             wrapper.updateRef(inliningTarget, refCount, hasRefProfile);
             return PNone.NO_VALUE;

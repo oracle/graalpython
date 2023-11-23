@@ -1336,13 +1336,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
@@ -1712,19 +1710,19 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-            
+
             Object pointerObject = null;
             if (arg instanceof PythonAbstractNativeObject nativeObject) {
-               pointerObject = nativeObject.getPtr();
-            } else if (arg instanceof PythonObject managedObject){
+                pointerObject = nativeObject.getPtr();
+            } else if (arg instanceof PythonObject managedObject) {
                 pointerObject = managedObject.getNativeWrapper();
             }
             // ignore other cases; also: don't allocate wrappers just because of this
-            
+
             if (pointerObject != null) {
                 AddRefCntNode.executeUncached(pointerObject, //
-                        1 /* that's what this function is for */ + //
-                        1 /* that for returning it */);
+                                1 /* that's what this function is for */ + //
+                                                1 /* that for returning it */);
             }
             return arg;
         }
@@ -1742,7 +1740,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             Object pointerObject = null;
             if (arg instanceof PythonAbstractNativeObject nativeObject) {
                 pointerObject = nativeObject.getPtr();
-            } else if (arg instanceof PythonObject managedObject){
+            } else if (arg instanceof PythonObject managedObject) {
                 pointerObject = managedObject.getNativeWrapper();
             }
             // ignore other cases; also: don't allocate wrappers just because of this
@@ -1751,7 +1749,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 // that's what this function is for
                 SubRefCntNode.executeUncached(pointerObject, 1);
                 // that for returning it
-                AddRefCntNode.executeUncached(pointerObject, 1 );
+                AddRefCntNode.executeUncached(pointerObject, 1);
             }
             return arg;
         }

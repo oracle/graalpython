@@ -494,7 +494,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal,
-                        @Cached GilNode gil,
+                        @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNode writeObjectNode,
