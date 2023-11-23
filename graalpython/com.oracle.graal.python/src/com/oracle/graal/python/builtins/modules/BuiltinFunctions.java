@@ -116,8 +116,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
@@ -572,101 +570,106 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    // bin(object)
-    @Builtin(name = J_BIN, minNumOfPositionalArgs = 1)
+    @GenerateInline
+    @GenerateCached(false)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class BinNode extends PythonUnaryBuiltinNode {
-        static final TruffleString T_BIN_PREFIX = tsLiteral("0b");
-        static final TruffleString T_HEX_PREFIX = tsLiteral("0x");
-        static final TruffleString T_OCT_PREFIX = tsLiteral("0o");
+    abstract static class BinOctHexHelperNode extends Node {
+
+        @FunctionalInterface
+        interface LongToString {
+            String convert(long value);
+        }
+
+        abstract TruffleString execute(VirtualFrame frame, Node inliningTarget, Object o, TruffleString prefix, int radix, LongToString longToString);
 
         @TruffleBoundary
-        protected TruffleString buildString(boolean isNegative, TruffleString number, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+        private static TruffleString buildString(boolean isNegative, TruffleString prefix, TruffleString number) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(3) + number.byteLength(TS_ENCODING));
             if (isNegative) {
-                appendStringNode.execute(sb, T_MINUS);
+                sb.appendStringUncached(T_MINUS);
             }
-            appendStringNode.execute(sb, prefix());
-            appendStringNode.execute(sb, number);
-            return toStringNode.execute(sb);
-        }
-
-        protected TruffleString prefix() {
-            return T_BIN_PREFIX;
+            sb.appendStringUncached(prefix);
+            sb.appendStringUncached(number);
+            return sb.toStringUncached();
         }
 
         @TruffleBoundary
-        protected String longToString(long x) {
-            return Long.toBinaryString(x);
+        private static BigInteger longMaxPlusOne() {
+            return BigInteger.valueOf(Long.MIN_VALUE).abs();
         }
 
         @TruffleBoundary
-        protected String bigToString(BigInteger x) {
-            return x.toString(2);
-        }
-
-        @TruffleBoundary
-        protected BigInteger bigAbs(BigInteger x) {
-            return x.abs();
+        private static String bigToString(int radix, BigInteger x) {
+            return x.toString(radix);
         }
 
         @Specialization
-        TruffleString doL(long x,
-                        @Bind("this") Node inliningTarget,
+        static TruffleString doL(Node inliningTarget, long x, TruffleString prefix, int radix, LongToString longToString,
                         @Exclusive @Cached InlinedConditionProfile isMinLong,
-                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             if (isMinLong.profile(inliningTarget, x == Long.MIN_VALUE)) {
-                return buildString(true, fromJavaStringNode.execute(bigToString(bigAbs(PInt.longToBigInteger(x))), TS_ENCODING), appendStringNode, toStringNode);
+                return buildString(true, prefix, fromJavaStringNode.execute(bigToString(radix, longMaxPlusOne()), TS_ENCODING));
             }
-            return buildString(x < 0, fromJavaStringNode.execute(longToString(Math.abs(x)), TS_ENCODING), appendStringNode, toStringNode);
+            return buildString(x < 0, prefix, fromJavaStringNode.execute(longToString.convert(Math.abs(x)), TS_ENCODING));
         }
 
         @Specialization
-        TruffleString doD(double x,
-                        @Cached PRaiseNode raise) {
+        @SuppressWarnings("unused")
+        static TruffleString doD(double x, TruffleString prefix, int radix, LongToString longToString,
+                        @Cached(inline = false) PRaiseNode raise) {
             throw raise.raiseIntegerInterpretationError(x);
         }
 
         @Specialization
-        TruffleString doPI(PInt x,
-                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+        static TruffleString doPI(PInt x, TruffleString prefix, int radix, @SuppressWarnings("unused") LongToString longToString,
+                        @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             BigInteger value = x.getValue();
-            return buildString(value.signum() < 0, fromJavaStringNode.execute(bigToString(PInt.abs(value)), TS_ENCODING), appendStringNode, toStringNode);
+            return buildString(value.signum() < 0, prefix, fromJavaStringNode.execute(bigToString(radix, PInt.abs(value)), TS_ENCODING));
         }
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
-        @SuppressWarnings("truffle-static-method")
-        TruffleString doO(VirtualFrame frame, Object x,
-                        @Bind("this") Node inliningTarget,
+        static TruffleString doO(VirtualFrame frame, Node inliningTarget, Object x, TruffleString prefix, int radix, LongToString longToString,
                         @Exclusive @Cached InlinedConditionProfile isMinLong,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedBranchProfile isInt,
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isPInt,
-                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             Object index = indexNode.execute(frame, inliningTarget, x);
             if (index instanceof Boolean || index instanceof Integer) {
                 isInt.enter(inliningTarget);
-                return doL(asSizeNode.executeExact(frame, inliningTarget, index), inliningTarget, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
+                return doL(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, index), prefix, radix, longToString, isMinLong, fromJavaStringNode);
             } else if (index instanceof Long) {
                 isLong.enter(inliningTarget);
-                return doL((long) index, inliningTarget, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
+                return doL(inliningTarget, (long) index, prefix, radix, longToString, isMinLong, fromJavaStringNode);
             } else if (index instanceof PInt) {
                 isPInt.enter(inliningTarget);
-                return doPI((PInt) index, fromJavaStringNode, appendStringNode, toStringNode);
+                return doPI((PInt) index, prefix, radix, longToString, fromJavaStringNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("bin/oct/hex with native integer subclasses"));
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("bin/oct/hex with native integer subclasses"));
             }
+        }
+    }
+
+    // bin(object)
+    @Builtin(name = J_BIN, minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class BinNode extends PythonUnaryBuiltinNode {
+        static final TruffleString T_BIN_PREFIX = tsLiteral("0b");
+
+        @Specialization
+        static TruffleString doIt(VirtualFrame frame, Object x,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BinOctHexHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, x, T_BIN_PREFIX, 2, BinNode::longToString);
+        }
+
+        @TruffleBoundary
+        private static String longToString(long x) {
+            return Long.toBinaryString(x);
         }
     }
 
@@ -674,27 +677,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_OCT, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class OctNode extends BinNode {
-        @Override
-        @TruffleBoundary
-        protected String bigToString(BigInteger x) {
-            return x.toString(8);
+    public abstract static class OctNode extends PythonUnaryBuiltinNode {
+        static final TruffleString T_OCT_PREFIX = tsLiteral("0o");
+
+        @Specialization
+        static TruffleString doIt(VirtualFrame frame, Object x,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BinOctHexHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, x, T_OCT_PREFIX, 8, OctNode::longToString);
         }
 
-        @Override
         @TruffleBoundary
-        protected String longToString(long x) {
+        private static String longToString(long x) {
             return Long.toOctalString(x);
-        }
-
-        @Override
-        protected TruffleString prefix() {
-            return T_OCT_PREFIX;
-        }
-
-        @NeverDefault
-        public static OctNode create() {
-            return OctNodeFactory.create();
         }
     }
 
@@ -702,27 +697,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_HEX, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class HexNode extends BinNode {
-        @Override
-        @TruffleBoundary
-        protected String bigToString(BigInteger x) {
-            return x.toString(16);
+    public abstract static class HexNode extends PythonUnaryBuiltinNode {
+        static final TruffleString T_HEX_PREFIX = tsLiteral("0x");
+
+        @Specialization
+        static TruffleString doIt(VirtualFrame frame, Object x,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BinOctHexHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, x, T_HEX_PREFIX, 16, HexNode::longToString);
         }
 
-        @Override
         @TruffleBoundary
-        protected String longToString(long x) {
+        private static String longToString(long x) {
             return Long.toHexString(x);
-        }
-
-        @Override
-        protected TruffleString prefix() {
-            return T_HEX_PREFIX;
-        }
-
-        @NeverDefault
-        public static HexNode create() {
-            return HexNodeFactory.create();
         }
     }
 
@@ -1657,7 +1644,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        @SuppressWarnings("truffle-static-method")
+        @SuppressWarnings("truffle-static-method")  // TODO: inh
         Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectGetIter getIter,
@@ -1726,7 +1713,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length != 0"})
-        @SuppressWarnings("truffle-static-method")
+        @SuppressWarnings("truffle-static-method")  // TODO: inh
         Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached("createComparison()") BinaryComparisonNode compare,
