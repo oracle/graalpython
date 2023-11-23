@@ -292,10 +292,10 @@ public final class PythonCextBuiltins {
             PythonContext context = PythonContext.get(null);
             context.reacquireGilAfterStackOverflow();
             PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
-            PException pe = ExceptionUtils.wrapJavaException(soe, null, newException);
-            throw pe;
+            throw ExceptionUtils.wrapJavaException(soe, null, newException);
         }
         if (t instanceof OutOfMemoryError oome) {
+            CompilerDirectives.transferToInterpreter();
             PBaseException newException = PythonContext.get(null).factory().createBaseException(MemoryError);
             throw ExceptionUtils.wrapJavaException(oome, null, newException);
         }
