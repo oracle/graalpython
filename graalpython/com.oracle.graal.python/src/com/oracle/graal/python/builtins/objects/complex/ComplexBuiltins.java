@@ -633,12 +633,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static boolean doComplexInt(PComplex left, long right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
-            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) == 0;
+            return left.getImag() == 0 && FloatBuiltins.ComparisonHelperNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
         static boolean doComplexInt(PComplex left, PInt right) {
-            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
+            return left.getImag() == 0 && FloatBuiltins.ComparisonHelperNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
@@ -706,12 +706,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static boolean doComplex(PComplex left, long right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
-            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) != 0;
+            return left.getImag() != 0 || FloatBuiltins.ComparisonHelperNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
         static boolean doComplex(PComplex left, PInt right) {
-            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
+            return left.getImag() != 0 || FloatBuiltins.ComparisonHelperNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
         }
 
         @Specialization

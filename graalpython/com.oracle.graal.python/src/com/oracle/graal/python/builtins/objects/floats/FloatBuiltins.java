@@ -119,6 +119,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -729,69 +730,68 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
     @GenerateCached(false)
-    public abstract static class AbstractComparisonNode extends PythonBinaryBuiltinNode {
+    public abstract static class ComparisonHelperNode extends Node {
 
-        protected abstract boolean op(double a, double b);
+        @FunctionalInterface
+        interface Op {
+            boolean compute(double a, double b);
+        }
+
+        abstract Object execute(Node inliningTarget, Object left, Object right, Op op);
 
         @Specialization
-        boolean doDD(double a, double b) {
-            return op(a, b);
+        static boolean doDD(double a, double b, Op op) {
+            return op.compute(a, b);
         }
 
         @Specialization
-        boolean doDI(double a, int b) {
-            return op(a, b);
+        static boolean doDI(double a, int b, Op op) {
+            return op.compute(a, b);
         }
 
         @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "doDD", limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        boolean doOO(Object aObj, Object bObj,
-                        @Bind("this") Node inliningTarget,
+        static boolean doOO(Node inliningTarget, Object aObj, Object bObj, Op op,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
                         @Exclusive @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
             double b = castToDoubleChecked(inliningTarget, bObj, cast);
-            return op(a, b);
+            return op.compute(a, b);
         }
 
         @Specialization(replaces = "doDI")
-        boolean doOI(Object aObj, int b,
-                        @Bind("this") Node inliningTarget,
+        static boolean doOI(Node inliningTarget, Object aObj, int b, Op op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op(a, b);
+            return op.compute(a, b);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean doOL(Object aObj, long b,
-                        @Bind("this") Node inliningTarget,
+        static boolean doOL(Node inliningTarget, Object aObj, long b, Op op,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op(compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile), 0.0);
+            return op.compute(compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile), 0.0);
         }
 
         @Specialization
-        boolean doOPInt(Object aObj, PInt b,
-                        @Bind("this") Node inliningTarget,
+        static boolean doOPInt(Node inliningTarget, Object aObj, PInt b, Op op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op(compareDoubleToLargeInt(a, b), 0.0);
+            return op.compute(compareDoubleToLargeInt(a, b), 0.0);
         }
 
         @Specialization
-        boolean doOB(Object aObj, boolean b,
-                        @Bind("this") Node inliningTarget,
+        static boolean doOB(Node inliningTarget, Object aObj, boolean b, Op op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op(a, b ? 1 : 0);
+            return op.compute(a, b ? 1 : 0);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented fallback(Object a, Object b) {
+        static PNotImplemented fallback(Object a, Object b, Op op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -833,55 +833,67 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends AbstractComparisonNode {
-        @Override
-        protected boolean op(double a, double b) {
-            return a == b;
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doIt(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode comparisonHelperNode) {
+            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a == b);
         }
     }
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class NeNode extends AbstractComparisonNode {
-        @Override
-        protected boolean op(double a, double b) {
-            return a != b;
+    abstract static class NeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doIt(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode comparisonHelperNode) {
+            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a != b);
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class LtNode extends AbstractComparisonNode {
-        @Override
-        protected boolean op(double a, double b) {
-            return a < b;
+    public abstract static class LtNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doIt(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode comparisonHelperNode) {
+            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a < b);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class LeNode extends AbstractComparisonNode {
-        @Override
-        protected boolean op(double a, double b) {
-            return a <= b;
+    public abstract static class LeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doIt(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode comparisonHelperNode) {
+            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a <= b);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GtNode extends AbstractComparisonNode {
-        @Override
-        protected boolean op(double a, double b) {
-            return a > b;
+    public abstract static class GtNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doIt(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode comparisonHelperNode) {
+            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a > b);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GeNode extends AbstractComparisonNode {
-        @Override
-        protected boolean op(double a, double b) {
-            return a >= b;
+    public abstract static class GeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doIt(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode comparisonHelperNode) {
+            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a >= b);
         }
     }
 
