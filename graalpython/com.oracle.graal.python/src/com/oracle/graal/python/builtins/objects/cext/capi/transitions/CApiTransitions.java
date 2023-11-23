@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWra
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -148,8 +148,8 @@ public abstract class CApiTransitions {
 
     public abstract static class IdReference<T> extends WeakReference<T> {
 
-        public IdReference(T referent) {
-            super(referent, getContext().referenceQueue);
+        public IdReference(HandleContext handleContext, T referent) {
+            super(referent, handleContext.referenceQueue);
         }
     }
 
@@ -165,8 +165,8 @@ public abstract class CApiTransitions {
         private PythonNativeWrapper strongReference;
         private final long pointer;
 
-        private PythonObjectReference(PythonNativeWrapper referent, boolean strong, long pointer) {
-            super(referent);
+        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer) {
+            super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
             if (LOGGER.isLoggable(Level.FINER)) {
@@ -175,12 +175,12 @@ public abstract class CApiTransitions {
             referent.ref = this;
         }
 
-        public static PythonObjectReference create(PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer) {
-            return new PythonObjectReference(referent, strong, pointer);
+        public static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer) {
+            return new PythonObjectReference(handleContext, referent, strong, pointer);
         }
 
-        public static PythonObjectReference create(PythonNativeWrapper referent, long pointer) {
-            return new PythonObjectReference(referent, true, pointer);
+        public static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer) {
+            return new PythonObjectReference(handleContext, referent, true, pointer);
         }
 
         public boolean isStrongReference() {
@@ -206,13 +206,15 @@ public abstract class CApiTransitions {
         final Object object;
         final long pointer;
 
-        public NativeObjectReference(PythonAbstractNativeObject referent, long pointer) {
-            super(referent);
+        public NativeObjectReference(HandleContext handleContext, PythonAbstractNativeObject referent, long pointer) {
+            super(handleContext, referent);
             this.object = referent.object;
             this.pointer = pointer;
             referent.ref = this;
             assert (pointer & 7) == 0;
-            LOGGER.finer(() -> PythonUtils.formatJString("new NativeObjectReference<%s> to %s", Long.toHexString(pointer), referent));
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("new NativeObjectReference<%s> to %s", Long.toHexString(pointer), referent));
+            }
         }
 
         @Override
@@ -226,12 +228,14 @@ public abstract class CApiTransitions {
         private Object ptr;
         private int size;
 
-        public NativeStorageReference(NativeSequenceStorage storage) {
-            super(storage);
+        public NativeStorageReference(HandleContext handleContext, NativeSequenceStorage storage) {
+            super(handleContext, storage);
             type = storage.getElementType();
             ptr = storage.getPtr();
             size = storage.length();
-            LOGGER.finer(() -> PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
+            }
         }
 
         public Object getPtr() {
@@ -254,9 +258,10 @@ public abstract class CApiTransitions {
     @TruffleBoundary
     public static void registerNativeSequenceStorage(NativeSequenceStorage storage) {
         assert PythonContext.get(null).ownsGil();
-        NativeStorageReference ref = new NativeStorageReference(storage);
+        HandleContext handleContext = getContext();
+        NativeStorageReference ref = new NativeStorageReference(handleContext, storage);
         storage.setReference(ref);
-        getContext().nativeStorageReferences.add(ref);
+        handleContext.nativeStorageReferences.add(ref);
     }
 
     @TruffleBoundary
@@ -500,7 +505,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.WriteObjectNode writeObjectNode,
                         @Cached InlinedExactClassProfile wrapperProfile,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode) {
 
             boolean acquired = gil.acquire();
             try {
@@ -516,10 +521,10 @@ public abstract class CApiTransitions {
                 Object nativeObjectStub = allocateNode.alloc(CStructs.PyObject);
                 writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
-                HandleContext handleContext = getContext();
-                long pointer = PythonUtils.coerceToLong(nativeObjectStub, lib);
+                HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+                long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
                 long stubPointer = HandlePointerConverter.stubToPointer(pointer);
-                PythonObjectReference ref = PythonObjectReference.create(wrapper, immortal, stubPointer);
+                PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, stubPointer);
                 nativeStubLookupPut(handleContext, stubPointer, ref);
                 return logResult(stubPointer);
             } finally {
@@ -549,7 +554,8 @@ public abstract class CApiTransitions {
                 logVoid(obj, ptr);
                 obj.setNativePointer(ptr);
                 pollReferenceQueue();
-                nativeLookupPut(getContext(), ptr, PythonObjectReference.create(obj, ptr));
+                HandleContext context = getContext();
+                nativeLookupPut(context, ptr, PythonObjectReference.create(context, obj, ptr));
             }
         }
     }
@@ -706,18 +712,9 @@ public abstract class CApiTransitions {
     @ImportStatic({CApiGuards.class, PGuards.class})
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
-        public final long executeLong(Object obj) {
-            return PythonUtils.coerceToLong(execute(obj), LIB);
-        }
-
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
             return PythonToNativeNodeGen.getUncached().execute(obj);
-        }
-
-        @TruffleBoundary
-        public static long executeLongUncached(Object obj) {
-            return PythonToNativeNodeGen.getUncached().executeLong(obj);
         }
 
         protected boolean needsTransfer() {
@@ -881,9 +878,8 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedExactClassProfile nativeWrapperProfile,
+                        @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
-                        @Cached CStructAccess.ReadI64Node readI64Node,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
@@ -930,11 +926,10 @@ public abstract class CApiTransitions {
                         if (LOGGER.isLoggable(Level.FINE)) {
                             LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         }
-                        return createAbstractNativeObject(value, needsTransfer(), pointer);
+                        return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
                     }
-                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
-                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
-                        wrapper = nativeWrapper;
+                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
+                        wrapper = (PythonNativeWrapper) ref;
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
                         if (needsTransfer()) {
@@ -943,7 +938,7 @@ public abstract class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(value, needsTransfer(), pointer);
+                    return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
                 }
             }
             return handleWrapper(inliningTarget, wrapperProfile, needsTransfer(), wrapper);
@@ -1045,7 +1040,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedExactClassProfile nativeWrapperProfile,
+                        @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
                         @Cached InlinedExactClassProfile wrapperProfile) {
 
@@ -1076,11 +1071,10 @@ public abstract class CApiTransitions {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(pointer, stealing, pointer);
+                        return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
                     }
-                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
-                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
-                        wrapper = nativeWrapper;
+                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
+                        wrapper = (PythonNativeWrapper) ref;
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
                         if (stealing) {
@@ -1089,7 +1083,7 @@ public abstract class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(pointer, stealing, pointer);
+                    return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
                 }
             }
             return NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, stealing, wrapper);
@@ -1138,12 +1132,12 @@ public abstract class CApiTransitions {
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, newValue);
     }
 
-    private static Object createAbstractNativeObject(Object obj, boolean transfer, long pointer) {
+    private static Object createAbstractNativeObject(HandleContext handleContext, Object obj, boolean transfer, long pointer) {
         assert isBackendPointerObject(obj) : obj.getClass();
 
         pollReferenceQueue();
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(obj);
-        NativeObjectReference ref = new NativeObjectReference(result, pointer);
+        NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
         nativeLookupPut(getContext(), pointer, ref);
 
         long refCntDelta = PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - (transfer ? 1 : 0);

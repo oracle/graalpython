@@ -1171,4 +1171,39 @@ public abstract class CExtCommonNodes {
             return GetIndexNodeGen.create();
         }
     }
+
+    /**
+     * Use this node to coerce an object (that is expected to be one of the pointer representations
+     * we use) into a {@code long} value. This node is semantically the same as method
+     * {@link PythonUtils#coerceToLong(Object, InteropLibrary)} but does profiling of the pointer
+     * object and additionally avoids the {@code InteropLibrary} for our known type
+     * {@link NativePointer}.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CoerceNativePointerToLongNode extends Node {
+
+        public abstract long execute(Node inliningTarget, Object pointerObject);
+
+        @Specialization
+        static long doLong(Long l) {
+            return l;
+        }
+
+        @Specialization
+        static long doNativePointer(NativePointer nativePointer) {
+            return nativePointer.asPointer();
+        }
+
+        @Specialization(guards = "!isNativePointer(pointerObject)", limit = "3")
+        static long doOther(Object pointerObject,
+                        @CachedLibrary("pointerObject") InteropLibrary lib) {
+            return PythonUtils.coerceToLong(pointerObject, lib);
+        }
+
+        static boolean isNativePointer(Object pointerObject) {
+            return pointerObject instanceof NativePointer;
+        }
+    }
 }
