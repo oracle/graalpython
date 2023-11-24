@@ -1686,7 +1686,13 @@ public final class PythonCextBuiltins {
                 InteropLibrary lib = null;
                 for (int i = 0;; i += 2) {
                     Object typeStructPtr = readPointerNode.readArrayElement(builtinTypesArrayPointer, i);
-                    if (lib == null) {
+                    /*
+                     * Most pointer types will be the same. So, we store the last looked up library
+                     * in a local variable. However, It may happen that there are different types of
+                     * pointer objects involved, so we need to update the library if the current one
+                     * does not accept the object.
+                     */
+                    if (lib == null || !lib.accepts(typeStructPtr)) {
                         lib = InteropLibrary.getUncached(typeStructPtr);
                     }
                     // if we reach the sentinel, stop the loop
