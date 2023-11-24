@@ -1403,6 +1403,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Override
         @TruffleBoundary
         public double count(double value) {
+            return compute(value);
+        }
+
+        static double compute(double value) {
             double absx = Math.abs(value);
 
             if (Double.isNaN(value) || Double.isInfinite(value)) {
