@@ -446,7 +446,6 @@ suite = {
                 "com.oracle.graal.python.shell",
                 "com.oracle.graal.python",
                 "com.oracle.graal.python.test.integration",
-                "org.graalvm.python.embedding.test",
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
