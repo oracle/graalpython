@@ -115,6 +115,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -287,6 +288,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached ReadAttributeFromDynamicObjectNode readNameNode,
                         @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -297,7 +299,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return run(context, new ModuleSpec(name, path, moduleSpec));
             } catch (ApiInitException ie) {
@@ -340,8 +342,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
-        int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
+        static int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached ExecModuleNode execModuleNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -359,7 +362,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 return 0;
             }
 
-            PythonContext context = getContext();
+            PythonContext context = PythonContext.get(inliningTarget);
             if (!context.hasCApiContext()) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
             }
@@ -368,8 +371,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
              * ExecModuleNode will run the module definition's exec function which may run arbitrary
              * C code. So we need to setup an indirect call.
              */
-            PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return execModuleNode.execute(context.getCApiContext(), extensionModule, nativeModuleDef);
             } finally {
@@ -537,8 +540,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, TruffleString name, Object dataObj,
+        static Object run(VirtualFrame frame, TruffleString name, Object dataObj,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile isCodeObjectProfile,
@@ -548,14 +552,14 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 try {
                     info = new FrozenInfo(bufferLib.getInternalOrCopiedByteArray(dataObj), bufferLib.getBufferLength(dataObj));
                 } finally {
-                    bufferLib.release(dataObj, frame, this);
+                    bufferLib.release(dataObj, frame, indirectCallData);
                 }
                 if (info.size == 0) {
                     /* Does not contain executable code. */
                     raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
                 }
             } else {
-                FrozenResult result = findFrozen(getContext(), name, equalNode);
+                FrozenResult result = findFrozen(PythonContext.get(inliningTarget), name, equalNode);
                 FrozenStatus status = result.status;
                 info = result.info;
                 raiseFrozenError(status, name, raiseNode.get(inliningTarget));

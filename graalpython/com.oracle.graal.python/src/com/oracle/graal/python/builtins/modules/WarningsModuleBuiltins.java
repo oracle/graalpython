@@ -99,7 +99,6 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -117,18 +116,17 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -211,7 +209,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         createFilter(factory, PythonBuiltinClassType.ResourceWarning, T_IGNORE, PNone.NONE)});
     }
 
-    static final class WarningsModuleNode extends Node implements IndirectCallNode {
+    static final class WarningsModuleNode extends Node {
         @Child DynamicObjectLibrary warningsModuleLib;
         @Child CastToTruffleStringNode castStr;
         @Child PRaiseNode raiseNode;
@@ -783,7 +781,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private void warnExplicit(VirtualFrame frame, PythonModule warnings,
                         Object categoryIn, Object messageIn, TruffleString filename, int lineno, Object moduleIn,
-                        Object registryObj, PDict globals /* see comment in method */, Object source) {
+                        Object registryObj, PDict globals /* see comment in method */, Object source,
+                        IndirectCallData indirectCallData) {
             // CPython passes the sourceline directly here where we pass the globals argument. If
             // it's not null, and we need the source line eventually, we will get it on the slow
             // path.
@@ -838,7 +837,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
             // the rest of this function is behind a TruffleBoundary, since we don't care so much
             // about performance when warnings are enabled.
-            Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), this);
+            Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), indirectCallData);
             try {
                 warnExplicitPart2(PythonContext.get(this), this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item[0], action);
             } finally {
@@ -956,13 +955,14 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * Entry point for module functions. On the fast path.
          */
         private void doWarn(VirtualFrame frame, PythonModule warnings,
-                        Object message, Object category, int stackLevel, Object source) {
+                        Object message, Object category, int stackLevel, Object source,
+                        IndirectCallData indirectCallData) {
             TruffleString[] filename = new TruffleString[1];
             int[] lineno = new int[1];
             TruffleString[] module = new TruffleString[1];
             Object[] registry = new Object[1];
             setupContext(frame, stackLevel, filename, lineno, module, registry);
-            warnExplicit(frame, warnings, category, message, filename[0], lineno[0], module[0], registry[0], null, source);
+            warnExplicit(frame, warnings, category, message, filename[0], lineno[0], module[0], registry[0], null, source, indirectCallData);
         }
 
         /**
@@ -1000,19 +1000,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
-
-        private final Assumption passFrame = Truffle.getRuntime().createAssumption();
-        private final Assumption passExc = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return passFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return passExc;
-        }
     }
 
     @ReportPolymorphism
@@ -1032,9 +1019,10 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             // warnings_warn_impl
-            moduleFunctionsNode.doWarn(frame, mod, message, moduleFunctionsNode.getCategory(frame, message, category), stacklevel, source);
+            moduleFunctionsNode.doWarn(frame, mod, message, moduleFunctionsNode.getCategory(frame, message, category), stacklevel, source, indirectCallData);
             return PNone.NONE;
         }
 
@@ -1056,6 +1044,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         static Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         int lineno, Object module, Object registry, Object globals, Object source,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached WarningsModuleNode moduleFunctionsNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -1079,7 +1068,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                             module == PNone.NO_VALUE ? null : module,
                             registry == PNone.NO_VALUE ? null : registry,
                             globalsDict,
-                            source == PNone.NO_VALUE ? null : source);
+                            source == PNone.NO_VALUE ? null : source,
+                            indirectCallData);
             return PNone.NONE;
         }
 
@@ -1151,6 +1141,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             @CompilationFinal BranchProfile noFrame = BranchProfile.create();
             @Child WarningsModuleNode moduleFunctionsNode;
             @Child TruffleString.FromJavaStringNode fromJavaStringNode;
+            final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
 
             @Override
             protected void execute(Frame frame, Object source, Object category, TruffleString format, int stackLevel, Object... formatArgs) {
@@ -1170,7 +1161,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     moduleFunctionsNode = insert(WarningsModuleNode.create());
                 }
-                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source);
+                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source, indirectCallData);
             }
 
             /*

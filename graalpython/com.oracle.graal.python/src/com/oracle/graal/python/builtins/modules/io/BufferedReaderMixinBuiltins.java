@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -536,6 +537,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("truffle-static-method")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -615,7 +617,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 return written;
             } finally {
                 EnterBufferedNode.leave(self);
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

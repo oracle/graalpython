@@ -158,6 +158,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -272,23 +273,19 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class StrFormatNode extends PythonBuiltinNode {
-        @Specialization
-        TruffleString format(VirtualFrame frame, PString self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("format") @Cached BuiltinFunctions.FormatNode format,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            return format(frame, castToStringNode.execute(inliningTarget, self), args, kwargs, format);
-        }
 
-        @Specialization
-        TruffleString format(VirtualFrame frame, TruffleString self, Object[] args, PKeyword[] kwargs,
-                        @Shared("format") @Cached BuiltinFunctions.FormatNode format) {
-            TemplateFormatter template = new TemplateFormatter(self);
-            PythonLanguage language = PythonLanguage.get(this);
-            PythonContext context = PythonContext.get(this);
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+        @Specialization(guards = "isString(self)")
+        static TruffleString format(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached BuiltinFunctions.FormatNode format,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            TemplateFormatter template = new TemplateFormatter(castToStringNode.execute(inliningTarget, self));
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext context = PythonContext.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
-                return template.build(this, args, kwargs, format);
+                return template.build(inliningTarget, args, kwargs, format);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
@@ -314,13 +311,14 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString format(VirtualFrame frame, TruffleString self, Object mapping,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached BuiltinFunctions.FormatNode format) {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return template.build(this, null, mapping, format);
             } finally {
@@ -1875,18 +1873,20 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object self, Object right,
+        static Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             String selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___MOD__, self);
-            PythonContext context = getContext();
-            Object state = IndirectCallContext.enter(frame, this);
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return fromJavaStringNode.execute(new StringFormatProcessor(context, getTupleItemNode, selfStr, inliningTarget).format(assertNoJavaString(right)), TS_ENCODING);
             } finally {
-                IndirectCallContext.exit(frame, getLanguage(), context, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
     }

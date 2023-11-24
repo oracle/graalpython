@@ -69,10 +69,10 @@ public final class Md5ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Md5FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.MD5Type, "md5", "md5", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.MD5Type, "md5", "md5", buffer);
         }
     }
 

@@ -151,6 +151,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -663,8 +664,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
     abstract static class ReadintoNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()"})
-        Object readinto(VirtualFrame frame, PFileIO self, Object buffer,
+        static Object readinto(VirtualFrame frame, PFileIO self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached InlinedBranchProfile readErrorProfile,
@@ -689,7 +691,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -721,14 +723,13 @@ public final class FileIOBuiltins extends PythonBuiltins {
         static Object write(VirtualFrame frame, PFileIO self, Object data,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesToWriteNode getBytesToWriteNode,
-                        @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] bytes = getBytesToWriteNode.execute(frame, inliningTarget, self, data);
             try {
-                return posixWrite.write(self.getFD(), bytes, bytes.length, inliningTarget, posixLib, errorProfile, gil);
+                return PosixModuleBuiltins.WriteNode.write(self.getFD(), bytes, bytes.length, inliningTarget, posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;

@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -250,9 +251,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "bufferAcquireLib.hasBuffer(value)", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        PNone doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
+        static PNone doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
@@ -263,13 +264,13 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
                         @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, indirectCallData);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(value));
                 return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -401,9 +402,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        PByteArray add(VirtualFrame frame, PByteArray self, Object other,
+        static PByteArray add(VirtualFrame frame, PByteArray self, Object other,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached @Shared SequenceStorageNodes.ConcatNode concatNode,
@@ -411,7 +412,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
+                buffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
@@ -423,7 +424,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                 updateSequenceStorage(self, res);
                 return self;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -618,9 +619,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(source)", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        PNone doGeneric(VirtualFrame frame, PByteArray self, Object source,
+        static PNone doGeneric(VirtualFrame frame, PByteArray self, Object source,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("source") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile bufferProfile,
@@ -632,12 +633,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             self.checkCanResize(inliningTarget, raiseNode);
             byte[] b;
             if (bufferProfile.profile(inliningTarget, bufferAcquireLib.hasBuffer(source))) {
-                Object buffer = bufferAcquireLib.acquireReadonly(source, frame, this);
+                Object buffer = bufferAcquireLib.acquireReadonly(source, frame, indirectCallData);
                 try {
                     // TODO avoid copying
                     b = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             } else {
                 try {
@@ -870,13 +871,14 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object cmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Cached PyByteArrayCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
                         @Exclusive @Cached GetInternalByteArrayNode getArray,
                         @CachedLibrary("other") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
-            Object otherBuffer = acquireLib.acquireReadonly(other, frame, this);
+            Object otherBuffer = acquireLib.acquireReadonly(other, frame, indirectCallData);
             try {
                 return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(),
                                 bufferLib.getInternalOrCopiedByteArray(otherBuffer), bufferLib.getBufferLength(otherBuffer));

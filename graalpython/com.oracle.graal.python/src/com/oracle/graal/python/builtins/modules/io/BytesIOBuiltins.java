@@ -112,6 +112,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -357,7 +358,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class ReadIntoNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
+        static Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 /* adjust invalid sizes */
@@ -377,7 +379,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
                 return len;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -433,15 +435,15 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends ClosedCheckPythonBinaryBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
+        static Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
-            Object buffer = acquireLib.acquireReadonly(b, frame, this);
+            Object buffer = acquireLib.acquireReadonly(b, frame, indirectCallData);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 if (len == 0) {
@@ -457,7 +459,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 }
                 return len;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }

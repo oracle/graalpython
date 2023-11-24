@@ -43,14 +43,15 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import com.oracle.graal.python.builtins.objects.buffer.BufferAcquireGenerateUncachedNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,6 +62,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -84,9 +86,11 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         return convertStringToDouble(frame, inliningTarget, toJavaStringNode.execute(object), object, reprNode, raiseNode);
     }
 
-    @Specialization
+    @Specialization(limit = "3")
     static double doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Cached(parameters = "3", inline = false) BufferAcquireGenerateUncachedNode acquireNode,
+                    @Cached(value = "createFor(this)") IndirectCallData indirectCallData,
+                    @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
+                    @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                     @Cached(inline = false) CastToJavaStringNode cast,
                     @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,
                     @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -96,18 +100,17 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         } catch (CannotCastException e) {
             Object buffer = null;
             try {
-                buffer = acquireNode.acquireReadonly(frame, object);
+                buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);
             } catch (PException e1) {
                 // fallthrough
             }
             if (buffer != null) {
                 try {
-                    PythonBufferAccessLibrary accessLib = acquireNode.getAccessLib();
                     byte[] bytes = accessLib.getInternalOrCopiedByteArray(buffer);
                     int len = accessLib.getBufferLength(buffer);
                     string = newString(bytes, 0, len);
                 } finally {
-                    acquireNode.release(frame, buffer);
+                    accessLib.release(buffer, frame, indirectCallData);
                 }
             }
         }

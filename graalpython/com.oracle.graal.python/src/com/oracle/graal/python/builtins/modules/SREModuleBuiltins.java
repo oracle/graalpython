@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -792,8 +793,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         // must_advance=True version in re builtins like sub, split, findall
         @Specialization(guards = "callable == cachedCallable", limit = "2")
         @SuppressWarnings("truffle-static-method")
-        Object doCached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
+        Object doCached(VirtualFrame frame, @SuppressWarnings("unused") Object callable, Object inputStringOrBytes, Number fromIndex,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached(value = "callable", weak = true) Object cachedCallable,
                         @Cached @Shared CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
@@ -809,7 +811,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 } catch (CannotCastException e1) {
                     binaryProfile.enter(inliningTarget);
                     // It's bytes or other buffer object
-                    buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, this);
+                    buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, indirectCallData);
                     input = getBufferToTruffleStringNode().execute(buffer, 0);
                 }
                 try {
@@ -819,7 +821,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 }
             } finally {
                 if (buffer != null) {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
         }
@@ -828,12 +830,13 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @ReportPolymorphism.Megamorphic
         Object doUncached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached @Shared CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("callable") InteropLibrary interop,
                         @Cached @Shared InlinedBranchProfile binaryProfile) {
-            return doCached(frame, callable, inputStringOrBytes, fromIndex, inliningTarget, callable, cast, bufferAcquireLib, bufferLib, interop, binaryProfile);
+            return doCached(frame, callable, inputStringOrBytes, fromIndex, inliningTarget, indirectCallData, callable, cast, bufferAcquireLib, bufferLib, interop, binaryProfile);
         }
 
         private BufferToTruffleStringNode getBufferToTruffleStringNode() {

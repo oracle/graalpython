@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -98,17 +97,15 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -343,14 +340,11 @@ public abstract class HPyExternalFunctionNodes {
      * Invokes an HPy C function. It takes care of argument and result conversion and always passes
      * the HPy context as a first parameter.
      */
-    abstract static class HPyExternalFunctionInvokeNode extends Node implements IndirectCallNode {
+    abstract static class HPyExternalFunctionInvokeNode extends Node {
 
         @Child private HPyConvertArgsToSulongNode toSulongNode;
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
         @Child private HPyCloseArgHandlesNode handleCloseNode;
-
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
 
         HPyExternalFunctionInvokeNode() {
             CompilerAsserts.neverPartOfCompilation();
@@ -377,6 +371,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Specialization(limit = "1")
         Object doIt(VirtualFrame frame, TruffleString name, Object callable, GraalHPyContext hPyContext, Object[] arguments,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
             Object[] convertedArguments = new Object[arguments.length + 1];
@@ -391,7 +386,7 @@ public abstract class HPyExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = IndirectCallContext.enter(frame, pythonThreadState, this);
+            Object state = IndirectCallContext.enter(frame, pythonThreadState, indirectCallData);
 
             try {
                 return checkFunctionResultNode.execute(pythonThreadState, name, lib.execute(callable, convertedArguments));
@@ -410,24 +405,6 @@ public abstract class HPyExternalFunctionNodes {
                     handleCloseNode.executeInto(frame, convertedArguments, 1);
                 }
             }
-        }
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return nativeCodeDoesntNeedExceptionState;
-        }
-
-        @Override
-        public Node copy() {
-            HPyExternalFunctionInvokeNode node = (HPyExternalFunctionInvokeNode) super.copy();
-            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            return node;
         }
     }
 

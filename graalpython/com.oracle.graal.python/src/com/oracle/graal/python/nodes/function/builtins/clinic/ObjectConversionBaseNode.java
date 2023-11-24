@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,10 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.truffle.api.dsl.Specialization;
 
-public abstract class ObjectConversionBaseNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
+public abstract class ObjectConversionBaseNode extends ArgumentCastNodeWithRaise {
     private final Object defaultValue;
     protected final boolean useDefaultForNone;
 

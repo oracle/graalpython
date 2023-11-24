@@ -76,11 +76,11 @@ import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -118,7 +118,8 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:getsockaddrarg}.
      */
-    public abstract static class GetSockAddrArgNode extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false)          // footprint reduction 72 -> 54
+    public abstract static class GetSockAddrArgNode extends Node {
         public abstract UniversalSockAddr execute(VirtualFrame frame, PSocket socket, Object address, String caller);
 
         @Specialization(guards = "isInet(socket)")
@@ -185,9 +186,9 @@ public abstract class SocketNodes {
         }
 
         @Specialization(guards = "isUnix(socket)")
-        @SuppressWarnings("truffle-static-method")
-        UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+        static UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -202,18 +203,18 @@ public abstract class SocketNodes {
                 TruffleString utf8 = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, address), Encoding.UTF_8);
                 path = copyToByteArrayNode.execute(utf8, Encoding.UTF_8);
             } else {
-                Object buffer = bufferAcquireLib.acquireReadonly(address, frame, this);
+                Object buffer = bufferAcquireLib.acquireReadonly(address, frame, indirectCallData);
                 try {
                     path = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
             if (!PosixConstants.IS_LINUX || (path.length > 0 && path[0] != 0)) {
                 // not a linux "abstract" address -> needs a terminating zero
                 path = arrayCopyOf(path, path.length + 1);
             }
-            PythonContext context = PythonContext.get(this);
+            PythonContext context = PythonContext.get(inliningTarget);
             Object posixSupport = context.getPosixSupport();
             try {
                 return posixLib.createUniversalSockAddrUnix(posixSupport, new UnixSockAddr(path));

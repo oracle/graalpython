@@ -111,6 +111,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1037,8 +1038,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
         public abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
 
         @Specialization
-        Object frombytes(VirtualFrame frame, PArray self, Object buffer,
+        static Object frombytes(VirtualFrame frame, PArray self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
@@ -1058,11 +1060,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     bufferLib.readIntoBuffer(buffer, 0, self.getBuffer(), oldSize << itemShift, bufferLength, bufferLib);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw PRaiseNode.raiseUncached(this, MemoryError);
+                    throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

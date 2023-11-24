@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -679,16 +680,16 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object recvInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
+        static Object recvInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, indirectCallData);
             try {
                 if (recvlenIn < 0) {
                     throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV_INTO);
@@ -718,7 +719,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
                 final int len = recvlen;
                 try {
-                    int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
+                    int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, PosixSupport.get(inliningTarget), gil, socket,
                                     (p, s) -> p.recv(s, socket.getFd(), bytes, 0, len, flags),
                                     false, false);
                     if (!directWrite) {
@@ -729,7 +730,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(bufferObj, frame, this);
+                bufferLib.release(bufferObj, frame, indirectCallData);
             }
         }
 
@@ -746,9 +747,9 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RecvFromIntoNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object recvFromInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
+        static Object recvFromInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -757,7 +758,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, indirectCallData);
             try {
                 if (recvlenIn < 0) {
                     throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM_INTO);
@@ -786,7 +787,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 }
 
                 try {
-                    RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
+                    RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, PosixSupport.get(inliningTarget), gil, socket,
                                     (p, s) -> p.recvfrom(s, socket.getFd(), bytes, 0, bytes.length, flags),
                                     false, false);
                     if (!directWrite) {
@@ -797,7 +798,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -813,16 +814,16 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        int send(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
+        static int send(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, indirectCallData);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
@@ -830,14 +831,14 @@ public final class SocketBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
 
                 try {
-                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
+                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, PosixSupport.get(inliningTarget), gil, socket,
                                     (p, s) -> p.send(s, socket.getFd(), bytes, 0, len, flags),
                                     true, false);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -853,16 +854,16 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object sendAll(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
+        static Object sendAll(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, indirectCallData);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
@@ -880,7 +881,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     try {
                         final int offset1 = offset;
                         final int len1 = len;
-                        int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
+                        int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, PosixSupport.get(inliningTarget), gil, socket,
                                         (p, s) -> p.send(s, socket.getFd(), bytes, offset1, len1, flags),
                                         true, false, timeoutHelper);
                         offset += outlen;
@@ -889,13 +890,13 @@ public final class SocketBuiltins extends PythonBuiltins {
                             return PNone.NONE;
                         }
                         // This can loop for a potentially long time
-                        PythonContext.triggerAsyncActions(this);
+                        PythonContext.triggerAsyncActions(inliningTarget);
                     } catch (PosixException e) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                     }
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -911,9 +912,9 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendToNode extends PythonBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
+        static Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -934,7 +935,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 flags = asIntNode.execute(frame, inliningTarget, flagsOrAddress);
             }
 
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, indirectCallData);
             try {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
@@ -945,14 +946,14 @@ public final class SocketBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
 
                 try {
-                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
+                    return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, PosixSupport.get(inliningTarget), gil, socket,
                                     (p, s) -> p.sendto(s, socket.getFd(), bytes, 0, len, flags, addr),
                                     true, false);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }
@@ -1084,8 +1085,8 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetSockOptNode extends PythonClinicBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        @SuppressWarnings("truffle-static-method")
-        Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
+        static Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -1100,17 +1101,17 @@ public final class SocketBuiltins extends PythonBuiltins {
                 len = bytes.length;
                 PythonUtils.ARRAY_ACCESSOR.putInt(bytes, 0, flag);
             } catch (PException e) {
-                Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
+                Object buffer = bufferAcquireLib.acquireReadonly(value, frame, indirectCallData);
                 try {
                     len = bufferLib.getBufferLength(buffer);
                     bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
 
             }
             try {
-                posixLib.setsockopt(getPosixSupport(), socket.getFd(), level, option, bytes, len);
+                posixLib.setsockopt(PosixSupport.get(inliningTarget), socket.getFd(), level, option, bytes, len);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

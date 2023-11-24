@@ -136,7 +136,6 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -728,15 +727,10 @@ public final class PythonCextAbstractBuiltins {
         }
 
         @Specialization(guards = "isNativeObject(obj)")
-        Object doNative(Object obj,
+        static Object doNative(Object obj,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
-            Object state = IndirectCallContext.enter(null, this);
-            try {
-                return callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
-            } finally {
-                IndirectCallContext.exit(null, this, state);
-            }
+            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
         }
     }
 
@@ -812,15 +806,10 @@ public final class PythonCextAbstractBuiltins {
         }
 
         @Specialization(guards = {"isNativeObject(obj)"})
-        Object size(Object obj,
+        static Object size(Object obj,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
-            Object state = IndirectCallContext.enter(null, this);
-            try {
-                return callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
-            } finally {
-                IndirectCallContext.exit(null, this, state);
-            }
+            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
         }
     }
 

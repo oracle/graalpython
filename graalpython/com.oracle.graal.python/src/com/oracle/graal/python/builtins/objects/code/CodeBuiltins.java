@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -403,7 +404,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PCode create(VirtualFrame frame, PCode self, int coArgcount,
+        static PCode create(VirtualFrame frame, PCode self, int coArgcount,
                         int coPosonlyargcount, int coKwonlyargcount,
                         int coNlocals, int coStacksize, int coFlags,
                         int coFirstlineno, Object coCode,
@@ -412,6 +413,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         Object[] coCellvars, TruffleString coFilename,
                         TruffleString coName, Object coLnotab,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
@@ -435,10 +437,10 @@ public final class CodeBuiltins extends PythonBuiltins {
                                 PGuards.isNone(coLnotab) ? self.getLinetable() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {
                 if (!PGuards.isNone(coCode)) {
-                    bufferLib.release(coCode, frame, this);
+                    bufferLib.release(coCode, frame, indirectCallData);
                 }
                 if (!PGuards.isNone(coLnotab)) {
-                    bufferLib.release(coLnotab, frame, this);
+                    bufferLib.release(coLnotab, frame, indirectCallData);
                 }
             }
         }

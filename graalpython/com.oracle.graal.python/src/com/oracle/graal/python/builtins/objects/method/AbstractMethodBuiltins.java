@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -74,6 +73,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -210,7 +210,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)", limit = "2")
         static Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Bind("getThisAsIndirectCallNode()") IndirectCallNode indirectCallNode,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyObjectLookupAttr lookup,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             // No profiling, performance here is not very important
@@ -220,11 +220,12 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
             }
             if (self.getSelf() instanceof PythonModule) {
                 PythonLanguage language = PythonLanguage.get(inliningTarget);
-                Object state = IndirectCallContext.enter(frame, language, PythonContext.get(inliningTarget), indirectCallNode);
+                PythonContext context = PythonContext.get(inliningTarget);
+                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 try {
                     return lookup.execute(null, inliningTarget, self.getSelf(), T___NAME__);
                 } finally {
-                    IndirectCallContext.exit(frame, language, PythonContext.get(inliningTarget), state);
+                    IndirectCallContext.exit(frame, language, context, state);
                 }
             }
             return PNone.NONE;

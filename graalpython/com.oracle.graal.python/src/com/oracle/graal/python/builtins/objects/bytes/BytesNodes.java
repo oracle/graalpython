@@ -85,7 +85,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -95,6 +94,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -215,7 +215,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ToBytesNode extends PNodeWithRaiseAndIndirectCall {
+    public abstract static class ToBytesNode extends Node {
 
         private final PythonBuiltinClassType errorType;
         private final TruffleString errorMessageFormat;
@@ -241,19 +241,20 @@ public abstract class BytesNodes {
         @SuppressWarnings("truffle-static-method")
         byte[] doBuffer(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
+                buffer = bufferAcquireLib.acquireReadonly(object, frame, indirectCallData);
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(errorType, errorMessageFormat, object);
             }
             try {
                 return bufferLib.getCopiedByteArray(buffer);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -535,15 +536,17 @@ public abstract class BytesNodes {
      * already bytes. We obviously cannot do that here, it must be done by the caller if the need
      * this behavior.
      */
-    public abstract static class BytesFromObject extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false)          // footprint reduction 44 -> 27
+    public abstract static class BytesFromObject extends Node {
         public abstract byte[] execute(VirtualFrame frame, Object object);
 
         // TODO make fast paths for builtin list/tuple - note that FromSequenceNode doesn't work
         // properly when the list is mutated by its __index__
 
         @Specialization
-        byte[] doGeneric(VirtualFrame frame, Object object,
+        static byte[] doGeneric(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
@@ -551,11 +554,11 @@ public abstract class BytesNodes {
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
-                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, this);
+                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, indirectCallData);
                 try {
                     return bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
             if (!PGuards.isString(object)) {
@@ -790,22 +793,24 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false)          // footprint reduction 52 -> 34
+    public abstract static class DecodeUTF8FSPathNode extends Node {
 
         public abstract TruffleString execute(VirtualFrame frame, Object value);
 
         @Specialization
-        TruffleString doit(VirtualFrame frame, Object value,
+        static TruffleString doit(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Cached PyOSFSPathNode fsPath,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             Object path = fsPath.execute(frame, inliningTarget, value);
             if (bufferAcquireLib.hasBuffer(path)) {
-                Object buffer = bufferAcquireLib.acquireReadonly(path, frame, this);
+                Object buffer = bufferAcquireLib.acquireReadonly(path, frame, indirectCallData);
                 try {
                     /*-
                      * This should be equivalent to PyUnicode_EncodeFSDefault
@@ -815,7 +820,7 @@ public abstract class BytesNodes {
                     TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(path), Encoding.UTF_8, false);
                     return switchEncodingNode.execute(utf8, TS_ENCODING);
                 } finally {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
             return toString.execute(inliningTarget, path);

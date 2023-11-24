@@ -64,12 +64,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -109,10 +111,11 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         public static final TruffleString T_PRINT_STACK = tsLiteral("print_stack");
 
         @Specialization
-        PNone doit(VirtualFrame frame, Object file, boolean allThreads) {
+        PNone doit(VirtualFrame frame, Object file, boolean allThreads,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = getContext();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 // it's not important for this to be fast at all
                 dump(language, context, file, allThreads);

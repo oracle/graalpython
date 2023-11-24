@@ -60,12 +60,12 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -585,7 +585,8 @@ public class MemoryViewNodes {
         }
     }
 
-    public abstract static class ReleaseNode extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false) // footprint reduction 36 -> 17
+    public abstract static class ReleaseNode extends Node {
 
         public final void execute(PMemoryView self) {
             execute(null, self);
@@ -601,13 +602,14 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = {"self.getReference() != null"})
-        void releaseNative(VirtualFrame frame, PMemoryView self,
+        static void releaseNative(VirtualFrame frame, PMemoryView self,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached ReleaseBufferNode releaseNode,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
             self.checkExports(raiseNode);
             if (self.checkShouldReleaseBuffer()) {
-                releaseNode.execute(frame, inliningTarget, this, self.getLifecycleManager());
+                releaseNode.execute(frame, inliningTarget, indirectCallData, self.getLifecycleManager());
             }
             self.setReleased();
         }
@@ -624,12 +626,12 @@ public class MemoryViewNodes {
             MemoryViewNodesFactory.ReleaseBufferNodeGen.getUncached().execute(null, buffer);
         }
 
-        public final void execute(VirtualFrame frame, Node inliningTarget, PNodeWithRaiseAndIndirectCall caller, BufferLifecycleManager buffer) {
-            Object state = IndirectCallContext.enter(frame, caller);
+        public final void execute(VirtualFrame frame, Node inliningTarget, IndirectCallData indirectCallData, BufferLifecycleManager buffer) {
+            Object state = IndirectCallContext.enter(frame, indirectCallData);
             try {
                 execute(inliningTarget, buffer);
             } finally {
-                IndirectCallContext.exit(frame, caller, state);
+                IndirectCallContext.exit(frame, indirectCallData, state);
             }
         }
 

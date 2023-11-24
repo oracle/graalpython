@@ -86,10 +86,10 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -116,7 +116,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
@@ -406,7 +405,7 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, Node inliningTarget, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
+    public void increaseMemoryPressure(VirtualFrame frame, Node inliningTarget, GetThreadStateNode getThreadStateNode, IndirectCallData indirectCallData, long size) {
         PythonContext context = getContext();
         if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
@@ -414,22 +413,22 @@ public final class CApiContext extends CExtContext {
         }
 
         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
-        Object savedState = IndirectCallContext.enter(frame, threadState, caller);
+        Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
         try {
-            triggerGC(context, size, caller);
+            triggerGC(context, size, inliningTarget);
         } finally {
             IndirectCallContext.exit(frame, threadState, savedState);
         }
     }
 
     @TruffleBoundary
-    public void triggerGC(PythonContext context, long size, NodeInterface caller) {
+    public void triggerGC(PythonContext context, long size, Node caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
             CApiTransitions.pollReferenceQueue();
-            PythonContext.triggerAsyncActions((Node) caller);
+            PythonContext.triggerAsyncActions(caller);
             if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;

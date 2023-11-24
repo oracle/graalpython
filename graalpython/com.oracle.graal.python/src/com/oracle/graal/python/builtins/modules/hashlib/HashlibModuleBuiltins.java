@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -221,24 +222,25 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(a) || !isString(b)"})
-        boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
+        static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (acquireLib.hasBuffer(a) && acquireLib.hasBuffer(b)) {
-                Object bufferA = acquireLib.acquireReadonly(a, frame, this);
+                Object bufferA = acquireLib.acquireReadonly(a, frame, indirectCallData);
                 try {
-                    Object bufferB = acquireLib.acquireReadonly(b, frame, this);
+                    Object bufferB = acquireLib.acquireReadonly(b, frame, indirectCallData);
                     try {
                         byte[] bytesA = accessLib.getInternalOrCopiedByteArray(bufferA);
                         byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
                         return cmp(bytesA, bytesB);
                     } finally {
-                        accessLib.release(bufferB);
+                        accessLib.release(bufferB, frame, indirectCallData);
                     }
                 } finally {
-                    accessLib.release(bufferA);
+                    accessLib.release(bufferA, frame, indirectCallData);
                 }
             } else {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
@@ -365,10 +367,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     @GenerateInline
     abstract static class CreateDigestNode extends Node {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer, PythonBuiltinBaseNode indirectCallNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer);
 
         @Specialization
-        static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value, PythonBuiltinBaseNode indirectCallNode,
+        static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
@@ -377,7 +380,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             if (value instanceof PNone) {
                 buffer = null;
             } else if (acquireLib.hasBuffer(value)) {
-                buffer = acquireLib.acquireReadonly(value, frame, indirectCallNode);
+                buffer = acquireLib.acquireReadonly(value, frame, indirectCallData);
             } else {
                 throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, value);
             }
@@ -393,7 +396,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 return factory.createDigestObject(type, pythonName, digest);
             } finally {
                 if (buffer != null) {
-                    bufferLib.release(buffer, frame, indirectCallNode);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
         }
@@ -419,14 +422,14 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
+        static Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
             String pythonDigestName = getPythonName(castStr.execute(name));
             String javaDigestName = getJavaName(pythonDigestName);
             PythonBuiltinClassType digestType = getTypeFor(javaDigestName);
-            return createNode.execute(frame, inliningTarget, digestType, pythonDigestName, javaDigestName, buffer, this);
+            return createNode.execute(frame, inliningTarget, digestType, pythonDigestName, javaDigestName, buffer);
         }
 
         private static PythonBuiltinClassType getTypeFor(String digestName) {

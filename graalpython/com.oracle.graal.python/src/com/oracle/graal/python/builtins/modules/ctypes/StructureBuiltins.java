@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -109,8 +110,9 @@ public final class StructureBuiltins extends PythonBuiltins {
         private static final int RECURSION_LIMIT = 5;
 
         @Specialization
-        Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
+        static Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetItem getItemNode,
@@ -122,7 +124,7 @@ public final class StructureBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (args.length > 0) {
                 int res = _init_pos_args(frame, inliningTarget, self, getClassNode.execute(inliningTarget, self), args, kwds, 0,
-                                setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, raiseNode, RECURSION_LIMIT);
+                                indirectCallData, setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, raiseNode, RECURSION_LIMIT);
                 if (res < args.length) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, TOO_MANY_INITIALIZERS);
                 }
@@ -147,7 +149,8 @@ public final class StructureBuiltins extends PythonBuiltins {
          *
          * Returns -1 on error, or the index of next argument on success.
          */
-        int _init_pos_args(VirtualFrame frame, Node inliningTarget, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+        static int _init_pos_args(VirtualFrame frame, Node inliningTarget, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+                        IndirectCallData indirectCallData,
                         SetAttributeNode.Dynamic setAttr,
                         PyObjectGetItem getItemNode,
                         CastToTruffleStringNode toString,
@@ -164,14 +167,14 @@ public final class StructureBuiltins extends PythonBuiltins {
             if (pyTypeStgDictNode.execute(inliningTarget, base) != null) {
                 if (recursionLimit > 0) {
                     index = _init_pos_args(frame, inliningTarget, self, base, args, kwds, index,
-                                    setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
+                                    indirectCallData, setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
                                     raiseNode, recursionLimit - 1);
                 } else {
-                    Object savedState = IndirectCallContext.enter(frame, this);
+                    Object savedState = IndirectCallContext.enter(frame, indirectCallData);
                     try {
-                        index = _init_pos_args_boundary(self, base, args, kwds, index, setAttr, getItemNode);
+                        index = _init_pos_args_boundary(self, base, args, kwds, index, indirectCallData, setAttr, getItemNode);
                     } finally {
-                        IndirectCallContext.exit(frame, this, savedState);
+                        IndirectCallContext.exit(frame, indirectCallData, savedState);
                     }
                 }
             }
@@ -200,10 +203,11 @@ public final class StructureBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+        static int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+                        IndirectCallData indirectCallData,
                         SetAttributeNode.Dynamic setAttr,
                         PyObjectGetItem getItemNode) {
-            return _init_pos_args(null, null, self, type, args, kwds, idx, setAttr,
+            return _init_pos_args(null, null, self, type, args, kwds, idx, indirectCallData, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),
                             HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),
                             GetBaseClassNode.getUncached(), TruffleString.EqualNode.getUncached(), PRaiseNode.Lazy.getUncached(), 0);

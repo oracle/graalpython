@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -112,8 +113,9 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        boolean compare(VirtualFrame frame, Object left, Object right,
+        static boolean compare(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -126,7 +128,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
-                Object savedState = IndirectCallContext.enter(frame, this);
+                Object savedState = IndirectCallContext.enter(frame, indirectCallData);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
                 try {
                     Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
@@ -137,7 +139,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     bufferLib.release(leftBuffer);
-                    IndirectCallContext.exit(frame, this, savedState);
+                    IndirectCallContext.exit(frame, indirectCallData, savedState);
                 }
             }
         }

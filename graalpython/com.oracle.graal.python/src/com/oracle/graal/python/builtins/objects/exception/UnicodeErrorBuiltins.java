@@ -53,17 +53,20 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -104,13 +107,15 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class GetArgAsBytesNode extends PNodeWithRaiseAndIndirectCall {
-        abstract PBytes execute(VirtualFrame frame, Object val);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetArgAsBytesNode extends PNodeWithContext {
+        abstract PBytes execute(VirtualFrame frame, Node inliningTarget, Object val);
 
         @Specialization
-        @CompilerDirectives.TruffleBoundary
-        PBytes doString(TruffleString value,
-                        @Shared @Cached PythonObjectFactory factory) {
+        @TruffleBoundary
+        static PBytes doString(TruffleString value,
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             // TODO GR-37601: cbasca cPython works directly with bytes while we have Java strings
             // which are encoded, here we decode using the system encoding but this might not be the
             // correct / ideal case
@@ -123,15 +128,16 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
-        PBytes doOther(VirtualFrame frame, Object value,
+        static PBytes doOther(VirtualFrame frame, Object value,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             try {
                 final byte[] buffer = bufferLib.getInternalOrCopiedByteArray(value);
                 final int bufferLength = bufferLib.getBufferLength(value);
                 return factory.createBytes(buffer, 0, bufferLength);
             } finally {
-                bufferLib.release(value, frame, this);
+                bufferLib.release(value, frame, indirectCallData);
             }
         }
     }
@@ -140,7 +146,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         if (args.length < index + 1) {
             throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
         } else {
-            return getArgAsBytesNode.execute(frame, args[index]);
+            return getArgAsBytesNode.execute(frame, inliningTarget, args[index]);
         }
     }
 

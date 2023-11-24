@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
@@ -308,14 +309,15 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(object)", limit = "3")
-        Object doBuffer(VirtualFrame frame, Object object,
+        static Object doBuffer(VirtualFrame frame, Object object,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = acquireLib.acquireReadonly(object, frame, this);
+            Object buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);
             try {
                 return new InteropByteArray(bufferLib.getCopiedByteArray(object));
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }

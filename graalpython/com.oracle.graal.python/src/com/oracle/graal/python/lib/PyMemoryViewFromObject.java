@@ -57,11 +57,12 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -80,8 +81,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateInline(false) // Needs to be an indirect call
-public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCall {
+@GenerateInline(false)          // footprint reduction 48 -> 29
+public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
 
     @Specialization
@@ -112,9 +113,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
     }
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
-    @SuppressWarnings("truffle-static-method")
-    PMemoryView fromManaged(VirtualFrame frame, Object object,
+    static PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
+                    @Cached("createFor(this)") IndirectCallData indirectCallData,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,
@@ -157,12 +158,12 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
             Object pythonBuffer = NativeByteSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), false);
             TruffleString format = cBuffer.getFormat();
-            return factory.createMemoryView(PythonContext.get(this), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
+            return factory.createMemoryView(PythonContext.get(inliningTarget), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
                             format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, indirectCallData);
             return factory.createMemoryViewForManagedObject(buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer), bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
         } else {

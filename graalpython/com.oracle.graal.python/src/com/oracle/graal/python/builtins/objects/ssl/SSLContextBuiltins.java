@@ -124,6 +124,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1015,7 +1016,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetAlpnProtocols extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        Object setFromBuffer(VirtualFrame frame, PSSLContext self, Object buffer,
+        static Object setFromBuffer(VirtualFrame frame, PSSLContext self, Object buffer,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -1023,7 +1025,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 self.setAlpnProtocols(parseProtocols(bytes, len));
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

@@ -40,14 +40,21 @@
  */
 package com.oracle.graal.python.util;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * @see ArrayBuilder
@@ -110,20 +117,23 @@ public final class ByteArrayBuilder {
         }
     }
 
-    public abstract static class AppendBytesNode extends PNodeWithRaiseAndIndirectCall {
-        public abstract void execute(VirtualFrame frame, ByteArrayBuilder builder, Object bytes);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class AppendBytesNode extends PNodeWithContext {
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, ByteArrayBuilder builder, Object bytes);
 
         @Specialization(limit = "3")
-        void appendBytes(VirtualFrame frame, ByteArrayBuilder builder, Object data,
+        static void appendBytes(VirtualFrame frame, Node inliningTarget, ByteArrayBuilder builder, Object data,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib) {
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, getContext(), getLanguage(), this);
+            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget), indirectCallData);
             try {
                 int len = bufferLib.getBufferLength(dataBuffer);
                 byte[] src = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
                 builder.add(src, len);
             } finally {
-                bufferLib.release(dataBuffer, frame, this);
+                bufferLib.release(dataBuffer, frame, indirectCallData);
             }
         }
 
