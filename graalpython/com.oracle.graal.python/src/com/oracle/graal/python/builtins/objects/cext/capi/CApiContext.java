@@ -578,7 +578,7 @@ public final class CApiContext extends CExtContext {
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
                     U.execute(initFunction, new GetBuiltin());
                 } else {
-                    U.execute(initFunction, new NativePointer(0), new GetBuiltin());
+                    U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
