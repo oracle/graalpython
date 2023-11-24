@@ -76,10 +76,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
 
-    private Object replacement;
-
     public PyMethodDefWrapper(PythonObject delegate) {
-        super(delegate);
+        super(delegate, true);
     }
 
     private static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
@@ -176,11 +174,6 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
         writePointerNode.write(mem, PyMethodDef__ml_doc, doc);
 
         return mem;
-    }
-
-    @Override
-    public boolean isReplacingWrapper() {
-        return true;
     }
 
     @Override

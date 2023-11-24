@@ -73,10 +73,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
-    private Object replacement;
 
     private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name) {
-        super(object);
+        super(object, true);
         this.nameWrapper = new CStringWrapper(name);
     }
 
@@ -174,11 +173,6 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
-    }
-
-    @Override
-    public boolean isReplacingWrapper() {
-        return true;
     }
 
     @Override

@@ -754,23 +754,16 @@ public abstract class CApiTransitions {
                         @Bind("needsTransfer()") boolean needsTransfer,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
-                        @Cached InlinedExactClassProfile isReplacementProfile,
-                        @Cached InlinedConditionProfile needsReplacementProfile,
+                        @Cached InlinedConditionProfile isReplacementProfile,
                         @Cached InlinedConditionProfile isStrongProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             pollReferenceQueue();
-            PythonNativeWrapper wrapper = isReplacementProfile.profile(inliningTarget, getWrapper.execute(obj));
+            PythonNativeWrapper wrapper = getWrapper.execute(obj);
             Object result;
 
-            // no profile for 'isReplacingWrapper' required since this should be constant for a type
-            // and the type is already profiled
-            if (wrapper.isReplacingWrapper()) {
+            if (isReplacementProfile.profile(inliningTarget, wrapper.isReplacingWrapper())) {
                 result = wrapper.getReplacement(lib);
-                if (needsReplacementProfile.profile(inliningTarget, result == null)) {
-                    lib.toNative(wrapper);
-                    result = wrapper.getReplacement(lib);
-                }
             } else {
                 assert obj != PNone.NO_VALUE;
                 result = wrapper;

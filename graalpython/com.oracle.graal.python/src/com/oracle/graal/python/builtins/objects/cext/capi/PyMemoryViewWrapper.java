@@ -82,7 +82,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     private Object replacement;
 
     public PyMemoryViewWrapper(PythonObject delegate) {
-        super(delegate);
+        super(delegate, true);
         assert delegate instanceof PMemoryView;
     }
 
@@ -159,11 +159,6 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
             writePointerNode.write(view, CFields.Py_buffer__suboffsets, intArrayToNativePySSizeArray(object.getBufferSuboffsets()));
         }
         return mem;
-    }
-
-    @Override
-    public boolean isReplacingWrapper() {
-        return true;
     }
 
     @Override

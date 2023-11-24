@@ -61,15 +61,20 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     private static final long UNINITIALIZED = -1;
 
+    private final boolean replacing;
     private Object delegate;
     private long nativePointer = UNINITIALIZED;
+
+    protected Object replacement;
 
     public PythonObjectReference ref;
 
     private PythonNativeWrapper() {
+        this.replacing = false;
     }
 
-    private PythonNativeWrapper(Object delegate) {
+    private PythonNativeWrapper(Object delegate, boolean replacing) {
+        this.replacing = replacing;
         this.delegate = delegate;
     }
 
@@ -122,8 +127,8 @@ public abstract class PythonNativeWrapper implements TruffleObject {
      * 
      * @return {@code true} if the wrapper should be materialized eagerly, {@code false} otherwise.
      */
-    public boolean isReplacingWrapper() {
-        return false;
+    public final boolean isReplacingWrapper() {
+        return replacing;
     }
 
     public Object getReplacement(@SuppressWarnings("unused") InteropLibrary lib) {
@@ -176,7 +181,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         protected PythonAbstractObjectNativeWrapper(Object delegate) {
-            super(delegate);
+            super(delegate, false);
+        }
+
+        protected PythonAbstractObjectNativeWrapper(Object delegate, boolean replacing) {
+            super(delegate, replacing);
         }
 
         public final long getRefCount() {
@@ -249,7 +258,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         protected PythonStructNativeWrapper(Object delegate) {
-            super(delegate);
+            super(delegate, false);
+        }
+
+        protected PythonStructNativeWrapper(Object delegate, boolean replacing) {
+            super(delegate, replacing);
         }
     }
 }

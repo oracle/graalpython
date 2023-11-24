@@ -65,12 +65,9 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  */
 public final class PThreadState extends PythonStructNativeWrapper {
 
-    private final PythonThreadState threadState;
-    private final Object replacement;
-
     @TruffleBoundary
     private PThreadState(PythonThreadState threadState) {
-        this.threadState = threadState;
+        super(threadState, true);
         // 'registerReplacement' will set the native pointer if not running LLVM managed mode.
         replacement = registerReplacement(allocateCLayout(threadState), InteropLibrary.getUncached());
     }
@@ -89,7 +86,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
     }
 
     public PythonThreadState getThreadState() {
-        return threadState;
+        return (PythonThreadState) getDelegate();
     }
 
     @TruffleBoundary
