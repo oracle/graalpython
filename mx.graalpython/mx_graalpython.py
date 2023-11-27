@@ -2753,7 +2753,7 @@ class MavenProject(mx.Distribution, mx.ClasspathDependency):
             return True, "Maven package does not exist"
         if not os.path.exists(self.sourcesPath):
             return True, "Maven sources do not exist"
-        newestSource = newestInput or 0
+        newestSource = newestInput.timestamp if newestInput else 0
         for root, _, files in os.walk(self.maven_directory):
             if files:
                 newestSource = max(newestSource, max(mx.getmtime(os.path.join(root, f)) for f in files))
