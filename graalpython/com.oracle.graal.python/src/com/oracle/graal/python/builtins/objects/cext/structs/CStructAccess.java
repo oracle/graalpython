@@ -1288,10 +1288,10 @@ public class CStructAccess {
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
         static void writeManaged(Object pointer, long offset, Object value,
                         @Shared @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached PythonToNativeNewRefNode toNative,
+                        @Cached PythonToNativeNode toNative,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            call.call(NativeCAPISymbol.FUN_WRITE_LONG_MEMBER, pointer, offset, toNative.execute(value));
+            call.call(NativeCAPISymbol.FUN_WRITE_OBJECT_MEMBER, pointer, offset, toNative.execute(value));
         }
     }
 
