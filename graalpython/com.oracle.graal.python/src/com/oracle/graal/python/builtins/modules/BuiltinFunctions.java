@@ -1633,23 +1633,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    public abstract static class MinMaxNode extends PythonBuiltinNode {
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            if (this instanceof MaxNode) {
-                return BinaryComparisonNode.GtNode.create();
-            } else {
-                return BinaryComparisonNode.LtNode.create();
-            }
-        }
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class MinMaxNode extends Node {
+
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, BinaryComparisonNode comparisonNode);
 
         @Specialization(guards = "args.length == 0")
-        @SuppressWarnings("truffle-static-method")  // TODO: inh
-        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal,
-                        @Bind("this") Node inliningTarget,
+        static Object minmaxSequenceWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal, String name,
+                        BinaryComparisonNode compare,
                         @Exclusive @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Shared @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Cached(inline = false) GetNextNode nextNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode castToBooleanNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
                         @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
@@ -1668,7 +1662,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, errorProfile1);
                 if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
-                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, getName());
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, name);
                 } else {
                     return defaultVal;
                 }
@@ -1708,15 +1702,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        private String getName() {
-            return this instanceof MaxNode ? "max" : "min";
-        }
-
         @Specialization(guards = {"args.length != 0"})
-        @SuppressWarnings("truffle-static-method")  // TODO: inh
-        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createComparison()") BinaryComparisonNode compare,
+        static Object minmaxBinaryWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, BinaryComparisonNode compare,
                         @Exclusive @Cached CallNode.Lazy keyCall,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode castToBooleanNode,
                         @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
@@ -1730,7 +1717,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
             if (!hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_SPECIFY_DEFAULT_FOR_S, getName());
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_SPECIFY_DEFAULT_FOR_S, name);
             }
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
@@ -1787,16 +1774,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     "max(arg1, arg2, *args, *[, key=func]) -> value\n\n" + "With a single iterable argument, return its biggest item. The\n" +
                     "default keyword-only argument specifies an object to return if\n" + "the provided iterable is empty.\n" + "With two or more arguments, return the largest argument.")
     @GenerateNodeFactory
-    public abstract static class MaxNode extends MinMaxNode {
+    public abstract static class MaxNode extends PythonBuiltinNode {
 
+        @Specialization
+        static Object max(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
+                        @Bind("this") Node inliningTarget,
+                        @Cached MinMaxNode minMaxNode,
+                        @Cached BinaryComparisonNode.GtNode gtNode) {
+            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "max", gtNode);
+        }
     }
 
     // min(iterable, *[, key])
     // min(arg1, arg2, *args[, key])
     @Builtin(name = J_MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"})
     @GenerateNodeFactory
-    public abstract static class MinNode extends MinMaxNode {
-
+    public abstract static class MinNode extends PythonBuiltinNode {
+        @Specialization
+        static Object min(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
+                        @Bind("this") Node inliningTarget,
+                        @Cached MinMaxNode minMaxNode,
+                        @Cached BinaryComparisonNode.LtNode ltNode) {
+            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "min", ltNode);
+        }
     }
 
     // next(iterator[, default])

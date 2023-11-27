@@ -835,7 +835,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doIt(double left, double right,
+        static Object doIt(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
             return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a == b);
@@ -846,7 +846,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doIt(double left, double right,
+        static Object doIt(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
             return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a != b);
@@ -857,7 +857,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doIt(double left, double right,
+        static Object doIt(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
             return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a < b);
@@ -868,7 +868,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doIt(double left, double right,
+        static Object doIt(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
             return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a <= b);
@@ -879,7 +879,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doIt(double left, double right,
+        static Object doIt(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
             return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a > b);
@@ -890,7 +890,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doIt(double left, double right,
+        static Object doIt(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
             return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a >= b);
