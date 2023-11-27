@@ -584,7 +584,9 @@ public abstract class GraalHPyNodes {
                 throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, CREATE, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 // close all handles (if necessary)
-                hSpec.closeAndInvalidate(hPyContext);
+                if (hSpec.isAllocated()) {
+                    hSpec.closeAndInvalidate(hPyContext);
+                }
             }
         }
     }
@@ -634,7 +636,9 @@ public abstract class GraalHPyNodes {
                 throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, T_EXEC, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 // close all handles (if necessary)
-                hModule.closeAndInvalidate(hPyContext);
+                if (hModule.isAllocated()) {
+                    hModule.closeAndInvalidate(hPyContext);
+                }
             }
         }
     }
