@@ -46,6 +46,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.io.IOAccess;
 
 /**
  * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,
@@ -68,24 +69,24 @@ public class Py2BinLauncher {
             String s = p.toString();
             return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
         });
+        IOAccess ioAccess = IOAccess.newBuilder().fileSystem(vfs).allowHostSocketAccess(true).build();
         var builder = Context.newBuilder()
-            .allowExperimentalOptions(true)
-            .allowAllAccess(true)
-            .allowIO(true)
-            .fileSystem(vfs)
-            .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
-            .option("python.PosixModuleBackend", "java")
-            .option("python.DontWriteBytecodeFlag", "true")
-            .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
-            .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
-            .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-            .option("python.AlwaysRunExcepthook", "true")
-            .option("python.ForceImportSite", "true")
-            .option("python.RunViaLauncher", "true")
-            .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
-            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
-            .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
-            .option("python.CheckHashPycsMode", "never");
+                .allowExperimentalOptions(true)
+                .allowAllAccess(true)
+                .allowIO(ioAccess)
+                .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
+                .option("python.PosixModuleBackend", "java")
+                .option("python.DontWriteBytecodeFlag", "true")
+                .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
+                .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
+                .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
+                .option("python.AlwaysRunExcepthook", "true")
+                .option("python.ForceImportSite", "true")
+                .option("python.RunViaLauncher", "true")
+                .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
+                .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
+                .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
+                .option("python.CheckHashPycsMode", "never");
         if(ImageInfo.inImageRuntimeCode()) {
             builder.option("engine.WarnInterpreterOnly", "false");
         }
