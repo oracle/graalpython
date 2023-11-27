@@ -74,6 +74,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
@@ -862,6 +863,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ModNode extends IntBinaryBuiltinNode {

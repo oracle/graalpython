@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
@@ -1888,6 +1889,16 @@ public final class StringBuiltins extends PythonBuiltins {
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
+        }
+    }
+
+    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RModNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        Object mod(Object self, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
