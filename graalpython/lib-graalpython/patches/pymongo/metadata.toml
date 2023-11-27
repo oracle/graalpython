@@ -1,0 +1,2 @@
+[[rules]]
+patch = 'pymongo.patch'

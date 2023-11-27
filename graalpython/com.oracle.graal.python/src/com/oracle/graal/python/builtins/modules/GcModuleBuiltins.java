@@ -60,6 +60,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         addBuiltinConstant("DEBUG_LEAK", 0);
+        addBuiltinConstant("DEBUG_UNCOLLECTABLE", 0);
         super.initialize(core);
     }
 

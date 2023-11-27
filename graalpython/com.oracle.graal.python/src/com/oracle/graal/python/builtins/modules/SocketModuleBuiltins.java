@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_ZERO;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
@@ -368,6 +370,55 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @NeverDefault
         protected static IdnaFromStringOrBytesConverterNode createIdnaConverter() {
             return IdnaFromStringOrBytesConverterNode.create("gethostbyname", 1);
+        }
+    }
+
+    @Builtin(name = "gethostbyname_ex", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetHostByNameExNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(VirtualFrame frame, Object nameObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            byte[] name = idnaConverter.execute(frame, nameObj);
+            // The event name is really without the _ex, it's not a copy-paste error
+            auditNode.audit(inliningTarget, "socket.gethostbyname", factory.createTuple(new Object[]{nameObj}));
+            /*
+             * TODO this uses getaddrinfo to emulate the legacy gethostbyname. It doesn't support
+             * aliases and multiple addresses. We might want to use the legacy gethostbyname_r API
+             * in the future
+             */
+            try {
+                AddrInfoCursor cursor = posixLib.getaddrinfo(getPosixSupport(), posixLib.createPathFromBytes(getPosixSupport(), name),
+                                null, AF_INET.value, 0, 0, AI_CANONNAME.value);
+                try {
+                    TruffleString canonName = posixLib.getPathAsString(getPosixSupport(), addrInfoCursorLib.getCanonName(cursor));
+                    Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addrInfoCursorLib.getSockAddr(cursor));
+                    TruffleString addr = posixLib.getPathAsString(getPosixSupport(), posixLib.inet_ntop(getPosixSupport(), AF_INET.value, inet4SockAddr.getAddressAsBytes()));
+                    // getaddrinfo doesn't support aliases
+                    PList aliases = factory.createList();
+                    // we support just one address for now
+                    PList addrs = factory.createList(new Object[]{addr});
+                    return factory.createTuple(new Object[]{canonName, aliases, addrs});
+                } finally {
+                    addrInfoCursorLib.release(cursor);
+                }
+            } catch (GetAddrInfoException e) {
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketHError, new Object[]{e.getMessageAsTruffleString()});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @NeverDefault
+        protected static IdnaFromStringOrBytesConverterNode createIdnaConverter() {
+            return IdnaFromStringOrBytesConverterNode.create("gethostbyname_ex", 1);
         }
     }
 

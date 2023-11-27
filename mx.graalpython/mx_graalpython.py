@@ -2040,6 +2040,8 @@ def _python_checkpatchfiles():
             'wheel-pre-0.35.patch',
             # Empty license field. It's ASL 2.0 or BSD 2-Clause
             'packaging.patch',
+            # pymongo puts the whole license in the field. It's ASL 2.0
+            'pymongo.patch',
             # Empty license field. It's ASL 2.0
             'tokenizers-0.13.3.patch',
             # Empty license field. It's Apache 2
