@@ -754,40 +754,40 @@ public abstract class CApiTransitions {
                         @Bind("needsTransfer()") boolean needsTransfer,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
-                        @Cached InlinedConditionProfile isReplacementProfile,
+                        @Cached GetReplacementNode getReplacementNode,
                         @Cached InlinedConditionProfile isStrongProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
-            Object result;
 
-            if (isReplacementProfile.profile(inliningTarget, wrapper.isReplacingWrapper())) {
-                result = wrapper.getReplacement(lib);
-            } else {
-                assert obj != PNone.NO_VALUE;
-                result = wrapper;
-                if (!lib.isPointer(wrapper)) {
-                    lib.toNative(wrapper);
-                }
-                if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    // native part needs to decRef to release
-                    objectNativeWrapper.incRef();
-                    /*
-                     * This creates a new reference to the object and the ownership is transferred
-                     * to the C extension. Therefore, we need to make the reference strong such that
-                     * we do not deallocate the object if it's no longer referenced in the
-                     * interpreter. The interpreter will be notified by an upcall as soon as the
-                     * object's refcount goes down to MANAGED_RECOUNT again.
-                     */
-                    assert wrapper.ref != null;
-                    if (isStrongProfile.profile(inliningTarget, !objectNativeWrapper.ref.isStrongReference())) {
-                        objectNativeWrapper.ref.setStrongReference(objectNativeWrapper);
-                    }
+            Object replacement = getReplacementNode.execute(inliningTarget, wrapper);
+            if (replacement != null) {
+                return replacement;
+            }
+
+            assert PythonContext.get(inliningTarget).getEnv().isNativeAccessAllowed();
+            assert obj != PNone.NO_VALUE;
+            if (!lib.isPointer(wrapper)) {
+                lib.toNative(wrapper);
+            }
+            if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                // native part needs to decRef to release
+                objectNativeWrapper.incRef();
+                /*
+                 * This creates a new reference to the object and the ownership is transferred to
+                 * the C extension. Therefore, we need to make the reference strong such that we do
+                 * not deallocate the object if it's no longer referenced in the interpreter. The
+                 * interpreter will be notified by an upcall as soon as the object's refcount goes
+                 * down to MANAGED_RECOUNT again.
+                 */
+                assert wrapper.ref != null;
+                if (isStrongProfile.profile(inliningTarget, !objectNativeWrapper.ref.isStrongReference())) {
+                    objectNativeWrapper.ref.setStrongReference(objectNativeWrapper);
                 }
             }
-            assert result != null;
-            return result;
+            assert wrapper != null;
+            return wrapper;
         }
     }
 

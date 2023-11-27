@@ -131,12 +131,16 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         return replacing;
     }
 
+    public final void setReplacement(Object replacement) {
+        this.replacement = replacement;
+    }
+
     public Object getReplacement(@SuppressWarnings("unused") InteropLibrary lib) {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
     @TruffleBoundary
-    protected final Object registerReplacement(Object pointer, InteropLibrary lib) {
+    public final Object registerReplacement(Object pointer, InteropLibrary lib) {
         LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
         Object result;
         if (pointer instanceof Long lptr) {
