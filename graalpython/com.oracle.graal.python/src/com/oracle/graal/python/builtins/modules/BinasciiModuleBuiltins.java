@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.PGuards.isAscii;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.crc32;
+import static com.oracle.graal.python.util.PythonUtils.crcHqx;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -405,6 +406,29 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BinasciiModuleBuiltinsClinicProviders.Crc32NodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "crc_hqx", minNumOfPositionalArgs = 2, parameterNames = {"data", "crc"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "crc", conversion = ArgumentClinic.ClinicConversion.Long)
+    @GenerateNodeFactory
+    abstract static class CrcHqxNode extends PythonBinaryClinicBuiltinNode {
+
+        @Specialization(limit = "3")
+        static long b2a(VirtualFrame frame, Object buffer, long crc,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
+                return crcHqx((int) crc, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.CrcHqxNodeClinicProviderGen.INSTANCE;
         }
     }
 
