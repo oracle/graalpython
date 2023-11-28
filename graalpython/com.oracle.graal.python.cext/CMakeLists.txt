@@ -67,7 +67,7 @@ add_compile_definitions(
     GRAALVM_PYTHON_LLVM
 )
 
-if("${LLVM_MODE}" EQUAL "native")
+if(${LLVM_MODE} STREQUAL "native")
     add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
 else()
     add_compile_definitions(GRAALVM_PYTHON_LLVM_MANAGED)

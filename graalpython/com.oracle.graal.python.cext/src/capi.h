@@ -798,7 +798,7 @@ static inline int get_method_flags_wrapper(int flags) {
 #define HANDLE_BASE 0x8000000000000000ULL
 #define IMMORTAL_REFCNT (INT64_MAX >> 1)
 
-#if GRAALVM_PYTHON_LLVM_MANAGED
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
 #define points_to_py_handle_space(PTR) polyglot_is_value((PTR))
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
 
