@@ -4,6 +4,7 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 24.0.0
+* We now provide a collection of recipes in the form of GitHub Actions to build popular native extensions on GraalPy. These provide a reproducible way for the community to build native extensions for GraalPy with the correct dependencies. See scripts/wheelbuilder/README.md for details.
 * Foreign big integers are now supported and work with all `Numeric` operators.
 * Interop `null` values are now treated as *identical*, not only *equal* to Python's `None`. This means that something like `java.type("java.lang.Object[]")(1)[0] is None` will now return `True`.
 * Update to Python 3.10.13. This inlines the security and bugfixes from 3.10.8 to 3.10.13.
