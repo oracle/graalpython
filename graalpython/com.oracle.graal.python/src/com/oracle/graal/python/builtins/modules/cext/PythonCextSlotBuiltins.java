@@ -686,18 +686,17 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyObject_ob_type extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(Object object) {
+        static Object get(Object object,
+                        @Bind("this") Node inliningTarget) {
             /*
              * We are allocating native object stubs for each wrapper. Therefore, accesses to
              * 'ob_type' should only be done on the native side. However, we allow access for
-             * debugging purposes.
+             * debugging purposes and in managed mode.
              */
-            if (PythonContext.DEBUG_CAPI) {
-                Object result = GetClassNode.executeUncached(object);
-                assert !(result instanceof Integer);
-                return result;
-            }
-            throw CompilerDirectives.shouldNotReachHere();
+            assert PythonContext.DEBUG_CAPI || !PythonContext.get(inliningTarget).isNativeAccessAllowed();
+            Object result = GetClassNode.executeUncached(object);
+            assert !(result instanceof Integer);
+            return result;
         }
     }
 
