@@ -48,10 +48,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -536,7 +539,10 @@ public final class CodeUnit {
         if (startLine == line) {
             return 0;
         }
-        // todo look into instrumentation support
+        if ((flags & PCode.CO_GRAALPYHON_MODULE) != 0 && line < startLine) {
+            // allow jump to the first line of a file, even if it is a comment
+            return 0;
+        }
         int[] map = getSourceMap().startLineMap;
         int bestBci = -1;
         int lineDiff = Integer.MAX_VALUE;
@@ -584,7 +590,7 @@ public final class CodeUnit {
             stacks.set(target, value);
             todo.addLast(target);
         } else {
-            assert value.equals(blocksAtTarget) : "found conflicting stacks depending on code path: " + this.name;
+            assert value.equals(blocksAtTarget) : "found conflicting stacks depending on code path: " + this.name + "\t at " + target;
         }
     }
 
@@ -595,22 +601,16 @@ public final class CodeUnit {
     }
 
     // returns null if the jump is fine
-    public String checkJump(int from, int to) {
-        List<ArrayList<StackItem>> blocks = computeStackElems();
-        ArrayList<StackItem> blkFrom = blocks.get(from);
-        System.out.println(this);
-
-        iterateBytecode(code, (bci, op, oparg, following) -> {
-            System.out.println(bci + "\t" +
-                            op.getNumberOfProducedStackItems(oparg, following, false) + "\t" +
-                            op.getNumberOfConsumedStackItems(oparg, following, false) + "\t" + op + "\t" +
-                            blocks.get(bci));
-        });
-
-        // todo these should be exceptions
-        assert blkFrom != null : "Unreachable origin";
-        ArrayList<StackItem> blkTo = blocks.get(to);
-        assert blkTo != null : "Unreachable target";
+    public String checkJump(List<ArrayList<StackItem>> stackElems, int from, int to) {
+        ArrayList<StackItem> blkFrom = stackElems.get(from);
+        if (blkFrom == null) {
+            // this should not happen
+            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, bciToLine(from));
+        }
+        ArrayList<StackItem> blkTo = stackElems.get(to);
+        if (blkTo == null) {
+            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, bciToLine(from));
+        }
         if (blkTo.size() > blkFrom.size()) {
             return blkTo.get(blkTo.size() - 1).error;
         }
@@ -622,7 +622,7 @@ public final class CodeUnit {
         return null;
     }
 
-    private List<ArrayList<StackItem>> computeStackElems() {
+    public List<ArrayList<StackItem>> computeStackElems() {
         List<ArrayList<StackItem>> blocks = new ArrayList<>(Collections.nCopies(code.length + 1, null));
         blocks.set(0, new ArrayList<>());
         ArrayDeque<Integer> todo = new ArrayDeque<>();
@@ -649,8 +649,12 @@ public final class CodeUnit {
                         next = StackItem.Iterable.push(popStack(blocks.get(bci)));
                         setNextStack(todo, blocks, bci + 1, next);
                         break;
+                    case FOR_ITER:
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), StackItem.Object.push(next));
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, true), popStack(next));
+                        break;
                     case PUSH_EXC_INFO:
-                        next = StackItem.Except.push(blocks.get(bci));
+                        next = StackItem.Except.push(StackItem.Object.push(popStack(blocks.get(bci))));
                         setNextStack(todo, blocks, bci + 1, next);
                         break;
                     case MATCH_EXC_OR_JUMP:
@@ -730,56 +734,6 @@ public final class CodeUnit {
             // System.out.println("After: " + blocksHere);
             setNextStack(todo, blocks, next, blocksHere);
         }
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    public int[] computeStackLevels() {
-        int[] stackLevels = new int[code.length];
-        Arrays.fill(stackLevels, -1);
-        // stackLevels has the stack depth before the corresponding opcode executes
-        stackLevels[0] = 0;
-        // deque of bci
-        ArrayDeque<Integer> todo = new ArrayDeque<>();
-        todo.addFirst(0);
-        for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
-            int handler = exceptionHandlerRanges[i + 2];
-            int stackAtHandler = exceptionHandlerRanges[i + 3];
-            // stack at handler + the exception
-            stackLevels[handler] = stackAtHandler + 1;
-            todo.addFirst(handler);
-        }
-        while (!todo.isEmpty()) {
-            int bci = todo.removeLast();
-            int stackHere = stackLevels[bci];
-            assert stackHere >= 0;
-            opCodeAt(code, bci, (ignored, op, oparg, followingArgs) -> {
-                assert stackHere >= op.getNumberOfConsumedStackItems(oparg, followingArgs, true) : "failed at:" + op + ":" + bci;
-                assert stackHere >= op.getNumberOfConsumedStackItems(oparg, followingArgs, false) : "failed at:" + op + ":" + bci;
-                int stackWJump = op.getStackEffect(oparg, followingArgs, true);
-                int stackWOJump = op.getStackEffect(oparg, followingArgs, false);
-                int bciWJump = op.getNextBci(bci, oparg, true);
-                int bciWOJump = op.getNextBci(bci, oparg, false);
-                if (bciWJump == -1) {
-                    assert bciWOJump == bciWJump;
-                    return;
-                }
-                if (stackLevels[bciWJump] < 0) {
-                    stackLevels[bciWJump] = stackHere + stackWJump;
-                    todo.addFirst(bciWJump);
-                } else {
-                    assert stackLevels[bciWJump] == stackHere + stackWJump;
-                }
-                if (bciWJump != bciWOJump) {
-                    if (stackLevels[bciWOJump] < 0) {
-                        stackLevels[bciWOJump] = stackHere + stackWOJump;
-                        todo.addFirst(bciWOJump);
-                    } else {
-                        assert stackLevels[bciWOJump] == stackHere + stackWOJump;
-                    }
-                }
-            });
-        }
-        return stackLevels;
     }
 
     @FunctionalInterface

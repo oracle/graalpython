@@ -174,8 +174,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Cached.Shared("isCurrentFrame") @Cached InlinedConditionProfile isCurrentFrameProfile,
+                        @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
@@ -190,8 +190,9 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(newLineno)")
         PNone set(VirtualFrame frame, PFrame self, Object newLineno,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Cached.Shared("isCurrentFrame") @Cached InlinedConditionProfile isCurrentFrameProfile,
+                        @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode,
+                        @Cached PRaiseNode.Lazy raise) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
@@ -201,9 +202,13 @@ public final class FrameBuiltins extends PythonBuiltins {
                 assert pyFrame == self;
             }
             if (self.isTraceArgument()) {
-                self.setJumpDestLine((int) newLineno); // todo
+                if (newLineno instanceof Integer x) {
+                    self.setJumpDestLine(x);
+                } else {
+                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EXPECTED_S_GOT_P, "int", newLineno);
+                }
             } else {
-                throw raise(PythonBuiltinClassType.ValueError); // todo
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT, getContext().getThreadState(getLanguage()).getTracingWhat().pythonName);
             }
             return PNone.NONE;
         }
@@ -250,7 +255,8 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(v)")
         static Object doSet(PFrame self, Object v, @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise, @Cached CastToJavaBooleanNode cast) {
+                        @Cached PRaiseNode raise,
+                        @Cached CastToJavaBooleanNode cast) {
             try {
                 self.setTraceLine(cast.execute(inliningTarget, v));
             } catch (CannotCastException e) {

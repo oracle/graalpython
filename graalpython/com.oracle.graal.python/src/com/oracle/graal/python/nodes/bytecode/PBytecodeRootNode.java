@@ -2925,7 +2925,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             mutableData.setPyFrame(ensurePyFrame(virtualFrame));
             PFrame pyFrame = mutableData.getPyFrame();
             if (pyFrame.didJump()) {
-                pyFrame.setJumpDestLine(-3);
                 mutableData.setPastBci(bci);
                 return bci;
             }
@@ -2935,22 +2934,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 mutableData.getPastLine(), true);
                 if (pyFrame.didJump()) {
                     int newBci = lineToBci(pyFrame.getJumpDestLine());
-                    String error = co.checkJump(bci, newBci);
-                    if (error != null) {
-                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
-                    }
                     mutableData.setPastBci(bci);
                     if (newBci == -1) {
-                        throw PRaiseNode.getUncached().raise(ValueError); // todo
+                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, pyFrame.getLine());
                     } else if (newBci == -2) {
-                        throw PRaiseNode.getUncached().raise(ValueError); // todo
+                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
                     } else {
-                        int[] stacks = co.computeStackLevels();
-                        ret = stacks[newBci] - stacks[bci];
+                        var stacks = co.computeStackElems();
+                        String error = co.checkJump(stacks, bci, newBci);
+                        if (error != null) {
+                            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
+                        }
+                        ret = stacks.get(newBci).size() - stacks.get(bci).size();
                         setCurrentBci(virtualFrame, bcioffset, newBci);
                     }
                 }
             }
+            pyFrame.setJumpDestLine(-3);
         }
         mutableData.setPastBci(bci);
         return ret;
