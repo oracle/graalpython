@@ -885,7 +885,7 @@ void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
     // do nothing
 }
 
-void nop_GraalPyTruffle_NotifyRefCount(PyObject*, Py_ssize_t) {
+void nop_GraalPyTruffle_NotifyRefCount(PyObject* obj, Py_ssize_t refcnt) {
     // do nothing
 }
 
