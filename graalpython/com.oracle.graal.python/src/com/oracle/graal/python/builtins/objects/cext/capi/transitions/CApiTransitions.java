@@ -502,7 +502,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
-                        @Cached(inline = false) CStructAccess.WriteObjectNode writeObjectNode,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
                         @Cached InlinedExactClassProfile wrapperProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode) {
