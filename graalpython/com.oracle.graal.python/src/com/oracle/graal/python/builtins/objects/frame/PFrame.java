@@ -76,7 +76,9 @@ public final class PFrame extends PythonBuiltinObject {
 
     // -3 for jumps not allowed, -2 for no jump, otherwise the line to jump to - only should be set
     // in a trace function.
-    private int jumpDestLine = -3;
+    public static final int DISALLOW_JUMPS = -3;
+    public static final int NO_JUMP = -2;
+    private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
 
     private boolean traceLine = true;
@@ -100,7 +102,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean isTraceArgument() {
-        return jumpDestLine != -3;
+        return jumpDestLine != DISALLOW_JUMPS;
     }
 
     public int getJumpDestLine() {
@@ -244,7 +246,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean didJump() {
-        return jumpDestLine > -2;
+        return jumpDestLine > NO_JUMP;
     }
 
     @TruffleBoundary

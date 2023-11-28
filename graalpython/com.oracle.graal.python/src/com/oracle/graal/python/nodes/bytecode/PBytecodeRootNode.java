@@ -2929,15 +2929,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 return bci;
             }
             if (pyFrame.getTraceLine()) {
-                pyFrame.setJumpDestLine(-2);
+                pyFrame.setJumpDestLine(PFrame.NO_JUMP); // jumps from live event allowed
                 invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.LINE,
                                 mutableData.getPastLine(), true);
                 if (pyFrame.didJump()) {
                     int newBci = lineToBci(pyFrame.getJumpDestLine());
                     mutableData.setPastBci(bci);
                     if (newBci == -1) {
+                        // line before the code block
                         throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, pyFrame.getLine());
                     } else if (newBci == -2) {
+                        // line after the code block
                         throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
                     } else {
                         var stacks = co.computeStackElems();
@@ -2950,7 +2952,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
             }
-            pyFrame.setJumpDestLine(-3);
+            pyFrame.setJumpDestLine(PFrame.DISALLOW_JUMPS);
         }
         mutableData.setPastBci(bci);
         return ret;
