@@ -963,6 +963,9 @@ PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwarg
 
 // GraalPy additions
 Py_ssize_t _Py_REFCNT(const PyObject *obj) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return IMMORTAL_REFCNT;
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     Py_ssize_t res;
     if (points_to_py_handle_space(obj))
     {
@@ -979,9 +982,13 @@ Py_ssize_t _Py_REFCNT(const PyObject *obj) {
         res = obj->ob_refcnt;
     }
     return res;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return IMMORTAL_REFCNT;
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     PyObject *dest;
     if (points_to_py_handle_space(obj))
     {
@@ -999,9 +1006,13 @@ Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
     }
     dest->ob_refcnt = cnt;
 	return cnt;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 PyTypeObject* _Py_TYPE(const PyObject *a) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return PyObject_ob_type(a);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     PyTypeObject *res;
     if (points_to_py_handle_space(a))
     {
@@ -1018,6 +1029,7 @@ PyTypeObject* _Py_TYPE(const PyObject *a) {
         res = a->ob_type;
     }
     return res;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 Py_ssize_t _Py_SIZE(const PyVarObject *a) {

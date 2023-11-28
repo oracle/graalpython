@@ -67,6 +67,13 @@ add_compile_definitions(
     GRAALVM_PYTHON_LLVM
 )
 
+if("${LLVM_MODE}" EQUAL "native")
+    add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
+else()
+    add_compile_definitions(GRAALVM_PYTHON_LLVM_MANAGED)
+endif()
+
+
 if(WIN32)
     add_compile_definitions(
         MS_WINDOWS

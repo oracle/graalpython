@@ -63,6 +63,10 @@
 #include "pycore_pymem.h"
 #include "bytesobject.h"
 
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+#include <graalvm/llvm/polyglot.h>
+#endif
+
 #define SRC_CS "utf-8"
 
 /* Flags definitions representing global (debug) options. */
@@ -794,6 +798,10 @@ static inline int get_method_flags_wrapper(int flags) {
 #define HANDLE_BASE 0x8000000000000000ULL
 #define IMMORTAL_REFCNT (INT64_MAX >> 1)
 
+#if GRAALVM_PYTHON_LLVM_MANAGED
+#define points_to_py_handle_space(PTR) polyglot_is_value((PTR))
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+
 #define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
 
 static MUST_INLINE PyObject *stub_to_pointer(PyObject *stub_ptr)
@@ -805,6 +813,7 @@ static MUST_INLINE PyObject *pointer_to_stub(PyObject *o)
 {
     return ((uintptr_t) o) & ~HANDLE_BASE;
 }
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 
