@@ -131,7 +131,7 @@ typedef struct {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
 PyTypeObject GLOBAL_NAME = {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
-    #__TYPE_NAME__,                              /* tp_name */\
+    __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
     (__ITEMSIZE__),                             /* tp_itemsize */\
     (__DEALLOC__),                              /* tp_dealloc */\
@@ -204,7 +204,7 @@ static void initialize_builtin_types_and_structs() {
 	clock_t t = clock();
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, #__TYPE_NAME__,
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
