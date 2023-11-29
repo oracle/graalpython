@@ -164,6 +164,7 @@ class ReferencesTestCase(TestBase):
         c = C()
         self.assertRaises(TypeError, weakref.ref, c, callback=None)
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_proxy_ref(self):
         o = C()
         o.bar = 1
@@ -474,6 +475,7 @@ class ReferencesTestCase(TestBase):
         with self.assertRaises(TypeError):
             hash(weakref.proxy(obj))
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_getweakrefcount(self):
         o = C()
         ref1 = weakref.ref(o)
@@ -496,6 +498,7 @@ class ReferencesTestCase(TestBase):
         self.assertEqual(weakref.getweakrefcount(1), 0,
                      "got wrong number of weak reference objects for int")
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_getweakrefs(self):
         o = C()
         ref1 = weakref.ref(o, self.callback)
@@ -687,6 +690,7 @@ class ReferencesTestCase(TestBase):
         del c1, c2, C, D
         gc.collect()
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_callback_in_cycle_resurrection(self):
         import gc
 
