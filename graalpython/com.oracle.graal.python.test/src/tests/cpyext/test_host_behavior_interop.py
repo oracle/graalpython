@@ -48,6 +48,37 @@ if sys.implementation.name == "graalpy":
 
     class TestPyStructNumericSequenceTypes(object):
 
+        @skipIf(True, "not supported in native mode")
+        def test_interop_assertions(self):
+            class MyType(object):
+                data = 100000000000
+
+            t = MyType()
+            import java
+            BigInteger = java.type("java.math.BigInteger")
+
+            polyglot.register_interop_behavior(MyType,
+                                               is_number=False,
+                                               as_long=lambda x: x.data)
+            try:
+                # since is number is false, this should throw a TypeError
+                print(BigInteger.valueOf(t))
+            except TypeError:
+                assert True
+            else:
+                assert False
+
+            polyglot.register_interop_behavior(MyType,
+                                               is_number=True,
+                                               fits_in_long=lambda x: True)
+            try:
+                # since as_long is not defined, this should throw a TypeError
+                print(BigInteger.valueOf(t))
+            except TypeError:
+                assert True
+            else:
+                assert False
+
         @skipIf(is_native, "not supported in native mode")
         def test_host_interop_extension(self):
             MyNativeType = CPyExtType("MyNativeType",
@@ -72,7 +103,6 @@ if sys.implementation.name == "graalpy":
             instance = MyNativeType()
             assert instance.get_data() == 10
 
-            import polyglot
             import java
             BigInteger = java.type("java.math.BigInteger")
 
