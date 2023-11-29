@@ -51,6 +51,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import java.io.IOException;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 public class GraalPy {
     private static final String VENV_PREFIX = "/vfs/venv";
@@ -60,7 +61,12 @@ public class GraalPy {
     private static final String PYTHON = "python";
 
     public static Context getContext() {
-        VirtualFileSystem vfs = new VirtualFileSystem();
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder()
+            .extractFilter(p -> {
+                String s = p.toString();
+                return s.endsWith(".ttf");
+            })
+            .build();
         Context context = Context.newBuilder()
             // set true to allow experimental options
             .allowExperimentalOptions(false)

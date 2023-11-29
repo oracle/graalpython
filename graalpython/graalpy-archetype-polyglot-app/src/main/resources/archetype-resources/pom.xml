@@ -37,6 +37,12 @@
       <artifactId>python-launcher</artifactId>
       <version>${symbol_dollar}{graalpy.version}</version>
     </dependency>
+    
+    <dependency>
+      <groupId>org.graalvm.python</groupId>
+      <artifactId>python-embedding</artifactId>
+        <version>${symbol_dollar}{graalpy.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
