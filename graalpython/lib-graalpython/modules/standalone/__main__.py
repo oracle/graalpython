@@ -54,24 +54,27 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import pathlib
 import platform
 import socket
 import urllib
 import urllib.request
 import tarfile
 import zipfile
-import glob 
+import glob
 
 assert sys.pycache_prefix is None
 
+# Prefix and filelist match the defaults in org.graalvm.python.embedding.utils.VirtualFileSystem
 VFS_PREFIX = "vfs"
+FILES_LIST_NAME = "fileslist.txt"
+FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
+
+# Global configuration
 VFS_HOME = "home"
 VFS_HOME_PREFIX = f"{VFS_PREFIX}/{VFS_HOME}"
 VFS_VENV_PREFIX = VFS_PREFIX + "/venv"
 VFS_PROJ_PREFIX = VFS_PREFIX + "/proj"
-
-VFS_JAVA_FILE = "VirtualFileSystem.java"
-VFS_JAVA_FILE_TEMPLATE = f"resources/{VFS_JAVA_FILE}"
 
 NATIVE_EXEC_LAUNCHER = "Py2BinLauncher"
 NATIVE_EXEC_LAUNCHER_FILE = f"{NATIVE_EXEC_LAUNCHER}.java"
@@ -83,19 +86,20 @@ NATIVE_IMAGE_RESOURCES_PATH = f"resources/{NATIVE_IMAGE_RESOURCES_FILE}"
 GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
 MVN_REPOSITORY = os.getenv("MVN_REPOSITORY")
-MVN_GRAALPY_ARTEFACT_ID = "python-community"
 MVN_GRAALPY_VERSION = os.getenv("MVN_GRAALPY_VERSION") if os.getenv("MVN_GRAALPY_VERSION") else __graalpython__.get_graalvm_version()
-PYTHON_LANGUAGE_JAR = f"org.graalvm.python-python-language-{MVN_GRAALPY_VERSION}.jar"
+ARTIFACTS = [
+    "org.graalvm.polyglot.python-community",
+    "org.graalvm.python.python-embedding",
+]
  
-FILES_LIST_NAME = "fileslist.txt"
-FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
-
 CMD_NATIVE_EXECUTABLE = "native"
 CMD_JAVA_PYTHON_APP = "polyglot_app"
 ATTR_STANDALONE_CMD = "command"
 
+
 def get_file(*paths):
     return os.path.join(os.path.dirname(__file__), *paths)
+
 
 def get_executable(file):
     if os.path.isfile(file):
@@ -107,6 +111,7 @@ def get_executable(file):
     if os.path.isfile(exe):
         return exe
     return None
+
 
 def create_polyglot_app(parsed_args):
     if hasattr(parsed_args, "module") and os.path.abspath(parsed_args.output_directory).startswith(os.path.abspath(parsed_args.module)):
@@ -145,23 +150,26 @@ def create_polyglot_app(parsed_args):
         exit(1)
 
 
-def get_modules_path(target_dir):
-    mp = os.path.join(__graalpython__.home, "graalpy_downloaded_modules")  
+def get_download_dir():
+    subdir = "downloaded_standalone_resources"
+    mp = os.path.join(__graalpython__.home, subdir)  
     try:
         if not os.path.exists(mp):
             os.mkdir(mp)
+        Pathlib(mp).touch() # Ensure if we can write to that location
         return mp
     except Exception as e:
-        pass
-    return os.path.join(target_dir, "modules")
+        return os.path.join(tempfile.mkdtemp(), subdir)
+
 
 def create_native_exec(parsed_args):
-    target_dir = tempfile.mkdtemp()
+    target_dir = get_download_dir()
     try:
         ni, jc = get_tools(target_dir, parsed_args)
                 
-        modules_path = get_modules_path(target_dir)
-        download_python(modules_path, parsed_args)
+        modules_path = os.path.join(target_dir, "modules")
+        for artifact in ARTIFACTS:
+            download_maven_artifact(modules_path, artifact, parsed_args)
         
         launcher_file = os.path.join(target_dir, NATIVE_EXEC_LAUNCHER_FILE)    
         create_target_directory(target_dir, launcher_file, parsed_args)
@@ -171,7 +179,8 @@ def create_native_exec(parsed_args):
     finally:
         if not parsed_args.keep_temp:
             shutil.rmtree(target_dir)
-   
+
+
 def index_vfs(target_dir):   
     files_list_path = os.path.join(target_dir, FILES_LIST_PATH)
     dir_to_list = os.path.join(target_dir, VFS_PREFIX)        
@@ -186,16 +195,7 @@ def index_vfs(target_dir):
         for (dir_path, dir_names, file_names) in w:
             f(dir_path, dir_names, "/\n")
             f(dir_path, file_names, "\n")
-                
-def create_virtual_filesystem_file(vfs_file):
-    lines = open(get_file(VFS_JAVA_FILE_TEMPLATE), 'r').readlines()
-    with open(vfs_file, 'w') as f:
-        for line in lines:
-            if "{vfs-prefix}" in line:
-                line = line.replace("{vfs-prefix}", VFS_PREFIX)
-            if "{files-list-name}" in line:
-                line = line.replace("{files-list-name}", FILES_LIST_NAME)
-            f.write(line)
+
 
 def create_launcher_file(template, launcher):
     lines = open(template, 'r').readlines()
@@ -208,6 +208,7 @@ def create_launcher_file(template, launcher):
             if "{vfs-proj-prefix}" in line:
                 line = line.replace("{vfs-proj-prefix}", VFS_PROJ_PREFIX)
             f.write(line)
+
 
 def create_target_directory(target_dir, launcher_file, parsed_args):
     if parsed_args.verbose:
@@ -222,10 +223,8 @@ def create_target_directory(target_dir, launcher_file, parsed_args):
     os.makedirs(os.path.dirname(launcher_file), exist_ok=True)
     create_launcher_file(get_file(NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH), launcher_file)
 
-    virtual_filesystem_java_file = os.path.join(target_dir, VFS_JAVA_FILE)
-    create_virtual_filesystem_file(virtual_filesystem_java_file)
-
     shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), os.path.join(target_dir, NATIVE_IMAGE_RESOURCES_FILE))
+
 
 def bundle_python_resources(target_dir, project, venv=None):
     """
@@ -276,6 +275,7 @@ def bundle_python_resources(target_dir, project, venv=None):
             copy_folder_to_target(target_dir, tmpdir, VFS_PROJ_PREFIX)
             os.unlink(name)
 
+
 def copy_folder_to_target(resource_root, folder, prefix, path_filter=lambda file=None, dir=None: False):
     """
     Store a folder with Python modules.
@@ -291,6 +291,7 @@ def copy_folder_to_target(resource_root, folder, prefix, path_filter=lambda file
             resource_parent_path = os.path.dirname(os.path.join(resource_root, arcname))
             os.makedirs(resource_parent_path, exist_ok=True)
             shutil.copy(fullname, os.path.join(resource_root, arcname))
+
 
 def get_graalvm_url():
     jdk_version = __graalpython__.get_jdk_version()
@@ -320,6 +321,7 @@ def get_graalvm_url():
         raise RuntimeError("Unknown platform machine", machine)
 
     return f"{GRAALVM_URL_BASE}{major_version}/archive/graalvm-jdk-{jdk_version}_{system}-{machine}_bin.{sufix}"
+
 
 def get_tools(target_dir, parsed_args):
     if os.getenv("JAVA_HOME"):
@@ -372,16 +374,15 @@ def get_tools(target_dir, parsed_args):
 
     return ni, jc
 
-def download_python(modules_path, parsed_args):
-    if os.path.exists((os.path.join(modules_path, PYTHON_LANGUAGE_JAR))):
-        return
-            
+
+def download_maven_artifact(modules_path, artifact, parsed_args):
     mvnd = get_executable(os.path.join(__graalpython__.home, "libexec", "graalpy-polyglot-get"))
     cmd = [mvnd]
 
     if MVN_REPOSITORY:
         cmd += ["-r", MVN_REPOSITORY]
-    cmd += ["-a", MVN_GRAALPY_ARTEFACT_ID]
+    cmd += ["-a", artifact.rsplit(".", 1)[1]]
+    cmd += ["-g", artifact.rsplit(".", 1)[0]]
     cmd += ["-v", MVN_GRAALPY_VERSION]
     cmd += ["-o", modules_path]
     if parsed_args.verbose:
@@ -398,13 +399,14 @@ def download_python(modules_path, parsed_args):
             print(p.stderr.decode())
         exit(1)
 
+
 def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
     cwd = os.getcwd()
     output = os.path.abspath(parsed_args.output)
     os.chdir(target_dir)
 
     try:        
-        cmd = [jc, "-cp", f"{modules_path}/*", os.path.join(target_dir, "VirtualFileSystem.java"), launcher_file]
+        cmd = [jc, "-cp", f"{modules_path}/*", launcher_file]
         if parsed_args.verbose:
             print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
         p = subprocess.run(cmd, cwd=target_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -438,6 +440,7 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
         subprocess.check_call(cmd, cwd=target_dir)
     finally:
         os.chdir(cwd)
+
 
 def main(args):
     parser = argparse.ArgumentParser(prog=f"{sys.executable} -m standalone")
@@ -509,6 +512,7 @@ def main(args):
         create_polyglot_app(parsed_args)
     else :
         create_native_exec(parsed_args)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

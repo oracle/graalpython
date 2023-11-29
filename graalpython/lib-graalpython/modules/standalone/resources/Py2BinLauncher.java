@@ -47,6 +47,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 /**
  * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,
@@ -65,10 +66,12 @@ public class Py2BinLauncher {
     private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     public static void main(String[] args) throws IOException {
-        VirtualFileSystem vfs = new VirtualFileSystem(p -> {
-            String s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
-        });
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder()
+            .extractFilter(p -> {
+                String s = p.toString();
+                return s.endsWith(".ttf");
+            })
+            .build();
         IOAccess ioAccess = IOAccess.newBuilder().fileSystem(vfs).allowHostSocketAccess(true).build();
         var builder = Context.newBuilder()
                 .allowExperimentalOptions(true)
