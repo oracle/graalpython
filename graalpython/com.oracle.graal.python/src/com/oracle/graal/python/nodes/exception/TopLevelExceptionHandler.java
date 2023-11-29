@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.exception;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printToStdErr;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -219,7 +220,11 @@ public final class TopLevelExceptionHandler extends RootNode {
             boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
             if (!exitException) {
                 ExceptionUtils.printPythonLikeStackTrace(getContext(), e);
-                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                boolean withJavaStacktrace = PythonOptions.isWithJavaStacktrace(getPythonLanguage());
+                if (e instanceof AssertionError && !withJavaStacktrace) {
+                    printToStdErr("To get more information about the failed assertion rerun with --python.WithJavaStacktrace=3\n");
+                }
+                if (withJavaStacktrace) {
                     e.printStackTrace();
                 }
             }
