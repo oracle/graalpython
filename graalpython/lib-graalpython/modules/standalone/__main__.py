@@ -150,20 +150,21 @@ def create_polyglot_app(parsed_args):
         exit(1)
 
 
-def get_download_dir():
+def get_download_dir(parsed_args):
     subdir = "downloaded_standalone_resources"
     mp = os.path.join(__graalpython__.home, subdir)  
     try:
         if not os.path.exists(mp):
             os.mkdir(mp)
         Pathlib(mp).touch() # Ensure if we can write to that location
+        parsed_args.keep_temp = True # Keep this location
         return mp
     except Exception as e:
         return os.path.join(tempfile.mkdtemp(), subdir)
 
 
 def create_native_exec(parsed_args):
-    target_dir = get_download_dir()
+    target_dir = get_download_dir(parsed_args)
     try:
         ni, jc = get_tools(target_dir, parsed_args)
                 
