@@ -526,6 +526,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void addOp(OpCodes code, int arg, byte[] followingArgs, SourceRange location) {
+        assert code != YIELD_VALUE || unit.scope.isGenerator() || unit.scope.isCoroutine();
         Block b = unit.currentBlock;
         Instruction insn = new Instruction(code, arg, followingArgs, null, location);
         b.instr.add(insn);
@@ -1570,9 +1571,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             enterScope(name, CompilationScope.Comprehension, node, 1, 0, 0, false, false);
+            boolean isAsyncGenerator = unit.scope.isCoroutine();
             if (type != ComprehensionType.GENEXPR) {
                 // The result accumulator, empty at the beginning
                 addOp(COLLECTION_FROM_STACK, type.typeBits);
+            }
+            // TODO allow top-level await
+            if (isAsyncGenerator && type != ComprehensionType.GENEXPR && unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "asynchronous comprehension outside of an asynchronous function");
             }
             visitComprehensionGenerator(generators, 0, element, value, type);
             if (type != ComprehensionType.GENEXPR) {
@@ -1590,15 +1596,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CALL_COMPREHENSION);
             // a genexpr will create an asyncgen, which we cannot await
             if (type != ComprehensionType.GENEXPR) {
-                for (ComprehensionTy gen : generators) {
-                    // if we have a non-genexpr async comprehension, the call will produce a
-                    // coroutine which we need to await
-                    if (gen.isAsync) {
-                        addOp(GET_AWAITABLE);
-                        addOp(LOAD_NONE);
-                        addYieldFrom();
-                        break;
-                    }
+                // if we have a non-genexpr async comprehension, the call will produce a
+                // coroutine which we need to await
+                if (isAsyncGenerator) {
+                    addOp(GET_AWAITABLE);
+                    addOp(LOAD_NONE);
+                    addYieldFrom();
                 }
             }
             return null;

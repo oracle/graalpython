@@ -97,6 +97,6 @@ public class AwaitAndAsyncTests extends ParserTestBase {
 
     @Test
     public void asyncComprehension() throws Exception {
-        checkScopeAndTree("[i async for i in foo()]");
+        checkScopeAndTree("async def f():\n [i async for i in foo()]");
     }
 }

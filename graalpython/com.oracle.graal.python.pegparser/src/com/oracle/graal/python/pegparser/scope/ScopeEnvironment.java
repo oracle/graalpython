@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -393,6 +393,7 @@ public class ScopeEnvironment {
             outermost.iter.accept(this);
             currentScope.comprehensionIterExpression--;
             enterBlock(scopeName, Scope.ScopeType.Function, e);
+            boolean isAsync;
             try {
                 currentScope.comprehensionType = comprehensionType;
                 if (outermost.isAsync) {
@@ -414,8 +415,12 @@ public class ScopeEnvironment {
                 if (isGenerator) {
                     currentScope.flags.add(ScopeFlags.IsGenerator);
                 }
+                isAsync = currentScope.isCoroutine() && !isGenerator;
             } finally {
                 exitBlock();
+            }
+            if (isAsync) {
+                currentScope.flags.add(ScopeFlags.IsCoroutine);
             }
         }
 
@@ -545,6 +550,7 @@ public class ScopeEnvironment {
         public Void visit(ExprTy.Await node) {
             raiseIfAnnotationBlock("await expression", node);
             node.value.accept(this);
+            currentScope.flags.add(ScopeFlags.IsCoroutine);
             return null;
         }
 

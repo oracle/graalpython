@@ -87,7 +87,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -177,7 +176,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "count", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class CountNode extends PythonBuiltinNode {
+    public abstract static class CountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         long count(VirtualFrame frame, Object self, Object value,
@@ -410,7 +409,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBuiltinNode {
+    abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
         static PTuple doTuple(Object left, Object right,

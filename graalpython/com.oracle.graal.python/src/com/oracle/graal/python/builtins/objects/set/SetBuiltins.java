@@ -35,9 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -635,28 +633,6 @@ public final class SetBuiltins extends PythonBuiltins {
             HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
             self.setDictStorage(result);
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class SubNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageDiff diffNode,
-                        @Cached PythonObjectFactory factory) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
-            return factory.createSet(storage);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doSub(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
