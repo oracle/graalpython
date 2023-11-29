@@ -53,7 +53,7 @@ import java.util.Set;
 
 public class GraalPyRunner {
 
-    public static List<String> run(Set<String> classpath, Log log, String... args) throws IOException, InterruptedException {
+    public static void run(Set<String> classpath, Log log, String... args) throws IOException, InterruptedException {
         String workdir = System.getProperty("exec.workingdir");
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
@@ -67,65 +67,81 @@ public class GraalPyRunner {
             pb.directory(new File(workdir));
         }
 
-        log.debug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        log.mvnDebug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
 
-        List<String> output = new ArrayList<>();
         pb.redirectError();
         pb.redirectOutput();
-        Process p = pb.start();
-        p.waitFor();
-        try (InputStream is = p.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line;
-            log.debug("=================== graalpy subprocess output start =================== ");
-            while ((line = reader.readLine()) != null) {
-                log.debug(line);
-                output.add(line);
+        Process process = pb.start();
+        Thread outputReader = new Thread(() -> {
+            try (InputStream is = process.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.subProcessOut(line);
+                }
+            } catch (IOException e) {
+                // Do nothing for now. Probably is not good idea to stop the
+                // execution at this moment
+                log.subProcessErr(e);
             }
-            log.debug("=================== graalpy subprocess output end ===================== ");
-        } catch (IOException e) {
-            // Do nothing for now. Probably is not good idea to stop the
-            // execution at this moment
-        }
+        });
+        outputReader.start();
 
-        if (p.exitValue() != 0) {
-            // if there are some errors, print the error output
-            BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            String line;
-            log.error("=================== graalpy subprocess error output start =================== ");
-            while ((line = errorBufferedReader.readLine()) != null) {
-                log.error(line);
+        Thread errorReader = new Thread(() -> {
+            try {
+                BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                String line;
+                while ((line = errorBufferedReader.readLine()) != null) {
+                    log.subProcessErr(line);
+                }
+            } catch (IOException e) {
+                // Do nothing for now. Probably is not good idea to stop the
+                // execution at this moment
+                log.subProcessErr(e);
             }
-            log.error("=================== graalpy subprocess error output end ===================== ");
-            // and terminate the build process
-            throw new RuntimeException(String.format("Running command: '%s' ended with code %d.See the error output above.", String.join(" ", pb.command()), p.exitValue()));
+        });
+        errorReader.start();
+
+        process.waitFor();
+        outputReader.join();
+        errorReader.join();
+
+        if (process.exitValue() != 0) {
+            throw new RuntimeException(String.format("Running command: '%s' ended with code %d.See the error output above.", String.join(" ", pb.command()), process.exitValue()));
         }
-        return output;
     }
 
     public static interface Log {
-        void debug(CharSequence var1);
 
-        void debug(CharSequence var1, Throwable var2);
+        void subProcessOut(CharSequence var1);
 
-        void debug(Throwable var1);
+        void subProcessErr(CharSequence var1);
 
-        void info(CharSequence var1);
+        void subProcessOut(Throwable var1);
 
-        void info(CharSequence var1, Throwable var2);
+        void subProcessErr(Throwable var1);
 
-        void info(Throwable var1);
+        void mvnDebug(CharSequence var1);
 
-        void warn(CharSequence var1);
+        void mvnDebug(CharSequence var1, Throwable var2);
 
-        void warn(CharSequence var1, Throwable var2);
+        void mvnDebug(Throwable var1);
 
-        void warn(Throwable var1);
+        void mvnInfo(CharSequence var1);
 
-        void error(CharSequence var1);
+        void mvnInfo(CharSequence var1, Throwable var2);
 
-        void error(CharSequence var1, Throwable var2);
+        void mvnInfo(Throwable var1);
 
-        void error(Throwable var1);
+        void mvnWarn(CharSequence var1);
+
+        void mvnWarn(CharSequence var1, Throwable var2);
+
+        void mvnWarn(Throwable var1);
+
+        void mvnError(CharSequence var1);
+
+        void mvnError(CharSequence var1, Throwable var2);
+
+        void mvnError(Throwable var1);
     }
-
 }

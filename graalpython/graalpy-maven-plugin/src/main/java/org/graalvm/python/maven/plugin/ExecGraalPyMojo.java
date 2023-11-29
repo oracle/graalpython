@@ -90,10 +90,18 @@ public class ExecGraalPyMojo extends AbstractMojo {
         runGraalPy(project, getLog(), args);
     }
 
-    static List<String> runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
+    static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
+        runGraalPy(project,  new LogDelegate(log), args);
+    }
+
+    static void runGraalPy(MavenProject project, Log log, List<String> out, String... args) throws MojoExecutionException {
+        runGraalPy(project, new LogDelegate(log, out), args);
+    }
+
+    private static  void runGraalPy(MavenProject project, GraalPyRunner.Log log, String... args) throws MojoExecutionException {
         var classpath = calculateClasspath(project);
         try {
-            return GraalPyRunner.run(classpath, new MavenLogDelegate(log), args);
+            GraalPyRunner.run(classpath, log, args);
         } catch (IOException | InterruptedException e) {
             throw new MojoExecutionException(e);
         }
@@ -131,46 +139,75 @@ public class ExecGraalPyMojo extends AbstractMojo {
         return classpath;
     }
 
-    private static class MavenLogDelegate implements GraalPyRunner.Log {
+    private static class LogDelegate implements GraalPyRunner.Log {
         private final Log delegate;
 
-        private MavenLogDelegate(Log delegate) {
-            this.delegate = delegate;
+        private final List<String> output;
+
+        private LogDelegate(Log delegate) {
+            this(delegate, null);
         }
-        public void debug(CharSequence var1) {
+        private LogDelegate(Log delegate, List<String> output) {
+            this.delegate = delegate;
+            this.output = output;
+        }
+
+        public void subProcessOut(CharSequence var1) {
+            if(output != null) {
+                output.add(var1.toString());
+            } else {
+                System.out.println(var1.toString());
+            }
+        }
+
+        public void subProcessErr(CharSequence var1) {
+            System.err.println(var1.toString());
+        }
+
+        public void subProcessOut(Throwable var1) {
+            var1.printStackTrace();
+            System.out.println(var1.toString());
+        }
+
+        public void subProcessErr(Throwable var1) {
+            var1.printStackTrace();
+            System.err.println(var1.toString());
+        }
+
+        public void mvnDebug(CharSequence var1) {
             delegate.debug(var1);
         }
-        public void debug(CharSequence var1, Throwable var2) {
+        public void mvnDebug(CharSequence var1, Throwable var2) {
             delegate.debug(var1, var2);
         }
-        public void debug(Throwable var1) {
+        public void mvnDebug(Throwable var1) {
             delegate.debug(var1);
         }
-        public void info(CharSequence var1) {
+        public void mvnInfo(CharSequence var1) {
             delegate.info(var1);
         }
-        public void info(CharSequence var1, Throwable var2) {
+        public void mvnInfo(CharSequence var1, Throwable var2) {
             delegate.info(var1, var2);
         }
-        public void info(Throwable var1) {
+        public void mvnInfo(Throwable var1) {
             delegate.info(var1);
         }
-        public void warn(CharSequence var1) {
+        public void mvnWarn(CharSequence var1) {
             delegate.warn(var1);
         }
-        public void warn(CharSequence var1, Throwable var2) {
+        public void mvnWarn(CharSequence var1, Throwable var2) {
             delegate.warn(var1, var2);
         }
-        public void warn(Throwable var1) {
+        public void mvnWarn(Throwable var1) {
             delegate.warn(var1);
         }
-        public void error(CharSequence var1) {
+        public void mvnError(CharSequence var1) {
             delegate.error(var1);
         }
-        public void error(CharSequence var1, Throwable var2) {
+        public void mvnError(CharSequence var1, Throwable var2) {
             delegate.error(var1, var2);
         }
-        public void error(Throwable var1) {
+        public void mvnError(Throwable var1) {
             delegate.error(var1);
         }
     }

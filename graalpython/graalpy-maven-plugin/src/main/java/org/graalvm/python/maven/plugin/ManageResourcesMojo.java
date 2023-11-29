@@ -100,11 +100,10 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private void manageHome() throws MojoExecutionException {
         var homeDirectory = getHomeDirectory(project);
-        if(pythonHome == null) {
+        if (pythonHome == null) {
             delete(homeDirectory);
             return;
         }
-
         var tag = homeDirectory.resolve("tagfile");
         var graalPyVersion = ExecGraalPyMojo.getGraalPyVersion(project);
 
@@ -118,7 +117,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                     getLog().info(String.format("Stale GraalPy home, updating to %s", graalPyVersion));
                     delete(homeDirectory);
                 }
-                if(pythonHomeChanged(pythonHomeIncludes, pythonHomeExcludes, lines)) {
+                if (pythonHomeChanged(pythonHomeIncludes, pythonHomeExcludes, lines)) {
                     getLog().info(String.format("Deleting GraalPy home due to chenges includes or excludes"));
                     delete(homeDirectory);
                 }
@@ -128,7 +127,6 @@ public class ManageResourcesMojo extends AbstractMojo {
         } else {
             getLog().info(String.format("Creating GraalPy %s home", graalPyVersion));
         }
-
         if (!Files.exists(homeDirectory)) {
             try {
                 Files.createDirectories(homeDirectory.getParent());
@@ -137,7 +135,6 @@ public class ManageResourcesMojo extends AbstractMojo {
             }
             copy(homeDirectory.toAbsolutePath().toString(), pythonHomeIncludes, pythonHomeExcludes);
         }
-
         try {
             Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             write(tag, pythonHomeIncludes, INCLUDE_PREFIX);
@@ -180,15 +177,12 @@ public class ManageResourcesMojo extends AbstractMojo {
     private void copy(String targetRootPath, List<String> pythonHomeIncludes, List<String> pythonHomeExcludes) throws MojoExecutionException {
         getLog().info(String.format("Copying std lib to '%s'\n", targetRootPath));
         try {
-            File target = new File(targetRootPath + File.separator + "lib-graalpython");
-            if(!target.exists()) {
-                target.mkdirs();
-            }
-
+            // get stdlib and core home
             String stdlibHome = null;
             String coreHome = null;
             String pathsOutputPrefix = "<=outputpaths=>";
-            List<String> homePathsOutput = ExecGraalPyMojo.runGraalPy(project, getLog(), new String[]{"-c", "print('" + pathsOutputPrefix + "', __graalpython__.get_python_home_paths(), sep='')"});
+            List<String> homePathsOutput = new ArrayList<>();
+            ExecGraalPyMojo.runGraalPy(project, getLog(), homePathsOutput, new String[]{"-c", "print('" + pathsOutputPrefix + "', __graalpython__.get_python_home_paths(), sep='')"});
             for (String l : homePathsOutput) {
                 if(l.startsWith(pathsOutputPrefix)) {
                     String[] s = l.substring(pathsOutputPrefix.length()).split(File.pathSeparator);
@@ -200,6 +194,10 @@ public class ManageResourcesMojo extends AbstractMojo {
             assert coreHome != null;
 
             // copy core home
+            File target = new File(targetRootPath + File.separator + "lib-graalpython");
+            if(!target.exists()) {
+                target.mkdirs();
+            }
             Path source = Paths.get(coreHome);
             Predicate<Path> filter = (f) -> {
                 if(Files.isDirectory(f)) {
@@ -221,12 +219,11 @@ public class ManageResourcesMojo extends AbstractMojo {
             };
             copyFolder(source, source, target, filter);
 
+            // copy stdlib home
             target =  new File(targetRootPath + File.separator +  "lib-python"+ File.separator + "3");
             if(!target.exists()) {
                 target.mkdirs();
             }
-
-            // copy stdlib home
             source = Paths.get(stdlibHome);
             filter = (f) -> {
                 if(Files.isDirectory(f)) {
@@ -252,22 +249,24 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
     }
 
-    private static boolean isIncluded(String filePath, List<String> includes) {
+    private boolean isIncluded(String filePath, List<String> includes) {
         if(includes == null || includes.isEmpty()) {
             return true;
         }
         return pathMatches(filePath, includes);
     }
 
-    private static boolean isExcluded(String filePath, List<String> excludes) {
+    private boolean isExcluded(String filePath, List<String> excludes) {
         if(excludes == null || excludes.isEmpty()) {
             return false;
         }
         return pathMatches(filePath, excludes);
     }
 
-    private static boolean pathMatches(String filePath, List<String> includes) {
-        filePath.replaceAll(File.separator, "/");
+    private boolean pathMatches(String filePath, List<String> includes) {
+        if(File.separator.equals("\\")) {
+            filePath = filePath.replaceAll("\\\\", "/");
+        }
         for (String i: includes) {
             Pattern pattern = Pattern.compile(i);
             Matcher matcher = pattern.matcher(filePath);
@@ -278,7 +277,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         return false;
     }
 
-    private static void copyFolder(Path sourceRoot, Path file, File targetRoot, Predicate<Path> filter) throws IOException {
+    private void copyFolder(Path sourceRoot, Path file, File targetRoot, Predicate<Path> filter) throws IOException {
         Files.walkFileTree(file, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException {
@@ -366,7 +365,7 @@ public class ManageResourcesMojo extends AbstractMojo {
 
         var venvDirectory = getVenvDirectory(project);
 
-        if(packages == null || packages.isEmpty()) {
+        if (packages == null || packages.isEmpty()) {
             getLog().info(String.format("No venv packages declared, deleting %s", venvDirectory));
             delete(venvDirectory);
             return;
@@ -394,7 +393,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             getLog().info(String.format("Creating GraalPy %s venv", graalPyVersion));
         }
 
-        if (!Files.exists(venvDirectory)) {            
+        if (!Files.exists(venvDirectory)) {
             runLauncher("-m", "venv", venvDirectory.toString(), "--without-pip");
             runVenvBin(venvDirectory, "graalpy", List.of("-I", "-m", "ensurepip"));
         }
@@ -496,7 +495,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                                 from pathlib import Path
                                 vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
                                 tl = os.path.join(r'%s')
-                                os.makedirs(Path(tl).parent.absolute())
+                                os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
                                 shutil.copy(vl, tl)
                                 cmd = r'mvn.cmd -f "%s" graalpy:exec "-Dexec.workingdir=%s"'
                                 with open(tl, 'ab') as f:
