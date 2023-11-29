@@ -260,7 +260,7 @@ Types not listed in the below table have no special interpretation in Python rig
 | Executable   | Anything with a `__call__` method.                                                                                                |
 | Instantiable | Any Python `type`.                                                                                                                |
 
-## The interoperability extension mechanism
+## The Truffle Interoperability Extension API
 
 It is possible to extend the Truffle Interoperability protocol directly from python via a simple API defined in the `polyglot` module. 
 The purpose of this API is to allow custom / user defined types to take part in the interop ecosystem. 
