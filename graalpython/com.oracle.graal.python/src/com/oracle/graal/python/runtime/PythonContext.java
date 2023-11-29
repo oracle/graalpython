@@ -169,6 +169,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
@@ -575,14 +576,15 @@ public final class PythonContext extends Python3Core {
 
         @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
         @SuppressWarnings("unused")
-        static PythonThreadState doNoShutdown(PythonContext noContext,
-                        @Bind("getThreadState()") PythonThreadState curThreadState) {
+        static PythonThreadState doNoShutdown(Node inliningTarget, PythonContext noContext,
+                        @Bind("getThreadState(inliningTarget)") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
-        PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext) {
-            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get();
+        @InliningCutoff
+        PythonThreadState doGeneric(@SuppressWarnings("unused") Node inliningTarget, PythonContext noContext) {
+            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get();
             if (curThreadState.isShuttingDown()) {
                 PythonContext.get(this).killThread();
             }
@@ -591,14 +593,15 @@ public final class PythonContext extends Python3Core {
 
         @Specialization(guards = "!curThreadState.isShuttingDown()")
         @SuppressWarnings("unused")
-        static PythonThreadState doNoShutdownWithContext(PythonContext context,
-                        @Bind("getThreadState()") PythonThreadState curThreadState) {
+        static PythonThreadState doNoShutdownWithContext(Node inliningTarget, PythonContext context,
+                        @Bind("getThreadState(inliningTarget)") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(replaces = "doNoShutdownWithContext")
-        PythonThreadState doGenericWithContext(PythonContext context) {
-            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get(context.env.getContext());
+        @InliningCutoff
+        PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
+            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 context.killThread();
             }
@@ -606,8 +609,8 @@ public final class PythonContext extends Python3Core {
         }
 
         @NonIdempotent
-        PythonThreadState getThreadState() {
-            return PythonLanguage.get(this).getThreadStateLocal().get();
+        PythonThreadState getThreadState(Node n) {
+            return PythonLanguage.get(n).getThreadStateLocal().get();
         }
     }
 

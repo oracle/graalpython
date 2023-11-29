@@ -96,6 +96,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -518,6 +519,14 @@ public abstract class CExtCommonNodes {
                         InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
             PException currentException = threadState.getCurrentException();
             boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
+            if (indicatesError || errOccurred) {
+                checkFunctionResultSlowpath(inliningTarget, threadState, name, indicatesError, strict, nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException);
+            }
+        }
+
+        @InliningCutoff
+        private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, PException currentException) {
             if (indicatesError) {
                 // consume exception
                 threadState.setCurrentException(null);
@@ -547,7 +556,12 @@ public abstract class CExtCommonNodes {
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
         }
 
-        public abstract Object execute(PythonContext context, TruffleString name, Object result);
+        public final Object execute(PythonContext context, TruffleString name, Object result) {
+            PythonLanguage language = PythonLanguage.get(this);
+            return execute(context.getThreadState(language), name, result);
+        }
+
+        public abstract Object execute(PythonThreadState threadState, TruffleString name, Object result);
     }
 
     @GenerateInline
