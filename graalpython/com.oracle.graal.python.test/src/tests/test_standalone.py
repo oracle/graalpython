@@ -38,15 +38,15 @@
 # SOFTWARE.
 
 import os
-import glob
 import subprocess
 import tempfile
 import unittest
 import urllib.parse
 import shutil
-import sys
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
+skip_purge = 'SKIP_STANDALONE_UNITTESTS_PURGE' in os.environ and os.environ['SKIP_STANDALONE_UNITTESTS_PURGE'] == "true"
+
 MVN_CMD = [shutil.which('mvn')]
 
 def run_cmd(cmd, env, cwd=None):
@@ -98,95 +98,100 @@ def get_gp():
 
     return graalpy
 
-@unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-def test_polyglot_app():
-    env = os.environ.copy()
-    env["PYLAUNCHER_DEBUG"] = "1"
-    with tempfile.TemporaryDirectory() as tmpdir:
-        target_name = "polyglot_app_test"
-        target_dir = os.path.join(tmpdir, target_name)
+class PolyglotAppTest(unittest.TestCase):
 
-        archetypeGroupId = "org.graalvm.python"
-        archetypeArtifactId = "graalpy-archetype-polyglot-app"
-        pluginArtifactId = "graalpy-maven-plugin"
-        graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], env)
+    def setUpClass(self):
+        if not is_enabled:
+            return
+        
+        self.env = os.environ.copy()
+        self.env["PYLAUNCHER_DEBUG"] = "1"
+        
+        self.archetypeGroupId = "org.graalvm.python"
+        self.archetypeArtifactId = "graalpy-archetype-polyglot-app"
+        self.pluginArtifactId = "graalpy-maven-plugin"
+        graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], self.env)
         # when JLine is cannot detect a terminal, it prints logging info
-        graalvmVersion = graalvmVersion.split("\n")[-1]
+        self.graalvmVersion = graalvmVersion.split("\n")[-1]
 
         for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
             url = urllib.parse.urlparse(custom_repo)
             if url.scheme == "file":
                 jar = os.path.join(
                     url.path,
-                    archetypeGroupId.replace(".", os.path.sep),
-                    archetypeArtifactId,
-                    graalvmVersion,
-                    f"{archetypeArtifactId}-{graalvmVersion}.jar",
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.archetypeArtifactId,
+                    self.graalvmVersion,
+                    f"{self.archetypeArtifactId}-{self.graalvmVersion}.jar",
                 )
                 pom = os.path.join(
                     url.path,
-                    archetypeGroupId.replace(".", os.path.sep),
-                    archetypeArtifactId,
-                    graalvmVersion,
-                    f"{archetypeArtifactId}-{graalvmVersion}.pom",
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.archetypeArtifactId,
+                    self.graalvmVersion,
+                    f"{self.archetypeArtifactId}-{self.graalvmVersion}.pom",
                 )
                 cmd = MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
-                    f"-DgroupId={archetypeGroupId}",
-                    f"-DartifactId={archetypeArtifactId}",
-                    f"-Dversion={graalvmVersion}",
+                    f"-DgroupId={self.archetypeGroupId}",
+                    f"-DartifactId={self.archetypeArtifactId}",
+                    f"-Dversion={self.graalvmVersion}",
                     "-Dpackaging=jar",
                     f"-DpomFile={pom}",
                     "-DcreateChecksum=true",
                 ]
-                out, return_code = run_cmd(cmd, env)
+                out, return_code = run_cmd(cmd, self.env)
                 assert return_code == 0
 
                 jar = os.path.join(
                     url.path,
-                    archetypeGroupId.replace(".", os.path.sep),
-                    pluginArtifactId,
-                    graalvmVersion,
-                    f"{pluginArtifactId}-{graalvmVersion}.jar",
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.pluginArtifactId,
+                    self.graalvmVersion,
+                    f"{self.pluginArtifactId}-{self.graalvmVersion}.jar",
                 )
 
                 pom = os.path.join(
                     url.path,
-                    archetypeGroupId.replace(".", os.path.sep),
-                    pluginArtifactId,
-                    graalvmVersion,
-                    f"{pluginArtifactId}-{graalvmVersion}.pom",
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.pluginArtifactId,
+                    self.graalvmVersion,
+                    f"{self.pluginArtifactId}-{self.graalvmVersion}.pom",
                 )
 
                 cmd = MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
-                    f"-DgroupId={archetypeGroupId}",
-                    f"-DartifactId={pluginArtifactId}",
-                    f"-Dversion={graalvmVersion}",
+                    f"-DgroupId={self.archetypeGroupId}",
+                    f"-DartifactId={self.pluginArtifactId}",
+                    f"-Dversion={self.graalvmVersion}",
                     "-Dpackaging=jar",                    
                     f"-DpomFile={pom}",
                     "-DcreateChecksum=true",
                 ]
-                out, return_code = run_cmd(cmd, env)
+                out, return_code = run_cmd(cmd, self.env)
                 assert return_code == 0
                 break
-
+                
+    def generate_app(self, tmpdir, target_dir, target_name, pom_template=None):        
         cmd = MVN_CMD + [
             "archetype:generate",
             "-B",
-            f"-DarchetypeGroupId={archetypeGroupId}",
-            f"-DarchetypeArtifactId={archetypeArtifactId}",
-            f"-DarchetypeVersion={graalvmVersion}",
+            f"-DarchetypeGroupId={self.archetypeGroupId}",
+            f"-DarchetypeArtifactId={self.archetypeArtifactId}",
+            f"-DarchetypeVersion={self.graalvmVersion}",
             f"-DartifactId={target_name}",
             "-DgroupId=archetype.it",
             "-Dpackage=it.pkg",
             "-Dversion=0.1-SNAPSHOT",
         ]
-        out, return_code = run_cmd(cmd, env, cwd=tmpdir)
+        out, return_code = run_cmd(cmd, self.env, cwd=str(tmpdir))
         assert "BUILD SUCCESS" in out
-
+        
+        if pom_template:
+            self.create_test_pom(pom_template, os.path.join(target_dir, "pom.xml"))
+        
         if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
             repos = []
             pluginRepos = []
@@ -229,22 +234,174 @@ def test_polyglot_app():
                 """ + '\n'.join(pluginRepos) + """
                 </pluginRepositories>
                 </project>
-                """))
+                """))   
 
-        env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"])
-        cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
-        run_cmd(cmd, env, cwd=target_dir)
-        try:                
-            cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
-            out, return_code = run_cmd(cmd, env, cwd=target_dir)
-            assert "BUILD SUCCESS" in out
+    def create_test_pom(self, template, pom):
+        lines = open(template, 'r').readlines()
+        with open(pom, 'w') as f:
+            for line in lines:
+                if "{graalpy-maven-plugin-version}" in line:
+                    line = line.replace("{graalpy-maven-plugin-version}", self.graalvmVersion)
+                f.write(line)
+            
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_generated_app(self):
+        
+        with tempfile.TemporaryDirectory() as tmpdir:                    
+            target_name = "polyglot_app_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
 
-            cmd = [os.path.join(target_dir, "target", "polyglot_app_test")]
-            out, return_code = run_cmd(cmd, env, cwd=target_dir)
-            assert "hello java" in out
-        finally:
-            cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
-            run_cmd(cmd, env, cwd=target_dir)
+            if not skip_purge:
+                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                run_cmd(cmd, self.env, cwd=target_dir)
+            try:
+                # build 
+                cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"] #, f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+                assert "BUILD SUCCESS" in out
+
+                # check fileslist.txt
+                fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")                
+                with open(fl_path) as f:
+                    lines = f.readlines()
+                assert "/vfs/\n" in lines
+                assert "/vfs/home/\n" in lines
+                assert "/vfs/home/lib-graalpython/\n" in lines
+                assert "/vfs/home/lib-python/\n" in lines
+
+                # execute and check native image
+                cmd = [os.path.join(target_dir, "target", "polyglot_app_test")]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+                assert "hello java" in out
+
+                # execute with java and check
+                cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"] 
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+                assert "hello java" in out
+            finally:
+                if not skip_purge:
+                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                    run_cmd(cmd, self.env, cwd=target_dir)                
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_graalpy_exec(self):
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "polyglot_app_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            # XXX - move to method
+            if not skip_purge:
+                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                run_cmd(cmd, self.env, cwd=target_dir)
+            try:
+                cmd = MVN_CMD + ["graalpy:exec", "-Dexec.argc=2", "-Dexec.arg1=-c", "-Dexec.arg2=print(42, 'from python')"]                
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                assert "42 from python" in out
+                
+                self.env["GRAAL_PYTHON_ARGS"] = "\013-c\013print(42, 'from python via GRAAL_PYTHON_ARGS env var')"
+                cmd = MVN_CMD + ["graalpy:exec"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+                assert "from python via GRAAL_PYTHON_ARGS env var" in out      
+            finally:
+                del self.env["GRAAL_PYTHON_ARGS"]
+                if not skip_purge:
+                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                    run_cmd(cmd, self.env, cwd=target_dir)
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_fail_without_graalpy_dep(self):
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "polyglot_app_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            pom_template = os.path.join(os.path.dirname(__file__), "embedding/fail_without_graalpy_dep_pom.xml")
+            self.generate_app(tmpdir, target_dir, target_name, pom_template)
+
+            if not skip_purge:
+                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                run_cmd(cmd, self.env, cwd=target_dir)
+            try:
+                cmd = MVN_CMD + ["process-resources"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
+
+            finally:
+                if not skip_purge:
+                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                    run_cmd(cmd, self.env, cwd=target_dir)
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_gen_launcher_and_venv(self):        
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "polyglot_app_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            pom_template = os.path.join(os.path.dirname(__file__), "embedding/prepare_venv_pom.xml")
+            self.generate_app(tmpdir, target_dir, target_name, pom_template)
+            if not skip_purge:
+                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                run_cmd(cmd, self.env, cwd=target_dir)
+            try:
+                cmd = MVN_CMD + ["process-resources"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                assert "-m venv" in out
+                assert "-m ensurepip" in out
+                assert "ujson" in out
+                assert "termcolor" in out
+                
+                # run again and assert that we do not regenerate the venv
+                cmd = MVN_CMD + ["generate-resources"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                assert "-m venv" not in out
+                assert "-m ensurepip" not in out
+                assert "ujson" not in out
+                assert "termcolor" not in out
+
+            finally:
+                if not skip_purge:
+                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                    run_cmd(cmd, self.env, cwd=target_dir)
+        
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_check_home(self):
+        
+        with tempfile.TemporaryDirectory() as tmpdir:            
+            target_name = "polyglot_app_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            pom_template = os.path.join(os.path.dirname(__file__), "embedding/check_home_pom.xml")
+            self.generate_app(tmpdir, target_dir, target_name, pom_template)
+
+            if not skip_purge:
+                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                run_cmd(cmd, self.env, cwd=target_dir)        
+
+            try:
+                cmd = MVN_CMD + ["process-resources"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+
+                # check fileslist.txt
+                fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")                
+                with open(fl_path) as f:
+                    for line in f:
+                        line = f.readline()
+                        # string \n
+                        line = line[:len(line)-1]
+                        if line.endswith("/") or line == "/vfs/home/tagfile" or line == "/vfs/proj/hello.py":
+                            continue
+                        assert line.endswith("/__init__.py")
+                        assert not line.endswith("html/__init__.py")
+            finally:
+                if not skip_purge:
+                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                    run_cmd(cmd, self.env, cwd=target_dir)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
