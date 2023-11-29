@@ -310,7 +310,7 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
-        "org.graalvm.python.embedding.utils": {
+        "org.graalvm.python.embedding": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
@@ -321,13 +321,13 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
-        "org.graalvm.python.embedding.utils.test": {
+        "org.graalvm.python.embedding.test": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "testProject": True,
             "javaCompliance": "17+",
             "dependencies": [
-                "org.graalvm.python.embedding.utils",
+                "org.graalvm.python.embedding",
                 "mx:JUNIT",
             ],
         },
@@ -895,24 +895,25 @@ suite = {
             },
         },
 
-        "GRAALPYTHON_EMBEDDING_UTILS" : {
+        "GRAALPYTHON_EMBEDDING" : {
             "moduleInfo": {
-                "name": "org.graalvm.python.embedding.utils",
+                "name": "org.graalvm.python.embedding",
                 "exports": [
                     "org.graalvm.python.embedding.utils",
+                    "org.graalvm.python.embedding.jbang",
                 ]
             },
             "useModulePath": True,
             "dependencies": [
-                "org.graalvm.python.embedding.utils",
+                "org.graalvm.python.embedding",
             ],
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy Embedding Utils",
+            "description": "GraalPy Embedding",
             "maven": {
                 "groupId": "org.graalvm.python",
-                "artifactId": "python-embedding-utils",
+                "artifactId": "python-embedding",
                 "tag": ["default", "public"],
             },
 

@@ -39,7 +39,7 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.utils.jbang;
+package org.graalvm.python.embedding.jbang;
 
 import java.io.BufferedReader;
 
