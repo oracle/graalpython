@@ -1,0 +1,30 @@
+{
+  "catalogs": {},
+  "aliases": {
+    "hello": {
+      "script-ref": "./graalpython/graalpy-jbang/examples/hello.java",
+      "description": "Script that says hello from Python started from Java or execute Python expression as parameter."
+    }
+  },
+  "templates": {
+    "graalpy": {
+      "file-refs": {
+        "{basename}.java": "./graalpython/graalpy-jbang/templates/graalpy-template.java.qute"
+      },
+      "properties": {},
+      "description": "Basic template for Graal Python java file."
+    },
+    "graalpy_local_repo": {
+      "file-refs": {
+        "{basename}.java": "./graalpython/graalpy-jbang/templates/graalpy-template_local_repo.java.qute"
+      },
+      "properties": {
+         "path_to_local_repo": {
+            "default": "/path/to/local/maven/repository",
+            "description": "Path to your local maven repository"
+         }
+       },
+      "description": "Basic template for Graal Python java file. Mainly for testing."
+    }
+  }
+}

@@ -22,6 +22,7 @@ GRAALPYTHON.dist
 GRAALPYTHON_UNIT_TESTS.dist
 mx.graalpython/eclipse-launches
 *.json
+!jbang-catalog.json
 !**/resources/*.json
 !**/META-INF/**/*.json
 !graalpython/lib-graalpython/modules/standalone/native-image-resources.json
