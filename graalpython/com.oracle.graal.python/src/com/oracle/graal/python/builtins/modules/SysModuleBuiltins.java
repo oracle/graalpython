@@ -673,8 +673,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     private static PFrozenSet createStdLibModulesSet(PythonObjectFactory factory) {
         EconomicMapStorage storage = EconomicMapStorage.create(STDLIB_MODULE_NAMES.length);
         for (String s : STDLIB_MODULE_NAMES) {
-            TruffleString ts = toTruffleStringUncached(s);
-            storage.putUncached(ts, PNone.NONE);
+            storage.putUncachedWithJavaEq(s, PNone.NONE);
         }
         return factory.createFrozenSet(storage);
     }

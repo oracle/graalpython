@@ -750,9 +750,19 @@ public abstract class TypeNodes {
             long hash = ObjectBuiltins.HashNode.hash(subclass);
             PDict dict = executeUncached(base);
             HashingStorage storage = dict.getDictStorage();
-            HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
-            storage = setItem.execute(null, null, storage, subclass, hash, subclass);
-            dict.setDictStorage(storage);
+            // Booting order problem: special method slot for object.__eq__ is not initialized yet
+            // In the unlikely event of hash collision __eq__ would fail
+            if (HashingStorageLen.executeUncached(storage) == 0) {
+                // This should not call __eq__
+                HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
+                storage = setItem.execute(null, null, storage, subclass, hash, subclass);
+                dict.setDictStorage(storage);
+            } else {
+                // the storage must be EconomicMap, because keys should not be Strings so there is
+                // no other option left
+                EconomicMapStorage mapStorage = (EconomicMapStorage) storage;
+                mapStorage.putUncachedWithJavaEq(subclass, hash, subclass);
+            }
         }
 
         protected static void unsafeRemoveSubclass(Object base, Object subclass) {
@@ -829,10 +839,12 @@ public abstract class TypeNodes {
             static PythonAbstractClassList doIt(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
+                            @Cached HashingStorageIteratorValue itValue,
                             @Cached HashingStorageGetItemWithHash getItemNode) {
                 long hash = itKeyHash.execute(inliningTarget, storage, it);
                 Object key = itKey.execute(inliningTarget, storage, it);
-                subclasses.add(PythonAbstractClass.cast(getItemNode.execute(frame, inliningTarget, storage, key, hash)));
+                Object value = itValue.execute(inliningTarget, storage, it);
+                subclasses.add(PythonAbstractClass.cast(value));
                 return subclasses;
             }
         }

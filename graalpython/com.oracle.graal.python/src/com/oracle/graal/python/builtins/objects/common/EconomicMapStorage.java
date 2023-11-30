@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -151,6 +152,17 @@ public class EconomicMapStorage extends HashingStorage {
 
     private void putUncached(Object key, Object value) {
         ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.executeUncached(key), value);
+    }
+
+    // Solves boot-order problem, do not use in normal code or during startup when __eq__ of
+    // builtins may not be properly set-up
+    public void putUncachedWithJavaEq(Object key, long keyHash, Object value) {
+        ObjectHashMap.PutNode.putUncachedWithJavaEq(this.map, key, keyHash, value);
+    }
+
+    public void putUncachedWithJavaEq(String key, Object value) {
+        TruffleString ts = toTruffleStringUncached(key);
+        putUncachedWithJavaEq(ts, PyObjectHashNode.hash(ts, HashCodeNode.getUncached()), value);
     }
 
     private static void putAllUncached(LinkedHashMap<String, Object> map, EconomicMapStorage result) {
