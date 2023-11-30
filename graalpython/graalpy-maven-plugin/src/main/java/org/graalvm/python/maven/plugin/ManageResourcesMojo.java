@@ -111,18 +111,19 @@ public class ManageResourcesMojo extends AbstractMojo {
         List<String> pythonHomeExcludes = toSortedArrayList(pythonHome.excludes);
 
         if (Files.isReadable(tag)) {
+            List<String> lines = null;
             try {
-                var lines = Files.readAllLines(tag);
-                if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
-                    getLog().info(String.format("Stale GraalPy home, updating to %s", graalPyVersion));
-                    delete(homeDirectory);
-                }
-                if (pythonHomeChanged(pythonHomeIncludes, pythonHomeExcludes, lines)) {
-                    getLog().info(String.format("Deleting GraalPy home due to chenges includes or excludes"));
-                    delete(homeDirectory);
-                }
+                lines = Files.readAllLines(tag);
             } catch (IOException e) {
-                throw new MojoExecutionException(e);
+                throw new MojoExecutionException(String.format("failed to read tag file %s", tag), e);
+            }
+            if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
+                getLog().info(String.format("Stale GraalPy home, updating to %s", graalPyVersion));
+                delete(homeDirectory);
+            }
+            if (pythonHomeChanged(pythonHomeIncludes, pythonHomeExcludes, lines)) {
+                getLog().info(String.format("Deleting GraalPy home due to chenges includes or excludes"));
+                delete(homeDirectory);
             }
         } else {
             getLog().info(String.format("Creating GraalPy %s home", graalPyVersion));
@@ -131,7 +132,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             try {
                 Files.createDirectories(homeDirectory.getParent());
             } catch (IOException e) {
-                throw new MojoExecutionException(e);
+                throw new MojoExecutionException(String.format("failed to create home directory %s", homeDirectory), e);
             }
             copy(homeDirectory.toAbsolutePath().toString(), pythonHomeIncludes, pythonHomeExcludes);
         }
@@ -140,7 +141,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             write(tag, pythonHomeIncludes, INCLUDE_PREFIX);
             write(tag, pythonHomeExcludes, EXCLUDE_PREFIX);
         } catch (IOException e) {
-            throw new MojoExecutionException(e);
+            throw new MojoExecutionException(String.format("failed to write tag file %s", tag), e);
         }
     }
 
@@ -311,7 +312,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                         .forEach(File::delete);
             }
         } catch (IOException e) {
-            new MojoExecutionException(e);
+            new MojoExecutionException(String.format("failed to delete %s", homeDirectory),  e);
         }
     }
 
@@ -376,18 +377,19 @@ public class ManageResourcesMojo extends AbstractMojo {
         var graalPyVersion = ExecGraalPyMojo.getGraalPyVersion(project);
 
         if (Files.isReadable(tag)) {
+            List<String> lines = null;
             try {
-                var lines = Files.readAllLines(tag);
-                if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
-                    getLog().info(String.format("Stale GraalPy venv, updating to %s", graalPyVersion));
-                    delete(venvDirectory);
-                } else {
-                    for (int i = 1; i < lines.size(); i++) {
-                        installedPackages.add(lines.get(i));
-                    }
-                }
+                lines = Files.readAllLines(tag);
             } catch (IOException e) {
-                throw new MojoExecutionException(e);
+                throw new MojoExecutionException(String.format("failed to read tag file %s", tag), e);
+            }
+            if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
+                getLog().info(String.format("Stale GraalPy venv, updating to %s", graalPyVersion));
+                delete(venvDirectory);
+            } else {
+                for (int i = 1; i < lines.size(); i++) {
+                    installedPackages.add(lines.get(i));
+                }
             }
         } else {
             getLog().info(String.format("Creating GraalPy %s venv", graalPyVersion));
@@ -405,7 +407,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             Files.write(tag, packages, StandardOpenOption.APPEND);
         } catch (IOException e) {
-            throw new MojoExecutionException(e);
+            throw new MojoExecutionException(String.format("failed to write tag file %s", tag), e);
         }
     }
 
@@ -423,7 +425,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         try {
             pb.start().waitFor();
         } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(e);
+            throw new MojoExecutionException(String.format("failed to execute launcher command %s", cmd), e);
         }
     }
 
@@ -445,7 +447,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         try {
             pb.start().waitFor();
         } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(e);
+            throw new MojoExecutionException(String.format("failed to execute venv command %s", cmd), e);
         }
     }
 
@@ -486,7 +488,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                     perms.addAll(List.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
                     Files.setPosixFilePermissions(launcher, perms);
                 } catch (IOException e) {
-                    throw new MojoExecutionException(e);
+                    throw new MojoExecutionException(String.format("failed to create launcher %s", launcher), e);
                 }
             } else {
                 // on windows, generate a venv launcher that executes our mvn target
@@ -502,20 +504,20 @@ public class ManageResourcesMojo extends AbstractMojo {
                                     sz = f.write(cmd.encode('utf-16le'))
                                     f.write(struct.pack("@I", sz)) == 4
                                 """,
-                        launcher,
+                                launcher,
                         Paths.get(projectPath, "pom.xml").toString(),
-                        projectPath);
+                                projectPath);
                 File tmp;
                 try {
                     tmp = File.createTempFile("create_launcher", ".py");
                 } catch (IOException e) {
-                    throw new MojoExecutionException(e);
+                    throw new MojoExecutionException("failed to create tmp launcher", e);
                 }
                 tmp.deleteOnExit();
                 try (var wr = new FileWriter(tmp)) {
                     wr.write(script);
                 } catch (IOException e) {
-                    throw new MojoExecutionException(e);
+                    throw new MojoExecutionException(String.format("failed to write tmp launcher %s", tmp), e);
                 }
                 ExecGraalPyMojo.runGraalPy(project, getLog(), tmp.getAbsolutePath());
             }
