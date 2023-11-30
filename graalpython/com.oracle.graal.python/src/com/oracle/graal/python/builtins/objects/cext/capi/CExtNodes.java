@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -122,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -2069,7 +2067,6 @@ public abstract class CExtNodes {
         @Specialization
         static void doNativeWrapper(PythonAbstractObjectNativeWrapper nativeWrapper,
                         @Bind("this") Node inliningTarget,
-                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
                         @Cached SubRefCntNode subRefCntNode) {
             // in the cached case, refCntNode acts as a branch profile
             // if (subRefCntNode.dec(nativeWrapper) == 0) {
@@ -2081,40 +2078,6 @@ public abstract class CExtNodes {
         @SuppressWarnings("unused")
         static void doOther(Object object) {
             // just do nothing; this is an implicit profile
-        }
-    }
-
-    /**
-     * Traverses the items of a tuple and applies {@link ReleaseNativeWrapperNode} on the items if
-     * the tuple is up to be released.
-     */
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class TraverseNativeWrapperNode extends Node {
-
-        public abstract void execute(Node inliningTarget, Object containerObject);
-
-        @Specialization
-        static void doTuple(Node inliningTarget, PTuple tuple,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached SubRefCntNode subRefCntNode) {
-
-            Object[] values = toArrayNode.execute(inliningTarget, tuple.getSequenceStorage());
-            for (int i = 0; i < values.length; i++) {
-                Object value = values[i];
-                if (value instanceof PythonObject) {
-                    PythonNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
-                    // only traverse if refCnt != 0; this will break the cycle
-                    if (nativeWrapper != null) {
-                        subRefCntNode.dec(inliningTarget, nativeWrapper);
-                    }
-                }
-            }
-        }
-
-        @Fallback
-        static void doOther(@SuppressWarnings("unused") Object other) {
-            // do nothing
         }
     }
 
