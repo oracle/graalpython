@@ -475,7 +475,6 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private void generateLaunchers() throws MojoExecutionException {
         getLog().info("Generating GraalPy launchers");
-        String projectPath = project.getBuild().getDirectory();
         var launcher = getLauncherPath();
         if (!Files.exists(launcher)) {
             if (!IS_WINDOWS) {
@@ -491,6 +490,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                     throw new MojoExecutionException(String.format("failed to create launcher %s", launcher), e);
                 }
             } else {
+                String projectPath = project.getBuild().getDirectory();
                 // on windows, generate a venv launcher that executes our mvn target
                 var script = String.format("""
                                 import os, shutil, struct, venv
@@ -500,12 +500,13 @@ public class ManageResourcesMojo extends AbstractMojo {
                                 os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
                                 shutil.copy(vl, tl)
                                 cmd = r'mvn.cmd -f "%s" graalpy:exec "-Dexec.workingdir=%s"'
-                                with open(tl, 'ab') as f:
-                                    sz = f.write(cmd.encode('utf-16le'))
-                                    f.write(struct.pack("@I", sz)) == 4
+                                pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
+                                with open(pyvenvcfg, 'w', encoding='utf-8') as f:
+                                    f.write('venvlauncher_command = ')
+                                    f.write(cmd)
                                 """,
                                 launcher,
-                        Paths.get(projectPath, "pom.xml").toString(),
+                                Paths.get(projectPath, "..", "pom.xml").toString(),
                                 projectPath);
                 File tmp;
                 try {
