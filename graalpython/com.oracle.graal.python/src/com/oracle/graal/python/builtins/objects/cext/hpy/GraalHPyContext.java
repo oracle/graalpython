@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
+import java.lang.invoke.VarHandle;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -497,7 +498,9 @@ public final class GraalHPyContext extends CExtContext {
     private RootCallTarget getReferenceCleanerCallTarget() {
         if (referenceCleanerCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceCleanerCallTarget = PythonUtils.getOrCreateCallTarget(new HPyNativeSpaceCleanerRootNode(getContext()));
+            RootCallTarget localTarget = PythonUtils.getOrCreateCallTarget(new HPyNativeSpaceCleanerRootNode(getContext()));
+            VarHandle.storeStoreFence();
+            referenceCleanerCallTarget = localTarget;
         }
         return referenceCleanerCallTarget;
     }

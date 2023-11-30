@@ -591,6 +591,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     synchronized Signature initializeSignature(RootCallTarget rootCallTarget) {
+        assert PythonContext.get(null).ownsGil(); // otherwise this is racy
         if (signature == null) {
             if (rootCallTarget.getRootNode() instanceof PRootNode) {
                 signature = ((PRootNode) rootCallTarget.getRootNode()).getSignature();
@@ -610,6 +611,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     synchronized RootCallTarget initializeCallTarget() {
+        assert PythonContext.get(null).ownsGil(); // otherwise this is racy
         if (callTarget == null) {
             callTarget = (RootCallTarget) callTargetSupplier.get();
             callTargetSupplier = null;
