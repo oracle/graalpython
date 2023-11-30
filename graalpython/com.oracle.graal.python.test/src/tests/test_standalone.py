@@ -226,7 +226,7 @@ def test_native_executable_one_file():
             f.write("print('hello world, argv[1:]:', sys.argv[1:])")
 
         target_file = os.path.join(tmpdir, "hello")
-        cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-m", source_file, "-o", target_file]
+        cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-m", source_file, "-o", target_file]
 
         out, return_code = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
@@ -261,7 +261,7 @@ def test_native_executable_venv_and_one_file():
         out, return_code = run_cmd(cmd, env)
 
         target_file = os.path.join(target_dir, "hello")
-        cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-Os", "-m", source_file, "--venv", venv_dir, "-o", target_file]
+        cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-Os", "-m", source_file, "--venv", venv_dir, "-o", target_file]
         out, return_code = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
@@ -294,7 +294,7 @@ def test_native_executable_module():
             f.write("hello.print_hello()\n")
 
         target_file = os.path.join(tmp_dir, "hello")
-        cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-Os", "-m", module_dir, "-o", target_file]
+        cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-Os", "-m", module_dir, "-o", target_file]
 
         out, return_code = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out

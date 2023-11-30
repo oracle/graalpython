@@ -87,10 +87,6 @@ GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
 MVN_REPOSITORY = os.getenv("MVN_REPOSITORY")
 MVN_GRAALPY_VERSION = os.getenv("MVN_GRAALPY_VERSION") if os.getenv("MVN_GRAALPY_VERSION") else __graalpython__.get_graalvm_version()
-ARTIFACTS = [
-    "org.graalvm.polyglot.python-community",
-    "org.graalvm.python.python-embedding",
-]
  
 CMD_NATIVE_EXECUTABLE = "native"
 CMD_JAVA_PYTHON_APP = "polyglot_app"
@@ -164,12 +160,18 @@ def get_download_dir(parsed_args):
 
 
 def create_native_exec(parsed_args):
+    artifacts = ["org.graalvm.python.python-embedding"]
+    if parsed_args.ce:
+        artifacts.append("org.graalvm.polyglot.python-community")
+    else:
+        artifacts.append("org.graalvm.polyglot.python")
+
     target_dir = get_download_dir(parsed_args)
     try:
         ni, jc = get_tools(target_dir, parsed_args)
                 
         modules_path = os.path.join(target_dir, "modules")
-        for artifact in ARTIFACTS:
+        for artifact in artifacts:
             download_maven_artifact(modules_path, artifact, parsed_args)
         
         launcher_file = os.path.join(target_dir, NATIVE_EXEC_LAUNCHER_FILE)    
@@ -474,6 +476,9 @@ def main(args):
         help="extra arguments to pass to the GraalVM Native Image build command",
         metavar="<arg>",
         default=[],
+    )
+    parser_bin.add_argument(
+        "-ce", action="store_true", help="Use GraalPy Community Edition instead of Oracle GraalPy"
     )
 
     parser_app = subparsers.add_parser(
