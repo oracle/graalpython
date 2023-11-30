@@ -71,7 +71,7 @@ public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
 
     @Fallback
     Object doOthers(Object value) {
-        throw raise(PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "tuple", value);
+        throw raise(PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "a tuple", value);
     }
 
     @ClinicConverterFactory

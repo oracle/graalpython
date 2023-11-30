@@ -601,7 +601,7 @@ public final class PCode extends PythonBuiltinObject {
         return signature;
     }
 
-    private RootCallTarget getRootCallTarget() {
+    public RootCallTarget getRootCallTarget() {
         if (callTarget == null) {
             initializeCallTarget();
         }

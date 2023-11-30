@@ -40,6 +40,20 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_BIG_INTEGER;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_BYTE;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_DOUBLE;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_FLOAT;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_INT;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_LONG;
+import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WRITABLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -60,12 +74,16 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -73,11 +91,14 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.interop.InteropBehavior;
+import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -100,8 +121,11 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -366,6 +390,385 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             UNCACHED_INTEROP = InteropLibrary.getFactory().getUncached();
         }
         return UNCACHED_INTEROP;
+    }
+
+    abstract static class FitsInNumberNode extends PythonUnaryBuiltinNode {
+        static boolean isSupportedNumber(Object number) {
+            return number instanceof Number || number instanceof PInt;
+        }
+
+        static boolean isWhole(double number) {
+            return !(number % 1.0 > 0);
+        }
+
+        @Specialization(guards = {"!isSupportedNumber(number)"})
+        static boolean unsupported(PythonAbstractObject number,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ARG_MUST_BE_NUMBER, "given", number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_BYTE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInByteNode extends FitsInNumberNode {
+        static boolean fits(long number) {
+            return number >= 0 && number < 256;
+        }
+
+        @Specialization
+        static boolean check(int number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            if (isWhole(number)) {
+                return fits((long) number);
+            }
+            return false;
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInByte(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_SHORT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInShortNode extends FitsInNumberNode {
+        static boolean fits(long number) {
+            return number >= Short.MIN_VALUE && number < Short.MAX_VALUE;
+        }
+
+        @Specialization
+        static boolean check(int number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            if (isWhole(number)) {
+                return fits((long) number);
+            }
+            return false;
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInShort(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_INT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInIntNode extends FitsInNumberNode {
+        static boolean fits(long number) {
+            return number >= Integer.MIN_VALUE && number < Integer.MAX_VALUE;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            if (isWhole(number)) {
+                return fits((long) number);
+            }
+            return false;
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInInt(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_LONG, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInLongNode extends FitsInNumberNode {
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") long number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            return isWhole(number);
+        }
+
+        @Specialization
+        static boolean check(PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInLong(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_BIG_INTEGER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInBigIntegerNode extends FitsInNumberNode {
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") long number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            return isWhole(number);
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") PInt number) {
+            return true;
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInFloatNode extends FitsInNumberNode {
+        static int PRECISION = 24;
+        static long MIN = -(long) Math.pow(2, PRECISION);
+        static long MAX = (long) Math.pow(2, PRECISION) - 1;
+
+        static boolean fits(long number) {
+            return number >= MIN && number <= MAX;
+        }
+
+        @Specialization
+        static boolean check(int number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(double number) {
+            return !Double.isFinite(number) || (float) number == number;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInFloat(number);
+        }
+    }
+
+    @Builtin(name = J_FITS_IN_DOUBLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class FitsInDoubleNode extends FitsInNumberNode {
+        static int PRECISION = 53;
+        static long MIN = -(long) Math.pow(2, PRECISION);
+        static long MAX = (long) Math.pow(2, PRECISION) - 1;
+
+        static boolean fits(long number) {
+            return number >= MIN && number <= MAX;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") int number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(long number) {
+            return fits(number);
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("true") double number) {
+            return true;
+        }
+
+        @Specialization
+        static boolean check(@SuppressWarnings("unused") PInt number,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return ilib.fitsInDouble(number);
+        }
+    }
+
+    @Builtin(name = J_GET_REGISTERED_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetRegisteredInteropBehaviorNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PList get(PythonAbstractObject klass,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+            if (isTypeNode.execute(inliningTarget, klass)) {
+                Object value = dylib.getOrDefault(klass, RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR, null);
+                if (value instanceof InteropBehavior behavior) {
+                    return factory.createList(behavior.getDefinedMethods());
+                }
+                return factory.createList();
+            }
+            throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", klass);
+        }
+    }
+
+    @Builtin(name = J_REGISTER_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"is_boolean", "is_date",
+                    "is_duration", "is_iterator", "is_number", "is_string", "is_time", "is_time_zone", "is_executable", "fits_in_big_integer", "fits_in_byte", "fits_in_double", "fits_in_float",
+                    "fits_in_int", "fits_in_long", "fits_in_short", "as_big_integer", "as_boolean", "as_byte", "as_date", "as_double", "as_duration", "as_float", "as_int", "as_long", "as_short",
+                    "as_string", "as_time", "as_time_zone", "execute", "read_array_element", "get_array_size", "has_array_elements", "is_array_element_readable", "is_array_element_modifiable",
+                    "is_array_element_insertable", "is_array_element_removable", "remove_array_element", "write_array_element", "has_iterator", "has_iterator_next_element", "get_iterator",
+                    "get_iterator_next_element", "has_hash_entries", "get_hash_entries_iterator", "get_hash_keys_iterator", "get_hash_size", "get_hash_values_iterator", "is_hash_entry_readable",
+                    "is_hash_entry_modifiable", "is_hash_entry_insertable", "is_hash_entry_removable", "read_hash_value", "write_hash_entry",
+                    "remove_hash_entry"}, doc = """
+                                    register_interop_behavior(type, is_boolean=None, is_date=None, is_duration=None, is_iterator=None, is_number=None, is_string=None, is_time=None,
+                                    is_time_zone=None, is_executable=None, fits_in_big_integer=None, fits_in_byte=None, fits_in_double=None, fits_in_float=None, fits_in_int=None,
+                                    fits_in_long=None, fits_in_short=None, as_big_integer=None, as_boolean=None, as_byte=None, as_date=None, as_double=None, as_duration=None, as_float=None,
+                                    as_int=None, as_long=None, as_short=None, as_string=None, as_time=None, as_time_zone=None, execute=None, read_array_element=None, get_array_size=None,
+                                    has_array_elements=None, is_array_element_readable=None, is_array_element_modifiable=None, is_array_element_insertable=None, is_array_element_removable=None,
+                                    remove_array_element=None, write_array_element=None, has_iterator=None, has_iterator_next_element=None, get_iterator=None, get_iterator_next_element=None,
+                                    has_hash_entries=None, get_hash_entries_iterator=None, get_hash_keys_iterator=None, get_hash_size=None, get_hash_values_iterator=None, is_hash_entry_readable=None,
+                                    is_hash_entry_modifiable=None, is_hash_entry_insertable=None, is_hash_entry_removable=None, read_hash_value=None, write_hash_entry=None, remove_hash_entry=None)
+
+                                    Registers the specified interop behavior with the passed type. The extensions are directly mapped to the Truffle (host) Interop 2.0 protocol.
+                                    Most Truffle InteropLibrary messages (http://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/interop/InteropLibrary.html) are supported (see keyword parameter list).
+
+                                    Example extending the interop behavior for iterators:
+
+                                    >>> from polyglot import register_interop_behavior
+
+                                    >>> class MyType(object):
+                                    ...     data = [0,1,2]
+
+                                    >>> register_interop_behavior(MyType, is_iterator=False, has_iterator=True, get_iterator=lambda t: iter(t.data))
+                                    """)
+    @GenerateNodeFactory
+    public abstract static class RegisterInteropBehaviorNode extends PythonBuiltinNode {
+        public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_INTEROP_BEHAVIOR__);
+
+        void handleArg(Object value, InteropBehaviorMethod method, InteropBehavior interopBehavior, PRaiseNode raiseNode) {
+            if (value instanceof Boolean boolValue) {
+                interopBehavior.defineBehavior(method, boolValue);
+            } else if (value instanceof PFunction function) {
+                interopBehavior.defineBehavior(method, function);
+                // validate the function
+                if (function.getKwDefaults().length != 0) {
+                    throw raiseNode.raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
+                } else if (function.getCode().getCellVars().length != 0) {
+                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, "function", "cell vars");
+                } else if (function.getCode().getFreeVars().length != 0) {
+                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, "function", "free vars");
+                }
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object register(PythonAbstractObject receiver, Object is_boolean, Object is_date, Object is_duration, Object is_iterator, Object is_number, Object is_string, Object is_time,
+                        Object is_time_zone, Object is_executable, Object fits_in_big_integer, Object fits_in_byte, Object fits_in_double, Object fits_in_float, Object fits_in_int,
+                        Object fits_in_long, Object fits_in_short, Object as_big_integer, Object as_boolean, Object as_byte, Object as_date, Object as_double, Object as_duration, Object as_float,
+                        Object as_int, Object as_long, Object as_short, Object as_string, Object as_time, Object as_time_zone, Object execute, Object read_array_element, Object get_array_size,
+                        Object has_array_elements, Object is_array_element_readable, Object is_array_element_modifiable, Object is_array_element_insertable, Object is_array_element_removable,
+                        Object remove_array_element, Object write_array_element, Object has_iterator, Object has_iterator_next_element, Object get_iterator, Object get_iterator_next_element,
+                        Object has_hash_entries, Object get_hash_entries_iterator, Object get_hash_keys_iterator, Object get_hash_size, Object get_hash_values_iterator, Object is_hash_entry_readable,
+                        Object is_hash_entry_modifiable, Object is_hash_entry_insertable, Object is_hash_entry_removable, Object read_hash_value, Object write_hash_entry, Object remove_hash_entry,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+            if (isTypeNode.execute(inliningTarget, receiver)) {
+                final InteropBehavior interopBehavior = new InteropBehavior(receiver);
+
+                handleArg(is_boolean, InteropBehaviorMethod.is_boolean, interopBehavior, raiseNode);
+                handleArg(is_date, InteropBehaviorMethod.is_date, interopBehavior, raiseNode);
+                handleArg(is_duration, InteropBehaviorMethod.is_duration, interopBehavior, raiseNode);
+                handleArg(is_iterator, InteropBehaviorMethod.is_iterator, interopBehavior, raiseNode);
+                handleArg(is_number, InteropBehaviorMethod.is_number, interopBehavior, raiseNode);
+                handleArg(is_string, InteropBehaviorMethod.is_string, interopBehavior, raiseNode);
+                handleArg(is_time, InteropBehaviorMethod.is_time, interopBehavior, raiseNode);
+                handleArg(is_time_zone, InteropBehaviorMethod.is_time_zone, interopBehavior, raiseNode);
+                handleArg(is_executable, InteropBehaviorMethod.is_executable, interopBehavior, raiseNode);
+                handleArg(fits_in_big_integer, InteropBehaviorMethod.fits_in_big_integer, interopBehavior, raiseNode);
+                handleArg(fits_in_byte, InteropBehaviorMethod.fits_in_byte, interopBehavior, raiseNode);
+                handleArg(fits_in_double, InteropBehaviorMethod.fits_in_double, interopBehavior, raiseNode);
+                handleArg(fits_in_float, InteropBehaviorMethod.fits_in_float, interopBehavior, raiseNode);
+                handleArg(fits_in_int, InteropBehaviorMethod.fits_in_int, interopBehavior, raiseNode);
+                handleArg(fits_in_long, InteropBehaviorMethod.fits_in_long, interopBehavior, raiseNode);
+                handleArg(fits_in_short, InteropBehaviorMethod.fits_in_short, interopBehavior, raiseNode);
+                handleArg(as_big_integer, InteropBehaviorMethod.as_big_integer, interopBehavior, raiseNode);
+                handleArg(as_boolean, InteropBehaviorMethod.as_boolean, interopBehavior, raiseNode);
+                handleArg(as_byte, InteropBehaviorMethod.as_byte, interopBehavior, raiseNode);
+                handleArg(as_date, InteropBehaviorMethod.as_date, interopBehavior, raiseNode);
+                handleArg(as_double, InteropBehaviorMethod.as_double, interopBehavior, raiseNode);
+                handleArg(as_duration, InteropBehaviorMethod.as_duration, interopBehavior, raiseNode);
+                handleArg(as_float, InteropBehaviorMethod.as_float, interopBehavior, raiseNode);
+                handleArg(as_int, InteropBehaviorMethod.as_int, interopBehavior, raiseNode);
+                handleArg(as_long, InteropBehaviorMethod.as_long, interopBehavior, raiseNode);
+                handleArg(as_short, InteropBehaviorMethod.as_short, interopBehavior, raiseNode);
+                handleArg(as_string, InteropBehaviorMethod.as_string, interopBehavior, raiseNode);
+                handleArg(as_time, InteropBehaviorMethod.as_time, interopBehavior, raiseNode);
+                handleArg(as_time_zone, InteropBehaviorMethod.as_time_zone, interopBehavior, raiseNode);
+                handleArg(execute, InteropBehaviorMethod.execute, interopBehavior, raiseNode);
+                handleArg(read_array_element, InteropBehaviorMethod.read_array_element, interopBehavior, raiseNode);
+                handleArg(get_array_size, InteropBehaviorMethod.get_array_size, interopBehavior, raiseNode);
+                handleArg(has_array_elements, InteropBehaviorMethod.has_array_elements, interopBehavior, raiseNode);
+                handleArg(is_array_element_readable, InteropBehaviorMethod.is_array_element_readable, interopBehavior, raiseNode);
+                handleArg(is_array_element_modifiable, InteropBehaviorMethod.is_array_element_modifiable, interopBehavior, raiseNode);
+                handleArg(is_array_element_insertable, InteropBehaviorMethod.is_array_element_insertable, interopBehavior, raiseNode);
+                handleArg(is_array_element_removable, InteropBehaviorMethod.is_array_element_removable, interopBehavior, raiseNode);
+                handleArg(remove_array_element, InteropBehaviorMethod.remove_array_element, interopBehavior, raiseNode);
+                handleArg(write_array_element, InteropBehaviorMethod.write_array_element, interopBehavior, raiseNode);
+                handleArg(has_iterator, InteropBehaviorMethod.has_iterator, interopBehavior, raiseNode);
+                handleArg(has_iterator_next_element, InteropBehaviorMethod.has_iterator_next_element, interopBehavior, raiseNode);
+                handleArg(get_iterator, InteropBehaviorMethod.get_iterator, interopBehavior, raiseNode);
+                handleArg(get_iterator_next_element, InteropBehaviorMethod.get_iterator_next_element, interopBehavior, raiseNode);
+                handleArg(has_hash_entries, InteropBehaviorMethod.has_hash_entries, interopBehavior, raiseNode);
+                handleArg(get_hash_entries_iterator, InteropBehaviorMethod.get_hash_entries_iterator, interopBehavior, raiseNode);
+                handleArg(get_hash_keys_iterator, InteropBehaviorMethod.get_hash_keys_iterator, interopBehavior, raiseNode);
+                handleArg(get_hash_size, InteropBehaviorMethod.get_hash_size, interopBehavior, raiseNode);
+                handleArg(get_hash_values_iterator, InteropBehaviorMethod.get_hash_values_iterator, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_readable, InteropBehaviorMethod.is_hash_entry_readable, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_modifiable, InteropBehaviorMethod.is_hash_entry_modifiable, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_insertable, InteropBehaviorMethod.is_hash_entry_insertable, interopBehavior, raiseNode);
+                handleArg(is_hash_entry_removable, InteropBehaviorMethod.is_hash_entry_removable, interopBehavior, raiseNode);
+                handleArg(read_hash_value, InteropBehaviorMethod.read_hash_value, interopBehavior, raiseNode);
+                handleArg(write_hash_entry, InteropBehaviorMethod.write_hash_entry, interopBehavior, raiseNode);
+                handleArg(remove_hash_entry, InteropBehaviorMethod.remove_hash_entry, interopBehavior, raiseNode);
+
+                dylib.put(receiver, HOST_INTEROP_BEHAVIOR, interopBehavior);
+                return PNone.NONE;
+            }
+            throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
+        }
     }
 
     @Builtin(name = "__read__", minNumOfPositionalArgs = 2)

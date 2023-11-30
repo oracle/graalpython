@@ -146,6 +146,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTESLIKE_OBJ_REQUIRED = tsLiteral("a bytes-like object is required, not '%p'");
     public static final TruffleString BYTE_STRING_OF_LEN_ONE_ONLY = tsLiteral("%s argument 2 must be a byte string of length 1, not %s");
     public static final TruffleString BYTE_MUST_BE_IN_RANGE = tsLiteral("byte must be in range(0, 256)");
+    public static final TruffleString SHORT_MUST_BE_IN_RANGE = tsLiteral("short must be in range(-32768, 32767)");
     public static final TruffleString C_ARG_NOT_IN_RANGE = tsLiteral("%%c arg not in range(0x%s)");
     public static final TruffleString CALL_STACK_NOT_DEEP_ENOUGH = tsLiteral("call stack is not deep enough");
     public static final TruffleString CALLED_MATCH_PAT_MUST_BE_TYPE = tsLiteral("called match pattern must be a type");
@@ -166,6 +167,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CAN_ONLY_JOIN_ITERABLE = tsLiteral("can only join an iterable");
     public static final TruffleString CANNOT_BE_INTEPRETED_AS_LONG = tsLiteral("%s cannot be interpreted as long (type %p)");
     public static final TruffleString S_CANNOT_BE_NEGATIVE_INTEGER_D = tsLiteral("%s cannot be negative integer (%d)");
+    public static final TruffleString S_CANNOT_HAVE_S = tsLiteral("%s cannot have %s");
+
     public static final TruffleString CANNOT_CALL_CTOR_OF = tsLiteral("cannot call constructor of %s");
     public static final TruffleString CANNOT_CLOSE_EXPORTED_PTRS_EXIST = tsLiteral("cannot close exported pointers exist");
     public static final TruffleString CANNOT_CONVERT_DICT_UPDATE_SEQ = tsLiteral("cannot convert dictionary update sequence element #%d to a sequence");
@@ -535,7 +538,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MUST_BE_REAL_NUMBER = tsLiteral("must be real number, not %p");
     public static final TruffleString MUST_BE_SEQ_OF_LENGTH_D_NOT_D = tsLiteral("must be sequence of length %d, not %d");
     public static final TruffleString MUST_BE_STR_NOT_P = tsLiteral("must be str, not %p");
-    public static final TruffleString S_MUST_BE_S_NOT_P = tsLiteral("%s must be a %s, not %p");
+    public static final TruffleString S_MUST_BE_S_NOT_P = tsLiteral("%s must be %s, not %p");
     public static final TruffleString MUST_BE_S_NOT_NONE = tsLiteral("must be %s, not None");
     public static final TruffleString MUST_BE_S_NOT_P = tsLiteral("must be %s, not %p");
     public static final TruffleString MUST_BE_S_OR_S = tsLiteral("%s must be %s or %s");

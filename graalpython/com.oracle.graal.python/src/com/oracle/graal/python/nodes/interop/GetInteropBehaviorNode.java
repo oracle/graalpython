@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,61 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.nodes.interop;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
+import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
-/**
- * Casts a Python integer to a Java long without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
 @GenerateUncached
 @GenerateInline
-@GenerateCached(false)
-public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
+public abstract class GetInteropBehaviorNode extends PNodeWithContext {
+    public abstract InteropBehavior execute(Node inliningTarget, PythonAbstractObject receiver, InteropBehaviorMethod method);
 
-    public final long executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
-    }
-
-    public final long executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(inliningTarget, x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a long", x);
+    @Specialization
+    static InteropBehavior getInteropBehavior(Node inliningTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
+                    @Cached GetClassNode getClassNode,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+        Object klass = getClassNode.execute(inliningTarget, receiver);
+        if (klass instanceof PythonBuiltinClassType pythonBuiltinClassType) {
+            klass = PythonContext.get(getClassNode).lookupType(pythonBuiltinClassType);
         }
-    }
-
-    public static long executeUncached(Object x) throws CannotCastException {
-        return CastToJavaLongExactNodeGen.getUncached().execute(null, x);
-    }
-
-    @Specialization(rewriteOn = OverflowException.class)
-    protected static long toLongNoOverflow(PInt x) throws OverflowException {
-        return x.longValueExact();
-    }
-
-    @Specialization(replaces = "toLongNoOverflow")
-    protected static long toLong(Node inliningTarget, PInt x,
-                    @Cached PRaiseNode.Lazy raiseNode) {
-        try {
-            return x.longValueExact();
-        } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
+        Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
+        if (value instanceof InteropBehavior behavior && behavior.isDefined(method)) {
+            return behavior;
         }
+        return null;
+    }
+
+    @NeverDefault
+    public static GetInteropBehaviorNode create() {
+        return GetInteropBehaviorNodeGen.create();
+    }
+
+    public static GetInteropBehaviorNode getUncached() {
+        return GetInteropBehaviorNodeGen.getUncached();
     }
 }

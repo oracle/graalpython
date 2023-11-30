@@ -15,6 +15,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Raise `KeyboardInterrupt` exception when the process is interrupted. Enabled only when using the launcher.
 * Add option `python.InitialLocale` to change the default locale. If not set, then Java Locale#getDefault is used.
 * `multiprocessing` module now uses the `spawn` method (creates new processes) by default. The formerly default method that uses threads and multiple Truffle contexts can be selected using `multiprocessing.set_start_method('graalpy')`.
+* `polyglot` module: add API to redefine Truffle interop messages for external / user defined types. For more details see [The Truffle Interoperability Extension API](docs/user/Interoperability.md).
 
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.

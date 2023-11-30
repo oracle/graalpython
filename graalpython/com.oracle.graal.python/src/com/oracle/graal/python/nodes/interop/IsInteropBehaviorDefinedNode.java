@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,61 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.nodes.interop;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
+import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
-/**
- * Casts a Python integer to a Java long without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
 @GenerateUncached
 @GenerateInline
-@GenerateCached(false)
-public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
+public abstract class IsInteropBehaviorDefinedNode extends Node {
+    public abstract boolean execute(Node inlineTarget, PythonAbstractObject receiver, InteropBehaviorMethod method);
 
-    public final long executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
+    @Specialization
+    static boolean isDefined(Node inlineTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
+                    @Cached GetClassNode getClassNode,
+                    @Cached InlinedConditionProfile isMethodDefined,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+        Object klass = getClassNode.execute(inlineTarget, receiver);
+        Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
+        return value instanceof InteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
     }
 
-    public final long executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(inliningTarget, x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a long", x);
-        }
+    @NeverDefault
+    public static IsInteropBehaviorDefinedNode create() {
+        return IsInteropBehaviorDefinedNodeGen.create();
     }
 
-    public static long executeUncached(Object x) throws CannotCastException {
-        return CastToJavaLongExactNodeGen.getUncached().execute(null, x);
-    }
-
-    @Specialization(rewriteOn = OverflowException.class)
-    protected static long toLongNoOverflow(PInt x) throws OverflowException {
-        return x.longValueExact();
-    }
-
-    @Specialization(replaces = "toLongNoOverflow")
-    protected static long toLong(Node inliningTarget, PInt x,
-                    @Cached PRaiseNode.Lazy raiseNode) {
-        try {
-            return x.longValueExact();
-        } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
-        }
+    public static IsInteropBehaviorDefinedNode getUncached() {
+        return IsInteropBehaviorDefinedNodeGen.getUncached();
     }
 }

@@ -504,8 +504,9 @@ abstract class GraalHPyJNINodes {
                     return UNSAFE.getFloat(addr);
                 case CDouble:
                     return UNSAFE.getDouble(addr);
-                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr, ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr,
-                                HPyType_SpecPtr, HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
+                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr:
+                case ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr, HPyType_SpecPtr:
+                case HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
                     return UNSAFE.getAddress(addr);
                 default:
                     int size = ctx.getCTypeSize(type);
@@ -712,8 +713,9 @@ abstract class GraalHPyJNINodes {
                 case CDouble:
                     UNSAFE.putDouble(addr, (double) value);
                     break;
-                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr, ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr,
-                                HPyType_SpecPtr, HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
+                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr:
+                case ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr, HPyType_SpecPtr:
+                case HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
                     UNSAFE.putAddress(addr, (long) value);
                     break;
                 default:

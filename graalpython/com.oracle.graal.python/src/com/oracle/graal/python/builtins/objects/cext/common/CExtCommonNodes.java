@@ -240,7 +240,7 @@ public abstract class CExtCommonNodes {
             try {
                 str = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "a string", unicodeObject);
             }
             try {
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);

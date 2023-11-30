@@ -506,8 +506,9 @@ abstract class GraalHPyLLVMNodes {
                     return GraalHPyNativeSymbol.GRAAL_HPY_READ_F;
                 case CDouble:
                     return GraalHPyNativeSymbol.GRAAL_HPY_READ_D;
-                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr, ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr,
-                                HPyType_SpecPtr, HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
+                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr:
+                case ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr, HPyType_SpecPtr:
+                case HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
                     return GraalHPyNativeSymbol.GRAAL_HPY_READ_PTR;
                 case Bool:
                     return GraalHPyNativeSymbol.GRAAL_HPY_READ_BOOL;
@@ -636,8 +637,9 @@ abstract class GraalHPyLLVMNodes {
                     return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_F;
                 case CDouble:
                     return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_D;
-                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr, ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr,
-                                HPyType_SpecPtr, HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
+                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr:
+                case ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr, HPyType_SpecPtr:
+                case HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
                     return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
                 case Bool:
                     return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_BOOL;

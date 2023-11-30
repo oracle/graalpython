@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,11 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -54,84 +52,71 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Casts a Python integer to a Java int without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
-@GenerateCached
-public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
+@GenerateInline
+@GenerateCached(false)
+@ImportStatic(MathGuards.class)
+public abstract class CastToJavaShortNode extends PNodeWithContext {
 
-    public final int executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
-    }
+    public abstract short execute(Node inliningTarget, short x);
 
-    public final int executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(inliningTarget, x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "an int", x);
-        }
-    }
+    public abstract short execute(Node inliningTarget, int x);
 
-    public static int executeUncached(long x) {
-        return CastToJavaIntExactNodeGen.getUncached().execute(null, x);
-    }
+    public abstract short execute(Node inliningTarget, long x);
 
-    public static int executeUncached(Object x) {
-        return CastToJavaIntExactNodeGen.getUncached().execute(null, x);
-    }
+    public abstract short execute(Node inliningTarget, Object x);
 
-    public final int executeCached(long x) {
-        return execute(this, x);
-    }
-
-    public final int executeCached(Object x) {
-        return execute(this, x);
-    }
-
-    @NeverDefault
-    public static CastToJavaIntExactNode create() {
-        return CastToJavaIntExactNodeGen.create();
-    }
-
-    @NeverDefault
-    public static CastToJavaIntExactNode getUncached() {
-        return CastToJavaIntExactNodeGen.getUncached();
+    @Specialization
+    static short fromShort(short x) {
+        return x;
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static int longToInt(long x) throws OverflowException {
-        return PInt.intValueExact(x);
+    static short fromInt(int x) throws OverflowException {
+        return PInt.shortValueExact(x);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static int pIntToInt(PInt x) throws OverflowException {
-        return x.intValueExact();
+    static short fromLong(long x) throws OverflowException {
+        return PInt.shortValueExact(x);
     }
 
-    @Specialization(replaces = "longToInt")
-    static int longToIntOverflow(Node inliningTarget, long x,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    static short fromPInt(PInt x) {
+        return x.shortValueExact();
+    }
+
+    @Specialization(replaces = "fromInt")
+    static short fromIntErr(Node inliningTarget, int x,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            return PInt.intValueExact(x);
+            return PInt.shortValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHORT_MUST_BE_IN_RANGE);
         }
     }
 
-    @Specialization(replaces = "pIntToInt")
-    static int pIntToIntOverflow(Node inliningTarget, PInt x,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
+    @Specialization(replaces = "fromLong")
+    static short fromLongErr(Node inliningTarget, long x,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            return x.intValueExact();
+            return PInt.shortValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHORT_MUST_BE_IN_RANGE);
+        }
+    }
+
+    @Specialization(replaces = "fromPInt")
+    static short fromPIntErr(Node inliningTarget, PInt x,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        try {
+            return x.shortValueExact();
+        } catch (ArithmeticException e) {
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHORT_MUST_BE_IN_RANGE);
         }
     }
 }
