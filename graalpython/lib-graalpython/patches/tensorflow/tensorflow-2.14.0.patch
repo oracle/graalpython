@@ -1,20 +1,30 @@
-From d206a167fea7930a0f1909d2c854643e001fe967 Mon Sep 17 00:00:00 2001
+From 0194b00a93f145c5539767689c112e04c8bf2b51 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
 Date: Mon, 30 Oct 2023 17:19:59 +0300
 Subject: [PATCH] patch tensorflow 2.14.0
 
 ---
  WORKSPACE                                     |   7 +-
- graalpy_build.py                              | 253 ++++++++++++++++++
- graalpy_patch.py                              | 105 ++++++++
+ graalpy_build.py                              | 260 ++++++++++++++++++
+ graalpy_patch.py                              | 105 +++++++
  pyproject.toml                                |  50 ++++
- rules_python-0.23.1.patch                     | 182 +++++++++++++
+ rules_python-0.23.1.patch                     | 182 ++++++++++++
+ .../dtensor/python/tests/test_backend_util.py |   2 +-
+ tensorflow/python/autograph/impl/api_test.py  |   3 +
  .../python/client/tf_session_wrapper.cc       |   4 +-
+ .../data/kernel_tests/memory_cleanup_test.py  |   4 +
+ .../python/distribute/multi_process_lib.py    |   3 +
+ .../eager/memory_tests/memory_test_util.py    |   4 +
  tensorflow/python/eager/pywrap_tfe_src.cc     |  11 +-
  tensorflow/python/framework/dtypes.py         |   2 +-
+ .../python/framework/error_interpolation.py   |   3 +-
+ tensorflow/python/framework/errors_test.py    |   4 +
  .../python_api_dispatcher_wrapper.cc          |   2 +-
+ .../python/framework/python_memory_checker.py |   4 +
+ tensorflow/python/framework/test_util.py      |   8 +
  .../tools/api/generator/create_python_api.py  |   2 +-
  tensorflow/python/util/module_wrapper.py      |  55 +++-
+ tensorflow/python/util/tf_stack_test.py       |   3 +
  tensorflow/tools/git/gen_git_source.py        |   3 +-
  tensorflow/tools/pip_package/setup.py         |   2 +-
  .../devel.usertools/squash_testlogs.py        |  13 +-
@@ -23,7 +33,7 @@ Subject: [PATCH] patch tensorflow 2.14.0
  tf_build_backend.py                           |  57 ++++
  third_party/protobuf/protobuf.patch           |   2 +-
  third_party/repo.bzl                          |   8 +-
- 19 files changed, 746 insertions(+), 25 deletions(-)
+ 29 files changed, 789 insertions(+), 27 deletions(-)
  create mode 100644 graalpy_build.py
  create mode 100644 graalpy_patch.py
  create mode 100644 pyproject.toml
@@ -64,10 +74,10 @@ index fb3af8a2bea..44ddffba73c 100644
  load("@pypi//:requirements.bzl", "install_deps")
 diff --git a/graalpy_build.py b/graalpy_build.py
 new file mode 100644
-index 00000000000..3da98203ff8
+index 00000000000..09290d0fd26
 --- /dev/null
 +++ b/graalpy_build.py
-@@ -0,0 +1,253 @@
+@@ -0,0 +1,260 @@
 +
 +import subprocess
 +import os
@@ -79,7 +89,8 @@ index 00000000000..3da98203ff8
 +
 +TF_ROOT = os.path.dirname(__file__)
 +INTERPRETER_HOME = sys.base_prefix
-+WHL_DIR_PATH = TF_ROOT + "/wheel_build"
++WHL_DIR_PATH = os.path.join(TF_ROOT, "wheel_build")
++TRACK_DIR = os.path.join(TF_ROOT, "track_test")
 +
 +for e in os.environ:
 +    print(e)
@@ -99,7 +110,7 @@ index 00000000000..3da98203ff8
 +    "flatbuffers",
 +    "gast",
 +    "google-pasta",
-+    "keras",
++    "keras==2.14.0",
 +    "libclang",
 +    "numpy",
 +    "protobuf",
@@ -110,7 +121,7 @@ index 00000000000..3da98203ff8
 +    "typing-extensions",
 +    "ml_dtypes==0.2.0",
 +    "opt-einsum",
-+    # "h5py", # require libhdf5-dev (apt-get install libhdf5-dev)
++    "h5py==3.10.0", # require libhdf5-dev (apt-get install libhdf5-dev)
 +]
 +
 +PIP_INSTALL = [
@@ -299,12 +310,18 @@ index 00000000000..3da98203ff8
 +            run(PIP_INSTALL + ["--force-reinstall", "--no-deps", find_tf_whl(args.whl_path)])
 +
 +    if args.test:
++        if not os.path.exists(TRACK_DIR):
++            os.mkdir(TRACK_DIR)
 +        BAZEL_TEST = [
 +            "test",
 +            ] + BAZEL_SYSTEM_LIMIT + [
 +            ] + BAZEL_EXTRA_OPT + [
++            # "--test_sharding_strategy=disabled",
++            # "--test_output=errors", "--verbose_failures=true", "--keep_going",
 +            "--repo_env=VENV_SITE_PACKAGES=%s" % VENV_SITE_PACKAGES,
 +            "--repo_env=INTERPRETER_HOME=%s" % INTERPRETER_HOME,
++            "--test_env=TRACK_DIR=%s" % TRACK_DIR,
++            "--flaky_test_attempts=3",
 +            # "--repo_env=TF_PYTHON_VERSION=%s" % '3.10',
 +            "-k",
 +            "//tensorflow/python/..."
@@ -324,7 +341,7 @@ index 00000000000..3da98203ff8
 \ No newline at end of file
 diff --git a/graalpy_patch.py b/graalpy_patch.py
 new file mode 100644
-index 00000000000..728d8a8863a
+index 00000000000..dc67a9fc453
 --- /dev/null
 +++ b/graalpy_patch.py
 @@ -0,0 +1,105 @@
@@ -363,7 +380,7 @@ index 00000000000..728d8a8863a
 +    "termcolor-1.1.0": "",
 +    "astunparse-1.6.3/lib": "",
 +    "FXdiv-63058eff77e11aa15bf531df5dd34395ec3017c8": "",
-+    "dill-0.3.6": "", # str(os.path.join(PATCHES_BASE_DIR, 'dill', 'dill-0.3.6.patch')),
++    "dill-0.3.6": str(os.path.join(PATCHES_BASE_DIR, 'dill', 'dill.patch')),
 +    "farmhash-0d859a811870d10f53a594927d0d0b97573ad06d": "",
 +    "pasta-0.2.0": "",
 +    "giflib-5.2.1": "",
@@ -491,7 +508,7 @@ index 00000000000..841b726f3fe
 +backend-path = ["."]
 diff --git a/rules_python-0.23.1.patch b/rules_python-0.23.1.patch
 new file mode 100644
-index 00000000000..cb8c98b661b
+index 00000000000..442e3c69c7d
 --- /dev/null
 +++ b/rules_python-0.23.1.patch
 @@ -0,0 +1,182 @@
@@ -578,14 +595,14 @@ index 00000000000..cb8c98b661b
 +         build_file.write(contents)
 + 
 ++def get_package(package_spec):
-++    try:
-++        pkg = package_spec.split('==')[0]
-++        if pkg in set(os.listdir(os.path.join(__graalpython__.core_home, "patches"))):
-++            print('[GraalPy] replacing %s requirement with patched %s' % (package_spec, pkg))
-++            return pkg
-++    except:
-++        pass
-++    return package_spec
+++    replacements = {"h5py": "h5py==3.10.0", "urllib3": "urllib3==1.26.18", "grpcio": "grpcio==1.56.2"}
+++    pkg = package_spec.split('==')[0]
+++    if pkg in replacements:
+++        print('[GraalPy] replacing %s requirement with patched %s' % (package_spec, replacements[pkg]))
+++
+++
+++
+++    return replacements.get(pkg, package_spec)
 ++
 ++def get_wheel(args, deserialized_args):
 ++    package_spec = args.requirement.split()[0]
@@ -677,6 +694,33 @@ index 00000000000..cb8c98b661b
 +     patches = rctx.attr.patches
 +     if patches:
 +         for patch in patches:
+diff --git a/tensorflow/dtensor/python/tests/test_backend_util.py b/tensorflow/dtensor/python/tests/test_backend_util.py
+index 02fc82a71b7..58b902b469c 100644
+--- a/tensorflow/dtensor/python/tests/test_backend_util.py
++++ b/tensorflow/dtensor/python/tests/test_backend_util.py
+@@ -71,7 +71,7 @@ def slice_host_devices_for_multiworker(num_clients, client_id, ports):
+ 
+ 
+ def get_mp_context():
+-  return multiprocessing.get_context('forkserver')
++  return multiprocessing.get_context('spawn')
+ 
+ 
+ def handle_test_main(main, *args, **kwargs):
+diff --git a/tensorflow/python/autograph/impl/api_test.py b/tensorflow/python/autograph/impl/api_test.py
+index 1332240d9df..bf8b4a0926f 100644
+--- a/tensorflow/python/autograph/impl/api_test.py
++++ b/tensorflow/python/autograph/impl/api_test.py
+@@ -57,6 +57,9 @@ global_n = 2
+ 
+ DEFAULT_RECURSIVE = converter.ConversionOptions(recursive=True)
+ 
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ class TestResource:
+ 
 diff --git a/tensorflow/python/client/tf_session_wrapper.cc b/tensorflow/python/client/tf_session_wrapper.cc
 index 61551f0f8c1..d19edb3dd59 100644
 --- a/tensorflow/python/client/tf_session_wrapper.cc
@@ -699,6 +743,50 @@ index 61551f0f8c1..d19edb3dd59 100644
        copy.append(op);
      }
      return copy;
+diff --git a/tensorflow/python/data/kernel_tests/memory_cleanup_test.py b/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
+index afd5e18eecd..4ec8b9a6643 100644
+--- a/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
++++ b/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
+@@ -36,6 +36,10 @@ try:
+ except ImportError:
+   memory_profiler = None
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ class MemoryCleanupTest(test_base.DatasetTestBase, parameterized.TestCase):
+ 
+diff --git a/tensorflow/python/distribute/multi_process_lib.py b/tensorflow/python/distribute/multi_process_lib.py
+index fa1e44fbf58..e4bfb8577e3 100644
+--- a/tensorflow/python/distribute/multi_process_lib.py
++++ b/tensorflow/python/distribute/multi_process_lib.py
+@@ -31,6 +31,9 @@ def is_oss():
+ 
+ 
+ def _is_enabled():
++  if sys.implementation.name == 'graalpy':
++    logging.info("GraalPy doesn't support forking a jvm/svm process")
++    return False
+   # Note that flags may not be parsed at this point and simply importing the
+   # flags module causes a variety of unusual errors.
+   tpu_args = [arg for arg in sys.argv if arg.startswith('--tpu')]
+diff --git a/tensorflow/python/eager/memory_tests/memory_test_util.py b/tensorflow/python/eager/memory_tests/memory_test_util.py
+index 7d584661b34..cf5370a51cf 100644
+--- a/tensorflow/python/eager/memory_tests/memory_test_util.py
++++ b/tensorflow/python/eager/memory_tests/memory_test_util.py
+@@ -26,6 +26,10 @@ try:
+ except ImportError:
+   memory_profiler = None
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ def _instance_count_by_class():
+   counter = collections.Counter()
 diff --git a/tensorflow/python/eager/pywrap_tfe_src.cc b/tensorflow/python/eager/pywrap_tfe_src.cc
 index 1981bedc2a4..9e356d1d588 100644
 --- a/tensorflow/python/eager/pywrap_tfe_src.cc
@@ -748,6 +836,42 @@ index 9f17099424f..a3d8626658e 100644
  
    def __init__(self, type_enum, handle_data=None):
      super().__init__(type_enum)
+diff --git a/tensorflow/python/framework/error_interpolation.py b/tensorflow/python/framework/error_interpolation.py
+index 76c727a5fe5..b6f74197a29 100644
+--- a/tensorflow/python/framework/error_interpolation.py
++++ b/tensorflow/python/framework/error_interpolation.py
+@@ -23,6 +23,7 @@ import os
+ import re
+ import site
+ import traceback
++import sys
+ 
+ from tensorflow.python.util import tf_stack
+ 
+@@ -354,7 +355,7 @@ def _compute_field_dict(op):
+   device_summary = _compute_device_assignment_summary_from_op(op)
+   combined_summary = "\n".join([colocation_summary, device_summary])
+ 
+-  if op.traceback is None:
++  if op.traceback is None or sys.implementation.name == 'graalpy':
+     # Some ops synthesized on as part of function or control flow definition
+     # do not have tracebacks.
+     filename = "<unknown>"
+diff --git a/tensorflow/python/framework/errors_test.py b/tensorflow/python/framework/errors_test.py
+index c2124cb7893..14ec9132453 100644
+--- a/tensorflow/python/framework/errors_test.py
++++ b/tensorflow/python/framework/errors_test.py
+@@ -27,6 +27,10 @@ from tensorflow.python.lib.io import _pywrap_file_io
+ from tensorflow.python.platform import test
+ from tensorflow.python.util import compat
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ class ErrorsTest(test.TestCase):
+ 
 diff --git a/tensorflow/python/framework/python_api_dispatcher_wrapper.cc b/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
 index d3f688578a7..071fadb1e45 100644
 --- a/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
@@ -761,6 +885,47 @@ index d3f688578a7..071fadb1e45 100644
        if (!PyType_Check(cls.ptr())) {
          throw py::type_error("`*py_classes` must be a tuple of types.");
        }
+diff --git a/tensorflow/python/framework/python_memory_checker.py b/tensorflow/python/framework/python_memory_checker.py
+index aa0d2023585..3f5f773a361 100644
+--- a/tensorflow/python/framework/python_memory_checker.py
++++ b/tensorflow/python/framework/python_memory_checker.py
+@@ -25,6 +25,10 @@ from tensorflow.python.framework import _python_memory_checker_helper
+ from tensorflow.python.platform import tf_logging as logging
+ from tensorflow.python.profiler import trace
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ def _get_typename(obj):
+   """Return human readable pretty type name string."""
+diff --git a/tensorflow/python/framework/test_util.py b/tensorflow/python/framework/test_util.py
+index 906fac99b7e..3ea07d28a31 100644
+--- a/tensorflow/python/framework/test_util.py
++++ b/tensorflow/python/framework/test_util.py
+@@ -92,6 +92,10 @@ from tensorflow.python.util.compat import collections_abc
+ from tensorflow.python.util.protobuf import compare
+ from tensorflow.python.util.tf_export import tf_export
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ # If the below import is made available through the BUILD rule, then this
+ # function is overridden and will instead return True and cause Tensorflow
+@@ -804,6 +808,10 @@ def assert_no_new_tensors(f):
+   def decorator(self, **kwargs):
+     """Finds existing Tensors, runs the test, checks for new Tensors."""
+ 
++    if sys.implementation.name == 'graalpy':
++      # GraalPy we don't have control over the jvm's gc
++      gc.get_objects = lambda: []
++
+     def _is_tensorflow_object(obj):
+       try:
+         return isinstance(obj,
 diff --git a/tensorflow/python/tools/api/generator/create_python_api.py b/tensorflow/python/tools/api/generator/create_python_api.py
 index 742cc879d0e..cdc65b36473 100644
 --- a/tensorflow/python/tools/api/generator/create_python_api.py
@@ -844,6 +1009,27 @@ index fcf7225d683..f0205b919aa 100644
  _PER_MODULE_WARNING_LIMIT = 1
  compat_v1_usage_gauge = monitoring.BoolGauge('/tensorflow/api/compat/v1',
                                               'compat.v1 usage')
+diff --git a/tensorflow/python/util/tf_stack_test.py b/tensorflow/python/util/tf_stack_test.py
+index 8b607acb30a..d60857507e3 100644
+--- a/tensorflow/python/util/tf_stack_test.py
++++ b/tensorflow/python/util/tf_stack_test.py
+@@ -17,6 +17,7 @@
+ from tensorflow.python.platform import test
+ from tensorflow.python.util import tf_stack
+ 
++import sys
+ 
+ class TFStackTest(test.TestCase):
+ 
+@@ -40,6 +41,8 @@ class TFStackTest(test.TestCase):
+     self.assertEqual(hash(tuple(frame1)), hash(tuple(frame2)))
+ 
+   def testLastUserFrame(self):
++    if sys.implementation.name == 'graalpy':
++      return
+     trace = tf_stack.extract_stack()
+     frame = trace.last_user_frame()
+     self.assertRegex(repr(frame), 'testLastUserFrame')
 diff --git a/tensorflow/tools/git/gen_git_source.py b/tensorflow/tools/git/gen_git_source.py
 index 2a93649f84a..3ac09a7f30c 100644
 --- a/tensorflow/tools/git/gen_git_source.py
