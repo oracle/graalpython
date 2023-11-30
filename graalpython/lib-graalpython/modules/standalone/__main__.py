@@ -156,7 +156,13 @@ def get_download_dir(parsed_args):
         parsed_args.keep_temp = True # Keep this location
         return mp
     except Exception as e:
-        return os.path.join(tempfile.mkdtemp(), subdir)
+        if parsed_args.verbose:
+            print("Cannot store native standalone dependencies permanently, storing to tmpdir")
+            import traceback
+            traceback.print_exception(e)
+        mp = os.path.join(tempfile.mkdtemp(), subdir)
+        os.mkdir(mp)
+        return mp
 
 
 def create_native_exec(parsed_args):
@@ -170,7 +176,7 @@ def create_native_exec(parsed_args):
     try:
         ni, jc = get_tools(target_dir, parsed_args)
                 
-        modules_path = os.path.join(target_dir, "modules")
+        modules_path = target_dir
         for artifact in artifacts:
             download_maven_artifact(modules_path, artifact, parsed_args)
         
