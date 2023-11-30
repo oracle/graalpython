@@ -92,10 +92,10 @@ index c799413..bf52f00 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..348baae
+index 0000000..f9b8dcc
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,203 @@
+@@ -0,0 +1,214 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -113,6 +113,9 @@ index 0000000..348baae
 +PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
 +if hasattr(__graalpython__, "tdebug"):
 +    PATCHES_BASE_DIRS += os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
++
++DISABLE_PATCHING = os.environ.get('PIP_GRAALPY_DISABLE_PATCHING', '').lower() in ('true', '1')
++DISABLE_VERSION_SELECTION = os.environ.get('PIP_GRAALPY_DISABLE_VERSION_SELECTION', '').lower() in ('true', '1')
 +
 +
 +def normalize_name(name):
@@ -189,10 +192,8 @@ index 0000000..348baae
 +    Note that 'location' must be the parent directory of the package directory itself.
 +    For example: /path/to/site-package and not /path/to/site-packages/mypackage.
 +    """
-+    import autopatch_capi
-+    import subprocess
-+
-+    autopatch_capi.auto_patch_tree(location)
++    if DISABLE_PATCHING:
++        return
 +
 +    # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
 +    archive_name = os.path.basename(filename)
@@ -211,6 +212,11 @@ index 0000000..348baae
 +    if is_wheel and is_wheel_marked(filename):
 +        # We already processed it when building from source
 +        return
++
++    import autopatch_capi
++    import subprocess
++
++    autopatch_capi.auto_patch_tree(location)
 +
 +    print(f"Looking for GraalPy patches for {name}")
 +    repository = get_patch_repository()
@@ -247,6 +253,9 @@ index 0000000..348baae
 +
 +
 +def apply_graalpy_sort_order(sort_key_func):
++    if DISABLE_VERSION_SELECTION:
++        return sort_key_func
++
 +    def wrapper(self, candidate):
 +        default_sort_key = sort_key_func(self, candidate)
 +        priority = get_patch_repository().get_priority_for_version(candidate.name, str(candidate.version))
@@ -284,6 +293,8 @@ index 0000000..348baae
 +
 +
 +def mark_wheel(path):
++    if DISABLE_PATCHING:
++        return
 +    with zipfile.ZipFile(path, 'a') as z:
 +        dist_info = None
 +        for name in z.namelist():
