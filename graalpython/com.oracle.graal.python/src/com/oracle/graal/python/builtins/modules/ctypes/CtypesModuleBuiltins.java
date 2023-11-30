@@ -120,7 +120,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -1740,9 +1740,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             if (pointerObject != null) {
                 // that's what this function is for
-                SubRefCntNode.executeUncached(pointerObject, 1);
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_DECREF, pointerObject);
                 // that for returning it
-                AddRefCntNode.executeUncached(pointerObject, 1);
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INCREF, pointerObject);
             }
             return arg;
         }

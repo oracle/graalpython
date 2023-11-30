@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCha
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.SubRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -1226,65 +1225,6 @@ public abstract class CExtNodes {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    public abstract static class SubRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(SubRefCntNode.class);
-
-        public static long executeUncached(Object object, long value) {
-            return SubRefCntNodeGen.getUncached().execute(null, object, value);
-        }
-
-        public final long dec(Node inliningTarget, Object object) {
-            return execute(inliningTarget, object, 1);
-        }
-
-        public abstract long execute(Node inliningTarget, Object object, long value);
-
-        @Specialization(guards = "value == 1")
-        static long doNativeWrapperDecByOne(PythonAbstractObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") long value) {
-            long refCount = nativeWrapper.decRef();
-            // TODO(fa): see comment in 'doNativeWrapper'
-            // checkRefCountZero(inliningTarget, nativeWrapper, freeNode, negativeProfile,
-            // refCount);
-            return refCount;
-        }
-
-        @Specialization
-        static long doNativeWrapper(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, long value,
-                        @Exclusive @Cached InlinedConditionProfile hasRefProfile) {
-            long updatedRefCount = nativeWrapper.getRefCount() - value;
-            nativeWrapper.setRefCount(inliningTarget, updatedRefCount, hasRefProfile);
-            /*
-             * TODO(fa): Investigate if call to 'checkRefCountZero' is beneficial or necessary.
-             * 
-             * I think it is not strictly necessary because 'setRefCount' will make the wrapper's
-             * reference weak and as soon as there is no more reference from managed, the object
-             * will be free'd. However, if the refcount is 0, we already know that it can be free'd
-             * and we could safe the overhead of going through the reference queue and such. OTOH, I
-             * think this will rarely happen and would need some special treatment in the reference
-             * queue processor.
-             */
-            // checkRefCountZero(inliningTarget, nativeWrapper, freeNode, negativeProfile,
-            // updatedRefCount);
-            return updatedRefCount;
-        }
-
-        /*-
-        private static void checkRefCountZero(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, PyTruffleObjectFree freeNode, InlinedBranchProfile negativeProfile, long refCount) {
-            if (refCount == 0) {
-                // 'freeNode' acts as a branch profile
-                freeNode.execute(inliningTarget, nativeWrapper);
-            } else if (refCount < 0) {
-                negativeProfile.enter(inliningTarget);
-                LOGGER.severe(() -> "native wrapper has negative ref count: " + nativeWrapper);
-            }
-        }
-        */
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class ClearNativeWrapperNode extends Node {
 
@@ -2065,13 +2005,11 @@ public abstract class CExtNodes {
         public abstract void execute(Object pythonObject);
 
         @Specialization
-        static void doNativeWrapper(PythonAbstractObjectNativeWrapper nativeWrapper,
-                        @Bind("this") Node inliningTarget,
-                        @Cached SubRefCntNode subRefCntNode) {
-            // in the cached case, refCntNode acts as a branch profile
-            // if (subRefCntNode.dec(nativeWrapper) == 0) {
-            // traverseNativeWrapperNode.execute(inliningTarget, nativeWrapper.getDelegate());
-            // }
+        static void doNativeWrapper(@SuppressWarnings("unused") PythonAbstractObjectNativeWrapper nativeWrapper) {
+            /*
+             * TODO(fa): this is the place where we should decrease the wrapper's refcount by 1 and
+             * also make the ref weak
+             */
         }
 
         @Specialization(guards = "!isNativeWrapper(object)")

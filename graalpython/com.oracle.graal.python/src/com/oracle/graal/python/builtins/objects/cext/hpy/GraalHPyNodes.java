@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -1945,20 +1944,6 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
             closeFirstHandleNode.execute(inliningTarget, dest[destOffset]);
             closeSecondHandleNode.execute(inliningTarget, dest[destOffset + 1]);
-        }
-    }
-
-    /**
-     * The counter part of {@link HPyGetSetSetterToSulongNode}.
-     */
-    @GenerateInline(false)
-    public abstract static class HPyLegacyGetSetSetterDecrefNode extends HPyCloseArgHandlesNode {
-
-        @Specialization
-        static void doConvert(Object[] dest, int destOffset,
-                        @Bind("this") Node inliningTarget,
-                        @Cached SubRefCntNode subRefCntNode) {
-            subRefCntNode.dec(inliningTarget, dest[destOffset + 1]);
         }
     }
 
