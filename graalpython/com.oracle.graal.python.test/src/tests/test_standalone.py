@@ -246,9 +246,8 @@ class PolyglotAppTest(unittest.TestCase):
             
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app(self):
-        
         with tempfile.TemporaryDirectory() as tmpdir:                    
-            target_name = "polyglot_app_test"
+            target_name = "generated_app_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
 
@@ -272,7 +271,7 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "/vfs/home/lib-python/\n" in lines
 
                 # execute and check native image
-                cmd = [os.path.join(target_dir, "target", "polyglot_app_test")]
+                cmd = [os.path.join(target_dir, "target", target_name)]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "hello java" in out
 
@@ -287,9 +286,8 @@ class PolyglotAppTest(unittest.TestCase):
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_graalpy_exec(self):
-        
         with tempfile.TemporaryDirectory() as tmpdir:
-            target_name = "polyglot_app_test"
+            target_name = "graalpy_exec_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
 
@@ -315,9 +313,8 @@ class PolyglotAppTest(unittest.TestCase):
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
-        
         with tempfile.TemporaryDirectory() as tmpdir:
-            target_name = "polyglot_app_test"
+            target_name = "fail_without_graalpy_dep_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "embedding/fail_without_graalpy_dep_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
@@ -327,7 +324,7 @@ class PolyglotAppTest(unittest.TestCase):
                 cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
                 run_cmd(cmd, self.env, cwd=target_dir)
             try:
-                cmd = MVN_CMD + ["process-resources"]
+                cmd = MVN_CMD + ["-X", "process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
                 assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
 
@@ -338,9 +335,8 @@ class PolyglotAppTest(unittest.TestCase):
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_gen_launcher_and_venv(self):        
-
         with tempfile.TemporaryDirectory() as tmpdir:
-            target_name = "polyglot_app_test"
+            target_name = "gen_launcher_and_venv_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "embedding/prepare_venv_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
@@ -349,7 +345,7 @@ class PolyglotAppTest(unittest.TestCase):
                 cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
                 run_cmd(cmd, self.env, cwd=target_dir)
             try:
-                cmd = MVN_CMD + ["process-resources"]
+                cmd = MVN_CMD + ["-X", "process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
                 assert "-m venv" in out
                 assert "-m ensurepip" in out
@@ -371,9 +367,8 @@ class PolyglotAppTest(unittest.TestCase):
         
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_check_home(self):
-        
-        with tempfile.TemporaryDirectory() as tmpdir:            
-            target_name = "polyglot_app_test"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "check_home_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "embedding/check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
@@ -384,7 +379,7 @@ class PolyglotAppTest(unittest.TestCase):
                 run_cmd(cmd, self.env, cwd=target_dir)        
 
             try:
-                cmd = MVN_CMD + ["process-resources"]
+                cmd = MVN_CMD + ["-X", "process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 
                 # check fileslist.txt
