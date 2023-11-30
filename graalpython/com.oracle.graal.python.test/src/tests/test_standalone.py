@@ -243,18 +243,24 @@ class PolyglotAppTest(unittest.TestCase):
                 if "{graalpy-maven-plugin-version}" in line:
                     line = line.replace("{graalpy-maven-plugin-version}", self.graalvmVersion)
                 f.write(line)
-            
+          
+    def purge_local_repo(self, target_dir, resolve=True):
+        if not skip_purge:
+            self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
+            if resolve:
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]            
+            else:
+                cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+            run_cmd(cmd, self.env, cwd=target_dir)
+                
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app(self):
         with tempfile.TemporaryDirectory() as tmpdir:                    
             target_name = "generated_app_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
-
-            if not skip_purge:
-                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                run_cmd(cmd, self.env, cwd=target_dir)
+            self.purge_local_repo(target_dir)
+            
             try:
                 # build 
                 cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"] #, f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
@@ -280,9 +286,7 @@ class PolyglotAppTest(unittest.TestCase):
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "hello java" in out
             finally:
-                if not skip_purge:
-                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                    run_cmd(cmd, self.env, cwd=target_dir)                
+                self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_graalpy_exec(self):
@@ -290,12 +294,8 @@ class PolyglotAppTest(unittest.TestCase):
             target_name = "graalpy_exec_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
-
-            # XXX - move to method
-            if not skip_purge:
-                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                run_cmd(cmd, self.env, cwd=target_dir)
+            self.purge_local_repo(target_dir)
+            
             try:
                 cmd = MVN_CMD + ["graalpy:exec", "-Dexec.argc=2", "-Dexec.arg1=-c", "-Dexec.arg2=print(42, 'from python')"]                
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
@@ -307,9 +307,7 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "from python via GRAAL_PYTHON_ARGS env var" in out      
             finally:
                 del self.env["GRAAL_PYTHON_ARGS"]
-                if not skip_purge:
-                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                    run_cmd(cmd, self.env, cwd=target_dir)
+                self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
@@ -318,7 +316,8 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "embedding/fail_without_graalpy_dep_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-
+            self.purge_local_repo(target_dir)
+            
             if not skip_purge:
                 self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
                 cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
@@ -329,9 +328,7 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
 
             finally:
-                if not skip_purge:
-                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                    run_cmd(cmd, self.env, cwd=target_dir)
+                self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_gen_launcher_and_venv(self):        
@@ -340,10 +337,8 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "embedding/prepare_venv_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-            if not skip_purge:
-                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                run_cmd(cmd, self.env, cwd=target_dir)
+            self.purge_local_repo(target_dir)
+            
             try:
                 cmd = MVN_CMD + ["-X", "process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
@@ -361,9 +356,7 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "termcolor" not in out
 
             finally:
-                if not skip_purge:
-                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                    run_cmd(cmd, self.env, cwd=target_dir)
+                self.purge_local_repo(target_dir, False)
         
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_check_home(self):
@@ -372,11 +365,7 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "embedding/check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-
-            if not skip_purge:
-                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                run_cmd(cmd, self.env, cwd=target_dir)        
+            self.purge_local_repo(target_dir)     
 
             try:
                 cmd = MVN_CMD + ["-X", "process-resources"]
@@ -394,9 +383,7 @@ class PolyglotAppTest(unittest.TestCase):
                         assert line.endswith("/__init__.py")
                         assert not line.endswith("html/__init__.py")
             finally:
-                if not skip_purge:
-                    cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                    run_cmd(cmd, self.env, cwd=target_dir)
+                self.purge_local_repo(target_dir, False)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
