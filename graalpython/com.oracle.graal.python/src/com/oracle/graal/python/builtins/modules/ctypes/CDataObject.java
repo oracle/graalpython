@@ -78,8 +78,8 @@ public class CDataObject extends PythonBuiltinObject {
         this.b_needsfree = b_needsfree;
     }
 
-    public static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
-        return new CDataObjectWrapper(dictObject, storage);
+    public static CDataObjectWrapper createWrapper(Object delegate, StgDictObject dictObject, byte[] storage) {
+        return new CDataObjectWrapper(delegate, dictObject, storage);
     }
 
     @ExportMessage
@@ -144,12 +144,13 @@ public class CDataObject extends PythonBuiltinObject {
     @ExportLibrary(InteropLibrary.class)
     public static final class CDataObjectWrapper extends PythonAbstractObjectNativeWrapper {
 
-        final byte[] storage;
-        final StgDictObject stgDict;
+        private final byte[] storage;
+        private final StgDictObject stgDict;
 
         private String[] members;
 
-        public CDataObjectWrapper(StgDictObject stgDict, byte[] storage) {
+        public CDataObjectWrapper(Object delegate, StgDictObject stgDict, byte[] storage) {
+            super(delegate);
             this.storage = storage;
             assert stgDict != null;
             this.stgDict = stgDict;

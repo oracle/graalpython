@@ -105,6 +105,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
@@ -1138,7 +1139,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static final class argument {
+    protected static final class CTypesCallArgument {
         FFIType ffi_type;
         StgDictObject stgDict;
         /*
@@ -1188,7 +1189,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(ArgError, TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D, argcount, CTYPES_MAX_ARGCOUNT);
             }
 
-            argument[] args = new argument[argcount];
+            CTypesCallArgument[] args = new CTypesCallArgument[argcount];
             Object[] avalues = new Object[argcount];
             FFIType[] atypes = new FFIType[argcount];
             int argtype_count = argtypes != null ? argtypes.length : 0;
@@ -1203,7 +1204,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 }
             }
             for (int i = 0; i < argcount; ++i) {
-                args[i] = new argument();
+                args[i] = new CTypesCallArgument();
                 Object arg = argarray[i];
                 /*
                  * For cdecl functions, we allow more actual arguments than the length of the
@@ -1223,7 +1224,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 if (arg instanceof PyCFuncPtrObject) {
                     atypes[i] = new FFIType(atypes[i], ((PyCFuncPtrObject) arg).thunk);
                 }
-                avalues[i] = convertParameterToBackendValueNode.execute(inliningTarget, args[i].valuePointer, args[i].ffi_type, args[i].stgDict, mode);
+                avalues[i] = convertParameterToBackendValueNode.execute(inliningTarget, args[i], mode);
             }
 
             FFIType rtype = FFIType.ffi_type_sint;
@@ -1481,14 +1482,14 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @SuppressWarnings("truffle-inlining")       // footprint reduction 124 -> 106
     protected abstract static class ConvParamNode extends Node {
 
-        final void execute(VirtualFrame frame, Object obj, int index, argument pa) {
+        final void execute(VirtualFrame frame, Object obj, int index, CTypesCallArgument pa) {
             execute(frame, obj, index, pa, true);
         }
 
-        protected abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean allowRecursion);
+        protected abstract void execute(VirtualFrame frame, Object obj, int index, CTypesCallArgument pa, boolean allowRecursion);
 
         @Specialization
-        void convParam(VirtualFrame frame, Object obj, int index, argument pa, boolean allowRecursion,
+        void convParam(VirtualFrame frame, Object obj, int index, CTypesCallArgument pa, boolean allowRecursion,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
@@ -1589,65 +1590,57 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     @ImportStatic({FFIType.FFI_TYPES.class, BackendMode.class})
     abstract static class ConvertParameterToBackendValueNode extends Node {
-        public abstract Object execute(Node inliningTarget, Pointer ptr, FFIType ffiType, StgDictObject dict, BackendMode mode);
+        public abstract Object execute(Node inliningTarget, CTypesCallArgument arg, BackendMode mode);
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT8 || ffiType.type == FFI_TYPE_UINT8")
-        static byte doByte(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = "isFFIType(arg, FFI_TYPE_SINT8) || isFFIType(arg, FFI_TYPE_UINT8)")
+        static byte doByte(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Cached PointerNodes.ReadByteNode readByteNode) {
-            return readByteNode.execute(inliningTarget, pointer);
+            return readByteNode.execute(inliningTarget, arg.valuePointer);
         }
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT16 || ffiType.type == FFI_TYPE_UINT16")
-        static short doShort(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = "isFFIType(arg, FFI_TYPE_SINT16) || isFFIType(arg, FFI_TYPE_UINT16)")
+        static short doShort(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Cached PointerNodes.ReadShortNode readShortNode) {
-            return readShortNode.execute(inliningTarget, pointer);
+            return readShortNode.execute(inliningTarget, arg.valuePointer);
         }
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT32 || ffiType.type == FFI_TYPE_UINT32")
-        static int doInt(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = "isFFIType(arg, FFI_TYPE_SINT32) || isFFIType(arg, FFI_TYPE_UINT32)")
+        static int doInt(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
-            return readIntNode.execute(inliningTarget, pointer);
+            return readIntNode.execute(inliningTarget, arg.valuePointer);
         }
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT64 || ffiType.type == FFI_TYPE_UINT64")
-        static long doLong(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = "isFFIType(arg, FFI_TYPE_SINT64) || isFFIType(arg, FFI_TYPE_UINT64)")
+        static long doLong(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
-            return readLongNode.execute(inliningTarget, pointer);
+            return readLongNode.execute(inliningTarget, arg.valuePointer);
         }
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_FLOAT")
-        static float doFloat(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = "isFFIType(arg, FFI_TYPE_FLOAT)")
+        static float doFloat(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
-            return Float.intBitsToFloat(readIntNode.execute(inliningTarget, pointer));
+            return Float.intBitsToFloat(readIntNode.execute(inliningTarget, arg.valuePointer));
         }
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_DOUBLE")
-        static double doDouble(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = "isFFIType(arg, FFI_TYPE_DOUBLE)")
+        static double doDouble(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
-            return Double.longBitsToDouble(readLongNode.execute(inliningTarget, pointer));
+            return Double.longBitsToDouble(readLongNode.execute(inliningTarget, arg.valuePointer));
         }
 
-        @Specialization(guards = {"mode == NFI", "ffiType.type == FFI_TYPE_POINTER"})
-        static Object doNFIPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = {"mode == NFI", "isFFIType(arg, FFI_TYPE_POINTER)"})
+        static Object doNFIPointer(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Shared @Cached PointerNodes.GetPointerValueAsObjectNode toNativeNode) {
-            Pointer value = readPointerNode.execute(inliningTarget, pointer);
+            Pointer value = readPointerNode.execute(inliningTarget, arg.valuePointer);
             return toNativeNode.execute(inliningTarget, value);
         }
 
-        @Specialization(guards = {"mode == LLVM", "ffiType.type == FFI_TYPE_POINTER"})
-        static Object doLLVMPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = {"mode == LLVM", "isFFIType(arg, FFI_TYPE_POINTER)"})
+        static Object doLLVMPointer(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Shared @Cached PointerNodes.GetPointerValueAsObjectNode toNativeNode) {
-            Pointer value = readPointerNode.execute(inliningTarget, pointer);
+            Pointer value = readPointerNode.execute(inliningTarget, arg.valuePointer);
             /*
              * TODO this is currently the same as NFI, but here we have an opportunity to pass
              * interop objects instead of allocating native memory.
@@ -1655,29 +1648,30 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             return toNativeNode.execute(inliningTarget, value);
         }
 
-        @Specialization(guards = {"mode == INTRINSIC", "ffiType.type == FFI_TYPE_POINTER"})
-        static Object doIntrinsicPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = {"mode == INTRINSIC", "isFFIType(arg, FFI_TYPE_POINTER)"})
+        static Object doIntrinsicPointer(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode) {
-            return readPointerNode.execute(inliningTarget, pointer);
+            return readPointerNode.execute(inliningTarget, arg.valuePointer);
         }
 
-        @Specialization(guards = {"mode == NFI", "ffiType.type == FFI_TYPE_STRUCT"})
+        @Specialization(guards = {"mode == NFI", "isFFIType(arg, FFI_TYPE_STRUCT)"})
         @SuppressWarnings("unused")
-        static Object doNFIStruct(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        static Object doNFIStruct(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Cached(inline = false) PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED);
         }
 
-        @Specialization(guards = {"mode == LLVM", "ffiType.type == FFI_TYPE_STRUCT"})
-        static Object doLLVMStruct(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, StgDictObject dict,
-                        @SuppressWarnings("unused") BackendMode mode,
+        @Specialization(guards = {"mode == LLVM", "isFFIType(arg, FFI_TYPE_STRUCT)"})
+        static Object doLLVMStruct(Node inliningTarget, CTypesCallArgument arg, @SuppressWarnings("unused") BackendMode mode,
                         @Cached PointerNodes.ReadBytesNode readBytesNode) {
-            byte[] bytes = new byte[dict.size];
+            byte[] bytes = new byte[arg.stgDict.size];
             // TODO avoid copying the bytes if possible
-            readBytesNode.execute(inliningTarget, bytes, 0, pointer, dict.size);
-            return CDataObject.createWrapper(dict, bytes);
+            readBytesNode.execute(inliningTarget, bytes, 0, arg.valuePointer, arg.stgDict.size);
+            return CDataObject.createWrapper(arg.keep, arg.stgDict, bytes);
+        }
+
+        static boolean isFFIType(CTypesCallArgument arg, FFI_TYPES expected) {
+            return arg.ffi_type.type == expected;
         }
     }
 
