@@ -314,7 +314,7 @@ class PolyglotAppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "fail_without_graalpy_dep_test"
             target_dir = os.path.join(str(tmpdir), target_name)
-            pom_template = os.path.join(os.path.dirname(__file__), "embedding/fail_without_graalpy_dep_pom.xml")
+            pom_template = os.path.join(os.path.dirname(__file__), "fail_without_graalpy_dep_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
             self.purge_local_repo(target_dir)
             
@@ -335,7 +335,7 @@ class PolyglotAppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "gen_launcher_and_venv_test"
             target_dir = os.path.join(str(tmpdir), target_name)
-            pom_template = os.path.join(os.path.dirname(__file__), "embedding/prepare_venv_pom.xml")
+            pom_template = os.path.join(os.path.dirname(__file__), "prepare_venv_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
             self.purge_local_repo(target_dir)
             
@@ -363,7 +363,7 @@ class PolyglotAppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "check_home_test"
             target_dir = os.path.join(str(tmpdir), target_name)
-            pom_template = os.path.join(os.path.dirname(__file__), "embedding/check_home_pom.xml")
+            pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
             self.purge_local_repo(target_dir)     
 
