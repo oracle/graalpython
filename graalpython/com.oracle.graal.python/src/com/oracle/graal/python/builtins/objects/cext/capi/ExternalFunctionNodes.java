@@ -151,7 +151,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ExternalFunctionNodes {
@@ -270,26 +269,6 @@ public abstract class ExternalFunctionNodes {
         public Object execute(Object object) {
             assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
             return toNative.execute(object);
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class ToNativeReplacedNode extends CExtToNativeNode {
-
-        @Specialization
-        public Object replace(Object object,
-                        @Bind("$node") Node inliningTarget,
-                        @Cached InlinedExactClassProfile profile,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            Object profiled = profile.profile(inliningTarget, object);
-            if (profiled instanceof PythonNativeWrapper nativeWrapper && nativeWrapper.isReplacingWrapper()) {
-                if (!lib.isPointer(object)) {
-                    lib.toNative(object);
-                }
-                return nativeWrapper.getReplacement(lib);
-            }
-            return object;
         }
     }
 

@@ -69,15 +69,15 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -177,6 +177,7 @@ public final class CApiContext extends CExtContext {
     private final AtomicLong nextTssKey = new AtomicLong();
 
     public Object timezoneType;
+    private PyCapsule pyDateTimeCAPICapsule;
 
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
@@ -213,9 +214,9 @@ public final class CApiContext extends CExtContext {
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
-            PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
-            CApiTransitions.incRef(nativeWrapper, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
-            primitiveNativeWrapperCache[i] = nativeWrapper;
+            int value = i - 5;
+            assert CApiGuards.isSmallInteger(value);
+            primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
     }
 
@@ -576,11 +577,11 @@ public final class CApiContext extends CExtContext {
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
                     U.execute(initFunction, new GetBuiltin());
                 } else {
-                    U.execute(initFunction, new PointerContainer(0), new GetBuiltin());
+                    U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
-                PyDateTimeCAPIWrapper.initWrapper(cApiContext);
+                cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
 
                 if (useNative) {
@@ -661,6 +662,9 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public void finalizeCapi() {
+        if (pyDateTimeCAPICapsule != null) {
+            PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
+        }
         if (nativeFinalizerShutdownHook != null) {
             try {
                 Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
@@ -686,7 +690,7 @@ public final class CApiContext extends CExtContext {
         try {
             nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
         } catch (UnsupportedMessageException e) {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+            Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
             Object bound = SignatureLibrary.getUncached().bind(signature, pyinitFunc);
             nativeResult = InteropLibrary.getUncached().execute(bound);
         } catch (ArityException e) {
@@ -758,8 +762,9 @@ public final class CApiContext extends CExtContext {
             int id = (int) arguments[0];
             try {
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                if (PythonContext.get(null).getCApiContext() != null) {
-                    Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+                if (cApiContext != null) {
+                    Object llvmLibrary = cApiContext.getLLVMLibrary();
                     assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin, llvmLibrary) : "name clash in builtin vs. CAPI library: " + builtin.name();
                 }
                 LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
@@ -809,8 +814,9 @@ public final class CApiContext extends CExtContext {
 
     public long registerClosure(String nfiSignature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
-        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
+        PythonContext context = getContext();
+        boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
+        Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -67,6 +66,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -76,10 +76,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
 
-    private Object replacement;
-
     public PyMethodDefWrapper(PythonObject delegate) {
-        super(delegate);
+        super(delegate, true);
     }
 
     private static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
@@ -108,7 +106,7 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
     @TruffleBoundary
     private static Object createFunctionWrapper(PythonObject object) {
         int flags = getFlags(object);
-        PythonNativeWrapper wrapper;
+        PyProcsWrapper wrapper;
         if (CExtContext.isMethNoArgs(flags)) {
             wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
         } else if (CExtContext.isMethO(flags)) {
@@ -120,7 +118,10 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
         } else {
             throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
-        return ToNativeReplacedNodeGen.getUncached().execute(wrapper);
+        if (wrapper.isReplacingWrapper()) {
+            return wrapper.getReplacement(InteropLibrary.getUncached());
+        }
+        return wrapper;
     }
 
     private static int getFlags(PythonObject object) {
@@ -176,11 +177,6 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
     }
 
     @Override
-    public boolean isReplacingWrapper() {
-        return true;
-    }
-
-    @Override
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
             replacement = registerReplacement(allocateReplacementObject(), lib);
@@ -194,16 +190,19 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
         return getNativePointer();
     }
 
     @ExportMessage
-    @TruffleBoundary
-    protected void toNative() {
+    void toNative() {
         if (!isNative()) {
             getReplacement(InteropLibrary.getUncached());
+            assert isNative();
         }
     }
 }

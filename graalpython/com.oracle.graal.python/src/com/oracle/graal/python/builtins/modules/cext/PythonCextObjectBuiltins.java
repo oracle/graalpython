@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -82,10 +83,14 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolvePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -140,11 +145,46 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonCextObjectBuiltins {
 
     private PythonCextObjectBuiltins() {
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Py_ssize_t}, call = Ignored)
+    abstract static class PyTruffle_NotifyRefCount extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasRefProfile) {
+            assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
+            wrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {Pointer, Int}, call = Ignored)
+    abstract static class PyTruffle_BulkNotifyRefCount extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object arrayPointer, int len,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasRefProfile,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached ToPythonWrapperNode toPythonWrapperNode) {
+
+            for (int i = 0; i < len; i++) {
+                Object elem = readPointerNode.readArrayElement(arrayPointer, i);
+                PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(elem);
+                if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                    long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
+                    objectNativeWrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+                }
+            }
+            return PNone.NO_VALUE;
+        }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Direct)
@@ -600,7 +640,11 @@ public abstract class PythonCextObjectBuiltins {
             long refCnt;
             // We need again check if 'resolved' is a wrapper in case we resolved a handle.
             if (resolved instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                refCnt = objectNativeWrapper.getRefCount();
+                if (objectNativeWrapper.isNative()) {
+                    refCnt = objectNativeWrapper.getRefCount();
+                } else {
+                    refCnt = PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                }
             } else {
                 refCnt = readI64.read(PythonToNativeNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
             }

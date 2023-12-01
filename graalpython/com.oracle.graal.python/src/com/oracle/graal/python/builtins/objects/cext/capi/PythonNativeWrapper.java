@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.util.PythonUtils;
@@ -60,15 +61,20 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     private static final long UNINITIALIZED = -1;
 
+    private final boolean replacing;
     private Object delegate;
     private long nativePointer = UNINITIALIZED;
+
+    protected Object replacement;
 
     public PythonObjectReference ref;
 
     private PythonNativeWrapper() {
+        this.replacing = false;
     }
 
-    private PythonNativeWrapper(Object delegate) {
+    private PythonNativeWrapper(Object delegate, boolean replacing) {
+        this.replacing = replacing;
         this.delegate = delegate;
     }
 
@@ -121,8 +127,12 @@ public abstract class PythonNativeWrapper implements TruffleObject {
      * 
      * @return {@code true} if the wrapper should be materialized eagerly, {@code false} otherwise.
      */
-    public boolean isReplacingWrapper() {
-        return false;
+    public final boolean isReplacingWrapper() {
+        return replacing;
+    }
+
+    public final void setReplacement(Object replacement) {
+        this.replacement = replacement;
     }
 
     public Object getReplacement(@SuppressWarnings("unused") InteropLibrary lib) {
@@ -130,25 +140,30 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     @TruffleBoundary
-    protected final Object registerReplacement(Object pointer, InteropLibrary lib) {
+    public final Object registerReplacement(Object pointer, InteropLibrary lib) {
         LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
         Object result;
-        if (pointer instanceof Long) {
+        if (pointer instanceof Long lptr) {
             // need to convert to actual pointer
-            result = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_CONVERT_POINTER, pointer);
-            CApiTransitions.firstToNative(this, (long) pointer);
+            result = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_CONVERT_POINTER, lptr);
+            CApiTransitions.createReference(this, lptr);
         } else {
             result = pointer;
             if (lib.isPointer(pointer)) {
                 assert pointer.getClass() == NativePointer.class || pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
                 try {
-                    CApiTransitions.firstToNative(this, lib.asPointer(pointer));
+                    CApiTransitions.createReference(this, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } else {
+                /*
+                 * This branch is required for LLVM managed mode where we will never have a native
+                 * pointer (i.e. an address pointing into off-heap memory) but a managed pointer to
+                 * some object emulating the native memory.
+                 */
                 assert pointer.getClass().getSimpleName().contains("LLVMPointer");
-                CApiTransitions.firstToNativeManaged(getDelegate(), pointer);
+                CApiTransitions.createManagedReference(getDelegate(), pointer);
             }
         }
         return result;
@@ -166,24 +181,75 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         public static final long IMMORTAL_REFCNT = Long.MAX_VALUE / 2;
 
-        /**
-         * Equivalent to {@code ob_refcnt}.
-         */
-        private long refCount = MANAGED_REFCNT;
-
         protected PythonAbstractObjectNativeWrapper() {
         }
 
         protected PythonAbstractObjectNativeWrapper(Object delegate) {
-            super(delegate);
+            super(delegate, false);
+        }
+
+        protected PythonAbstractObjectNativeWrapper(Object delegate, boolean replacing) {
+            super(delegate, replacing);
         }
 
         public final long getRefCount() {
-            return refCount;
+            if (isNative()) {
+                return CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()));
+            }
+            return MANAGED_REFCNT;
         }
 
-        public final void setRefCount(long refCount) {
-            this.refCount = refCount;
+        public final void setRefCount(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
+            CApiTransitions.writeNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()), refCount);
+            updateRef(inliningTarget, refCount, hasRefProfile);
+        }
+
+        /**
+         * Adjusts the native wrapper's reference to be weak (if {@code refCount <= MANAGED_REFCNT})
+         * or to be strong (if {@code refCount > MANAGED_REFCNT}) if there is a reference. This
+         * method should be called at appropriate points in the program, e.g., method
+         * {@link #setRefCount(Node, long, InlinedConditionProfile)} uses it, or it should be called
+         * from native code if the refcount falls below {@link #MANAGED_REFCNT}.
+         */
+        public final void updateRef(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
+            if (hasRefProfile.profile(inliningTarget, ref != null)) {
+                if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
+                    ref.setStrongReference(this);
+                } else if (refCount <= MANAGED_REFCNT && ref.isStrongReference()) {
+                    ref.setStrongReference(null);
+                }
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        public void incRef() {
+            assert isNative();
+            long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
+            long refCount = CApiTransitions.readNativeRefCount(pointer);
+            if (refCount != IMMORTAL_REFCNT) {
+                CApiTransitions.writeNativeRefCount(pointer, refCount + 1);
+            }
+            // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
+            assert refCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        public long decRef() {
+            long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
+            long refCount = CApiTransitions.readNativeRefCount(pointer);
+            if (refCount != IMMORTAL_REFCNT) {
+                long updatedRefCount = refCount - 1;
+                CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
+                // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
+                assert updatedRefCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
+                if (updatedRefCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
+                    // make weak
+                    assert ref.isStrongReference();
+                    ref.setStrongReference(null);
+                }
+                return updatedRefCount;
+            }
+            return refCount;
         }
     }
 
@@ -196,7 +262,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         protected PythonStructNativeWrapper(Object delegate) {
-            super(delegate);
+            super(delegate, false);
+        }
+
+        protected PythonStructNativeWrapper(Object delegate, boolean replacing) {
+            super(delegate, replacing);
         }
     }
 }

@@ -83,6 +83,9 @@ public final class CApiCodeGen {
     private static final String START_CAPI_BUILTINS = "{{start CAPI_BUILTINS}}";
     private static final String END_CAPI_BUILTINS = "{{end CAPI_BUILTINS}}";
 
+    private static final String START_CAPI_CONSTANTS = "{{start CAPI_CONSTANTS}}";
+    private static final String END_CAPI_CONSTANTS = "{{end CAPI_CONSTANTS}}";
+
     public static final class CApiBuiltinDesc {
         public final String name;
         public final boolean inlined;

@@ -63,6 +63,10 @@
 #include "pycore_pymem.h"
 #include "bytesobject.h"
 
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+#include <graalvm/llvm/polyglot.h>
+#endif
+
 #define SRC_CS "utf-8"
 
 /* Flags definitions representing global (debug) options. */
@@ -72,6 +76,7 @@
 #define PY_TRUFFLE_LOG_FINE 0x8
 #define PY_TRUFFLE_LOG_FINER 0x10
 #define PY_TRUFFLE_LOG_FINEST 0x20
+#define PY_TRUFFLE_DEBUG_CAPI 0x30
 
 typedef struct mmap_object mmap_object;
 
@@ -353,6 +358,7 @@ typedef struct {
     BUILTIN(PyTruffle_Arg_ParseTupleAndKeywords, int, PyObject*, PyObject*, const char*, void*, void*) \
     BUILTIN(PyTruffle_Array_getbuffer, int, PyObject*, Py_buffer*, int) \
     BUILTIN(PyTruffle_Array_releasebuffer, void, PyObject*, Py_buffer*) \
+    BUILTIN(PyTruffle_BulkNotifyRefCount, void, void*, int) \
     BUILTIN(PyTruffle_ByteArray_EmptyWithCapacity, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffle_Bytes_CheckEmbeddedNull, int, PyObject*) \
     BUILTIN(PyTruffle_Bytes_EmptyWithCapacity, PyObject*, long) \
@@ -367,6 +373,7 @@ typedef struct {
     BUILTIN(PyTruffle_GetMMapData, char*, PyObject*) \
     BUILTIN(PyTruffle_GetMaxNativeMemory, size_t) \
     BUILTIN(PyTruffle_HashConstant, long, int) \
+    BUILTIN(PyTruffle_InitBuiltinTypesAndStructs, void, void*) \
     BUILTIN(PyTruffle_LogString, void, int, const char*) \
     BUILTIN(PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
     BUILTIN(PyTruffle_Native_Options, int) \
@@ -374,11 +381,11 @@ typedef struct {
     BUILTIN(PyTruffle_NoValue, PyObject*) \
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
+    BUILTIN(PyTruffle_NotifyRefCount, void, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffle_Object_Free, void, void*) \
     BUILTIN(PyTruffle_PyDateTime_GET_TZINFO, PyObject*, PyObject*) \
     BUILTIN(PyTruffle_PyUnicode_Find, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
-    BUILTIN(PyTruffle_SetTypeStore, void, const char*, void*) \
     BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
     BUILTIN(PyTruffle_ToNative, int, void*) \
     BUILTIN(PyTruffle_Trace_Type, int, void*, void*) \
@@ -704,6 +711,9 @@ static MUST_INLINE int PyTruffle_Log_Finer() {
 static MUST_INLINE int PyTruffle_Log_Finest() {
 	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
 }
+static MUST_INLINE int PyTruffle_Debug_CAPI() {
+	return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
+}
 
 static void PyTruffle_Log(int level, const char* format, ... ) {
 	if (Py_Truffle_Options & level) {
@@ -785,9 +795,26 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
-#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & 0x8000000000000000L) != 0)
+#define MANAGED_REFCNT 10
+#define HANDLE_BASE 0x8000000000000000ULL
+#define IMMORTAL_REFCNT (INT64_MAX >> 1)
 
-PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, const char* name);
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+#define points_to_py_handle_space(PTR) polyglot_is_value((PTR))
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+
+#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
+
+static MUST_INLINE PyObject *stub_to_pointer(PyObject *stub_ptr)
+{
+    return ((uintptr_t) stub_ptr) | HANDLE_BASE;
+}
+
+static MUST_INLINE PyObject *pointer_to_stub(PyObject *o)
+{
+    return ((uintptr_t) o) & ~HANDLE_BASE;
+}
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 
@@ -804,76 +831,78 @@ extern size_t PyTruffle_AllocatedMemory;
 extern size_t PyTruffle_MaxNativeMemory;
 extern size_t PyTruffle_NativeMemoryGCBarrier;
 
-#undef bool // may be defined as "_Bool"
-// alphabetical, but base types first
+/*
+ * alphabetical but: according to CPython's '_PyTypes_Init': first
+ * PyBaseObject_Type, then PyType_Type, ...
+ */
 #define PY_TYPE_OBJECTS \
-PY_TRUFFLE_TYPE_GENERIC(PyType_Type, type, 				&PyType_Type, sizeof(PyHeapTypeObject), sizeof(PyMemberDef), PyType_GenericAlloc, object_dealloc, PyObject_GC_Del, 0) \
-PY_TRUFFLE_TYPE_WITH_ALLOC(PyBaseObject_Type, object, 			&PyType_Type, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del) \
-PY_TRUFFLE_TYPE(PyCFunction_Type, 		builtin_function_or_method, &PyType_Type, sizeof(PyCFunctionObject)) \
-PY_TRUFFLE_TYPE(_PyBytesIOBuffer_Type,	_BytesIOBuffer, 		&PyType_Type, 0) \
-PY_TRUFFLE_TYPE(_PyExc_BaseException, 	BaseException, 			&PyType_Type, sizeof(PyBaseExceptionObject)) \
-PY_TRUFFLE_TYPE(_PyExc_Exception, 		Exception, 				&PyType_Type, sizeof(PyBaseExceptionObject)) \
-PY_TRUFFLE_TYPE(_PyExc_StopIteration, 	StopIteration, 			&PyType_Type, sizeof(PyStopIterationObject)) \
-PY_TRUFFLE_TYPE(_PyNamespace_Type, 		SimpleNamespace, 		&PyType_Type, sizeof(_PyNamespaceObject)) \
-PY_TRUFFLE_TYPE(_PyNone_Type, 			NoneType, 				&PyType_Type, 0) \
-PY_TRUFFLE_TYPE(_PyNotImplemented_Type, NotImplementedType, 	&PyType_Type, 0) \
-PY_TRUFFLE_TYPE(_PyWeakref_CallableProxyType, _weakref.CallableProxyType,&PyType_Type, sizeof(PyWeakReference)) \
-PY_TRUFFLE_TYPE(_PyWeakref_ProxyType, 	_weakref.ProxyType, 	&PyType_Type, sizeof(PyWeakReference)) \
-PY_TRUFFLE_TYPE(_PyWeakref_RefType, 	_weakref.ReferenceType, &PyType_Type, sizeof(PyWeakReference)) \
-PY_TRUFFLE_TYPE(Arraytype,			 	array, 					&PyType_Type, sizeof(arrayobject)) \
-PY_TRUFFLE_TYPE(mmap_object_type, 		mmap.mmap, 				&PyType_Type, 0) \
-PY_TRUFFLE_TYPE(PyArrayIter_Type, 		arrayiterator, 			&PyType_Type, sizeof(arrayiterobject)) \
-PY_TRUFFLE_TYPE(PyAsyncGen_Type, 		async_generator, 		&PyType_Type, sizeof(PyAsyncGenObject)) \
-PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type, int, 				&PyType_Type, offsetof(PyLongObject, ob_digit), sizeof(PyObject *)) \
-PY_TRUFFLE_TYPE(PyBool_Type, 			bool, 					&PyType_Type, sizeof(struct _longobject)) \
-PY_TRUFFLE_TYPE(PyByteArray_Type, 		bytearray, 				&PyType_Type, sizeof(PyByteArrayObject)) \
-PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyBytes_Type, bytes, 				&PyType_Type, PyBytesObject_SIZE, sizeof(char)) \
-PY_TRUFFLE_TYPE(PyCapsule_Type, 		capsule, 				&PyType_Type, sizeof(PyCapsule)) \
-PY_TRUFFLE_TYPE(PyCell_Type, 			cell, 					&PyType_Type, sizeof(PyCellObject)) \
-PY_TRUFFLE_TYPE(PyCMethod_Type, 		builtin_method, 		&PyCFunction_Type, sizeof(PyCFunctionObject)) \
-PY_TRUFFLE_TYPE(PyCode_Type, 			code, 					&PyType_Type, sizeof(PyTypeObject)) \
-PY_TRUFFLE_TYPE(PyComplex_Type, 		complex, 				&PyType_Type, sizeof(PyComplexObject)) \
-PY_TRUFFLE_TYPE(PyDict_Type, 			dict, 					&PyType_Type, sizeof(PyDictObject)) \
-PY_TRUFFLE_TYPE(PyDictProxy_Type, 		mappingproxy, 			&PyType_Type, sizeof(mappingproxyobject)) \
-PY_TRUFFLE_TYPE(PyEllipsis_Type, 		ellipsis, 				&PyType_Type, 0) \
-PY_TRUFFLE_TYPE(PyFloat_Type, 			float, 					&PyType_Type, sizeof(PyFloatObject)) \
-PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyFrame_Type, frame, 				&PyType_Type, sizeof(PyTypeObject), sizeof(PyObject *)) \
-PY_TRUFFLE_TYPE(PyFrozenSet_Type, 		frozenset, 				&PyType_Type, sizeof(PySetObject)) \
-PY_TRUFFLE_TYPE(PyFunction_Type, 		function, 				&PyType_Type, sizeof(PyFunctionObject)) \
-PY_TRUFFLE_TYPE(PyGen_Type, 			generator, 				&PyType_Type, sizeof(PyGenObject)) \
-PY_TRUFFLE_TYPE(PyGetSetDescr_Type, 	getset_descriptor, 		&PyType_Type, sizeof(PyGetSetDescrObject)) \
-PY_TRUFFLE_TYPE(PyInstanceMethod_Type, 	instancemethod, 		&PyType_Type, sizeof(PyInstanceMethodObject)) \
-PY_TRUFFLE_TYPE(PyList_Type, 			list, 					&PyType_Type, sizeof(PyListObject)) \
-PY_TRUFFLE_TYPE(PyMap_Type, 			map, 					&PyType_Type, sizeof(mapobject)) \
-PY_TRUFFLE_TYPE(PyMemberDescr_Type, 	member_descriptor, 		&PyType_Type, sizeof(PyMemberDescrObject)) \
-PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyMemoryView_Type, memoryview, 	&PyType_Type, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t)) \
-PY_TRUFFLE_TYPE(PyMethod_Type, 			method, 				&PyType_Type, sizeof(PyMethodObject)) \
-PY_TRUFFLE_TYPE(PyMethodDescr_Type, 	method_descriptor, 		&PyType_Type, sizeof(PyMethodDescrObject)) \
-PY_TRUFFLE_TYPE(PyModule_Type, 			module, 				&PyType_Type, sizeof(PyModuleObject)) \
-PY_TRUFFLE_TYPE(PyModuleDef_Type, 		moduledef, 				&PyType_Type, sizeof(struct PyModuleDef)) \
-PY_TRUFFLE_TYPE(PyProperty_Type, 		property, 				&PyType_Type, sizeof(propertyobject)) \
-PY_TRUFFLE_TYPE(PyRange_Type, 			range, 					&PyType_Type, sizeof(rangeobject)) \
-PY_TRUFFLE_TYPE(PySet_Type, 			set, 					&PyType_Type, sizeof(PySetObject)) \
-PY_TRUFFLE_TYPE(PySlice_Type, 			slice, 					&PyType_Type, sizeof(PySliceObject)) \
-PY_TRUFFLE_TYPE(PyStaticMethod_Type, 	staticmethod, 			&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PySuper_Type, 			super, 					&PyType_Type, sizeof(superobject)) \
-PY_TRUFFLE_TYPE(PyTraceBack_Type, 		traceback, 				&PyType_Type, sizeof(PyTypeObject)) \
-PY_TRUFFLE_TYPE_GENERIC(PyTuple_Type, 	tuple, 					&PyType_Type, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, (destructor)PyTruffle_Tuple_Dealloc, 0, 0) \
-PY_TRUFFLE_TYPE(PyUnicode_Type, 		str, 					&PyType_Type, sizeof(PyUnicodeObject)) \
+PY_TRUFFLE_TYPE_WITH_ALLOC(PyBaseObject_Type, "object",			    &PyType_Type, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del) \
+PY_TRUFFLE_TYPE_GENERIC(PyType_Type,    "type", 				    &PyType_Type, sizeof(PyHeapTypeObject), sizeof(PyMemberDef), PyType_GenericAlloc, object_dealloc, PyObject_GC_Del, 0) \
+PY_TRUFFLE_TYPE(PyCFunction_Type, 		"builtin_function_or_method", &PyType_Type, sizeof(PyCFunctionObject)) \
+PY_TRUFFLE_TYPE(_PyBytesIOBuffer_Type,	"_BytesIOBuffer", 		    &PyType_Type, 0) \
+PY_TRUFFLE_TYPE(_PyExc_BaseException, 	"BaseException", 			&PyType_Type, sizeof(PyBaseExceptionObject)) \
+PY_TRUFFLE_TYPE(_PyExc_Exception, 		"Exception", 				&PyType_Type, sizeof(PyBaseExceptionObject)) \
+PY_TRUFFLE_TYPE(_PyExc_StopIteration, 	"StopIteration", 			&PyType_Type, sizeof(PyStopIterationObject)) \
+PY_TRUFFLE_TYPE(_PyNamespace_Type, 		"SimpleNamespace", 		    &PyType_Type, sizeof(_PyNamespaceObject)) \
+PY_TRUFFLE_TYPE(_PyNone_Type, 			"NoneType", 				&PyType_Type, 0) \
+PY_TRUFFLE_TYPE(_PyNotImplemented_Type, "NotImplementedType", 	    &PyType_Type, 0) \
+PY_TRUFFLE_TYPE(_PyWeakref_CallableProxyType, "_weakref.CallableProxyType", &PyType_Type, sizeof(PyWeakReference)) \
+PY_TRUFFLE_TYPE(_PyWeakref_ProxyType, 	"_weakref.ProxyType",       &PyType_Type, sizeof(PyWeakReference)) \
+PY_TRUFFLE_TYPE(_PyWeakref_RefType, 	"_weakref.ReferenceType",   &PyType_Type, sizeof(PyWeakReference)) \
+PY_TRUFFLE_TYPE(Arraytype,			 	"array", 					&PyType_Type, sizeof(arrayobject)) \
+PY_TRUFFLE_TYPE(mmap_object_type, 		"mmap.mmap", 				&PyType_Type, 0) \
+PY_TRUFFLE_TYPE(PyArrayIter_Type, 		"arrayiterator", 			&PyType_Type, sizeof(arrayiterobject)) \
+PY_TRUFFLE_TYPE(PyAsyncGen_Type, 		"async_generator", 	    	&PyType_Type, sizeof(PyAsyncGenObject)) \
+PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type, "int", 			    	&PyType_Type, offsetof(PyLongObject, ob_digit), sizeof(PyObject *)) \
+PY_TRUFFLE_TYPE(PyBool_Type, 			"bool", 					&PyType_Type, sizeof(struct _longobject)) \
+PY_TRUFFLE_TYPE(PyByteArray_Type, 		"bytearray", 				&PyType_Type, sizeof(PyByteArrayObject)) \
+PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyBytes_Type, "bytes", 				&PyType_Type, PyBytesObject_SIZE, sizeof(char)) \
+PY_TRUFFLE_TYPE(PyCapsule_Type, 		"capsule", 			    	&PyType_Type, sizeof(PyCapsule)) \
+PY_TRUFFLE_TYPE(PyCell_Type, 			"cell", 					&PyType_Type, sizeof(PyCellObject)) \
+PY_TRUFFLE_TYPE(PyCMethod_Type, 		"builtin_method", 	    	&PyCFunction_Type, sizeof(PyCFunctionObject)) \
+PY_TRUFFLE_TYPE(PyCode_Type, 			"code", 					&PyType_Type, sizeof(PyTypeObject)) \
+PY_TRUFFLE_TYPE(PyComplex_Type, 		"complex", 			    	&PyType_Type, sizeof(PyComplexObject)) \
+PY_TRUFFLE_TYPE(PyDict_Type, 			"dict", 					&PyType_Type, sizeof(PyDictObject)) \
+PY_TRUFFLE_TYPE(PyDictProxy_Type, 		"mappingproxy", 			&PyType_Type, sizeof(mappingproxyobject)) \
+PY_TRUFFLE_TYPE(PyEllipsis_Type, 		"ellipsis", 				&PyType_Type, 0) \
+PY_TRUFFLE_TYPE(PyFloat_Type, 			"float", 					&PyType_Type, sizeof(PyFloatObject)) \
+PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyFrame_Type, "frame", 				&PyType_Type, sizeof(PyTypeObject), sizeof(PyObject *)) \
+PY_TRUFFLE_TYPE(PyFrozenSet_Type, 		"frozenset", 				&PyType_Type, sizeof(PySetObject)) \
+PY_TRUFFLE_TYPE(PyFunction_Type, 		"function", 				&PyType_Type, sizeof(PyFunctionObject)) \
+PY_TRUFFLE_TYPE(PyGen_Type, 			"generator", 				&PyType_Type, sizeof(PyGenObject)) \
+PY_TRUFFLE_TYPE(PyGetSetDescr_Type, 	"getset_descriptor", 		&PyType_Type, sizeof(PyGetSetDescrObject)) \
+PY_TRUFFLE_TYPE(PyInstanceMethod_Type, 	"instancemethod", 	    	&PyType_Type, sizeof(PyInstanceMethodObject)) \
+PY_TRUFFLE_TYPE(PyList_Type, 			"list", 					&PyType_Type, sizeof(PyListObject)) \
+PY_TRUFFLE_TYPE(PyMap_Type, 			"map", 				    	&PyType_Type, sizeof(mapobject)) \
+PY_TRUFFLE_TYPE(PyMemberDescr_Type, 	"member_descriptor", 		&PyType_Type, sizeof(PyMemberDescrObject)) \
+PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyMemoryView_Type, "memoryview",      &PyType_Type, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t)) \
+PY_TRUFFLE_TYPE(PyMethod_Type, 			"method", 				    &PyType_Type, sizeof(PyMethodObject)) \
+PY_TRUFFLE_TYPE(PyMethodDescr_Type, 	"method_descriptor", 		&PyType_Type, sizeof(PyMethodDescrObject)) \
+PY_TRUFFLE_TYPE(PyModule_Type, 			"module", 				    &PyType_Type, sizeof(PyModuleObject)) \
+PY_TRUFFLE_TYPE(PyModuleDef_Type, 		"moduledef", 				&PyType_Type, sizeof(struct PyModuleDef)) \
+PY_TRUFFLE_TYPE(PyProperty_Type, 		"property", 				&PyType_Type, sizeof(propertyobject)) \
+PY_TRUFFLE_TYPE(PyRange_Type, 			"range", 					&PyType_Type, sizeof(rangeobject)) \
+PY_TRUFFLE_TYPE(PySet_Type, 			"set", 					    &PyType_Type, sizeof(PySetObject)) \
+PY_TRUFFLE_TYPE(PySlice_Type, 			"slice", 					&PyType_Type, sizeof(PySliceObject)) \
+PY_TRUFFLE_TYPE(PyStaticMethod_Type, 	"staticmethod", 			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PySuper_Type, 			"super", 					&PyType_Type, sizeof(superobject)) \
+PY_TRUFFLE_TYPE(PyTraceBack_Type, 		"traceback", 				&PyType_Type, sizeof(PyTypeObject)) \
+PY_TRUFFLE_TYPE_GENERIC(PyTuple_Type, 	"tuple", 					&PyType_Type, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, (destructor)PyTruffle_Tuple_Dealloc, 0, 0) \
+PY_TRUFFLE_TYPE(PyUnicode_Type, 		"str", 					    &PyType_Type, sizeof(PyUnicodeObject)) \
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */ \
-PY_TRUFFLE_TYPE(PyWrapperDescr_Type, 	wrapper_descriptor, 	&PyType_Type, sizeof(PyWrapperDescrObject)) \
-PY_TRUFFLE_TYPE(PyZip_Type, 			zip, 					&PyType_Type, sizeof(zipobject)) \
-PY_TRUFFLE_TYPE(PyReversed_Type, 		reversed, 				&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(cycle_type, 			cycle, 					&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PySeqIter_Type, 		iterator, 				&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyEnum_Type, 			enumerate,				&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCSimpleType, 			PyCSimpleType,			&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCData_Type, 			_CData,					&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(Simple_Type, 			_SimpleCData,			&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCStructType_Type, 	PyCStructType,			&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(UnionType_Type, 		_ctypes.UnionType,		&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCPointerType_Type,	PyCPointerType, 		&PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCArrayType_Type,		PyCArrayType, 			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyWrapperDescr_Type, 	"wrapper_descriptor",       &PyType_Type, sizeof(PyWrapperDescrObject)) \
+PY_TRUFFLE_TYPE(PyZip_Type, 			"zip", 					    &PyType_Type, sizeof(zipobject)) \
+PY_TRUFFLE_TYPE(PyReversed_Type, 		"reversed", 				&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(cycle_type, 			"cycle", 					&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PySeqIter_Type, 		"iterator", 				&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyEnum_Type, 			"enumerate",				&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCSimpleType, 			"PyCSimpleType",			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCData_Type, 			"_CData",					&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(Simple_Type, 			"_SimpleCData",			    &PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCStructType_Type, 	"PyCStructType",			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(UnionType_Type, 		"_ctypes.UnionType",		&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCPointerType_Type,	"PyCPointerType", 		    &PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCArrayType_Type,		"PyCArrayType", 			&PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAIterWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenASend_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenAThrow_Type) \

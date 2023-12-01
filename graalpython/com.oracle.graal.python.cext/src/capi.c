@@ -41,7 +41,6 @@
 #include "capi.h"
 #include <stdio.h>
 #include <time.h>
-#include <truffle.h>
 #include <trufflenfi.h>
 
 #define ASSERTIONS
@@ -132,7 +131,7 @@ typedef struct {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
 PyTypeObject GLOBAL_NAME = {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
-    #__TYPE_NAME__,                              /* tp_name */\
+    __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
     (__ITEMSIZE__),                             /* tp_itemsize */\
     (__DEALLOC__),                              /* tp_dealloc */\
@@ -200,22 +199,20 @@ CAPI_BUILTINS
 
 uint32_t Py_Truffle_Options;
 
-void initialize_type_structure(PyTypeObject* structure, const char* name) {
-    // Store the Sulong struct type id to be used for instances of this class
-
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINEST, "initialize_type_structure: %s", structure->tp_name);
-	GraalPyTruffle_SetTypeStore(name, structure);
-}
-
 #undef bool
 static void initialize_builtin_types_and_structs() {
 	clock_t t = clock();
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) initialize_type_structure(&GLOBAL_NAME, #__TYPE_NAME__);
+	static int64_t builtin_types[] = {
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
+        NULL, NULL
+	};
+
+	GraalPyTruffle_InitBuiltinTypesAndStructs(builtin_types);
 
 	// fix up for circular dependency:
 	PyType_Type.tp_base = &PyBaseObject_Type;
@@ -250,8 +247,6 @@ PyObject* _PyTruffle_Zero;
 PyObject* _PyTruffle_One;
 
 static void initialize_globals() {
-    GraalPyTruffle_Register_NULL(NULL);
-
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
@@ -861,10 +856,12 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
 	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
 
+    // this will set PythonContext.nativeNull and is required to be first
+    GraalPyTruffle_Register_NULL(NULL);
 
+    initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
-	initialize_builtin_types_and_structs();
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
@@ -881,11 +878,19 @@ _Py_DECREF. The destructors get called by libc during exit during which we canno
 So we rebind them to no-ops when exiting.
 */
 Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
- return 100; // large dummy refcount
+    return IMMORTAL_REFCNT; // large dummy refcount
 }
 
 void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
- // do nothing
+    // do nothing
+}
+
+void nop_GraalPyTruffle_NotifyRefCount(PyObject* obj, Py_ssize_t refcnt) {
+    // do nothing
+}
+
+void nop_GraalPyTruffle_BulkNotifyRefCount(void *, int) {
+    // do nothing
 }
 
 /*
@@ -908,6 +913,10 @@ static int64_t reset_func_ptrs[] = {
         nop_GraalPy_get_PyObject_ob_refcnt,
         &GraalPy_set_PyObject_ob_refcnt,
         nop_GraalPy_set_PyObject_ob_refcnt,
+        &GraalPyTruffle_NotifyRefCount,
+        nop_GraalPyTruffle_NotifyRefCount,
+        &GraalPyTruffle_BulkNotifyRefCount,
+        nop_GraalPyTruffle_NotifyRefCount,
         /* sentinel (required) */
         NULL
 };

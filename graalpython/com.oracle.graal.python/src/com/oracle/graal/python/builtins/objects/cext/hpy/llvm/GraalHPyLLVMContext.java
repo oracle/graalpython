@@ -285,7 +285,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     @Override
     protected Object getNativeNull() {
-        return new NativePointer(0);
+        return NativePointer.createNull();
     }
 
     @Override

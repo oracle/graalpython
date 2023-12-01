@@ -87,11 +87,15 @@ PyAPI_FUNC(void) set_PyDateTime_types() {
     PyGetSetDef* getsets_datetime = PyDateTime_DateTimeType.tp_getset;
     PyMemberDef* members_delta = PyDateTime_DeltaType.tp_members;
 
-    initialize_type_structure(&PyDateTime_DateType, "datetime.date");
-    initialize_type_structure(&PyDateTime_DateTimeType, "datetime.datetime");
-    initialize_type_structure(&PyDateTime_TimeType, "datetime.time");
-    initialize_type_structure(&PyDateTime_DeltaType, "datetime.timedelta");
-    initialize_type_structure(&PyDateTime_TZInfoType, "datetime.timezone");
+    static int64_t datetime_types[] = {
+        &PyDateTime_DateType, "datetime.date",
+        &PyDateTime_DateTimeType, "datetime.datetime",
+        &PyDateTime_TimeType, "datetime.time",
+        &PyDateTime_DeltaType, "datetime.timedelta",
+        &PyDateTime_TZInfoType, "datetime.timezone",
+        NULL, NULL
+    };
+	GraalPyTruffle_InitBuiltinTypesAndStructs(datetime_types);
 
     /* register native get/set descriptors to managed types */
     register_native_slots(&PyDateTime_DateType, getsets_date, NULL);

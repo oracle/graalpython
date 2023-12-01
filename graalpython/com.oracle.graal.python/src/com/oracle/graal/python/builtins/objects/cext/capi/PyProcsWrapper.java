@@ -92,7 +92,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     protected final CApiTiming timing;
 
     public PyProcsWrapper(Object delegate) {
-        super(delegate);
+        super(delegate, false);
         this.timing = CApiTiming.create(false, delegate);
     }
 

@@ -43,11 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -60,54 +60,51 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class PyTruffleObjectFree {
+@GenerateInline
+@GenerateCached(false)
+@GenerateUncached
+@ImportStatic(CApiGuards.class)
+public abstract class PyTruffleObjectFree extends Node {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObjectFree.class);
 
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    public abstract static class FreeNode extends Node {
+    public abstract int execute(Node inliningTarget, Object pointerObject);
 
-        public abstract int execute(Node inliningTarget, Object pointerObject);
+    @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
+    static int doNativeWrapper(Node inliningTarget, PythonNativeWrapper nativeWrapper,
+                    @Cached(inline = false) CStructAccess.FreeNode freeNode,
+                    @Cached ClearNativeWrapperNode clearNativeWrapperNode) {
+        // if (nativeWrapper.getRefCount() > 0) {
+        // CompilerDirectives.transferToInterpreterAndInvalidate();
+        // throw new IllegalStateException("deallocating native object with refcnt > 0");
+        // }
 
-        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
-        static int doNativeWrapper(Node inliningTarget, PythonNativeWrapper nativeWrapper,
-                        @Cached(inline = false) PCallCapiFunction callReleaseHandleNode,
-                        @Cached ClearNativeWrapperNode clearNativeWrapperNode) {
-            // if (nativeWrapper.getRefCount() > 0) {
-            // CompilerDirectives.transferToInterpreterAndInvalidate();
-            // throw new IllegalStateException("deallocating native object with refcnt > 0");
-            // }
+        // clear native wrapper
+        Object delegate = nativeWrapper.getDelegate();
+        clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
+        PyTruffleObjectFree.releaseNativeWrapper(nativeWrapper, freeNode);
+        return 1;
+    }
 
-            // clear native wrapper
-            Object delegate = nativeWrapper.getDelegate();
-            clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
-            PyTruffleObjectFree.releaseNativeWrapper(nativeWrapper, callReleaseHandleNode);
-            return 1;
-        }
+    @Specialization
+    static int arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
+        // It's a pointer to a managed object but doesn't need special handling, so we just
+        // ignore it.
+        return 1;
+    }
 
-        @Specialization
-        static int arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
-            // It's a pointer to a managed object but doesn't need special handling, so we just
-            // ignore it.
-            return 1;
-        }
+    @Specialization(guards = "!isNativeWrapper(object)")
+    static int doOther(@SuppressWarnings("unused") Object object) {
+        // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
+        return 0;
+    }
 
-        @Specialization(guards = "!isNativeWrapper(object)")
-        static int doOther(@SuppressWarnings("unused") Object object) {
-            // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
-            return 0;
-        }
-
-        protected static boolean isCArrayWrapper(Object obj) {
-            return obj instanceof CArrayWrapper;
-        }
+    protected static boolean isCArrayWrapper(Object obj) {
+        return obj instanceof CArrayWrapper;
     }
 
     @TruffleBoundary
     public static void releaseNativeWrapperUncached(PythonNativeWrapper nativeWrapper) {
-        releaseNativeWrapper(nativeWrapper, PCallCapiFunction.getUncached());
+        releaseNativeWrapper(nativeWrapper, CStructAccessFactory.FreeNodeGen.getUncached());
     }
 
     /**
@@ -116,7 +113,7 @@ public abstract class PyTruffleObjectFree {
      * {@code toNative}, either a <it>handle pointer</it> is allocated or some off-heap memory is
      * allocated. This method takes care of that and will also free any off-heap memory.
      */
-    static void releaseNativeWrapper(PythonNativeWrapper nativeWrapper, PCallCapiFunction callReleaseHandleNode) {
+    static void releaseNativeWrapper(PythonNativeWrapper nativeWrapper, CStructAccess.FreeNode freeNode) {
 
         // If wrapper already received toNative, release the handle or free the native memory.
         if (nativeWrapper.isNative()) {
@@ -125,11 +122,13 @@ public abstract class PyTruffleObjectFree {
                 LOGGER.finer(PythonUtils.formatJString("Releasing handle: %x (object: %s)", nativePointer, nativeWrapper));
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
-                HandleReleaser.release(nativePointer);
+                // In this case, we are up to free a native object stub.
+                nativePointer = HandlePointerConverter.pointerToStub(nativePointer);
+                assert CApiTransitions.nativeStubLookupGet(PythonContext.get(freeNode).nativeContext, nativePointer) == null;
             } else {
-                CApiTransitions.nativeLookupRemove(PythonContext.get(callReleaseHandleNode).nativeContext, nativePointer);
-                callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
+                CApiTransitions.nativeLookupRemove(PythonContext.get(freeNode).nativeContext, nativePointer);
             }
+            freeNode.free(nativePointer);
         }
     }
 }

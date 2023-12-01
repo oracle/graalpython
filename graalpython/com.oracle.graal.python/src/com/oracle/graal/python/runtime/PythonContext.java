@@ -201,6 +201,7 @@ import sun.misc.Unsafe;
 
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
+    public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
@@ -437,11 +438,20 @@ public final class PythonContext extends Python3Core {
 
         public void dispose() {
             // This method may be called twice on the same object.
-            if (dict != null && dict.getNativeWrapper() != null) {
-                PyTruffleObjectFree.releaseNativeWrapperUncached(dict.getNativeWrapper());
+
+            /*
+             * Note: we may only free the native wrappers if they have no PythonObjectReference
+             * otherwise it could happen that we free them here and again in
+             * 'CApiTransitions.pollReferenceQueue'.
+             */
+            if (dict != null) {
+                PythonAbstractObjectNativeWrapper dictNativeWrapper = dict.getNativeWrapper();
+                if (dictNativeWrapper != null && dictNativeWrapper.ref == null) {
+                    PyTruffleObjectFree.releaseNativeWrapperUncached(dictNativeWrapper);
+                }
             }
             dict = null;
-            if (nativeWrapper != null) {
+            if (nativeWrapper != null && nativeWrapper.ref == null) {
                 PyTruffleObjectFree.releaseNativeWrapperUncached(nativeWrapper);
                 nativeWrapper = null;
             }
@@ -2025,7 +2035,12 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     private void cleanupCApiResources() {
         for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
-            if (singletonNativeWrapper != null) {
+            /*
+             * Note: we may only free the native wrappers if they have no PythonObjectReference
+             * otherwise it could happen that we free them here and again in
+             * 'CApiTransitions.pollReferenceQueue'.
+             */
+            if (singletonNativeWrapper != null && singletonNativeWrapper.ref == null) {
                 PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
             }
         }

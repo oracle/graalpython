@@ -76,7 +76,7 @@ public abstract class ManagedMethodWrappers {
     public abstract static class MethodWrapper extends PythonStructNativeWrapper {
 
         public MethodWrapper(Object method) {
-            super(method);
+            super(method, false);
         }
 
         @ExportMessage

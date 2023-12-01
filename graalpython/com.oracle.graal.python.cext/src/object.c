@@ -12,32 +12,63 @@
 #include "pycore_pymem.h"         // _PyMem_IsPtrFreed()
 
 // 134
-void Py_IncRef(PyObject *op) {
-	if (op != NULL) {
-		_Py_IncRef(op);
-	}
+void Py_IncRef(PyObject *op)
+{
+    if (op != NULL) {
+        _Py_IncRef(op);
+    }
 }
 
 // 141
-void Py_DecRef(PyObject *op) {
-	if (op != NULL) {
-		_Py_DecRef(op);
-	}
+void Py_DecRef(PyObject *op)
+{
+    if (op != NULL) {
+        _Py_DecRef(op);
+    }
 }
 
 // 146
 void _Py_IncRef(PyObject *op) {
-    Py_SET_REFCNT(op, Py_REFCNT(op) + 1);
+    const Py_ssize_t refcnt = Py_REFCNT(op);
+    if (refcnt != IMMORTAL_REFCNT)
+    {
+        Py_SET_REFCNT(op, refcnt + 1);
+        if (points_to_py_handle_space(op) && refcnt == MANAGED_REFCNT) {
+            GraalPyTruffle_NotifyRefCount(op, refcnt + 1);
+        }
+    }
+}
+
+#define DEFERRED_NOTIFY_SIZE 16
+static PyObject *deferred_notify_ops[DEFERRED_NOTIFY_SIZE];
+static int deferred_notify_cur = 0;
+
+static inline void
+_decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
+{
+    if (points_to_py_handle_space(op) && updated_refcnt == MANAGED_REFCNT) {
+        if (deferred_notify_cur >= DEFERRED_NOTIFY_SIZE) {
+            deferred_notify_cur = 0;
+            GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
+        }
+        assert(deferred_notify_cur < DEFERRED_NOTIFY_SIZE);
+        deferred_notify_ops[deferred_notify_cur++] = op;
+    }
 }
 
 // 152
 void _Py_DecRef(PyObject *op) {
-    Py_ssize_t cnt = Py_REFCNT(op) - 1;
-    Py_SET_REFCNT(op, cnt);
-    if (cnt != 0) {
-    }
-    else {
-        _Py_Dealloc(op);
+    const Py_ssize_t refcnt = Py_REFCNT(op);
+    if (refcnt != IMMORTAL_REFCNT)
+    {
+        const Py_ssize_t updated_refcnt = refcnt - 1;
+        Py_SET_REFCNT(op, updated_refcnt);
+        if (updated_refcnt != 0) {
+            _decref_notify(op, refcnt);
+        }
+        else {
+            _Py_Dealloc(op);
+        }
     }
 }
 
@@ -947,16 +978,73 @@ PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwarg
 
 // GraalPy additions
 Py_ssize_t _Py_REFCNT(const PyObject *obj) {
-	return PyObject_ob_refcnt(obj);
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return IMMORTAL_REFCNT;
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    Py_ssize_t res;
+    if (points_to_py_handle_space(obj))
+    {
+        res = pointer_to_stub(obj)->ob_refcnt;
+#ifndef NDEBUG
+        if (PyTruffle_Debug_CAPI() && PyObject_ob_refcnt(obj) != res)
+        {
+            Py_FatalError("Refcount of native stub and managed object differ");
+        }
+#endif
+    }
+    else
+    {
+        res = obj->ob_refcnt;
+    }
+    return res;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-	set_PyObject_ob_refcnt(obj, cnt);
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return IMMORTAL_REFCNT;
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    PyObject *dest;
+    if (points_to_py_handle_space(obj))
+    {
+        dest = pointer_to_stub(obj);
+#ifndef NDEBUG
+        if (PyTruffle_Debug_CAPI())
+        {
+            set_PyObject_ob_refcnt(obj, cnt);
+        }
+#endif
+    }
+    else
+    {
+        dest = obj;
+    }
+    dest->ob_refcnt = cnt;
 	return cnt;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 PyTypeObject* _Py_TYPE(const PyObject *a) {
-	return PyObject_ob_type(a);
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return PyObject_ob_type(a);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    PyTypeObject *res;
+    if (points_to_py_handle_space(a))
+    {
+        res = pointer_to_stub(a)->ob_type;
+#ifndef NDEBUG
+        if (PyTruffle_Debug_CAPI() && PyObject_ob_type(a) != res)
+        {
+            Py_FatalError("Type of native stub and managed object differ");
+        }
+#endif
+    }
+    else
+    {
+        res = a->ob_type;
+    }
+    return res;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 Py_ssize_t _Py_SIZE(const PyVarObject *a) {

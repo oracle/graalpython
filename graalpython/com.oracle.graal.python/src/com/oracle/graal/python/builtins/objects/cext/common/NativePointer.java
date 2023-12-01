@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -64,6 +65,20 @@ public final class NativePointer implements TruffleObject {
         this.ptr = ptr;
     }
 
+    private NativePointer() {
+        this.ptr = 0;
+    }
+
+    /**
+     * Returns an object representing a {@code NULL} pointer. This may also be used if
+     * {@link PythonContext#isNativeAccessAllowed()} is {@code false}.
+     *
+     * @return
+     */
+    public static NativePointer createNull() {
+        return new NativePointer();
+    }
+
     @ExportMessage
     public boolean isPointer() {
         return true;
@@ -77,5 +92,11 @@ public final class NativePointer implements TruffleObject {
     @ExportMessage
     public boolean isNull() {
         return ptr == 0;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<0x%016x>", ptr);
     }
 }

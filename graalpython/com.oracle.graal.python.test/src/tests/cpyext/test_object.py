@@ -1285,6 +1285,79 @@ class TestObject(object):
         assert obj['hello'] == 'mp_subscript'
         assert obj + 'hello' == 'mas_nb_add'
 
+    def test_take_ownership(self):
+        import gc
+        ValueType = CPyExtType(
+            "Value",
+            '''
+            static PyObject* set_value(PyObject* self, PyObject *arg) {
+                ValueObject *value_obj = (ValueObject *) self;
+                Py_INCREF(arg);
+                Py_XSETREF(value_obj->value, arg);
+                Py_RETURN_NONE;
+            }
+
+            static PyObject* from_tuple(PyObject* self, PyObject *arg) {
+                if (!PyTuple_CheckExact(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "arg must be a tuple");
+                    return NULL;
+                }
+                // returns a borrowed ref
+                PyObject *value = PyTuple_GetItem(arg, 0);
+                return set_value(self, value);
+            }
+
+            static PyObject* get_value(PyObject* self) {
+                ValueObject *value_obj = (ValueObject *) self;
+                PyObject *res = value_obj->value;
+                Py_INCREF(res);
+                return res;
+            }
+
+            static PyObject* clear_value(PyObject* self) {
+                ValueObject *value_obj = (ValueObject *) self;
+                Py_XSETREF(value_obj->value, NULL);
+                Py_RETURN_NONE;
+            }
+           ''',
+           tp_methods='''
+           {"set_value", (PyCFunction)set_value, METH_O, NULL},
+           {"from_tuple", (PyCFunction)from_tuple, METH_O, NULL},
+           {"get_value", (PyCFunction)get_value, METH_NOARGS, NULL},
+           {"clear_value", (PyCFunction)clear_value, METH_NOARGS, NULL}
+           ''',
+            cmembers='PyObject *value;',
+        )
+
+        dummy = object()
+        obj = ValueType()
+        obj.set_value(dummy)
+
+        # dummy is also kept alive by Python code
+        assert obj.get_value() is dummy
+
+        # delete dummy here; should still be available from native
+        r = repr(dummy)
+        del dummy
+
+        # no guarantee but increases chances that ref will be collected
+        for _ in range(3):
+            gc.collect()
+
+        assert repr(obj.get_value()) == r
+        obj.clear_value()
+
+        # same as before but getting borrowed value from tuple
+        dummy = object()
+        obj.from_tuple((dummy, ))
+        assert obj.get_value() is dummy
+        r = repr(dummy)
+        del dummy
+        for _ in range(3):
+            gc.collect()
+        assert repr(obj.get_value()) == r
+        obj.clear_value()
+
 
 class CBytes: 
     def __bytes__(self):

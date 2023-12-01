@@ -44,6 +44,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -56,8 +58,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -69,10 +73,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
-    private Object replacement;
 
     private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name) {
-        super(object);
+        super(object, true);
         this.nameWrapper = new CStringWrapper(name);
     }
 
@@ -94,8 +97,15 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
      * Creates a wrapper that uses an existing native object as native replacement object.
      */
     public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
-        // important: native wrappers are cached
-        assert clazz.getClassNativeWrapper() == null;
+        /*
+         * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
+         * the native pointer of the wrapper would not be equal to the corresponding native global
+         * variable. E.g. 'Py_TYPE(PyBaseObjec_Type) != &PyType_Type'.
+         */
+        if (clazz.getNativeWrapper() != null) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
         PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name);
         clazz.setNativeWrapper(wrapper);
 
@@ -143,9 +153,20 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
         SetTypeFlagsNode.executeUncached(clazz, flags);
 
-        ToNativeTypeNode.initializeType(wrapper, pointer);
+        /*
+         * It's important that we first register the pointer before initializing the type (see
+         * 'getReplacement' for more explanation).
+         */
         wrapper.replacement = pointer;
         wrapper.registerReplacement(pointer, lib);
+    }
+
+    public static void initNative(PythonManagedClass clazz, Object pointer) {
+        PythonClassNativeWrapper classNativeWrapper = clazz.getClassNativeWrapper();
+        if (classNativeWrapper == null) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+        ToNativeTypeNode.initializeType(classNativeWrapper, pointer);
     }
 
     @Override
@@ -155,16 +176,22 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     }
 
     @Override
-    public boolean isReplacingWrapper() {
-        return true;
-    }
-
-    @Override
     @TruffleBoundary
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
-            Object pointerObject = ToNativeTypeNode.executeUncached(this);
+            /*
+             * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it
+             * to the wrapper before we do the type's initialization. Otherwise, we will run into an
+             * infinite recursion because, e.g., some type uses 'None', so the 'NoneType' will be
+             * transformed to native but 'NoneType' may have some field that is initialized with
+             * 'None' and so on.
+             *
+             * If we first set the empty struct and initialize it afterward, everything is fine.
+             */
+            Object pointerObject = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
             replacement = registerReplacement(pointerObject, lib);
+
+            ToNativeTypeNode.initializeType(this, pointerObject);
         }
         return replacement;
     }
@@ -175,17 +202,22 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     }
 
     @ExportMessage
-    long asPointer() {
-        assert getNativePointer() != -1;
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
         return getNativePointer();
     }
 
     @ExportMessage
-    @TruffleBoundary
     void toNative() {
         if (!isNative()) {
-            setRefCount(IMMORTAL_REFCNT); // make this object immortal
-            getReplacement(InteropLibrary.getUncached());
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }
