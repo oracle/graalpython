@@ -64,6 +64,8 @@ public class GraalPy {
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder()
             .extractFilter(p -> {
                 String s = p.toString();
+                // Specify what files in the virtual filesystem need to be accessed outside the Truffle sandbox.
+                // e.g. if they need to be accessed by the operating system loader.
                 return s.endsWith(".ttf");
             })
             .build();
