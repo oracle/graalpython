@@ -1,0 +1,13 @@
+name: build-windows-amd64-wheels
+'on':
+  workflow_dispatch:
+    inputs:
+      name:
+        type: string
+        description: Pkg to build (empty for all)
+        required: false
+      graalpy:
+        type: string
+        description: GraalPy download url prefix (empty for default)
+        required: false
+jobs: {}
