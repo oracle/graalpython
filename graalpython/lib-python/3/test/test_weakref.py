@@ -1082,6 +1082,7 @@ class WeakMethodTestCase(unittest.TestCase):
         self.assertIs(r().__func__, o.some_method.__func__)
         self.assertEqual(r()(), 4)
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_object_dead(self):
         o = Object(1)
         r = weakref.WeakMethod(o.some_method)
@@ -1089,6 +1090,7 @@ class WeakMethodTestCase(unittest.TestCase):
         gc.collect()
         self.assertIs(r(), None)
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_method_dead(self):
         C = self._subclass()
         o = C(1)
@@ -1114,6 +1116,7 @@ class WeakMethodTestCase(unittest.TestCase):
         gc.collect()
         self.assertEqual(calls, [r])
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_callback_when_method_dead(self):
         # Test callback behaviour when method dies first.
         C = self._subclass()
