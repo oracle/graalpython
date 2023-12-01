@@ -353,7 +353,8 @@ public final class ObjectHashMap {
                         @Cached InlinedCountingConditionProfile collisionFoundNoValue,
                         @Cached InlinedCountingConditionProfile collisionFoundEqKey,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            // must not call generic __eq__ before this
+            // Must not call generic __eq__ before builtins are initialized
+            // If this assert fires: we'll need something like putUncachedWithJavaEq also for get
             assert map.size == 0 || SpecialMethodSlot.areBuiltinSlotsInitialized();
             while (true) {
                 try {
@@ -476,6 +477,8 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            // Must not call generic __eq__ before builtins are initialized
+            // If this assert fires: make sure to use putUncachedWithJavaEq during initialization
             assert map.size == 0 || (SpecialMethodSlot.areBuiltinSlotsInitialized() || eqNode == null);
             while (true) {
                 try {
