@@ -87,6 +87,7 @@ Additionally, one can change the polyglot artifacts version with
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <trimStackTrace>false</trimStackTrace>
                     <testSourceDirectory>src</testSourceDirectory>
                     <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
                     <includes>

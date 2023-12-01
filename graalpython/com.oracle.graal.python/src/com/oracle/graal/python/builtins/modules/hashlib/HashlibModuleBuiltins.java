@@ -49,7 +49,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -153,11 +152,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        LinkedHashMap<String, Object> algos = new LinkedHashMap<>();
+        EconomicMapStorage algos = EconomicMapStorage.create(DIGEST_ALGORITHMS.length);
         for (var digest : DIGEST_ALGORITHMS) {
-            algos.put(digest, PNone.NONE);
+            algos.putUncachedWithJavaEq(digest, PNone.NONE);
         }
-        addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(EconomicMapStorage.create(algos)));
+        addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(algos));
 
         EconomicMapStorage storage = EconomicMapStorage.create();
         addBuiltinConstant(CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
