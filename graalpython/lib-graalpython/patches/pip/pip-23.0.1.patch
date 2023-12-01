@@ -1,5 +1,5 @@
 diff --git a/pip/__init__.py b/pip/__init__.py
-index 3d4b45a..3aa11e8 100644
+index 42f6c45..26c9066 100644
 --- a/pip/__init__.py
 +++ b/pip/__init__.py
 @@ -11,3 +11,6 @@ def main(args: Optional[List[str]] = None) -> int:
@@ -10,10 +10,10 @@ index 3d4b45a..3aa11e8 100644
 +
 +__GRAALPY_PATCHED = True
 diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
-index 47ed927..1d182de 100644
+index 1f80409..df7ebfc 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
-@@ -891,7 +891,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
+@@ -879,7 +879,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
      "--disable-pip-version-check",
      dest="disable_pip_version_check",
      action="store_true",
@@ -23,17 +23,17 @@ index 47ed927..1d182de 100644
      "of pip is available for download. Implied with --no-index.",
  )
 diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
-index 9bf247f..3e8f187 100644
+index b6f8d57..6c37e0b 100644
 --- a/pip/_internal/index/package_finder.py
 +++ b/pip/_internal/index/package_finder.py
-@@ -38,6 +38,7 @@ from pip._internal.utils.logging import indent_log
+@@ -35,6 +35,7 @@ from pip._internal.utils.logging import indent_log
  from pip._internal.utils.misc import build_netloc
  from pip._internal.utils.packaging import check_requires_python
  from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
 +from pip._internal.utils.graalpy import apply_graalpy_sort_order, get_graalpy_candidates
  
- __all__ = ["FormatControl", "BestCandidateResult", "PackageFinder"]
- 
+ if TYPE_CHECKING:
+     from pip._vendor.typing_extensions import TypeGuard
 @@ -487,6 +488,7 @@ class CandidateEvaluator:
  
          return sorted(filtered_applicable_candidates, key=self._sort_key)
@@ -42,7 +42,7 @@ index 9bf247f..3e8f187 100644
      def _sort_key(self, candidate: InstallationCandidate) -> CandidateSortingKey:
          """
          Function to pass as the `key` argument to a call to sorted() to sort
-@@ -851,8 +853,11 @@ class PackageFinder:
+@@ -852,8 +854,11 @@ class PackageFinder:
  
              logger.debug("Local files found: %s", ", ".join(paths))
  
@@ -77,10 +77,10 @@ index 79b82a5..1eddfa3 100644
      ext: Optional[str] = splitext(filename)[1]
      if not ext:
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
-index 1af8978..15fee7f 100644
+index c799413..bf52f00 100644
 --- a/pip/_internal/operations/install/wheel.py
 +++ b/pip/_internal/operations/install/wheel.py
-@@ -587,6 +587,9 @@ def _install_wheel(
+@@ -589,6 +589,9 @@ def _install_wheel(
          file.save()
          record_installed(file.src_record_path, file.dest_path, file.changed)
  
@@ -92,14 +92,15 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..b8a506c
+index 0000000..f9b8dcc
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,195 @@
+@@ -0,0 +1,214 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
 +import re
++import zipfile
 +from pathlib import Path
 +from urllib.parse import urlparse
 +
@@ -113,11 +114,8 @@ index 0000000..b8a506c
 +if hasattr(__graalpython__, "tdebug"):
 +    PATCHES_BASE_DIRS += os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
 +
-+BUNDLED_WHEELS_PATH = None
-+
-+
-+def is_bundled_wheel(location, package_name):
-+    return os.path.exists(os.path.join(location, package_name, '.graalpy_bundled'))
++DISABLE_PATCHING = os.environ.get('PIP_GRAALPY_DISABLE_PATCHING', '').lower() in ('true', '1')
++DISABLE_VERSION_SELECTION = os.environ.get('PIP_GRAALPY_DISABLE_VERSION_SELECTION', '').lower() in ('true', '1')
 +
 +
 +def normalize_name(name):
@@ -188,19 +186,14 @@ index 0000000..b8a506c
 +    return __PATCH_REPOSITORY
 +
 +
-+__already_patched = set()
-+
-+
 +def apply_graalpy_patches(filename, location):
 +    """
 +    Applies any GraalPy patches to package extracted from 'filename' into 'location'.
 +    Note that 'location' must be the parent directory of the package directory itself.
 +    For example: /path/to/site-package and not /path/to/site-packages/mypackage.
 +    """
-+    import autopatch_capi
-+    import subprocess
-+
-+    autopatch_capi.auto_patch_tree(location)
++    if DISABLE_PATCHING:
++        return
 +
 +    # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
 +    archive_name = os.path.basename(filename)
@@ -216,13 +209,14 @@ index 0000000..b8a506c
 +    suffix = name_ver_match.group('suffix')
 +    is_wheel = suffix == "whl"
 +
-+    # Avoid applying patches to bundled wheels, they are already patched
-+    if is_wheel and is_bundled_wheel(location, name):
++    if is_wheel and is_wheel_marked(filename):
++        # We already processed it when building from source
 +        return
 +
-+    # When we patch a sdist, pip may call us again to process the wheel produced from it
-+    if (name, version) in __already_patched:
-+        return
++    import autopatch_capi
++    import subprocess
++
++    autopatch_capi.auto_patch_tree(location)
 +
 +    print(f"Looking for GraalPy patches for {name}")
 +    repository = get_patch_repository()
@@ -251,7 +245,6 @@ index 0000000..b8a506c
 +                    "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
 +            except subprocess.CalledProcessError:
 +                print(f"Applying GraalPy patch failed for {name}. The package may still work.")
-+            __already_patched.add((name, version))
 +    elif version_specs := repository.get_suggested_version_specs(name):
 +        print("We have patches to make this package work on GraalVM for some version(s).")
 +        print("If installing or running fails, consider using one of the versions that we have patches for:")
@@ -260,6 +253,9 @@ index 0000000..b8a506c
 +
 +
 +def apply_graalpy_sort_order(sort_key_func):
++    if DISABLE_VERSION_SELECTION:
++        return sort_key_func
++
 +    def wrapper(self, candidate):
 +        default_sort_key = sort_key_func(self, candidate)
 +        priority = get_patch_repository().get_priority_for_version(candidate.name, str(candidate.version))
@@ -291,6 +287,29 @@ index 0000000..b8a506c
 +        link = LinkWithFilename(url, f'{name}-{version}.{suffix}')
 +        candidates.append(InstallationCandidate(name=name, version=version, link=link))
 +    return candidates
++
++
++MARKER_NAME = 'GRAALPY_MARKER'
++
++
++def mark_wheel(path):
++    if DISABLE_PATCHING:
++        return
++    with zipfile.ZipFile(path, 'a') as z:
++        dist_info = None
++        for name in z.namelist():
++            if m := re.match(r'([^/]+.dist-info)/', name):
++                dist_info = m.group(1)
++                break
++        assert dist_info, "Cannot find .dist_info in built wheel"
++        marker = f'{dist_info}/{MARKER_NAME}'
++        with z.open(marker, 'w'):
++            pass
++
++
++def is_wheel_marked(path):
++    with zipfile.ZipFile(path) as z:
++        return any(re.match(rf'[^/]+.dist-info/{MARKER_NAME}$', f) for f in z.namelist())
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
 index 78b5c13..18a184c 100644
 --- a/pip/_internal/utils/unpacking.py
@@ -301,6 +320,27 @@ index 78b5c13..18a184c 100644
          raise InstallationError(f"Cannot determine archive format of {location}")
 +    from pip._internal.utils.graalpy import apply_graalpy_patches
 +    apply_graalpy_patches(filename, location)
+diff --git a/pip/_internal/wheel_builder.py b/pip/_internal/wheel_builder.py
+index 15b30af..f28355d 100644
+--- a/pip/_internal/wheel_builder.py
++++ b/pip/_internal/wheel_builder.py
+@@ -7,6 +7,7 @@ import re
+ import shutil
+ from typing import Callable, Iterable, List, Optional, Tuple
+ 
++from pip._internal.utils import graalpy
+ from pip._vendor.packaging.utils import canonicalize_name, canonicalize_version
+ from pip._vendor.packaging.version import InvalidVersion, Version
+ 
+@@ -275,6 +276,8 @@ def _build_one_inside_env(
+             )
+ 
+         if wheel_path is not None:
++            # GraalPy change: watermark wheels that we built so that we don't try to patch them when installing
++            graalpy.mark_wheel(wheel_path)
+             wheel_name = os.path.basename(wheel_path)
+             dest_path = os.path.join(output_dir, wheel_name)
+             try:
 diff --git a/pip/_vendor/packaging/tags.py b/pip/_vendor/packaging/tags.py
 index 9a3d25a..e0e7b31 100644
 --- a/pip/_vendor/packaging/tags.py
