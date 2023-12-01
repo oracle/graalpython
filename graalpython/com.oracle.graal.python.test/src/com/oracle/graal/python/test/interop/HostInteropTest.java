@@ -45,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -481,5 +482,25 @@ public class HostInteropTest extends PythonTests {
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
         assertTrue(t.isTimeZone());
         assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
+    }
+
+    @Test
+    public void testByteBuffer() {
+        Value t = context.eval("python", "bytearray(10)");
+        assertTrue(t.hasBufferElements());
+        assertTrue(t.isBufferWritable());
+        assertEquals(10, t.getBufferSize());
+        t.writeBufferByte(0, (byte) 10);
+        assertEquals(10, t.readBufferByte(0));
+        t.writeBufferShort(ByteOrder.LITTLE_ENDIAN, 0, Short.MAX_VALUE);
+        assertEquals(Short.MAX_VALUE, t.readBufferShort(ByteOrder.LITTLE_ENDIAN, 0));
+        t.writeBufferInt(ByteOrder.LITTLE_ENDIAN, 0, Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, t.readBufferInt(ByteOrder.LITTLE_ENDIAN, 0));
+        t.writeBufferLong(ByteOrder.LITTLE_ENDIAN, 0, Long.MAX_VALUE);
+        assertEquals(Long.MAX_VALUE, t.readBufferLong(ByteOrder.LITTLE_ENDIAN, 0));
+        t.writeBufferFloat(ByteOrder.LITTLE_ENDIAN, 0, 0.5f);
+        assertEquals(0.5f, t.readBufferFloat(ByteOrder.LITTLE_ENDIAN, 0), 0.0);
+        t.writeBufferDouble(ByteOrder.LITTLE_ENDIAN, 0, 12345.6789123);
+        assertEquals(12345.6789123, t.readBufferDouble(ByteOrder.LITTLE_ENDIAN, 0), 0.0);
     }
 }
