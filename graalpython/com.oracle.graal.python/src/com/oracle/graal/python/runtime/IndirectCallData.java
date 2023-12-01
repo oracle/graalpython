@@ -41,6 +41,7 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -103,6 +104,10 @@ public final class IndirectCallData {
     public static boolean setEncapsulatingNeedsToPassCallerFrame(final Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
+            if (pythonCallNode instanceof InvokeNode) {
+                // see GR-50465
+                return true;
+            }
             IndirectCallData data = PythonLanguage.lookupIndirectCallData(pythonCallNode);
             if (data != null) {
                 data.setCalleeNeedsCallerFrame();
@@ -116,6 +121,10 @@ public final class IndirectCallData {
     public static void setEncapsulatingNeedsToPassExceptionState(Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
+            if (pythonCallNode instanceof InvokeNode) {
+                // see GR-50465
+                break;
+            }
             IndirectCallData data = PythonLanguage.lookupIndirectCallData(pythonCallNode);
             if (data != null) {
                 data.setCalleeNeedsExceptionState();
