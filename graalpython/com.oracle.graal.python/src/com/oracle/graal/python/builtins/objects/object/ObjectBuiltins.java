@@ -432,11 +432,10 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type);
-            return fullLookup(frame, inliningTarget, object, cachedKey, type, descr, factory, raiseNode);
+            return fullLookup(frame, inliningTarget, object, cachedKey, type, descr, raiseNode);
         }
 
         @Specialization
@@ -446,7 +445,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString key;
             try {
@@ -457,10 +455,10 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
-            return fullLookup(frame, inliningTarget, object, key, type, descr, factory, raiseNode);
+            return fullLookup(frame, inliningTarget, object, key, type, descr, raiseNode);
         }
 
-        private Object fullLookup(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, Object descr, PythonObjectFactory.Lazy factory, PRaiseNode.Lazy raiseNode) {
+        private Object fullLookup(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, Object descr, PRaiseNode.Lazy raiseNode) {
             Object dataDescClass = null;
             boolean hasDescr = descr != PNone.NO_VALUE;
             if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
@@ -501,14 +499,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
                 profileFlags |= HAS_NO_VALUE;
             }
             if (hasDescr) {
-                if (object == PNone.NONE) {
-                    if (descr instanceof PBuiltinFunction) {
-                        // Special case for None object. We cannot call function.__get__(None,
-                        // type(None)),
-                        // because that would return an unbound method
-                        return factory.get(inliningTarget).createBuiltinMethod(PNone.NONE, (PBuiltinFunction) descr);
-                    }
-                }
                 Object get = lookupGet(dataDescClass);
                 if (get == PNone.NO_VALUE) {
                     return descr;
