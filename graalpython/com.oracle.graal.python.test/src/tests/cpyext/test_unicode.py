@@ -1030,18 +1030,21 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+
 class TestUnicodeObject(object):
     def test_intern(self):
         TestIntern = CPyExtType(
             "TestIntern",
             '''
             static PyObject* set_intern_str(PyObject* self, PyObject* str) {
+                Py_INCREF(str);
                 PyUnicode_InternInPlace(&str);
                 ((TestInternObject*)self)->str = str;
                 return str;
             }
 
             static PyObject* check_is_same_str_ptr(PyObject* self, PyObject* str) {
+                Py_INCREF(str);
                 PyUnicode_InternInPlace(&str);
                 if (str == ((TestInternObject*)self)->str) {
                     Py_RETURN_TRUE;
@@ -1057,6 +1060,7 @@ class TestUnicodeObject(object):
             ''',
         )
         tester = TestIntern()
-        s = 'some text'
-        assert tester.set_intern_str(s) == s
-        assert tester.check_is_same_str_ptr(s)
+        s1 = b'some text'.decode('ascii')
+        s2 = b'some text'.decode('ascii')
+        assert tester.set_intern_str(s1) == s2
+        assert tester.check_is_same_str_ptr(s2)

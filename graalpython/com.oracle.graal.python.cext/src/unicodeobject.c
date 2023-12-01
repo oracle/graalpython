@@ -819,10 +819,9 @@ PyUnicode_InternInPlace(PyObject **p)
     }
 
     if (t != s) {
-        Py_INCREF(t);
-        Py_SETREF(*p, t);
-        return;
+        *p = t;
     }
+    Py_DECREF(s);
 }
 
 // 15940
