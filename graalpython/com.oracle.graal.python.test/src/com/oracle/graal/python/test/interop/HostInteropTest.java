@@ -486,7 +486,27 @@ public class HostInteropTest extends PythonTests {
 
     @Test
     public void testByteBuffer() {
-        Value t = context.eval("python", "bytearray(10)");
+        Value t;
+        // test bytes
+        t = context.eval("python", "bytes([" +
+                        "10, " + // 10 (byte)
+                        "0xFF, 0x7F, " + // Short.MAX_VALUE
+                        "0xFF, 0xFF, 0xFF, 0x7F, " + // Integer.MAX_VALUE
+                        "0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, " + // Long.MAX_VALUE
+                        "0, 0, 0, 0x3F, 0xFF, 0xFF, 0xFF, 0x7F, " + // 0.5f
+                        "0xAD, 0x26, 0x99, 0xE6, 0xD6, 0x1C, 0xC8, 0x40])"); // 12345.6789123
+        assertTrue(t.hasBufferElements());
+        assertFalse(t.isBufferWritable());
+        assertEquals(31, t.getBufferSize());
+        assertEquals(10, t.readBufferByte(0));
+        assertEquals(Short.MAX_VALUE, t.readBufferShort(ByteOrder.LITTLE_ENDIAN, 1));
+        assertEquals(Integer.MAX_VALUE, t.readBufferInt(ByteOrder.LITTLE_ENDIAN, 3));
+        assertEquals(Long.MAX_VALUE, t.readBufferLong(ByteOrder.LITTLE_ENDIAN, 7));
+        assertEquals(0.5f, t.readBufferFloat(ByteOrder.LITTLE_ENDIAN, 15), 0.0);
+        assertEquals(12345.6789123, t.readBufferDouble(ByteOrder.LITTLE_ENDIAN, 23), 0.0);
+
+        // test bytearray
+        t = context.eval("python", "bytearray(10)");
         assertTrue(t.hasBufferElements());
         assertTrue(t.isBufferWritable());
         assertEquals(10, t.getBufferSize());
