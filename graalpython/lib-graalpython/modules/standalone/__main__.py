@@ -152,7 +152,7 @@ def get_download_dir(parsed_args):
     try:
         if not os.path.exists(mp):
             os.mkdir(mp)
-        Pathlib(mp).touch() # Ensure if we can write to that location
+        pathlib.Path(mp).touch() # Ensure if we can write to that location
         parsed_args.keep_temp = True # Keep this location
         return mp
     except Exception as e:
