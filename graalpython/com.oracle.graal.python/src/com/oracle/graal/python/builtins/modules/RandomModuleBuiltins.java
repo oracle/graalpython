@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -65,7 +66,7 @@ public final class RandomModuleBuiltins extends PythonBuiltins {
         PRandom random(VirtualFrame frame, Object cls, Object seed,
                         @Cached PythonObjectFactory factory) {
             PRandom random = factory.createRandom(cls);
-            setSeed.executeObject(frame, random, seed);
+            setSeed.executeObject(frame, random, seed != PNone.NO_VALUE ? seed : PNone.NONE);
             return random;
         }
     }

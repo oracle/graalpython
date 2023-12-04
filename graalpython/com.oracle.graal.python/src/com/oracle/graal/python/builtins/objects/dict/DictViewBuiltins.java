@@ -492,19 +492,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PBaseSet doNotIterable(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            PSet otherSet = constructSetNode.executeWith(frame, other);
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, selfSet.getDictStorage(), otherSet.getDictStorage());
-            return factory.createSet(storage);
-        }
-
-        @Specialization
-        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
+        static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
