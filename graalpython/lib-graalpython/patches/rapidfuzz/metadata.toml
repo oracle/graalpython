@@ -1,0 +1,2 @@
+[[rules]]
+patch = 'rapidfuzz.patch'

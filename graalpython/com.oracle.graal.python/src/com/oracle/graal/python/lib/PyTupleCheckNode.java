@@ -73,7 +73,7 @@ public abstract class PyTupleCheckNode extends Node {
     @Specialization
     static boolean doNative(PythonAbstractNativeObject object,
                     @Cached(inline = false) IsBuiltinObjectProfile check) {
-        return check.profileObjectCached(object, PythonBuiltinClassType.PList);
+        return check.profileObjectCached(object, PythonBuiltinClassType.PTuple);
     }
 
     @Fallback

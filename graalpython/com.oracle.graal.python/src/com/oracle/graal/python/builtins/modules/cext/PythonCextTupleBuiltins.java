@@ -214,6 +214,14 @@ public final class PythonCextTupleBuiltins {
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
             }
+            if (result == null) {
+                /*
+                 * This can happen when the tuple is not fully initialized. Such tuple is not valid,
+                 * but the C code sometimes uses PyTuple_GET_ITEM to Py_XDECREF the items on error
+                 * paths when they failed to populate the tuple.
+                 */
+                return getNativeNull(inliningTarget);
+            }
             return result;
         }
 
@@ -232,6 +240,9 @@ public final class PythonCextTupleBuiltins {
             if (promotedValue != null) {
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
+            }
+            if (result == null) {
+                return getNativeNull(inliningTarget);
             }
             return result;
         }

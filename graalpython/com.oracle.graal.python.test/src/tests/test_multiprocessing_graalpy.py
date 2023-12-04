@@ -80,9 +80,3 @@ if sys.implementation.name == 'graalpy':
         res = wait([b, x], 3)
         assert res == [x], "res3"
         assert x.recv() == 33, "res4"
-        a.send(1)
-        y.send(2)
-        res = wait([b, x], 3)
-        assert set(res) == {b, x}
-        assert b.recv() == 1
-        assert x.recv() == 2

@@ -127,7 +127,7 @@ public final class PythonCextPythonRunBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
     abstract static class Py_CompileString extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
@@ -146,7 +146,7 @@ public final class PythonCextPythonRunBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
     abstract static class Py_CompileStringExFlags extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
@@ -180,7 +180,7 @@ public final class PythonCextPythonRunBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
     abstract static class Py_CompileStringObject extends CApi5BuiltinNode {
         @Specialization(guards = "isString(source)")
         static Object compile(Object source, Object filename, int type,

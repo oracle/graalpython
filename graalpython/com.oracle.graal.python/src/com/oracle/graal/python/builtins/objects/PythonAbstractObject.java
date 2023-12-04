@@ -276,17 +276,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.has_array_elements;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.has_array_elements;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
                 return check.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -299,13 +299,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.read_array_element;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.execute(inliningTarget, behavior, method, this, key);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.read_array_element;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this, key);
+            } else {
                 if (interopLib.hasArrayElements(this)) {
                     try {
                         return getItemNode.execute(this, key);
@@ -314,9 +314,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 throw UnsupportedMessageException.create();
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -329,13 +329,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.write_array_element;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            getValue.execute(inliningTarget, behavior, method, this, key, value);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.write_array_element;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                getValue.execute(inliningTarget, behavior, method, this, key, value);
+            } else {
                 if (interopLib.hasArrayElements(this)) {
                     try {
                         setItemNode.execute(this, key, value);
@@ -344,9 +344,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 throw UnsupportedMessageException.create();
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -359,13 +359,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") InteropLibrary interopLib,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.remove_array_element;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            getValue.execute(inliningTarget, behavior, method, this, key);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.remove_array_element;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                getValue.execute(inliningTarget, behavior, method, this, key);
+            } else {
                 if (interopLib.hasArrayElements(this)) {
                     try {
                         deleteItemNode.execute(inliningTarget, this, key);
@@ -375,9 +375,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 } else {
                     throw UnsupportedMessageException.create();
                 }
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -395,27 +395,27 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.get_array_size;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            // todo: cbasca - once we remove the default behavior, we should probably use a cast to
-            // long node
-            return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
-        } else {
-            boolean mustRelease = gil.acquire();
-            if (!interopLib.hasArrayElements(this)) {
-                throw UnsupportedMessageException.create();
-            }
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_array_size;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                // todo: cbasca - once we remove the default behavior, we should probably use a cast
+                // to long node
+                return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
+            } else {
+                if (!interopLib.hasArrayElements(this)) {
+                    throw UnsupportedMessageException.create();
+                }
                 long len = sizeNode.execute(null, inliningTarget, this);
                 if (len >= 0) {
                     return len;
                 }
-            } finally {
-                gil.release(mustRelease);
+                CompilerDirectives.transferToInterpreter();
+                throw UnsupportedMessageException.create();
             }
-            CompilerDirectives.transferToInterpreter();
-            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -434,20 +434,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_readable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
-        } else {
-            boolean mustRelease = gil.acquire();
-            if (!interopLib.hasArrayElements(this)) {
-                return false;
-            }
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_readable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
+            } else {
+                if (!interopLib.hasArrayElements(this)) {
+                    return false;
+                }
                 return isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -466,20 +466,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_modifiable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
-        } else {
-            boolean mustRelease = gil.acquire();
-            if (!interopLib.hasArrayElements(this)) {
-                return false;
-            }
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_modifiable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
+            } else {
+                if (!interopLib.hasArrayElements(this)) {
+                    return false;
+                }
                 return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -498,20 +498,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_insertable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
-        } else {
-            boolean mustRelease = gil.acquire();
-            if (!interopLib.hasArrayElements(this)) {
-                return false;
-            }
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_insertable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
+            } else {
+                if (!interopLib.hasArrayElements(this)) {
+                    return false;
+                }
                 return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -530,20 +530,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_removable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
-        } else {
-            boolean mustRelease = gil.acquire();
-            if (!interopLib.hasArrayElements(this)) {
-                return false;
-            }
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_removable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
+            } else {
+                if (!interopLib.hasArrayElements(this)) {
+                    return false;
+                }
                 return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -666,13 +666,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Cached PyCallableCheckNode callableCheck) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_executable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return callableCheck.execute(inliningTarget, this);
+                    @Cached PyCallableCheckNode callableCheck,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_executable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return callableCheck.execute(inliningTarget, this);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -684,17 +691,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.execute;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.execute(inliningTarget, behavior, method, this, arguments);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.execute;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this, arguments);
+            } else {
                 return executeNode.execute(this, arguments);
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -799,10 +806,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
-        if (!interopLib.isInstantiable(this)) {
-            throw UnsupportedMessageException.create();
-        }
         try {
+            if (!interopLib.isInstantiable(this)) {
+                throw UnsupportedMessageException.create();
+            }
             return executeNode.execute(this, arguments);
         } finally {
             gil.release(mustRelease);
@@ -879,13 +886,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_date;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_date;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
                 Object objType = getClassNode.executeCached(this);
                 PDict importedModules = PythonContext.get(getClassNode).getSysModules();
                 Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
@@ -902,9 +909,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 return false;
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -949,14 +956,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
                     @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
-            return constructDate(castToIntNode, inliningTarget, lib, value, raiseNode);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                return constructDate(castToIntNode, inliningTarget, lib, value, raiseNode);
+            } else {
                 Object objType = getClassNode.executeCached(this);
                 PDict importedModules = PythonContext.get(getClassNode).getSysModules();
                 Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
@@ -973,9 +980,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 throw UnsupportedMessageException.create();
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1000,13 +1007,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_time;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_time;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
                 Object objType = getClassNode.executeCached(this);
                 PDict importedModules = PythonContext.get(getClassNode).getSysModules();
                 Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
@@ -1023,9 +1030,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 return false;
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1077,14 +1084,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
                     @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
-            return constructTime(value, castToIntNode, inliningTarget, lib, raiseNode);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                return constructTime(value, castToIntNode, inliningTarget, lib, raiseNode);
+            } else {
                 Object objType = getClassNode.executeCached(this);
                 PDict importedModules = PythonContext.get(getClassNode).getSysModules();
                 Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
@@ -1101,9 +1108,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 throw UnsupportedMessageException.create();
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1128,13 +1135,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
                     @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
                 Object objType = getClassNode.executeCached(this);
                 PDict importedModules = PythonContext.get(getClassNode).getSysModules();
                 Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
@@ -1179,9 +1186,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 return false;
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1231,14 +1238,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                     @Exclusive @Cached GilNode gil,
                     @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
-            return constructZoneId(value, castToIntNode, toJavaStringNode, inliningTarget, lib, raiseNode);
-        } else {
-            boolean mustRelease = gil.acquire();
-            try {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                return constructZoneId(value, castToIntNode, toJavaStringNode, inliningTarget, lib, raiseNode);
+            } else {
                 if (!lib.isTimeZone(this)) {
                     throw UnsupportedMessageException.create();
                 }
@@ -1283,9 +1290,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
                 throw UnsupportedMessageException.create();
-            } finally {
-                gil.release(mustRelease);
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1318,13 +1325,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_duration;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_duration;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1338,14 +1352,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
-            return constructDuration(value, toLongNode, inliningTarget, lib, raiseNode);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                return constructDuration(value, toLongNode, inliningTarget, lib, raiseNode);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1991,13 +2012,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return !(lookupIter.execute(getClassNode.executeCached(this)) instanceof PNone);
+                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return !(lookupIter.execute(getClassNode.executeCached(this)) instanceof PNone);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2010,21 +2038,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Cached PyObjectGetIter getIter,
                     @Exclusive @Cached GilNode gil,
                     @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
-        if (lib.hasIterator(this)) {
-            InteropBehaviorMethod method = InteropBehaviorMethod.get_iterator;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.execute(inliningTarget, behavior, method, this);
-            } else {
-                boolean mustRelease = gil.acquire();
-                try {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (lib.hasIterator(this)) {
+                InteropBehaviorMethod method = InteropBehaviorMethod.get_iterator;
+                InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+                if (behavior != null) {
+                    return getValue.execute(inliningTarget, behavior, method, this);
+                } else {
                     return getIter.execute(null, inliningTarget, this);
-                } finally {
-                    gil.release(mustRelease);
                 }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-        } else {
-            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2039,13 +2067,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_iterator;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return lookupNext.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
+                    @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_iterator;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return lookupNext.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2066,30 +2101,32 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached GilNode gil,
                     @CachedLibrary("this") InteropLibrary ilib,
                     @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws UnsupportedMessageException {
-        if (ilib.isIterator(this)) {
-            InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator_next_element;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-            } else {
-                Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
-                if (nextElement != null) {
-                    return true;
-                }
-                boolean mustRelease = gil.acquire();
-                try {
-                    nextElement = getNextNode.execute(null, this);
-                    dylib.put(this, NEXT_ELEMENT, nextElement);
-                    return true;
-                } catch (PException e) {
-                    e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, exceptionProfile);
-                    return false;
-                } finally {
-                    gil.release(mustRelease);
+        boolean mustRelease = gil.acquire();
+        try {
+            if (ilib.isIterator(this)) {
+                InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator_next_element;
+                InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+                if (behavior != null) {
+                    return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+                } else {
+                    Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
+                    if (nextElement != null) {
+                        return true;
+                    }
+                    try {
+                        nextElement = getNextNode.execute(null, this);
+                        dylib.put(this, NEXT_ELEMENT, nextElement);
+                        return true;
+                    } catch (PException e) {
+                        e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, exceptionProfile);
+                        return false;
+                    }
                 }
             }
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
@@ -2099,19 +2136,26 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary ilib,
-                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws StopIterationException, UnsupportedMessageException {
-        if (ilib.hasIteratorNextElement(this)) {
-            InteropBehaviorMethod method = InteropBehaviorMethod.get_iterator_next_element;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.execute(inliningTarget, behavior, method, this);
+                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws StopIterationException, UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (ilib.hasIteratorNextElement(this)) {
+                InteropBehaviorMethod method = InteropBehaviorMethod.get_iterator_next_element;
+                InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+                if (behavior != null) {
+                    return getValue.execute(inliningTarget, behavior, method, this);
+                } else {
+                    Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
+                    dylib.put(this, NEXT_ELEMENT, null);
+                    return nextElement;
+                }
             } else {
-                Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
-                dylib.put(this, NEXT_ELEMENT, null);
-                return nextElement;
+                throw StopIterationException.create();
             }
-        } else {
-            throw StopIterationException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2123,13 +2167,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_boolean;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_boolean;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2141,13 +2192,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_number;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_number;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2159,13 +2217,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_string;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_string;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2177,13 +2242,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_byte;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_byte;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2195,13 +2267,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_short;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_short;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2213,13 +2292,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_int;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_int;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2231,13 +2317,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_long;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_long;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2249,13 +2342,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_float;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_float;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2267,13 +2367,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_double;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_double;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2285,13 +2392,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_big_integer;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_big_integer;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2303,13 +2417,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_boolean;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_boolean;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2321,13 +2442,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaByteNode toByteNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_byte;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeByte(inliningTarget, behavior, method, toByteNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_byte;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeByte(inliningTarget, behavior, method, toByteNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2339,13 +2467,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaShortNode toShortNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_short;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeShort(inliningTarget, behavior, method, toShortNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_short;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeShort(inliningTarget, behavior, method, toShortNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2357,13 +2492,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_int;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_int;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2375,13 +2517,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_long;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_long;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2393,13 +2542,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_float;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return (float) getValue.executeDouble(inliningTarget, behavior, method, toDoubleNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_float;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return (float) getValue.executeDouble(inliningTarget, behavior, method, toDoubleNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2411,13 +2567,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_double;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeDouble(inliningTarget, behavior, method, toDoubleNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_double;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeDouble(inliningTarget, behavior, method, toDoubleNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2426,14 +2589,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaBigIntegerNode toBigIntegerNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_big_integer;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
-            return toBigIntegerNode.execute(inliningTarget, value);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Cached CastToJavaBigIntegerNode toBigIntegerNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_big_integer;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                return toBigIntegerNode.execute(inliningTarget, value);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2444,13 +2614,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached CastToJavaStringNode toStringNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.as_string;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeString(inliningTarget, behavior, method, toStringNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.as_string;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeString(inliningTarget, behavior, method, toStringNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2462,13 +2639,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.has_hash_entries;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.has_hash_entries;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2481,13 +2665,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_size;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_size;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2496,13 +2687,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object getHashEntriesIterator(
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.execute(inliningTarget, behavior, method, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2511,13 +2709,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object getHashKeysIterator(
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.execute(inliningTarget, behavior, method, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2526,13 +2731,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object getHashValuesIterator(
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_values_iterator;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.execute(inliningTarget, behavior, method, this);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_values_iterator;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2541,13 +2753,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object readHashValue(Object key,
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.read_hash_value;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.execute(inliningTarget, behavior, method, this, key);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.read_hash_value;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.execute(inliningTarget, behavior, method, this, key);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2560,13 +2779,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_readable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_readable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2579,13 +2805,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_removable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
-        } else {
-            return false;
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_removable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2594,13 +2827,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public void removeHashEntry(Object key,
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.remove_hash_entry;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            getValue.execute(inliningTarget, behavior, method, this, key);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.remove_hash_entry;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                getValue.execute(inliningTarget, behavior, method, this, key);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2613,13 +2853,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_modifiable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
-        } else {
-            return false;
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_modifiable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2632,13 +2879,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) {
-        InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_insertable;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
-        } else {
-            return false;
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_insertable;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, key);
+            } else {
+                return false;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2647,13 +2901,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public void writeHashEntry(Object key, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue) throws UnsupportedMessageException {
-        InteropBehaviorMethod method = InteropBehaviorMethod.write_hash_entry;
-        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-        if (behavior != null) {
-            getValue.execute(inliningTarget, behavior, method, this, key, value);
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            InteropBehaviorMethod method = InteropBehaviorMethod.write_hash_entry;
+            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+            if (behavior != null) {
+                getValue.execute(inliningTarget, behavior, method, this, key, value);
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 }

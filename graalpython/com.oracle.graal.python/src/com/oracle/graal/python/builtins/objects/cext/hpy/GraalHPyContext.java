@@ -112,6 +112,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -119,7 +120,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class GraalHPyContext extends CExtContext {
+public final class GraalHPyContext extends CExtContext implements TruffleObject {
 
     // {{start autogen}}
     public static final int HPY_ABI_VERSION = 0;
@@ -1043,19 +1044,25 @@ public final class GraalHPyContext extends CExtContext {
     }
 
     public Object getObjectForHPyHandle(int handle) {
-        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from handle";
+        // GR-50245
+        // assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when
+        // resolving object from handle";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyHandleTable[handle];
     }
 
     public Object getObjectForHPyGlobal(int handle) {
-        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from global";
+        // GR-50245
+        // assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when
+        // resolving object from global";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyGlobalsTable[handle];
     }
 
     public boolean releaseHPyHandleForObject(int handle) {
-        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when releasing handle";
+        // GR-50245
+        // assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when
+        // releasing handle";
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.formatJString("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {

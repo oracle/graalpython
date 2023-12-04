@@ -132,7 +132,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -298,45 +297,42 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
     abstract static class PyTruffleUnicode_LookupAndIntern extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object withTS(TruffleString str,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached StringNodes.InternStringNode internNode,
-                        @Exclusive @Cached HashingStorageGetItem getItem,
-                        @Exclusive @Cached HashingStorageSetItem setItem,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory) {
-            PDict dict = getCApiContext(inliningTarget).getInternedUnicode();
-            if (dict == null) {
-                dict = factory.get(inliningTarget).createDict();
-                getCApiContext(inliningTarget).setInternedUnicode(dict);
-            }
-            Object interned = getItem.execute(inliningTarget, dict.getDictStorage(), str);
-            if (interned == null) {
-                interned = internNode.execute(inliningTarget, str);
-                dict.setDictStorage(setItem.execute(inliningTarget, dict.getDictStorage(), str, interned));
-            }
-            return interned;
-        }
 
         @Specialization
         static Object withPString(PString str,
                         @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Exclusive @Cached StringNodes.InternStringNode internNode,
-                        @Exclusive @Cached HashingStorageGetItem getItem,
-                        @Exclusive @Cached HashingStorageSetItem setItem,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode,
+                        @Cached StringNodes.InternStringNode internNode,
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
                 return getNativeNull(inliningTarget);
             }
-            boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;
+            /*
+             * TODO this is not integrated with str.intern, pointer comparisons of two str.intern'ed
+             * string may still yield failse
+             */
+            boolean isInterned = isInternedStringNode.execute(inliningTarget, str);
             if (isInterned) {
                 return str;
             }
-            return withTS(str.getValueUncached(), inliningTarget, internNode, getItem, setItem, factory);
+            TruffleString ts = cast.execute(inliningTarget, str);
+            PDict dict = getCApiContext(inliningTarget).getInternedUnicode();
+            if (dict == null) {
+                dict = factory.get(inliningTarget).createDict();
+                getCApiContext(inliningTarget).setInternedUnicode(dict);
+            }
+            Object interned = getItem.execute(inliningTarget, dict.getDictStorage(), ts);
+            if (interned == null) {
+                interned = internNode.execute(inliningTarget, str);
+                dict.setDictStorage(setItem.execute(inliningTarget, dict.getDictStorage(), ts, interned));
+            }
+            return interned;
         }
 
         @Fallback
@@ -958,7 +954,7 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = Direct)
     abstract static class PyUnicode_FromWideChar extends CApiBinaryBuiltinNode {
         @Specialization
         Object doInt(Object arr, long size,
