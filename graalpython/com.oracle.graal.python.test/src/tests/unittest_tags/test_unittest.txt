@@ -476,6 +476,7 @@
 *unittest.test.testmock.testasync.AsyncContextManagerTest.test_set_return_value_of_aenter
 *unittest.test.testmock.testasync.AsyncIteratorTest.test_aiter_set_return_value
 *unittest.test.testmock.testasync.AsyncIteratorTest.test_mock_aiter_and_anext_asyncmock
+*unittest.test.testmock.testasync.AsyncIteratorTest.test_mock_async_for
 *unittest.test.testmock.testasync.AsyncMagicMethods.test_async_magic_methods_return_async_mocks
 *unittest.test.testmock.testasync.AsyncMagicMethods.test_asyncmock_has_sync_magic_methods
 *unittest.test.testmock.testasync.AsyncMagicMethods.test_magic_methods_are_async_functions

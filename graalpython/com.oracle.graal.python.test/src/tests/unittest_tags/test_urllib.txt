@@ -41,6 +41,7 @@
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_parts
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_plus
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_with_bytes_input
+*graalpython.lib-python.3.test.test_urllib.Utility_Tests.test_thishost
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_doseq
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_empty_sequence
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_nonstring_seq_values
@@ -77,6 +78,7 @@
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_URLopener_deprecation
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_cafile_and_context
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_empty_socket
+*graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_file_notexists
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_ftp_cache_pruning
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_invalid_redirect
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_missing_localfile
