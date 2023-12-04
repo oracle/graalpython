@@ -61,6 +61,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -71,6 +72,8 @@ import java.util.HashSet;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -162,6 +165,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -2915,6 +2919,346 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
         } finally {
             gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean hasBufferElements(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) {
+        return acquireLib.hasBuffer(this);
+    }
+
+    @ExportMessage
+    public boolean isBufferWritable(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException {
+        if (acquireLib.hasBuffer(this)) {
+            try {
+                Object buffer = acquireLib.acquireWritable(this);
+                try {
+                    return true;
+                } finally {
+                    bufferLib.release(buffer);
+                }
+            } catch (PException pe) {
+                return false;
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public long getBufferSize(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                return bufferLib.getBufferLength(this);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public byte readBufferByte(long byteOffset,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                return bufferLib.readByte(buffer, offset);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void writeBufferByte(long byteOffset, byte value, @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireWritable(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                bufferLib.writeByte(buffer, offset, value);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public short readBufferShort(ByteOrder order, long byteOffset,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                return bufferLib.readShortByteOrder(buffer, offset, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void writeBufferShort(ByteOrder order, long byteOffset, short value, @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireWritable(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                bufferLib.writeShortByteOrder(buffer, offset, value, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public int readBufferInt(ByteOrder order, long byteOffset,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                return bufferLib.readIntByteOrder(buffer, offset, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void writeBufferInt(ByteOrder order, long byteOffset, int value, @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireWritable(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                bufferLib.writeIntByteOrder(buffer, offset, value, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public long readBufferLong(ByteOrder order, long byteOffset,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                return bufferLib.readLongByteOrder(buffer, offset, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void writeBufferLong(ByteOrder order, long byteOffset, long value, @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireWritable(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                bufferLib.writeLongByteOrder(buffer, offset, value, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public float readBufferFloat(ByteOrder order, long byteOffset,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                return bufferLib.readFloatByteOrder(buffer, offset, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void writeBufferFloat(ByteOrder order, long byteOffset, float value,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireWritable(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                bufferLib.writeFloatByteOrder(buffer, offset, value, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public double readBufferDouble(ByteOrder order, long byteOffset,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                return bufferLib.readDoubleByteOrder(buffer, offset, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void writeBufferDouble(ByteOrder order, long byteOffset, double value,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireWritable(this);
+            try {
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                bufferLib.writeDoubleByteOrder(buffer, offset, value, order);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-inlining")
+    public void readBuffer(long byteOffset, byte[] destination, int destinationOffset, int length,
+                    @Bind("$node") Node inliningTarget,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (acquireLib.hasBuffer(this)) {
+            Object buffer = acquireLib.acquireReadonly(this);
+            try {
+                if (length < 0) {
+                    throw InvalidBufferOffsetException.create(byteOffset, length);
+                }
+                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+                for (int i = 0; i < length; i++) {
+                    destination[destinationOffset + i] = bufferLib.readByte(buffer, offset + i);
+                }
+            } finally {
+                bufferLib.release(buffer);
+            }
+        } else {
+            throw UnsupportedMessageException.create();
         }
     }
 }
