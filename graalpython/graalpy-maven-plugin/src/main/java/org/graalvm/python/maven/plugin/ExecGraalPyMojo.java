@@ -103,7 +103,7 @@ public class ExecGraalPyMojo extends AbstractMojo {
         try {
             GraalPyRunner.run(classpath, log, args);
         } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(e);
+            throw new MojoExecutionException(String.format("failed to run Graalpy launcher"), e);
         }
     }
 
