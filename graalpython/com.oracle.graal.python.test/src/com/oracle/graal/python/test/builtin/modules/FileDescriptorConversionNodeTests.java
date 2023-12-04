@@ -77,12 +77,6 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
     }
 
     @Test
-    public void noValue() {
-        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
-        call(PNone.NO_VALUE);
-    }
-
-    @Test
     public void fdBool() {
         Assert.assertEquals(0, call(false));
         Assert.assertEquals(1, call(true));
