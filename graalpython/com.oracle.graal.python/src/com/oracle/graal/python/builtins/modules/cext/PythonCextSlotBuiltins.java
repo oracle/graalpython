@@ -69,6 +69,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTupleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -271,7 +272,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObject, args = {PyCMethodObject}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyCMethodObject}, call = Ignored)
     abstract static class Py_get_PyCMethodObject_mm_class extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
@@ -388,7 +389,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObject, args = {PyDescrObject}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyDescrObject}, call = Ignored)
     abstract static class Py_get_PyDescrObject_d_type extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -682,7 +683,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObject, args = {PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyObject}, call = Ignored)
     abstract static class Py_get_PyObject_ob_type extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -711,7 +712,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_start extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doStart(PSlice object) {
@@ -719,7 +720,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_step extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doStep(PSlice object) {
@@ -727,7 +728,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_stop extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doStop(PSlice object) {
