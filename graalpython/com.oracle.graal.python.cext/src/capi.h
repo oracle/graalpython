@@ -239,8 +239,6 @@ typedef struct {
     BUILTIN(PyObject_DelItem, int, PyObject*, PyObject*) \
     BUILTIN(PyObject_Dir, PyObject*, PyObject*) \
     BUILTIN(PyObject_Format, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(PyObject_GC_Track, void, void*) \
-    BUILTIN(PyObject_GC_UnTrack, void, void*) \
     BUILTIN(PyObject_GetDoc, const char*, PyObject*) \
     BUILTIN(PyObject_GetItem, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyObject_GetIter, PyObject*, PyObject*) \
@@ -335,6 +333,8 @@ typedef struct {
     BUILTIN(PyTruffleNumber_UnaryOp, PyObject*, PyObject*, int) \
     BUILTIN(PyTruffleObject_CallFunctionObjArgs, PyObject*, PyObject*, va_list*) \
     BUILTIN(PyTruffleObject_CallMethodObjArgs, PyObject*, PyObject*, PyObject*, va_list*) \
+    BUILTIN(PyTruffleObject_GC_Track, void, void*) \
+    BUILTIN(PyTruffleObject_GC_UnTrack, void, void*) \
     BUILTIN(PyTruffleObject_GenericGetAttr, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleObject_GenericSetAttr, int, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleObject_GetItemString, PyObject*, PyObject*, const char*) \

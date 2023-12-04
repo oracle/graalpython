@@ -1476,9 +1476,9 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {Pointer}, call = Direct)
-    abstract static class PyObject_GC_UnTrack extends PyTruffleGcTracingNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyObject_GC_UnTrack.class);
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffleObject_GC_UnTrack extends PyTruffleGcTracingNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObject_GC_UnTrack.class);
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
@@ -1487,9 +1487,9 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {Pointer}, call = Direct)
-    abstract static class PyObject_GC_Track extends PyTruffleGcTracingNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyObject_GC_Track.class);
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffleObject_GC_Track extends PyTruffleGcTracingNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObject_GC_Track.class);
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {

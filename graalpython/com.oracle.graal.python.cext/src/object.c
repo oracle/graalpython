@@ -1075,5 +1075,17 @@ PyVarObject* _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems) {
 }
 
 void PyObject_GC_Del(void *tp) {
-	PyObject_Free(tp);
+    PyObject_Free(tp);
+}
+
+void PyObject_GC_Track(void* a) {
+    if (PyTruffle_Trace_Memory()) {
+        GraalPyTruffleObject_GC_Track(a);
+    }
+}
+
+void PyObject_GC_UnTrack(void* a) {
+    if (PyTruffle_Trace_Memory()) {
+        GraalPyTruffleObject_GC_UnTrack(a);
+    }
 }
