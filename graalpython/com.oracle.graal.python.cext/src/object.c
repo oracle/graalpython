@@ -1048,7 +1048,37 @@ PyTypeObject* _Py_TYPE(const PyObject *a) {
 }
 
 Py_ssize_t _Py_SIZE(const PyVarObject *a) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
 	return PyVarObject_ob_size(a);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    Py_ssize_t res;
+    if (points_to_py_handle_space(a))
+    {
+        PyObject *ptr = pointer_to_stub((PyObject *) a);
+        /*
+         * Only do that for tuples right now but we may extend that to any
+         * PyVarObject in future.
+         */
+        if (ptr->ob_type == &PyTuple_Type) {
+            res = ((PyVarObject *) ptr)->ob_size;
+#ifndef NDEBUG
+            if (PyTruffle_Debug_CAPI() && GraalPy_get_PyVarObject_ob_size(a) != res)
+            {
+                Py_FatalError("ob_size of native stub and managed object differ");
+            }
+#endif
+        }
+        else
+        {
+            res = GraalPy_get_PyVarObject_ob_size(a);
+        }
+    }
+    else
+    {
+        res = a->ob_size;
+    }
+	return res;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 void _Py_SET_TYPE(PyObject *a, PyTypeObject *b) {
