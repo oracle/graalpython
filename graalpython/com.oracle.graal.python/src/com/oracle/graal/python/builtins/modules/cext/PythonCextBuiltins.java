@@ -1769,6 +1769,7 @@ public final class PythonCextBuiltins {
      * used like a {@code char*} pointer.
      */
     @ExportLibrary(InteropLibrary.class)
+    @SuppressWarnings("truffle-abstract-export")
     public static final class PMMapWrapper implements TruffleObject {
 
         private final PMMap delegate;

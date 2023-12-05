@@ -243,6 +243,7 @@ public abstract class CArrayWrappers {
      * used like a {@code char*} pointer.
      */
     @ExportLibrary(InteropLibrary.class)
+    @SuppressWarnings("truffle-abstract-export")
     public static final class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {
