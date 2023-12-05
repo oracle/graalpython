@@ -1,12 +1,12 @@
-From 11634e6f497f7fb9a3509c549832f94b5cb86865 Mon Sep 17 00:00:00 2001
+From 9edd0115fec81c1add7e1301eaccb0a3eef49d2e Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
-Date: Fri, 1 Dec 2023 05:32:57 +0300
-Subject: [PATCH] Add asv features
+Date: Tue, 5 Dec 2023 14:47:39 +0300
+Subject: [PATCH] patch 0.5.1
 
 ---
  LICENSE.rst                   |   1 +
  README.rst                    |  51 +++++
- asv/benchmark.py              |  40 +++-
+ asv/benchmark.py              |  38 +++-
  asv/commands/common_args.py   |  19 ++
  asv/commands/publish.py       |  11 ++
  asv/commands/run.py           |   2 +-
@@ -19,7 +19,7 @@ Subject: [PATCH] Add asv features
  asv/www/comparisonlist.js     | 362 ++++++++++++++++++++++++++++++++++
  asv/www/index.html            |   9 +
  docs/source/benchmarks.rst    |   3 +
- 15 files changed, 899 insertions(+), 27 deletions(-)
+ 15 files changed, 898 insertions(+), 26 deletions(-)
  create mode 100644 asv/plugins/comparisonlist.py
  create mode 100644 asv/www/comparisonlist.css
  create mode 100644 asv/www/comparisonlist.js
@@ -97,10 +97,10 @@ index e916d68..62fca24 100644
  <http://opensource.org/licenses/BSD-3-Clause>`__.
  
 diff --git a/asv/benchmark.py b/asv/benchmark.py
-index d92b4a7..721d272 100644
+index 3f5a9e7..55c93ff 100644
 --- a/asv/benchmark.py
 +++ b/asv/benchmark.py
-@@ -359,6 +359,8 @@ class Benchmark:
+@@ -462,6 +462,8 @@ class Benchmark(object):
          self._params = _get_first_attr(attr_sources, "params", [])
          self.param_names = _get_first_attr(attr_sources, "param_names", [])
          self._current_params = ()
@@ -109,14 +109,14 @@ index d92b4a7..721d272 100644
  
          # Enforce params format
          try:
-@@ -445,12 +447,23 @@ class Benchmark:
+@@ -548,12 +550,22 @@ class Benchmark(object):
          try:
              for setup in self._setups:
                  setup(*self._current_params)
 +            self.warmup_process()
          except NotImplementedError as e:
              # allow skipping test
-             print(f"asv: skipped: {e !r} ")
+             print("asv: skipped: {!r} ".format(e))
              return True
          return False
  
@@ -129,11 +129,10 @@ index d92b4a7..721d272 100644
 +                warmup_count -= 1
 +            self.warmup_func = None
 +
-+
      def redo_setup(self):
          if not self._redo_setup_next:
              self._redo_setup_next = True
-@@ -512,6 +525,8 @@ class TimeBenchmark(Benchmark):
+@@ -615,6 +627,8 @@ class TimeBenchmark(Benchmark):
          self.sample_time = _get_first_attr(self._attr_sources, 'sample_time', 0.01)
          self.warmup_time = _get_first_attr(self._attr_sources, 'warmup_time', -1)
          self.timer = _get_first_attr(self._attr_sources, 'timer', wall_timer)
@@ -142,7 +141,7 @@ index d92b4a7..721d272 100644
  
      def do_setup(self):
          result = Benchmark.do_setup(self)
-@@ -526,6 +541,8 @@ class TimeBenchmark(Benchmark):
+@@ -628,6 +642,8 @@ class TimeBenchmark(Benchmark):
          else:
              func = self.func
  
@@ -151,7 +150,7 @@ index d92b4a7..721d272 100644
          timer = timeit.Timer(
              stmt=func,
              setup=self.redo_setup,
-@@ -534,10 +551,19 @@ class TimeBenchmark(Benchmark):
+@@ -636,10 +652,19 @@ class TimeBenchmark(Benchmark):
          return timer
  
      def run(self, *param):
@@ -171,16 +170,15 @@ index d92b4a7..721d272 100644
              else:
                  # Transient effects exist also on CPython, e.g. from
                  # OS scheduling
-@@ -569,14 +595,24 @@ class TimeBenchmark(Benchmark):
-                                                 warmup_time=warmup_time,
+@@ -672,13 +697,24 @@ class TimeBenchmark(Benchmark):
                                                  number=self.number,
                                                  min_run_count=self.min_run_count)
+ 
 +        if self.do_maxrss == 2:
 +            maxrss = get_maxrss()
- 
--        samples = [s / number for s in samples]
++
+         samples = [s/number for s in samples]
 -        return {'samples': samples, 'number': number}
-+        samples = [s/number for s in samples]
 +        return {'samples': samples, 'number': number, 'maxrss' : maxrss}
  
      def benchmark_timing(self, timer, min_repeat, max_repeat, max_time, warmup_time,
@@ -199,10 +197,10 @@ index d92b4a7..721d272 100644
          run_count = 0
  
 diff --git a/asv/commands/common_args.py b/asv/commands/common_args.py
-index 05fcf15..749a40e 100644
+index 76cc729..9625a85 100644
 --- a/asv/commands/common_args.py
 +++ b/asv/commands/common_args.py
-@@ -157,10 +157,19 @@ def add_bench(parser):
+@@ -159,10 +159,19 @@ def add_bench(parser):
  
          return affinity_list
  
@@ -222,7 +220,7 @@ index 05fcf15..749a40e 100644
          'repeat': parse_repeat,
          'number': int,
          'rounds': int,
-@@ -181,6 +190,16 @@ def add_bench(parser):
+@@ -183,6 +192,16 @@ def add_bench(parser):
          help=("Set CPU affinity for running the benchmark, in format: "
                "0 or 0,1,2 or 0-3. Default: not set"))
  
@@ -240,10 +238,10 @@ index 05fcf15..749a40e 100644
  def add_machine(parser):
      parser.add_argument(
 diff --git a/asv/commands/publish.py b/asv/commands/publish.py
-index 9e84b0c..a16d20f 100644
+index 43204e9..176e558 100644
 --- a/asv/commands/publish.py
 +++ b/asv/commands/publish.py
-@@ -58,6 +58,14 @@ class Publish(Command):
+@@ -68,6 +68,14 @@ class Publish(Command):
              '--html-dir', '-o', default=None, help=(
                  "Optional output directory. Default is 'html_dir' "
                  "from asv config"))
@@ -258,7 +256,7 @@ index 9e84b0c..a16d20f 100644
  
          parser.set_defaults(func=cls.run_from_args)
  
-@@ -67,6 +75,9 @@ class Publish(Command):
+@@ -77,6 +85,9 @@ class Publish(Command):
      def run_from_conf_args(cls, conf, args):
          if args.html_dir is not None:
              conf.html_dir = args.html_dir
@@ -269,10 +267,10 @@ index 9e84b0c..a16d20f 100644
  
      @staticmethod
 diff --git a/asv/commands/run.py b/asv/commands/run.py
-index 457c127..b88028d 100644
+index 9e19b6c..ed38412 100644
 --- a/asv/commands/run.py
 +++ b/asv/commands/run.py
-@@ -495,7 +495,7 @@ class Run(Command):
+@@ -514,7 +514,7 @@ class Run(Command):
                                  record_samples=(record_samples or force_record_samples),
                                  append_samples=(append_samples or force_append_samples),
                                  run_rounds=run_rounds,
@@ -282,10 +280,10 @@ index 457c127..b88028d 100644
                              skip_benchmarks(benchmark_set, env, results=result)
  
 diff --git a/asv/config.py b/asv/config.py
-index 473007c..5137b55 100644
+index c6d15d7..b52c846 100644
 --- a/asv/config.py
 +++ b/asv/config.py
-@@ -42,6 +42,8 @@ class Config:
+@@ -46,6 +46,8 @@ class Config(object):
          self.build_command = None
          self.install_command = None
          self.uninstall_command = None
@@ -537,10 +535,10 @@ index 0000000..dfe078f
 +                        fp.write(row)
 +                    fp.write('\n\n\n')
 diff --git a/asv/runner.py b/asv/runner.py
-index b5c6a7b..364ee95 100644
+index 2c19e15..9321f33 100644
 --- a/asv/runner.py
 +++ b/asv/runner.py
-@@ -103,7 +103,8 @@ def run_benchmarks(benchmarks, env, results=None,
+@@ -111,7 +111,8 @@ def run_benchmarks(benchmarks, env, results=None,
                     extra_params=None,
                     record_samples=False, append_samples=False,
                     run_rounds=None,
@@ -550,7 +548,7 @@ index b5c6a7b..364ee95 100644
      """
      Run all of the benchmarks in the given `Environment`.
  
-@@ -156,6 +157,8 @@ def run_benchmarks(benchmarks, env, results=None,
+@@ -164,6 +165,8 @@ def run_benchmarks(benchmarks, env, results=None,
          extra_params['repeat'] = 1
          extra_params['warmup_time'] = 0
          extra_params['rounds'] = 1
@@ -559,7 +557,7 @@ index b5c6a7b..364ee95 100644
  
      if results is None:
          results = Results.unnamed()
-@@ -351,16 +354,29 @@ def run_benchmarks(benchmarks, env, results=None,
+@@ -359,16 +362,29 @@ def run_benchmarks(benchmarks, env, results=None,
                  benchmark_durations[name] = (ended_at - started_at).total_seconds()
  
              # Save result
@@ -591,7 +589,7 @@ index b5c6a7b..364ee95 100644
                  failed_benchmarks.add(name)
  
              # Log result
-@@ -500,8 +516,11 @@ def run_benchmark(benchmark, spawner, profile,
+@@ -508,8 +524,11 @@ def run_benchmark(benchmark, spawner, profile,
      samples = []
      number = []
      profiles = []
@@ -603,16 +601,16 @@ index b5c6a7b..364ee95 100644
  
      if benchmark['params']:
          param_iter = enumerate(itertools.product(*benchmark['params']))
-@@ -514,6 +533,8 @@ def run_benchmark(benchmark, spawner, profile,
+@@ -522,6 +541,8 @@ def run_benchmark(benchmark, spawner, profile,
              samples.append(None)
              number.append(None)
              profiles.append(None)
-+            result_maxrss.append(math.nan)
++            result_maxrss.append(util.nan)
 +            ignored_maxrss.append(None)
              continue
  
          if isinstance(extra_params, list):
-@@ -525,28 +546,44 @@ def run_benchmark(benchmark, spawner, profile,
+@@ -533,28 +554,44 @@ def run_benchmark(benchmark, spawner, profile,
              benchmark, spawner, param_idx,
              extra_params=cur_extra_params, profile=profile,
              cwd=cwd)
@@ -668,7 +666,7 @@ index b5c6a7b..364ee95 100644
  
  
  def _run_benchmark_single_param(benchmark, spawner, param_idx,
-@@ -611,6 +648,7 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+@@ -619,6 +656,7 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
              result = None
              samples = None
              number = None
@@ -676,8 +674,8 @@ index b5c6a7b..364ee95 100644
          else:
              with open(result_file.name, 'r') as stream:
                  data = stream.read()
-@@ -623,14 +661,16 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
-                 out += f"\n\nasv: failed to parse benchmark result: {exc}\n"
+@@ -631,14 +669,16 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+                 out += "\n\nasv: failed to parse benchmark result: {0}\n".format(exc)
  
              # Special parsing for timing benchmark results
 -            if isinstance(data, dict) and 'samples' in data and 'number' in data:
@@ -694,7 +692,7 @@ index b5c6a7b..364ee95 100644
  
          if benchmark['params'] and out:
              params, = itertools.islice(itertools.product(*benchmark['params']),
-@@ -644,14 +684,22 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+@@ -652,14 +692,22 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
          else:
              profile_data = None
  
@@ -726,10 +724,10 @@ index b5c6a7b..364ee95 100644
          spawner.interrupt()
          raise util.UserError("Interrupted.")
 diff --git a/asv/util.py b/asv/util.py
-index efed60d..0675bc1 100644
+index 52eb96e..1165020 100644
 --- a/asv/util.py
 +++ b/asv/util.py
-@@ -523,7 +523,7 @@ def check_output(args, valid_return_codes=(0,), timeout=600, dots=True,
+@@ -543,7 +543,7 @@ def check_output(args, valid_return_codes=(0,), timeout=600, dots=True,
          kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
      else:
          kwargs['close_fds'] = True
@@ -1226,10 +1224,10 @@ index 0000000..3064adc
 +    });
 +});
 diff --git a/asv/www/index.html b/asv/www/index.html
-index 5e2f651..8703284 100644
+index d1651ba..c69a6f1 100644
 --- a/asv/www/index.html
 +++ b/asv/www/index.html
-@@ -33,6 +33,9 @@
+@@ -59,6 +59,9 @@
      <script language="javascript" type="text/javascript"
              src="summarylist.js">
      </script>
@@ -1239,7 +1237,7 @@ index 5e2f651..8703284 100644
      <script language="javascript" type="text/javascript"
              src="graphdisplay.js">
      </script>
-@@ -42,6 +45,7 @@
+@@ -68,6 +71,7 @@
      <link href="asv.css" rel="stylesheet" type="text/css"/>
      <link href="regressions.css" rel="stylesheet" type="text/css"/>
      <link href="summarylist.css" rel="stylesheet" type="text/css"/>
@@ -1247,7 +1245,7 @@ index 5e2f651..8703284 100644
      <link rel="shortcut icon" href="swallow.ico"/>
      <link rel="alternate" type="application/atom+xml" title="Regressions" href="regressions.xml"/>
    </head>
-@@ -57,6 +61,7 @@
+@@ -83,6 +87,7 @@
          </li>
  	<li id="nav-li-" class="active"><a href="#/">Benchmark grid</a></li>
  	<li id="nav-li-summarylist"><a href="#/summarylist">Benchmark list</a></li>
@@ -1255,7 +1253,7 @@ index 5e2f651..8703284 100644
  	<li id="nav-li-regressions"><a href="#/regressions">Regressions</a></li>
          <li id="nav-li-graphdisplay">
            <span class="navbar-brand" id="title">
-@@ -73,6 +78,10 @@
+@@ -99,6 +104,10 @@
        <div id="summarylist-body" style="position: absolute; left: 200px; top: 55px; bottom: 0px; right: 0px; overflow-y: scroll;">
        </div>
      </div>
@@ -1267,7 +1265,7 @@ index 5e2f651..8703284 100644
        <div id="graphdisplay-navigation" class="asv-navigation" style="position: absolute; left: 0; top: 55px; bottom: 0; width: 200px; overflow-y: scroll">
          <div class="panel panel-default">
 diff --git a/docs/source/benchmarks.rst b/docs/source/benchmarks.rst
-index 16ac796..a13a6b8 100644
+index 7a1e3a4..c8bf6eb 100644
 --- a/docs/source/benchmarks.rst
 +++ b/docs/source/benchmarks.rst
 @@ -114,6 +114,9 @@ Timing benchmarks
