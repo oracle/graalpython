@@ -52,7 +52,7 @@ import com.oracle.truffle.api.object.Shape;
 /**
  * Storage for classmethods, staticmethods and instancemethods
  */
-public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
+public final class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
     private Object callable;
 
     public PDecoratedMethod(Object cls, Shape instanceShape) {
