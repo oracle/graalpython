@@ -67,7 +67,7 @@ public class GraalPyRunner {
             pb.directory(new File(workdir));
         }
 
-        log.mvnDebug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        log.debug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
 
         pb.redirectError();
         pb.redirectOutput();
@@ -120,28 +120,7 @@ public class GraalPyRunner {
 
         void subProcessErr(Throwable var1);
 
-        void mvnDebug(CharSequence var1);
+        void debug(CharSequence var1);
 
-        void mvnDebug(CharSequence var1, Throwable var2);
-
-        void mvnDebug(Throwable var1);
-
-        void mvnInfo(CharSequence var1);
-
-        void mvnInfo(CharSequence var1, Throwable var2);
-
-        void mvnInfo(Throwable var1);
-
-        void mvnWarn(CharSequence var1);
-
-        void mvnWarn(CharSequence var1, Throwable var2);
-
-        void mvnWarn(Throwable var1);
-
-        void mvnError(CharSequence var1);
-
-        void mvnError(CharSequence var1, Throwable var2);
-
-        void mvnError(Throwable var1);
     }
 }

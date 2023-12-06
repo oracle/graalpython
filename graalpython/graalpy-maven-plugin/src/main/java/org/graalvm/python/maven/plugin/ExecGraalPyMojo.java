@@ -174,41 +174,8 @@ public class ExecGraalPyMojo extends AbstractMojo {
             System.err.println(var1.toString());
         }
 
-        public void mvnDebug(CharSequence var1) {
+        public void debug(CharSequence var1) {
             delegate.debug(var1);
-        }
-        public void mvnDebug(CharSequence var1, Throwable var2) {
-            delegate.debug(var1, var2);
-        }
-        public void mvnDebug(Throwable var1) {
-            delegate.debug(var1);
-        }
-        public void mvnInfo(CharSequence var1) {
-            delegate.info(var1);
-        }
-        public void mvnInfo(CharSequence var1, Throwable var2) {
-            delegate.info(var1, var2);
-        }
-        public void mvnInfo(Throwable var1) {
-            delegate.info(var1);
-        }
-        public void mvnWarn(CharSequence var1) {
-            delegate.warn(var1);
-        }
-        public void mvnWarn(CharSequence var1, Throwable var2) {
-            delegate.warn(var1, var2);
-        }
-        public void mvnWarn(Throwable var1) {
-            delegate.warn(var1);
-        }
-        public void mvnError(CharSequence var1) {
-            delegate.error(var1);
-        }
-        public void mvnError(CharSequence var1, Throwable var2) {
-            delegate.error(var1, var2);
-        }
-        public void mvnError(Throwable var1) {
-            delegate.error(var1);
         }
     }
 
