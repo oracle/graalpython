@@ -326,6 +326,26 @@ def test_pow():
         from pow_tests import test_pow
         test_pow()
 
+    # Needs to run multiple times to invoke the cached node too
+    def call_rpow(x):
+        return x.__rpow__(2, 10)
+
+    assert call_rpow(3) == 8
+    assert call_rpow(3) == 8
+
+    class MyRPow:
+        def __pow__(self, other, modulus=None):
+            return (2 ** other) % modulus if modulus else 2 ** other
+        def __rpow__(self, other, modulus=None):
+            return (3 ** other) % modulus if modulus else 3 ** other
+
+    assert MyRPow() ** 2 == 4
+    assert pow(MyRPow(), 2, 3) == 1
+
+    assert 2 ** MyRPow() == 9
+    # This works on GraalPy, but not on CPython: feature or a bug?
+    # assert_exception(lambda: pow(2, MyRPow(), 5), TypeError)
+
 def test_slot1binfull():
     class A:
         def __add__(self, other):
