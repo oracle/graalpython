@@ -120,6 +120,7 @@ public enum ArgDescriptor {
     PyObjectWrapper(ArgBehavior.PyObjectWrapper, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
     PyTypeObject(ArgBehavior.PyObject, "PyTypeObject*"),
+    PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),
     PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true),
     PyListObject(ArgBehavior.PyObject, "PyListObject*"),
     PyTupleObject(ArgBehavior.PyObject, "PyTupleObject*"),
@@ -428,6 +429,14 @@ public enum ArgDescriptor {
 
     public boolean isPyObject() {
         return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed;
+    }
+
+    public boolean isValidReturnType() {
+        /*
+         * We don't want to allow "bare" PyObject and force ourselves to decide between
+         * PyObjectTransfer and PyObjectBorrow
+         */
+        return behavior != ArgBehavior.PyObject || transfer;
     }
 
     public boolean isCharPtr() {

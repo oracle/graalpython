@@ -1472,6 +1472,10 @@ public final class CApiFunction {
                         if (!annotation.name().isEmpty()) {
                             name = annotation.name();
                         }
+                        if (!annotation.ret().isValidReturnType()) {
+                            throw new IllegalArgumentException(
+                                            String.format("Invalid @CApiBuiltin %s: %s is not an allowed return type, use PyObjectTransfer or PyObjectBorrow variants", name, annotation.ret()));
+                        }
                         Class<?> gen;
                         try {
                             gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "NodeGen");
