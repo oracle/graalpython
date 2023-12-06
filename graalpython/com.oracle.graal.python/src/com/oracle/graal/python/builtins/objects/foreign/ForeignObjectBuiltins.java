@@ -651,8 +651,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.isString(left)")
         Object doComparisonString(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
-                        @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             TruffleString leftString;
             gil.release(true);
