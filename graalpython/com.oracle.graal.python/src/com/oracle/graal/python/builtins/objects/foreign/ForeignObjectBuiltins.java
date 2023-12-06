@@ -649,6 +649,24 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             return comparisonNode.executeObject(frame, PNone.NONE, right);
         }
 
+        @Specialization(guards = "lib.isString(left)")
+        Object doComparisonString(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
+                        @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            TruffleString leftString;
+            gil.release(true);
+            try {
+                leftString = switchEncodingNode.execute(lib.asTruffleString(left), TS_ENCODING);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("object does not unpack to string for comparison as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            return comparisonNode.executeObject(frame, leftString, right);
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         public static PNotImplemented doGeneric(Object left, Object right) {
