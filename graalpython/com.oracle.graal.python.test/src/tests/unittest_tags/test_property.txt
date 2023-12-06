@@ -12,6 +12,7 @@
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_property_decorator_subclass_doc
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_property_getter_doc_override
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_property_set_name_incorrect_args
+*graalpython.lib-python.3.test.test_property.PropertyTests.test_property_setname_on_property_subclass
 *graalpython.lib-python.3.test.test_property.PropertyTests.test_refleaks_in___init__
 *graalpython.lib-python.3.test.test_property.PropertyUnreachableAttributeNoName.test_del_property
 *graalpython.lib-python.3.test.test_property.PropertyUnreachableAttributeNoName.test_get_property
