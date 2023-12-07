@@ -1769,7 +1769,6 @@ public final class PythonCextBuiltins {
      * A native wrapper for arbitrary byte arrays (i.e. the store of a Python Bytes object) to be
      * used like a {@code char*} pointer.
      */
-    @SuppressWarnings("truffle-abstract-export")
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("truffle-abstract-export")
     public static final class PMMapWrapper implements TruffleObject {
