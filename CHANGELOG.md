@@ -20,7 +20,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 *Adding integration with jBang (https://www.jbang.dev/)
 ** running example via `jbang hello@oracle/graalpython` or `jbang hello@oracle/graalpython "print(1*4)"`
 ** creating new script via: `jbang init --template=graalpy@oracle/graalpython myscript.java`
-** creating new script with local maven repo for testing: `jbang init --template=graalpy@oracle/graalpython -Dpath_to_local_repo=/absolute/path/to/local/maven/repository myscript.java'
+** creating new script with local maven repo for testing: `bang init --template=graalpy_local_repo@oracle/graalpython -Dpath_to_local_repo=/absolute/path/to/local/maven/repository myscript.java'
 
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.

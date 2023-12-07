@@ -20,7 +20,7 @@ import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 public class {baseName} {
     public static void main(String[] args) {
-        System.out.println("Running2");
+
         try (Context context = VirtualGraalPyContext.getContext()) {
             switch (args.length) {
                 case 0:
