@@ -1124,6 +1124,9 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     env['PYTHONHASHSEED'] = '0'
     delete_bad_env_keys(env)
 
+    if mx.primary_suite() != SUITE:
+        env.setdefault("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS", "true")
+
     # list of excluded tests
     if aot_compatible:
         exclude += AOT_INCOMPATIBLE_TESTS
