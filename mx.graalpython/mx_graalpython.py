@@ -1938,7 +1938,7 @@ def update_import_cmd(args):
     overlaytip = str(vc.tip(overlaydir)).strip()
 
     # update ci import in all our repos, commit the full update
-    prev_verbosity = mx._opts.very_verbose
+    prev_verbosity = mx.get_opts().very_verbose
     for repo in repos:
         jsonnetfile = os.path.join(repo, "ci.jsonnet")
         with open(jsonnetfile, "w") as f:
@@ -1951,10 +1951,10 @@ def update_import_cmd(args):
     if not args.no_push:
         for repo in repos_updated:
             try:
-                mx._opts.very_verbose = True
+                mx.get_opts().very_verbose = True
                 vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
             finally:
-                mx._opts.very_verbose = prev_verbosity
+                mx.get_opts().very_verbose = prev_verbosity
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
