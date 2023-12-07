@@ -50,4 +50,26 @@ SOFTWARE.
   <packaging>jar</packaging>
   <name>Test MyMojo</name>
   
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.graalvm.python</groupId>
+        <artifactId>graalpy-maven-plugin</artifactId>
+        <version>{graalpy-maven-plugin-version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>process-graalpy-resources</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <packages>
+            <package>psutil</package>
+            <package>termcolor</package>
+          </packages>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

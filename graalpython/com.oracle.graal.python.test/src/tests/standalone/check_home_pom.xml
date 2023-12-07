@@ -52,44 +52,41 @@ SOFTWARE.
   
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.graalvm.polyglot</groupId>
-      <artifactId>python</artifactId>
-      <version>23.1.0</version>
+      <artifactId>python-community</artifactId>
+      <version>{graalpy-maven-plugin-version}</version>
       <type>pom</type>
     </dependency>
     <dependency>
       <groupId>org.graalvm.python</groupId>
       <artifactId>python-launcher</artifactId>
-      <version>23.1.0</version>
+      <version>{graalpy-maven-plugin-version}</version>
     </dependency>
   </dependencies>
-
+  
   <build>
     <plugins>
       <plugin>
         <groupId>org.graalvm.python</groupId>
         <artifactId>graalpy-maven-plugin</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>{graalpy-maven-plugin-version}</version>
         <executions>
           <execution>
+            <configuration>
+              <pythonHome>
+                <includes>
+                  <include>.*__init__\.py</include>
+                </includes>
+                <excludes>
+                  <exclude>.*html/__init__\.py</exclude>
+                </excludes>
+              </pythonHome>
+            </configuration>
             <goals>
-              <goal>prepare-venv</goal>
-              <goal>vfs-index</goal>
+              <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <packages>
-            <package>psutil</package>
-            <package>termcolor</package>
-          </packages>
-        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -40,10 +40,7 @@
  */
 package org.graalvm.python.maven.plugin;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +55,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-
+import org.graalvm.python.embedding.utils.GraalPyRunner;
 
 @Mojo(name = "exec", defaultPhase = LifecyclePhase.NONE,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
@@ -94,25 +91,19 @@ public class ExecGraalPyMojo extends AbstractMojo {
     }
 
     static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
-        var classpath = calculateClasspath(project, log);
-        var workdir = System.getProperty("exec.workingdir");
-        var java = Paths.get(System.getProperty("java.home"), "bin", "java");
-        var cmd = new ArrayList<String>();
-        cmd.add(java.toString());
-        cmd.add("-classpath");
-        cmd.add(String.join(File.pathSeparator, classpath));
-        cmd.add("com.oracle.graal.python.shell.GraalPythonMain");
-        cmd.addAll(List.of(args));
-        var pb = new ProcessBuilder(cmd);
-        if (workdir != null) {
-            pb.directory(new File(workdir));
-        }
-        log.debug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
-        pb.inheritIO();
+        runGraalPy(project,  new LogDelegate(log), args);
+    }
+
+    static void runGraalPy(MavenProject project, Log log, List<String> out, String... args) throws MojoExecutionException {
+        runGraalPy(project, new LogDelegate(log, out), args);
+    }
+
+    private static  void runGraalPy(MavenProject project, GraalPyRunner.Log log, String... args) throws MojoExecutionException {
+        var classpath = calculateClasspath(project);
         try {
-            pb.start().waitFor();
+            GraalPyRunner.run(classpath, log, args);
         } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(e);
+            throw new MojoExecutionException(String.format("failed to run Graalpy launcher"), e);
         }
     }
 
@@ -120,7 +111,7 @@ public class ExecGraalPyMojo extends AbstractMojo {
         return getGraalPyArtifact(project, PYTHON_LANGUAGE).getVersion();
     }
 
-    private static Collection<Artifact> resolveProjectDependencies(MavenProject project) {
+    static Collection<Artifact> resolveProjectDependencies(MavenProject project) {
         return project.getArtifacts()
             .stream()
             .filter(a -> !"test".equals(a.getScope()))
@@ -137,7 +128,7 @@ public class ExecGraalPyMojo extends AbstractMojo {
         throw new MojoExecutionException(String.format("Missing GraalPy dependency %s:%s. Please add it to your pom", GRAALPY_GROUP, aid));
     }
 
-    private static HashSet<String> calculateClasspath(MavenProject project, Log log) throws MojoExecutionException {
+    private static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
         var classpath = new HashSet<String>();
         getGraalPyArtifact(project, PYTHON_LANGUAGE);
         getGraalPyArtifact(project, PYTHON_LAUNCHER);
@@ -146,6 +137,79 @@ public class ExecGraalPyMojo extends AbstractMojo {
             classpath.add(r.getFile().getAbsolutePath());
         }
         return classpath;
+    }
+
+    private static class LogDelegate implements GraalPyRunner.Log {
+        private final Log delegate;
+
+        private final List<String> output;
+
+        private LogDelegate(Log delegate) {
+            this(delegate, null);
+        }
+        private LogDelegate(Log delegate, List<String> output) {
+            this.delegate = delegate;
+            this.output = output;
+        }
+
+        public void subProcessOut(CharSequence var1) {
+            if(output != null) {
+                output.add(var1.toString());
+            } else {
+                System.out.println(var1.toString());
+            }
+        }
+
+        public void subProcessErr(CharSequence var1) {
+            System.err.println(var1.toString());
+        }
+
+        public void subProcessOut(Throwable var1) {
+            var1.printStackTrace();
+            System.out.println(var1.toString());
+        }
+
+        public void subProcessErr(Throwable var1) {
+            var1.printStackTrace();
+            System.err.println(var1.toString());
+        }
+
+        public void mvnDebug(CharSequence var1) {
+            delegate.debug(var1);
+        }
+        public void mvnDebug(CharSequence var1, Throwable var2) {
+            delegate.debug(var1, var2);
+        }
+        public void mvnDebug(Throwable var1) {
+            delegate.debug(var1);
+        }
+        public void mvnInfo(CharSequence var1) {
+            delegate.info(var1);
+        }
+        public void mvnInfo(CharSequence var1, Throwable var2) {
+            delegate.info(var1, var2);
+        }
+        public void mvnInfo(Throwable var1) {
+            delegate.info(var1);
+        }
+        public void mvnWarn(CharSequence var1) {
+            delegate.warn(var1);
+        }
+        public void mvnWarn(CharSequence var1, Throwable var2) {
+            delegate.warn(var1, var2);
+        }
+        public void mvnWarn(Throwable var1) {
+            delegate.warn(var1);
+        }
+        public void mvnError(CharSequence var1) {
+            delegate.error(var1);
+        }
+        public void mvnError(CharSequence var1, Throwable var2) {
+            delegate.error(var1, var2);
+        }
+        public void mvnError(Throwable var1) {
+            delegate.error(var1);
+        }
     }
 
 }

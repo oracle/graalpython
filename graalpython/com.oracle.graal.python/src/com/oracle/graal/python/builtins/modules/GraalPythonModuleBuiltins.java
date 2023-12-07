@@ -1027,4 +1027,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return TruffleString.fromJavaStringUncached(System.getProperty("java.version"), TS_ENCODING);
         }
     }
+
+    @Builtin(name = "get_python_home_paths", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetPythonHomePaths extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        TruffleString get() {
+            PythonContext context = getContext();
+            TruffleString sep = TruffleString.fromJavaStringUncached(File.pathSeparator, TS_ENCODING);
+            return context.getStdlibHome().concatUncached(sep, TS_ENCODING, false).concatUncached(context.getCoreHome(), TS_ENCODING, false);
+        }
+    }
 }

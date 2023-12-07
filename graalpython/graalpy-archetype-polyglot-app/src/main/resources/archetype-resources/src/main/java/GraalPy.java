@@ -51,6 +51,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import java.io.IOException;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 public class GraalPy {
     private static final String VENV_PREFIX = "/vfs/venv";
@@ -60,7 +61,14 @@ public class GraalPy {
     private static final String PYTHON = "python";
 
     public static Context getContext() {
-        VirtualFileSystem vfs = new VirtualFileSystem();
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder()
+            .extractFilter(p -> {
+                String s = p.toString();
+                // Specify what files in the virtual filesystem need to be accessed outside the Truffle sandbox.
+                // e.g. if they need to be accessed by the operating system loader.
+                return s.endsWith(".ttf");
+            })
+            .build();
         Context context = Context.newBuilder()
             // set true to allow experimental options
             .allowExperimentalOptions(false)

@@ -1490,7 +1490,7 @@ def graalpython_gate_runner(args, tasks):
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
             full_env = extend_os_env(**env)
-            mx.run([sys.executable, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests/test_standalone.py"], env=full_env)
+            mx.run([sys.executable, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=full_env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -2753,7 +2753,7 @@ class MavenProject(mx.Distribution, mx.ClasspathDependency):
             return True, "Maven package does not exist"
         if not os.path.exists(self.sourcesPath):
             return True, "Maven sources do not exist"
-        newestSource = newestInput or 0
+        newestSource = newestInput.timestamp if newestInput else 0
         for root, _, files in os.walk(self.maven_directory):
             if files:
                 newestSource = max(newestSource, max(mx.getmtime(os.path.join(root, f)) for f in files))

@@ -152,7 +152,7 @@ def get_download_dir(parsed_args):
     try:
         if not os.path.exists(mp):
             os.mkdir(mp)
-        Pathlib(mp).touch() # Ensure if we can write to that location
+        pathlib.Path(mp).touch() # Ensure if we can write to that location
         parsed_args.keep_temp = True # Keep this location
         return mp
     except Exception as e:
@@ -242,7 +242,7 @@ def bundle_python_resources(target_dir, project, venv=None):
 
     os.makedirs(os.path.dirname(target_dir), exist_ok=True)
 
-    lib_source = __graalpython__.capi_home
+    lib_source = __graalpython__.core_home
     copy_folder_to_target(
         target_dir,
         lib_source,
@@ -267,7 +267,7 @@ def bundle_python_resources(target_dir, project, venv=None):
                     "sulong",
                     "llvm-toolchain",
                 ]
-            )
+    )
             or (file and file.split(".")[-1] in ["so", "dll", "dylib"])
         ),
     )
