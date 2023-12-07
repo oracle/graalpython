@@ -59,6 +59,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.graalvm.python.embedding.utils.VFSUtils;
 
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
@@ -318,47 +319,11 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private void listGraalPyResources() throws MojoExecutionException {
         Path vfs = getVenvDirectory(project).getParent();
-        Path filesList = vfs.resolve("fileslist.txt");
-        if (!Files.isDirectory(vfs)) {
-            getLog().error(String.format("'%s' has to exist and be a directory.\n", vfs.toString()));
+        try {
+            VFSUtils.generateVFSFilesList(vfs);
+        } catch(IOException e) {
+            throw new MojoExecutionException(String.format("Failed to generate files list in '%s'", vfs.toString()), e);
         }
-        var ret = new HashSet<String>();
-        String rootPath = makeDirPath(vfs.toAbsolutePath());
-        int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
-        ret.add(rootPath.substring(rootEndIdx));
-        try (var s = Files.walk(vfs)) {
-            s.forEach(p -> {
-                if (Files.isDirectory(p)) {
-                    String dirPath = makeDirPath(p.toAbsolutePath());
-                    ret.add(dirPath.substring(rootEndIdx));
-                } else if (Files.isRegularFile(p)) {
-                    ret.add(p.toAbsolutePath().toString().substring(rootEndIdx));
-                }
-            });
-        } catch (IOException e) {
-            throw new MojoExecutionException(String.format("Failed to access '%s'", vfs.toString()), e);
-        }
-        String[] a = ret.toArray(new String[ret.size()]);
-        Arrays.sort(a);
-        try (var wr = new FileWriter(filesList.toFile())) {
-            for (String f : a) {
-                if (f.charAt(0) == '\\') {
-                    f = f.replace("\\", "/");
-                }
-                wr.write(f);
-                wr.write("\n");
-            }
-        } catch (IOException e) {
-            throw new MojoExecutionException(String.format("error while creating '%s'\n", filesList), e);
-        }
-    }
-
-    private static String makeDirPath(Path p) {
-        String ret = p.toString();
-        if (!ret.endsWith(File.separator)) {
-            ret += File.separator;
-        }
-        return ret;
     }
     
     private void manageVenv() throws MojoExecutionException {
