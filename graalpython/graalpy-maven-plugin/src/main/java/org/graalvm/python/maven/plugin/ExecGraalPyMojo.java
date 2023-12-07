@@ -91,14 +91,10 @@ public class ExecGraalPyMojo extends AbstractMojo {
     }
 
     static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
-        runGraalPy(project,  new LogDelegate(log), args);
+        runGraalPy(project,  new MavenDelegateLog(log), args);
     }
 
-    static void runGraalPy(MavenProject project, Log log, List<String> out, String... args) throws MojoExecutionException {
-        runGraalPy(project, new LogDelegate(log, out), args);
-    }
-
-    private static  void runGraalPy(MavenProject project, GraalPyRunner.Log log, String... args) throws MojoExecutionException {
+    private static  void runGraalPy(MavenProject project, MavenDelegateLog log, String... args) throws MojoExecutionException {
         var classpath = calculateClasspath(project);
         try {
             GraalPyRunner.run(classpath, log, args);
@@ -128,7 +124,7 @@ public class ExecGraalPyMojo extends AbstractMojo {
         throw new MojoExecutionException(String.format("Missing GraalPy dependency %s:%s. Please add it to your pom", GRAALPY_GROUP, aid));
     }
 
-    private static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
+    public static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
         var classpath = new HashSet<String>();
         getGraalPyArtifact(project, PYTHON_LANGUAGE);
         getGraalPyArtifact(project, PYTHON_LAUNCHER);
@@ -137,46 +133,6 @@ public class ExecGraalPyMojo extends AbstractMojo {
             classpath.add(r.getFile().getAbsolutePath());
         }
         return classpath;
-    }
-
-    private static class LogDelegate implements GraalPyRunner.Log {
-        private final Log delegate;
-
-        private final List<String> output;
-
-        private LogDelegate(Log delegate) {
-            this(delegate, null);
-        }
-        private LogDelegate(Log delegate, List<String> output) {
-            this.delegate = delegate;
-            this.output = output;
-        }
-
-        public void subProcessOut(CharSequence var1) {
-            if(output != null) {
-                output.add(var1.toString());
-            } else {
-                System.out.println(var1.toString());
-            }
-        }
-
-        public void subProcessErr(CharSequence var1) {
-            System.err.println(var1.toString());
-        }
-
-        public void subProcessOut(Throwable var1) {
-            var1.printStackTrace();
-            System.out.println(var1.toString());
-        }
-
-        public void subProcessErr(Throwable var1) {
-            var1.printStackTrace();
-            System.err.println(var1.toString());
-        }
-
-        public void debug(CharSequence var1) {
-            delegate.debug(var1);
-        }
     }
 
 }

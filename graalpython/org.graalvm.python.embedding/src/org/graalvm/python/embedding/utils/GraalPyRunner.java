@@ -53,7 +53,7 @@ import java.util.Set;
 
 public class GraalPyRunner {
 
-    public static void run(Set<String> classpath, Log log, String... args) throws IOException, InterruptedException {
+    public static void run(Set<String> classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
         String workdir = System.getProperty("exec.workingdir");
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
@@ -67,7 +67,7 @@ public class GraalPyRunner {
             pb.directory(new File(workdir));
         }
 
-        log.debug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        log.log(String.format("Running GraalPy: %s", String.join(" ", cmd)));
 
         pb.redirectError();
         pb.redirectOutput();
@@ -81,7 +81,7 @@ public class GraalPyRunner {
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.subProcessErr(e);
+                log.log("exception while reading subprocess out", e);
             }
         });
         outputReader.start();
@@ -96,7 +96,7 @@ public class GraalPyRunner {
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.subProcessErr(e);
+                log.log("exception while reading subprocess err", e);
             }
         });
         errorReader.start();
@@ -110,17 +110,4 @@ public class GraalPyRunner {
         }
     }
 
-    public static interface Log {
-
-        void subProcessOut(CharSequence var1);
-
-        void subProcessErr(CharSequence var1);
-
-        void subProcessOut(Throwable var1);
-
-        void subProcessErr(Throwable var1);
-
-        void debug(CharSequence var1);
-
-    }
 }

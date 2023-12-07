@@ -44,12 +44,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.AbstractMojo;
@@ -123,26 +119,22 @@ public class ManageResourcesMojo extends AbstractMojo {
                 delete(homeDirectory);
             }
             if (pythonHomeChanged(pythonHomeIncludes, pythonHomeExcludes, lines)) {
-                getLog().info(String.format("Deleting GraalPy home due to chenges includes or excludes"));
+                getLog().info(String.format("Deleting GraalPy home due to changed includes or excludes"));
                 delete(homeDirectory);
             }
         } else {
             getLog().info(String.format("Creating GraalPy %s home", graalPyVersion));
         }
-        if (!Files.exists(homeDirectory)) {
-            try {
-                Files.createDirectories(homeDirectory.getParent());
-            } catch (IOException e) {
-                throw new MojoExecutionException(String.format("failed to create home directory %s", homeDirectory), e);
-            }
-            copy(homeDirectory.toAbsolutePath().toString(), pythonHomeIncludes, pythonHomeExcludes);
-        }
         try {
+            if (!Files.exists(homeDirectory)) {
+                Files.createDirectories(homeDirectory.getParent());
+                VFSUtils.copyGraalPyHome(ExecGraalPyMojo.calculateClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
+            }
             Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             write(tag, pythonHomeIncludes, INCLUDE_PREFIX);
             write(tag, pythonHomeExcludes, EXCLUDE_PREFIX);
-        } catch (IOException e) {
-            throw new MojoExecutionException(String.format("failed to write tag file %s", tag), e);
+        } catch (IOException | InterruptedException e) {
+            throw new MojoExecutionException(String.format("failed to copy graalpy home %s", homeDirectory), e);
         }
     }
 
@@ -174,135 +166,6 @@ public class ManageResourcesMojo extends AbstractMojo {
             return new ArrayList<>(l);
         }
         return new ArrayList<>(0);
-    }
-
-    private void copy(String targetRootPath, List<String> pythonHomeIncludes, List<String> pythonHomeExcludes) throws MojoExecutionException {
-        getLog().info(String.format("Copying std lib to '%s'\n", targetRootPath));
-        try {
-            // get stdlib and core home
-            String stdlibHome = null;
-            String coreHome = null;
-            String pathsOutputPrefix = "<=outputpaths=>";
-            List<String> homePathsOutput = new ArrayList<>();
-            ExecGraalPyMojo.runGraalPy(project, getLog(), homePathsOutput, new String[]{"-c", "print('" + pathsOutputPrefix + "', __graalpython__.get_python_home_paths(), sep='')"});
-            for (String l : homePathsOutput) {
-                if(l.startsWith(pathsOutputPrefix)) {
-                    String[] s = l.substring(pathsOutputPrefix.length()).split(File.pathSeparator);
-                    stdlibHome = s[0];
-                    coreHome = s[1];
-                }
-            }
-            assert stdlibHome != null;
-            assert coreHome != null;
-
-            // copy core home
-            File target = new File(targetRootPath + File.separator + "lib-graalpython");
-            if(!target.exists()) {
-                target.mkdirs();
-            }
-            Path source = Paths.get(coreHome);
-            Predicate<Path> filter = (f) -> {
-                if(Files.isDirectory(f)) {
-                    if(f.getFileName().toString().equals("__pycache__") || f.getFileName().toString().equals("standalone")) {
-                        return true;
-                    }
-                } else {
-                    if(f.getFileName().endsWith(".py") || f.getFileName().endsWith(".txt") ||
-                            f.getFileName().endsWith(".c") || f.getFileName().endsWith(".md") ||
-                            f.getFileName().endsWith(".patch") || f.getFileName().endsWith(".toml") ||
-                            f.getFileName().endsWith("PKG-INFO")) {
-                        return true;
-                    }
-                    if(!isIncluded(f.toAbsolutePath().toString(), pythonHomeIncludes)) {
-                        return true;
-                    }
-                }
-                return isExcluded(f.toAbsolutePath().toString(), pythonHomeExcludes);
-            };
-            copyFolder(source, source, target, filter);
-
-            // copy stdlib home
-            target =  new File(targetRootPath + File.separator +  "lib-python"+ File.separator + "3");
-            if(!target.exists()) {
-                target.mkdirs();
-            }
-            source = Paths.get(stdlibHome);
-            filter = (f) -> {
-                if(Files.isDirectory(f)) {
-                    if(f.getFileName().toString().equals("idlelib") || f.getFileName().toString().equals("ensurepip") ||
-                            f.getFileName().toString().equals("tkinter") || f.getFileName().toString().equals("turtledemo") ||
-                            f.getFileName().toString().equals("__pycache__")) {
-                        return true;
-                    }
-                } else {
-                    // libpythonvm.* in same folder as stdlib is a windows issue only
-                    if(f.getFileName().toString().equals("libpythonvm.dll")) {
-                        return true;
-                    }
-                    if(!isIncluded(f.toAbsolutePath().toString(), pythonHomeIncludes)) {
-                        return true;
-                    }
-                }
-                return isExcluded(f.toAbsolutePath().toString(), pythonHomeExcludes);
-            };
-            copyFolder(source, source, target, filter);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private boolean isIncluded(String filePath, List<String> includes) {
-        if(includes == null || includes.isEmpty()) {
-            return true;
-        }
-        return pathMatches(filePath, includes);
-    }
-
-    private boolean isExcluded(String filePath, List<String> excludes) {
-        if(excludes == null || excludes.isEmpty()) {
-            return false;
-        }
-        return pathMatches(filePath, excludes);
-    }
-
-    private boolean pathMatches(String filePath, List<String> includes) {
-        if(File.separator.equals("\\")) {
-            filePath = filePath.replaceAll("\\\\", "/");
-        }
-        for (String i: includes) {
-            Pattern pattern = Pattern.compile(i);
-            Matcher matcher = pattern.matcher(filePath);
-            if(matcher.matches()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void copyFolder(Path sourceRoot, Path file, File targetRoot, Predicate<Path> filter) throws IOException {
-        Files.walkFileTree(file, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException {
-                if (filter.test(f)) {
-                    return FileVisitResult.CONTINUE;
-                }
-                if (Files.isDirectory(f)) {
-                    copyFolder(sourceRoot, f, targetRoot, filter);
-                } else {
-                    Path relFile = sourceRoot.relativize(f);
-                    Path targetPath = Paths.get(targetRoot + File.separator + relFile.toString());
-                    Path parent = targetPath.getParent();
-                    if (!Files.exists(parent)) {
-                        Files.createDirectories(parent);
-                    }
-                    if (Files.exists(targetPath)) {
-                        Files.delete(targetPath);
-                    }
-                    Files.copy(f, targetPath);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
     }
 
     private void delete(Path homeDirectory) throws MojoExecutionException {

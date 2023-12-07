@@ -41,8 +41,8 @@
 
 package org.graalvm.python.embedding.jbang;
 
+import org.graalvm.python.embedding.utils.SubprocessLog;
 import org.graalvm.python.embedding.utils.VFSUtils;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 import java.io.BufferedReader;
 
@@ -60,7 +60,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -144,9 +143,10 @@ public class JBangIntegration {
 
         if (nativeImage) {
             // include python stdlib in image
-            runGraalPy(dependencies, "-c", String.format("__import__('shutil').copytree(__graalpython__.home, '%s', dirs_exist_ok=True)", home.toAbsolutePath().toString()));
-            var niConfig = temporaryJar.resolve("META-INF").resolve("native-image");
             try {
+                // XXX always copy, no delete?
+                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, new Log());
+                var niConfig = temporaryJar.resolve("META-INF").resolve("native-image");
                 Files.createDirectories(niConfig);
                 Files.writeString(niConfig.resolve("native-image.properties"), "Args = -H:-CopyLanguageResources");
                 Files.writeString(niConfig.resolve("resource-config.json"), """
@@ -158,7 +158,7 @@ public class JBangIntegration {
                                   }
                                 }
                                 """);
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -416,5 +416,29 @@ public class JBangIntegration {
             System.out.println(line);
         }
         System.out.println("==================================");
+    }
+
+    private static class Log implements SubprocessLog {
+
+        @Override
+        public void subProcessOut(CharSequence var1) {
+            System.out.println(var1);
+        }
+
+        @Override
+        public void subProcessErr(CharSequence var1) {
+            System.err.println(var1);
+        }
+
+        @Override
+        public void log(CharSequence var1) {
+            System.out.println(var1);
+        }
+
+        @Override
+        public void log(CharSequence var1, Throwable t) {
+            System.out.println(var1);
+            t.printStackTrace();
+        }
     }
 }
