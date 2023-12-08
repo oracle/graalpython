@@ -4,32 +4,54 @@ jobs:
   build-repo:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Download artifacts for linux-amd64
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e
+        continue-on-error: true
         with:
-          workflow: build-linux-amd64-wheels
+          workflow: build-linux-amd64-wheels.yml
+          workflow_conclusion: ''
+          if_no_artifact_found: warn
+          allow_forks: 'false'
       - name: Download artifacts for linux-aarch64
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e
+        continue-on-error: true
         with:
-          workflow: build-linux-aarch64-wheels
+          workflow: build-linux-aarch64-wheels.yml
+          workflow_conclusion: ''
+          if_no_artifact_found: warn
+          allow_forks: 'false'
       - name: Download artifacts for macos-amd64
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e
+        continue-on-error: true
         with:
-          workflow: build-macos-amd64-wheels
+          workflow: build-macos-amd64-wheels.yml
+          workflow_conclusion: ''
+          if_no_artifact_found: warn
+          allow_forks: 'false'
       - name: Download artifacts for macos-aarch64
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e
+        continue-on-error: true
         with:
-          workflow: build-macos-aarch64-wheels
+          workflow: build-macos-aarch64-wheels.yml
+          workflow_conclusion: ''
+          if_no_artifact_found: warn
+          allow_forks: 'false'
       - name: Download artifacts for windows-amd64
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e
+        continue-on-error: true
         with:
-          workflow: build-windows-amd64-wheels
+          workflow: build-windows-amd64-wheels.yml
+          workflow_conclusion: ''
+          if_no_artifact_found: warn
+          allow_forks: 'false'
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       - name: Create repository
-        run: python ${GITHUB_WORKSPACE}/generate_repository.py
+        run: python ${GITHUB_WORKSPACE}/scripts/wheelbuilder/generate_repository.py
       - name: Store repository
         uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
         with:

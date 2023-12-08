@@ -118,10 +118,20 @@ def generate(workflow_directory):
                 "runs-on": "ubuntu-latest",
                 "steps": [
                     {
+                        "name": "Checkout",
+                        "uses": "actions/checkout@v4",
+                    },
+                ]
+                + [
+                    {
                         "name": f"Download artifacts for {p.name}-{p.arch}",
-                        "uses": "dawidd6/action-download-artifact@v2",
+                        "uses": "dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e",
+                        "continue-on-error": True,
                         "with": {
-                            "workflow": f"build-{p.name}-{p.arch}-wheels",
+                            "workflow": f"build-{p.name}-{p.arch}-wheels.yml",
+                            "workflow_conclusion": "",
+                            "if_no_artifact_found": "warn",
+                            "allow_forks": "false",
                         },
                     }
                     for p in PLATFORMS
@@ -136,7 +146,7 @@ def generate(workflow_directory):
                     },
                     {
                         "name": "Create repository",
-                        "run": "python ${GITHUB_WORKSPACE}/generate_repository.py",
+                        "run": "python ${GITHUB_WORKSPACE}/scripts/wheelbuilder/generate_repository.py",
                     },
                     {
                         "name": "Store repository",
