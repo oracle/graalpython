@@ -3466,14 +3466,14 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long doInt(int value,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return checkValue(inliningTarget, value, raiseNode);
         }
 
         @Specialization
         long doLong(long value,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return checkValue(inliningTarget, value, raiseNode);
         }
 
