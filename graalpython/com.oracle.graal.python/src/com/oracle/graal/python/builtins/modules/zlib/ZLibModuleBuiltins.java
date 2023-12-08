@@ -223,7 +223,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(MathGuards.class)
-    public abstract static class ExpectIntNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectIntNode extends ArgumentCastNode {
         private final Object defaultValue;
 
         protected ExpectIntNode(Object defaultValue) {
@@ -280,7 +280,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class ExpectByteLikeNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectByteLikeNode extends ArgumentCastNode {
         private final byte[] defaultValue;
 
         protected ExpectByteLikeNode(byte[] defaultValue) {
@@ -308,8 +308,9 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+        static byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
         }
 
         @ClinicConverterFactory

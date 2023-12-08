@@ -272,7 +272,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(obj)")
-        @SuppressWarnings("truffle-static-method")
         static long doObject(VirtualFrame frame, Node inliningTarget, Object obj,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Cached CastToJavaDoubleNode castToDouble,

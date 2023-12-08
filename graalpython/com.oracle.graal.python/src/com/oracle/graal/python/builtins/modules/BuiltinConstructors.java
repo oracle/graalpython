@@ -1153,20 +1153,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FrozenSetNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(arg)")
-        public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
+        static PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createFrozenSet(cls);
         }
 
         @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
-        public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
+        static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached IsAnyBuiltinClassProfile isBuiltinClass) {
             return arg;
         }
 
         @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
-        public PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
+        static PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached IsAnyBuiltinClassProfile isBuiltinClass,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -1174,8 +1174,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
-        @SuppressWarnings("truffle-static-method")
-        public PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
+        static PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Shared @Cached PythonObjectFactory factory) {

@@ -72,7 +72,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -110,7 +110,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
      * Helper converter which iterates the argv argument and converts each element to the opaque
      * path representation used by {@link PosixSupportLibrary}.
      */
-    abstract static class ProcessArgsConversionNode extends ArgumentCastNodeWithRaise {
+    abstract static class ProcessArgsConversionNode extends ArgumentCastNode {
         @Specialization
         static Object[] doNone(@SuppressWarnings("unused") PNone processArgs) {
             // CPython passes NULL to execve() in this case. man execve explicitly discourages this,
@@ -119,20 +119,20 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object[] doSequence(VirtualFrame frame, Object processArgs,
+        static Object[] doSequence(VirtualFrame frame, Object processArgs,
                         @Bind("this") Node inliningTarget,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
-                        @Cached("createNotNormalized()") GetItemNode getItemNode) {
+                        @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PSequence argsSequence;
             try {
                 argsSequence = fastConstructListNode.execute(frame, inliningTarget, processArgs);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, isBuiltinClassProfile);
-                throw raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
             }
 
             SequenceStorage argsStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
@@ -142,7 +142,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 SequenceStorage newStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
                 if (newStorage != argsStorage || newStorage.length() != len) {
                     // TODO write a test for this
-                    throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
+                    throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
                 Object o = getItemNode.execute(argsStorage, i);
                 argsArray[i] = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
@@ -157,29 +157,29 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class EnvConversionNode extends ArgumentCastNodeWithRaise {
+    abstract static class EnvConversionNode extends ArgumentCastNode {
         @Specialization
         static Object doNone(@SuppressWarnings("unused") PNone env) {
             return null;
         }
 
         @Specialization(guards = "!isPNone(env)")
-        @SuppressWarnings("truffle-static-method")
-        Object doSequence(VirtualFrame frame, Object env,
+        static Object doSequence(VirtualFrame frame, Object env,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached PyObjectGetItem getItem,
-                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, inliningTarget, env);
             Object[] result = new Object[length];
             for (int i = 0; i < length; ++i) {
                 Object o = getItem.execute(frame, inliningTarget, env, i);
                 byte[] bytes = toBytesNode.execute(frame, o);
-                Object o1 = posixLib.createPathFromBytes(getContext().getPosixSupport(), bytes);
+                Object o1 = posixLib.createPathFromBytes(PythonContext.get(inliningTarget).getPosixSupport(), bytes);
                 if (o1 == null) {
-                    throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }
                 result[i] = o1;
             }

@@ -277,7 +277,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "ignore_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class IgnoreErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
@@ -307,7 +306,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "replace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class ReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         private static final TruffleString T_REPLACEMENT = tsLiteral("\uFFFD");
@@ -348,7 +346,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "xmlcharrefreplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class XmlCharRefReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -388,7 +385,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "backslashreplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class BackslashReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -473,7 +469,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "namereplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class NameReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -526,7 +521,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "surrogatepass", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class SurrogatePassErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -663,7 +657,6 @@ public final class ErrorHandlers {
     }
 
     @Builtin(name = "surrogateescape", minNumOfPositionalArgs = 1, parameterNames = "e")
-    @SuppressWarnings("truffle-static-method")
     abstract static class SurrogateEscapeErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")

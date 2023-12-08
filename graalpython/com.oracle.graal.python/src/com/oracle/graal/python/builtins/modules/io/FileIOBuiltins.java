@@ -891,12 +891,11 @@ public final class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isCloseFD()")
-        @SuppressWarnings("truffle-static-method")
-        Object simple(VirtualFrame frame, PFileIO self,
+        static Object simple(VirtualFrame frame, PFileIO self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             try {
-                callClose.execute(frame, inliningTarget, getContext().lookupType(PRawIOBase), T_CLOSE, self);
+                callClose.execute(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
                 self.setClosed();
                 throw e;

@@ -135,7 +135,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -739,7 +739,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectHashNode hashNode,
                         @Cached AuditNode auditNode,
                         @Cached CodePointLengthNode codePointLengthNode,
-                        @Cached EndsWithNode endsWithNode,
+                        @Cached PrefixSuffixNode prefixSuffixNode,
                         @Cached EqualNode eqNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -755,7 +755,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             Exception exception = null;
             boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || //
                             (!context.getOption(PythonOptions.UseSystemToolchain) &&
-                                            endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
+                                            prefixSuffixNode.endsWith(name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
                 if (loadWithLLVM) {
                     Object handler = loadLLVMLibrary(context, inliningTarget, name);

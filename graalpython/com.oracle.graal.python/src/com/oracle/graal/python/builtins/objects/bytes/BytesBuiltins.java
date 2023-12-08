@@ -115,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -142,7 +141,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1088,7 +1086,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class SepExpectByteNode extends ArgumentCastNodeWithRaise {
+    public abstract static class SepExpectByteNode extends ArgumentCastNode {
         private final Object defaultValue;
 
         protected SepExpectByteNode(Object defaultValue) {
@@ -1103,54 +1101,53 @@ public final class BytesBuiltins extends PythonBuiltins {
             return defaultValue;
         }
 
-        @Specialization
-        byte string(TruffleString str,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        @Specialization(guards = "isString(strObj)")
+        static byte pstring(Object strObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode toStr,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString str = toStr.execute(inliningTarget, strObj);
             if (codePointLengthNode.execute(str, TS_ENCODING) != 1) {
-                throw raise(ValueError, SEP_MUST_BE_LENGTH_1);
+                throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_LENGTH_1);
             }
             int cp = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
             if (cp > 127) {
-                throw raise(ValueError, SEP_MUST_BE_ASCII);
+                throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_ASCII);
             }
             return (byte) cp;
         }
 
-        @Specialization
-        @SuppressWarnings("truffle-static-method")
-        byte pstring(PString str,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode toStr,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            return string(toStr.execute(inliningTarget, str), codePointLengthNode, codePointAtIndexNode);
-        }
-
         @Specialization(guards = "bufferAcquireLib.hasBuffer(object)", limit = "3")
-        byte doBuffer(VirtualFrame frame, Object object,
+        static byte doBuffer(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, getContext(), getLanguage(), indirectCallData);
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, indirectCallData);
             try {
                 if (bufferLib.getBufferLength(buffer) != 1) {
-                    throw raise(ValueError, SEP_MUST_BE_LENGTH_1);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_LENGTH_1);
                 }
                 byte b = bufferLib.readByte(buffer, 0);
                 if (b < 0) {
-                    throw raise(ValueError, SEP_MUST_BE_ASCII);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_ASCII);
                 }
                 return b;
             } finally {
-                bufferLib.release(buffer, frame, getContext(), getLanguage(), indirectCallData);
+                bufferLib.release(buffer, frame, context, language, indirectCallData);
             }
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        byte error(VirtualFrame frame, Object value) {
-            throw raise(TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
+        static byte error(VirtualFrame frame, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
         }
 
         @ClinicConverterFactory
@@ -1765,7 +1762,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class ExpectIntNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectIntNode extends ArgumentCastNode {
         private final int defaultValue;
 
         protected ExpectIntNode(int defaultValue) {
@@ -1789,20 +1786,24 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int toInt(long x) {
+        static int toInt(long x,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return PInt.intValueExact(x);
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }
 
         @Specialization
-        public int toInt(PInt x) {
+        static int toInt(PInt x,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return x.intValueExact();
             } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }
 
@@ -1825,7 +1826,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class ExpectByteLikeNode extends ArgumentCastNodeWithRaise {
+    public abstract static class ExpectByteLikeNode extends ArgumentCastNode {
         private final byte[] defaultValue;
 
         protected ExpectByteLikeNode(byte[] defaultValue) {

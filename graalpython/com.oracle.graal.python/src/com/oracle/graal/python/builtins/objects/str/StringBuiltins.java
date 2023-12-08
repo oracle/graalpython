@@ -121,10 +121,6 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlic
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EndsWithNodeFactory;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.EqNodeFactory;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.LtNodeFactory;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StartsWithNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
@@ -167,6 +163,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.IntPredicate;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -175,10 +172,11 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -356,20 +354,23 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class StringEqOpBaseNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class StringEqOpHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object self, Object other, boolean negate);
+
         @Specialization
-        boolean doStrings(TruffleString self, TruffleString other,
-                        @Shared("equal") @Cached TruffleString.EqualNode equalNode) {
-            return processResult(equalNode.execute(self, other, TS_ENCODING));
+        static boolean doStrings(TruffleString self, TruffleString other, boolean negate,
+                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
+            return equalNode.execute(self, other, TS_ENCODING) != negate;
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doGeneric(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+        static Object doGeneric(Node inliningTarget, Object self, Object other, boolean negate,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Cached CastToTruffleStringNode castOtherNode,
-                        @Shared("equal") @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode,
                         @Cached InlinedBranchProfile noStringBranch) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___EQ__, self);
             TruffleString otherStr;
@@ -379,30 +380,27 @@ public final class StringBuiltins extends PythonBuiltins {
                 noStringBranch.enter(inliningTarget);
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doStrings(selfStr, otherStr, equalNode);
-        }
-
-        @SuppressWarnings("unused")
-        boolean processResult(boolean eqResult) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
+            return doStrings(selfStr, otherStr, negate, equalNode);
         }
     }
 
-    abstract static class StringCmpOpBaseNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class StringCmpOpHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object self, Object other, IntPredicate resultProcessor);
+
         @Specialization
-        boolean doStrings(TruffleString self, TruffleString other,
-                        @Shared("compareIntsUtf32") @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return processResult(StringUtils.compareStrings(self, other, compareIntsUTF32Node));
+        static boolean doStrings(TruffleString self, TruffleString other, IntPredicate resultProcessor,
+                        @Shared @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return resultProcessor.test(StringUtils.compareStrings(self, other, compareIntsUTF32Node));
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doGeneric(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+        static Object doGeneric(Node inliningTarget, Object self, Object other, IntPredicate resultProcessor,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Cached CastToTruffleStringNode castOtherNode,
-                        @Shared("compareIntsUtf32") @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node,
+                        @Shared @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node,
                         @Cached InlinedBranchProfile noStringBranch) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___EQ__, self);
             TruffleString otherStr;
@@ -412,13 +410,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 noStringBranch.enter(inliningTarget);
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doStrings(selfStr, otherStr, compareIntsUTF32Node);
-        }
-
-        @SuppressWarnings("unused")
-        boolean processResult(int cmpResult) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
+            return doStrings(selfStr, otherStr, resultProcessor, compareIntsUTF32Node);
         }
     }
 
@@ -441,65 +433,73 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends StringEqOpBaseNode {
-        @Override
-        boolean processResult(boolean eqResult) {
-            return eqResult;
-        }
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @NeverDefault
-        public static EqNode create() {
-            return EqNodeFactory.create();
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
+            return stringEqOpHelperNode.execute(inliningTarget, self, other, false);
         }
     }
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NeNode extends StringEqOpBaseNode {
-        @Override
-        boolean processResult(boolean eqResult) {
-            return !eqResult;
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
+            return stringEqOpHelperNode.execute(inliningTarget, self, other, true);
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class LtNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult < 0;
-        }
+    public abstract static class LtNode extends PythonBinaryBuiltinNode {
 
-        @NeverDefault
-        public static LtNode create() {
-            return LtNodeFactory.create();
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r < 0);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class LeNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult <= 0;
+    public abstract static class LeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r <= 0);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GtNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult > 0;
+    public abstract static class GtNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r > 0);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GeNode extends StringCmpOpBaseNode {
-        @Override
-        boolean processResult(int cmpResult) {
-            return cmpResult >= 0;
+    public abstract static class GeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object doIt(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r >= 0);
         }
     }
 
@@ -588,72 +588,77 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class PrefixSuffixBaseNode extends PythonQuaternaryClinicBuiltinNode {
+    @GenerateInline(false) // footprint reduction 56 -> 39
+    @ImportStatic(PGuards.class)
+    public abstract static class PrefixSuffixNode extends Node {
 
-        public abstract boolean executeBoolean(VirtualFrame frame, TruffleString self, TruffleString subStr, int start, int end);
+        enum Op {
+            PREFIX,
+            SUFFIX;
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            // must be implemented here, because DSL creates a generated node for this class
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError();
+            TruffleString methodName() {
+                return this == PREFIX ? T_STARTSWITH : T_ENDSWITH;
+            }
+        }
+
+        abstract boolean execute(Object self, Object subStr, int start, int end, Op op);
+
+        public final boolean startsWith(Object self, Object subStr, int start, int end) {
+            return execute(self, subStr, start, end, Op.PREFIX);
+        }
+
+        public final boolean endsWith(Object self, Object subStr, int start, int end) {
+            return execute(self, subStr, start, end, Op.SUFFIX);
         }
 
         @Specialization(guards = "!isPTuple(subStrObj)")
-        boolean doStringPrefixStartEnd(Object selfObj, Object subStrObj, int start, int end,
+        static boolean doString(Object selfObj, Object subStrObj, int start, int end, Op op,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Exclusive @Cached CastToTruffleStringCheckedNode castPrefixNode,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("regionEqual") @Cached TruffleString.RegionEqualNode regionEqualNode) {
-            TruffleString self = castSelfNode.cast(inliningTarget, selfObj, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, getMethodName(), selfObj);
-            TruffleString subStr = castPrefixNode.cast(inliningTarget, subStrObj, ErrorMessages.FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P, getMethodName(), "str", subStrObj);
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.RegionEqualNode regionEqualNode) {
+            TruffleString self = castSelfNode.cast(inliningTarget, selfObj, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, op.methodName(), selfObj);
+            TruffleString subStr = castPrefixNode.cast(inliningTarget, subStrObj, ErrorMessages.FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P, op.methodName(), "str", subStrObj);
             int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
             int subStrLen = codePointLengthNode.execute(subStr, TS_ENCODING);
-            return doIt(self, subStr, adjustStartIndex(start, selfLen), adjustEndIndex(end, selfLen), selfLen, subStrLen, regionEqualNode);
+            return doIt(self, subStr, adjustStartIndex(start, selfLen), adjustEndIndex(end, selfLen), selfLen, subStrLen, regionEqualNode, op);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean doTuplePrefixStartEnd(Object selfObj, PTuple subStrs, int start, int end,
+        static boolean doTuple(Object selfObj, PTuple subStrs, int start, int end, Op op,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Exclusive @Cached CastToTruffleStringNode castPrefixNode,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("regionEqual") @Cached TruffleString.RegionEqualNode regionEqualNode,
+                        @Cached GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached CastToTruffleStringCheckedNode castSelfNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            TruffleString self = castSelfNode.cast(inliningTarget, selfObj, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, getMethodName(), selfObj);
+                        @Exclusive @Cached CastToTruffleStringCheckedNode castPrefixNode,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.RegionEqualNode regionEqualNode) {
+            TruffleString self = castSelfNode.cast(inliningTarget, selfObj, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, op.methodName(), selfObj);
 
             int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
             int cpStart = adjustStartIndex(start, selfLen);
             int cpEnd = adjustEndIndex(end, selfLen);
 
             for (Object element : getObjectArrayNode.execute(inliningTarget, subStrs)) {
-                try {
-                    TruffleString subStr = castPrefixNode.execute(inliningTarget, element);
-                    int subStrLen = codePointLengthNode.execute(subStr, TS_ENCODING);
-                    if (doIt(self, subStr, cpStart, cpEnd, selfLen, subStrLen, regionEqualNode)) {
-                        return true;
-                    }
-                } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_ELEMENT_TYPE, getMethodName(), element);
+                TruffleString subStr = castPrefixNode.cast(inliningTarget, element, ErrorMessages.INVALID_ELEMENT_TYPE, op.methodName(), element);
+                int subStrLen = codePointLengthNode.execute(subStr, TS_ENCODING);
+                if (doIt(self, subStr, cpStart, cpEnd, selfLen, subStrLen, regionEqualNode, op)) {
+                    return true;
                 }
             }
             return false;
         }
 
-        // the actual operation; will be overridden by subclasses
-        @SuppressWarnings("unused")
-        boolean doIt(TruffleString text, TruffleString subStr, int start, int end, int textLen, int subStrLen, TruffleString.RegionEqualNode regionEqualNode) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not reach");
-        }
+        private static boolean doIt(TruffleString text, TruffleString subStr, int start, int end, int textLen, int subStrLen, TruffleString.RegionEqualNode regionEqualNode, Op op) {
+            // start and end must be normalized indices for 'text'
+            assert start >= 0;
+            assert end >= 0 && end <= textLen;
 
-        @SuppressWarnings("unused")
-        protected TruffleString getMethodName() {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not reach");
+            if (end - start < subStrLen) {
+                return false;
+            }
+            int fromIndex = op == Op.PREFIX ? start : end - subStrLen;
+            return regionEqualNode.execute(text, fromIndex, subStr, 0, subStrLen, TS_ENCODING);
         }
     }
 
@@ -662,33 +667,17 @@ public final class StringBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
-    public abstract static class StartsWithNode extends PrefixSuffixBaseNode {
+    public abstract static class StartsWithNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.StartsWithNodeClinicProviderGen.INSTANCE;
         }
 
-        @Override
-        boolean doIt(TruffleString text, TruffleString prefix, int start, int end, int textLen, int prefixLen, TruffleString.RegionEqualNode regionEqualNode) {
-            // start and end must be normalized indices for 'text'
-            assert start >= 0;
-            assert end >= 0 && end <= textLen;
-
-            if (end - start < prefixLen) {
-                return false;
-            }
-            return regionEqualNode.execute(text, start, prefix, 0, prefixLen, TS_ENCODING);
-        }
-
-        @Override
-        protected TruffleString getMethodName() {
-            return T_STARTSWITH;
-        }
-
-        @NeverDefault
-        public static StartsWithNode create() {
-            return StartsWithNodeFactory.create();
+        @Specialization
+        static boolean doStartsWith(Object self, Object prefix, int start, int end,
+                        @Cached PrefixSuffixNode prefixSuffixNode) {
+            return prefixSuffixNode.startsWith(self, prefix, start, end);
         }
     }
 
@@ -697,33 +686,17 @@ public final class StringBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
-    public abstract static class EndsWithNode extends PrefixSuffixBaseNode {
+    public abstract static class EndsWithNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.EndsWithNodeClinicProviderGen.INSTANCE;
         }
 
-        @Override
-        boolean doIt(TruffleString text, TruffleString suffix, int start, int end, int textLen, int suffixLen, TruffleString.RegionEqualNode regionEqualNode) {
-            // start and end must be normalized indices for 'text'
-            assert start >= 0;
-            assert end >= 0 && end <= textLen;
-
-            if (end - start < suffixLen) {
-                return false;
-            }
-            return regionEqualNode.execute(text, end - suffixLen, suffix, 0, suffixLen, TS_ENCODING);
-        }
-
-        @Override
-        protected TruffleString getMethodName() {
-            return T_ENDSWITH;
-        }
-
-        @NeverDefault
-        public static EndsWithNode create() {
-            return EndsWithNodeFactory.create();
+        @Specialization
+        static boolean doEndsWith(Object self, Object prefix, int start, int end,
+                        @Cached PrefixSuffixNode prefixSuffixNode) {
+            return prefixSuffixNode.endsWith(self, prefix, start, end);
         }
     }
 
@@ -1029,7 +1002,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(to)", "isNoValue(z)"})
-        @SuppressWarnings({"unused", "truffle-static-method"})
+        @SuppressWarnings("unused")
         static PDict doDict(VirtualFrame frame, Object cls, PDict from, Object to, Object z,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
@@ -2694,12 +2667,12 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString remove(VirtualFrame frame, TruffleString self, TruffleString prefix,
-                        @Cached StartsWithNode startsWith,
+        static TruffleString remove(TruffleString self, TruffleString prefix,
+                        @Cached PrefixSuffixNode prefixSuffixNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             int prefixLen = codePointLengthNode.execute(prefix, TS_ENCODING);
-            if (startsWith.executeBoolean(frame, self, prefix, 0, prefixLen)) {
+            if (prefixSuffixNode.startsWith(self, prefix, 0, prefixLen)) {
                 int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
                 return substringNode.execute(self, prefixLen, selfLen - prefixLen, TS_ENCODING, false);
             }
@@ -2719,14 +2692,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString remove(VirtualFrame frame, TruffleString self, TruffleString suffix,
+        static TruffleString remove(TruffleString self, TruffleString suffix,
                         @Bind("this") Node inliningTarget,
-                        @Cached EndsWithNode endsWith,
+                        @Cached PrefixSuffixNode prefixSuffixNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached InlinedConditionProfile profile) {
             int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
-            if (profile.profile(inliningTarget, endsWith.executeBoolean(frame, self, suffix, 0, selfLen))) {
+            if (profile.profile(inliningTarget, prefixSuffixNode.endsWith(self, suffix, 0, selfLen))) {
                 int suffixLen = codePointLengthNode.execute(suffix, TS_ENCODING);
                 return substringNode.execute(self, 0, selfLen - suffixLen, TS_ENCODING, false);
             }

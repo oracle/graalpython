@@ -403,7 +403,6 @@ public final class DequeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "v", "start", "stop"})
     @GenerateNodeFactory
-    @SuppressWarnings("truffle-static-method")
     public abstract static class DequeIndexNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = {"isNoValue(start)", "isNoValue(stop)"})
