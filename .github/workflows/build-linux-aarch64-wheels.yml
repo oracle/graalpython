@@ -17,7 +17,7 @@ jobs:
       - Linux
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
-    if: inputs.name == '' || inputs.name == 'psutil'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
       - name: Install dependencies
         run: |
@@ -62,9 +62,10 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: psutil-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'numpy' || inputs.name == 'pandas' ||
-      inputs.name == 'contourpy' || inputs.name == 'matplotlib' || inputs.name ==
-      'scipy' || inputs.name == 'scikit-learn' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy' || inputs.name
+      == 'pandas' || inputs.name == 'contourpy' || inputs.name == 'matplotlib' ||
+      inputs.name == 'scipy' || inputs.name == 'scikit-learn' || inputs.name == 'torch')
+      }}
     steps:
       - name: Install dependencies
         run: |-
@@ -94,6 +95,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from psutil
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: psutil-linux-aarch64
       - name: Build wheel
@@ -118,7 +120,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: numpy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'pandas'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -148,6 +150,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Build wheel
@@ -168,8 +171,9 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: pandas-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'pybind11' || inputs.name == 'contourpy'
-      || inputs.name == 'kiwisolver' || inputs.name == 'torch' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11' || inputs.name
+      == 'contourpy' || inputs.name == 'kiwisolver' || inputs.name == 'torch' || inputs.name
+      == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |
@@ -198,6 +202,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pandas
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pandas-linux-aarch64
       - name: Build wheel
@@ -218,8 +223,8 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: pybind11-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'ninja' || inputs.name == 'contourpy'
-      || inputs.name == 'torch' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja' || inputs.name
+      == 'contourpy' || inputs.name == 'torch' || inputs.name == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |
@@ -248,6 +253,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Build wheel
@@ -268,7 +274,8 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: ninja-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'Pillow' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow' || inputs.name
+      == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -298,6 +305,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-aarch64
       - name: Build wheel
@@ -322,7 +330,8 @@ jobs:
       - pybind11-linux-aarch64
       - numpy-linux-aarch64
       - Pillow-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'contourpy' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy' || inputs.name
+      == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |
@@ -351,18 +360,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-linux-aarch64
       - name: Build wheel
@@ -385,7 +398,8 @@ jobs:
     needs:
       - pybind11-linux-aarch64
       - contourpy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'kiwisolver' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver' || inputs.name
+      == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |
@@ -414,10 +428,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-linux-aarch64
       - name: Build wheel
@@ -442,7 +458,7 @@ jobs:
       - kiwisolver-linux-aarch64
       - numpy-linux-aarch64
       - contourpy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -472,18 +488,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-linux-aarch64
       - name: Download artifacts from kiwisolver
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: kiwisolver-linux-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-linux-aarch64
       - name: Build wheel
@@ -506,7 +526,8 @@ jobs:
     needs:
       - numpy-linux-aarch64
       - matplotlib-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'scipy' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy' || inputs.name
+      == 'scikit-learn') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -536,10 +557,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from matplotlib
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: matplotlib-linux-aarch64
       - name: Build wheel
@@ -563,7 +586,7 @@ jobs:
     needs:
       - numpy-linux-aarch64
       - scipy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -593,10 +616,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from scipy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scipy-linux-aarch64
       - name: Build wheel
@@ -617,7 +642,8 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: scikit-learn-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'cffi' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi' || inputs.name
+      == 'torch') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -647,6 +673,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from scikit-learn
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scikit-learn-linux-aarch64
       - name: Build wheel
@@ -667,7 +694,8 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: cffi-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'PyYAML' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML' || inputs.name
+      == 'torch') }}
     steps:
       - name: Install dependencies
         run: |
@@ -696,6 +724,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-linux-aarch64
       - name: Build wheel
@@ -716,7 +745,8 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: PyYAML-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'cmake' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake' || inputs.name
+      == 'torch') }}
     steps:
       - name: Install dependencies
         run: |
@@ -745,6 +775,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-linux-aarch64
       - name: Build wheel
@@ -771,7 +802,7 @@ jobs:
       - pybind11-linux-aarch64
       - cffi-linux-aarch64
       - PyYAML-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env:
       MAX_JOBS: 4
       BUILD_TEST: 0
@@ -809,26 +840,32 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-aarch64
       - name: Download artifacts from cmake
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cmake-linux-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-linux-aarch64
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-linux-aarch64
       - name: Build wheel

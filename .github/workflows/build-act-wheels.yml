@@ -17,7 +17,7 @@ jobs:
       - Linux
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
-    if: inputs.name == '' || inputs.name == 'psutil'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
       - name: Install dependencies
         run: |
@@ -61,7 +61,7 @@ jobs:
       - Linux
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
-    if: inputs.name == '' || inputs.name == 'psutil'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
       - name: Install dependencies
         run: |
@@ -104,7 +104,7 @@ jobs:
       - self-hosted
       - macOS
       - X64
-    if: inputs.name == '' || inputs.name == 'psutil'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -140,7 +140,7 @@ jobs:
       - self-hosted
       - macOS
       - ARM64
-    if: inputs.name == '' || inputs.name == 'psutil'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -178,7 +178,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: psutil-linux-amd64
-    if: inputs.name == '' || inputs.name == 'numpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -208,6 +208,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from psutil
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: psutil-linux-amd64
       - name: Build wheel
@@ -232,7 +233,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: psutil-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'numpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -262,6 +263,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from psutil
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: psutil-linux-aarch64
       - name: Build wheel
@@ -285,7 +287,7 @@ jobs:
       - macOS
       - X64
     needs: psutil-macos-amd64
-    if: inputs.name == '' || inputs.name == 'numpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
     steps:
       - name: Install dependencies
         run: brew install gcc openblas
@@ -309,6 +311,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from psutil
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: psutil-macos-amd64
       - name: Build wheel
@@ -332,7 +335,7 @@ jobs:
       - macOS
       - ARM64
     needs: psutil-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'numpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
     steps:
       - name: Install dependencies
         run: brew install gcc openblas
@@ -356,6 +359,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from psutil
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: psutil-macos-aarch64
       - name: Build wheel
@@ -380,7 +384,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: numpy-linux-amd64
-    if: inputs.name == '' || inputs.name == 'pandas'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -410,6 +414,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-amd64
       - name: Build wheel
@@ -430,7 +435,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: numpy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'pandas'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -460,6 +465,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Build wheel
@@ -479,7 +485,7 @@ jobs:
       - macOS
       - X64
     needs: numpy-macos-amd64
-    if: inputs.name == '' || inputs.name == 'pandas'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
       - name: Install dependencies
         run: brew install openblas
@@ -503,6 +509,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-amd64
       - name: Build wheel
@@ -522,7 +529,7 @@ jobs:
       - macOS
       - ARM64
     needs: numpy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'pandas'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
       - name: Install dependencies
         run: brew install openblas
@@ -546,6 +553,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Build wheel
@@ -566,7 +574,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: pandas-linux-amd64
-    if: inputs.name == '' || inputs.name == 'pybind11'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11') }}
     steps:
       - name: Install dependencies
         run: |
@@ -595,6 +603,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pandas
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pandas-linux-amd64
       - name: Build wheel
@@ -615,7 +624,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: pandas-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'pybind11'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11') }}
     steps:
       - name: Install dependencies
         run: |
@@ -644,6 +653,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pandas
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pandas-linux-aarch64
       - name: Build wheel
@@ -663,7 +673,7 @@ jobs:
       - macOS
       - X64
     needs: pandas-macos-amd64
-    if: inputs.name == '' || inputs.name == 'pybind11'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -685,6 +695,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pandas
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pandas-macos-amd64
       - name: Build wheel
@@ -704,7 +715,7 @@ jobs:
       - macOS
       - ARM64
     needs: pandas-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'pybind11'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -726,6 +737,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pandas
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pandas-macos-aarch64
       - name: Build wheel
@@ -746,7 +758,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: pybind11-linux-amd64
-    if: inputs.name == '' || inputs.name == 'ninja'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja') }}
     steps:
       - name: Install dependencies
         run: |
@@ -775,6 +787,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-amd64
       - name: Build wheel
@@ -795,7 +808,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: pybind11-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'ninja'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja') }}
     steps:
       - name: Install dependencies
         run: |
@@ -824,6 +837,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Build wheel
@@ -843,7 +857,7 @@ jobs:
       - macOS
       - X64
     needs: pybind11-macos-amd64
-    if: inputs.name == '' || inputs.name == 'ninja'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -865,6 +879,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-amd64
       - name: Build wheel
@@ -884,7 +899,7 @@ jobs:
       - macOS
       - ARM64
     needs: pybind11-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'ninja'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -906,6 +921,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Build wheel
@@ -926,7 +942,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: ninja-linux-amd64
-    if: inputs.name == '' || inputs.name == 'Pillow'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -956,6 +972,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-amd64
       - name: Build wheel
@@ -976,7 +993,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: ninja-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'Pillow'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -1006,6 +1023,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-aarch64
       - name: Build wheel
@@ -1025,7 +1043,7 @@ jobs:
       - macOS
       - X64
     needs: ninja-macos-amd64
-    if: inputs.name == '' || inputs.name == 'Pillow'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow') }}
     steps:
       - name: Install dependencies
         run: brew install libjpeg libtiff little-cms2 openjpeg webp
@@ -1049,6 +1067,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-amd64
       - name: Build wheel
@@ -1068,7 +1087,7 @@ jobs:
       - macOS
       - ARM64
     needs: ninja-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'Pillow'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow') }}
     steps:
       - name: Install dependencies
         run: brew install libjpeg libtiff little-cms2 openjpeg webp
@@ -1092,6 +1111,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-aarch64
       - name: Build wheel
@@ -1116,7 +1136,7 @@ jobs:
       - pybind11-linux-amd64
       - numpy-linux-amd64
       - Pillow-linux-amd64
-    if: inputs.name == '' || inputs.name == 'contourpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy') }}
     steps:
       - name: Install dependencies
         run: |
@@ -1145,18 +1165,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-amd64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-amd64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-amd64
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-linux-amd64
       - name: Build wheel
@@ -1181,7 +1205,7 @@ jobs:
       - pybind11-linux-aarch64
       - numpy-linux-aarch64
       - Pillow-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'contourpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy') }}
     steps:
       - name: Install dependencies
         run: |
@@ -1210,18 +1234,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-linux-aarch64
       - name: Build wheel
@@ -1245,7 +1273,7 @@ jobs:
       - pybind11-macos-amd64
       - numpy-macos-amd64
       - Pillow-macos-amd64
-    if: inputs.name == '' || inputs.name == 'contourpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -1267,18 +1295,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-amd64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-amd64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-amd64
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-macos-amd64
       - name: Build wheel
@@ -1302,7 +1334,7 @@ jobs:
       - pybind11-macos-aarch64
       - numpy-macos-aarch64
       - Pillow-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'contourpy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -1324,18 +1356,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-macos-aarch64
       - name: Build wheel
@@ -1358,7 +1394,7 @@ jobs:
     needs:
       - pybind11-linux-amd64
       - contourpy-linux-amd64
-    if: inputs.name == '' || inputs.name == 'kiwisolver'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver') }}
     steps:
       - name: Install dependencies
         run: |
@@ -1387,10 +1423,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-amd64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-linux-amd64
       - name: Build wheel
@@ -1413,7 +1451,7 @@ jobs:
     needs:
       - pybind11-linux-aarch64
       - contourpy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'kiwisolver'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver') }}
     steps:
       - name: Install dependencies
         run: |
@@ -1442,10 +1480,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-linux-aarch64
       - name: Build wheel
@@ -1467,7 +1507,7 @@ jobs:
     needs:
       - pybind11-macos-amd64
       - contourpy-macos-amd64
-    if: inputs.name == '' || inputs.name == 'kiwisolver'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -1489,10 +1529,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-amd64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-macos-amd64
       - name: Build wheel
@@ -1514,7 +1556,7 @@ jobs:
     needs:
       - pybind11-macos-aarch64
       - contourpy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'kiwisolver'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -1536,10 +1578,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-macos-aarch64
       - name: Build wheel
@@ -1564,7 +1608,7 @@ jobs:
       - kiwisolver-linux-amd64
       - numpy-linux-amd64
       - contourpy-linux-amd64
-    if: inputs.name == '' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -1594,18 +1638,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-linux-amd64
       - name: Download artifacts from kiwisolver
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: kiwisolver-linux-amd64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-amd64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-linux-amd64
       - name: Build wheel
@@ -1630,7 +1678,7 @@ jobs:
       - kiwisolver-linux-aarch64
       - numpy-linux-aarch64
       - contourpy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -1660,18 +1708,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-linux-aarch64
       - name: Download artifacts from kiwisolver
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: kiwisolver-linux-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-linux-aarch64
       - name: Build wheel
@@ -1695,7 +1747,7 @@ jobs:
       - kiwisolver-macos-amd64
       - numpy-macos-amd64
       - contourpy-macos-amd64
-    if: inputs.name == '' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: brew install openblas
@@ -1719,18 +1771,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-macos-amd64
       - name: Download artifacts from kiwisolver
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: kiwisolver-macos-amd64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-amd64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-macos-amd64
       - name: Build wheel
@@ -1754,7 +1810,7 @@ jobs:
       - kiwisolver-macos-aarch64
       - numpy-macos-aarch64
       - contourpy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
       - name: Install dependencies
         run: brew install openblas
@@ -1778,18 +1834,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-macos-aarch64
       - name: Download artifacts from kiwisolver
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: kiwisolver-macos-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-macos-aarch64
       - name: Build wheel
@@ -1812,7 +1872,7 @@ jobs:
     needs:
       - numpy-linux-amd64
       - matplotlib-linux-amd64
-    if: inputs.name == '' || inputs.name == 'scipy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -1842,10 +1902,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-amd64
       - name: Download artifacts from matplotlib
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: matplotlib-linux-amd64
       - name: Build wheel
@@ -1869,7 +1931,7 @@ jobs:
     needs:
       - numpy-linux-aarch64
       - matplotlib-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'scipy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -1899,10 +1961,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from matplotlib
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: matplotlib-linux-aarch64
       - name: Build wheel
@@ -1925,7 +1989,7 @@ jobs:
     needs:
       - numpy-macos-amd64
       - matplotlib-macos-amd64
-    if: inputs.name == '' || inputs.name == 'scipy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy') }}
     steps:
       - name: Install dependencies
         run: brew install gcc openblas pkg-config
@@ -1949,10 +2013,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-amd64
       - name: Download artifacts from matplotlib
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: matplotlib-macos-amd64
       - name: Build wheel
@@ -1976,7 +2042,7 @@ jobs:
     needs:
       - numpy-macos-aarch64
       - matplotlib-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'scipy'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy') }}
     steps:
       - name: Install dependencies
         run: brew install gcc openblas pkg-config
@@ -2000,10 +2066,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from matplotlib
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: matplotlib-macos-aarch64
       - name: Build wheel
@@ -2028,7 +2096,7 @@ jobs:
     needs:
       - numpy-linux-amd64
       - scipy-linux-amd64
-    if: inputs.name == '' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -2058,10 +2126,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-amd64
       - name: Download artifacts from scipy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scipy-linux-amd64
       - name: Build wheel
@@ -2084,7 +2154,7 @@ jobs:
     needs:
       - numpy-linux-aarch64
       - scipy-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -2114,10 +2184,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from scipy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scipy-linux-aarch64
       - name: Build wheel
@@ -2139,7 +2211,7 @@ jobs:
     needs:
       - numpy-macos-amd64
       - scipy-macos-amd64
-    if: inputs.name == '' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
       - name: Install dependencies
         run: brew install openblas
@@ -2163,10 +2235,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-amd64
       - name: Download artifacts from scipy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scipy-macos-amd64
       - name: Build wheel
@@ -2190,7 +2264,7 @@ jobs:
     needs:
       - numpy-macos-aarch64
       - scipy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
       - name: Install dependencies
         run: brew install openblas
@@ -2214,10 +2288,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from scipy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scipy-macos-aarch64
       - name: Build wheel
@@ -2240,7 +2316,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: scikit-learn-linux-amd64
-    if: inputs.name == '' || inputs.name == 'cffi'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -2270,6 +2346,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from scikit-learn
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scikit-learn-linux-amd64
       - name: Build wheel
@@ -2290,7 +2367,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: scikit-learn-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'cffi'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -2320,6 +2397,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from scikit-learn
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scikit-learn-linux-aarch64
       - name: Build wheel
@@ -2339,7 +2417,7 @@ jobs:
       - macOS
       - X64
     needs: scikit-learn-macos-amd64
-    if: inputs.name == '' || inputs.name == 'cffi'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi') }}
     steps:
       - name: Install dependencies
         run: brew install libffi
@@ -2363,6 +2441,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from scikit-learn
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scikit-learn-macos-amd64
       - name: Build wheel
@@ -2382,7 +2461,7 @@ jobs:
       - macOS
       - ARM64
     needs: scikit-learn-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'cffi'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi') }}
     steps:
       - name: Install dependencies
         run: brew install libffi
@@ -2406,6 +2485,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from scikit-learn
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scikit-learn-macos-aarch64
       - name: Build wheel
@@ -2426,7 +2506,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: cffi-linux-amd64
-    if: inputs.name == '' || inputs.name == 'PyYAML'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
     steps:
       - name: Install dependencies
         run: |
@@ -2455,6 +2535,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-linux-amd64
       - name: Build wheel
@@ -2475,7 +2556,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: cffi-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'PyYAML'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
     steps:
       - name: Install dependencies
         run: |
@@ -2504,6 +2585,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-linux-aarch64
       - name: Build wheel
@@ -2523,7 +2605,7 @@ jobs:
       - macOS
       - X64
     needs: cffi-macos-amd64
-    if: inputs.name == '' || inputs.name == 'PyYAML'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -2545,6 +2627,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-macos-amd64
       - name: Build wheel
@@ -2564,7 +2647,7 @@ jobs:
       - macOS
       - ARM64
     needs: cffi-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'PyYAML'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -2586,6 +2669,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-macos-aarch64
       - name: Build wheel
@@ -2606,7 +2690,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: PyYAML-linux-amd64
-    if: inputs.name == '' || inputs.name == 'cmake'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake') }}
     steps:
       - name: Install dependencies
         run: |
@@ -2635,6 +2719,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-linux-amd64
       - name: Build wheel
@@ -2655,7 +2740,7 @@ jobs:
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
     needs: PyYAML-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'cmake'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake') }}
     steps:
       - name: Install dependencies
         run: |
@@ -2684,6 +2769,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-linux-aarch64
       - name: Build wheel
@@ -2703,7 +2789,7 @@ jobs:
       - macOS
       - X64
     needs: PyYAML-macos-amd64
-    if: inputs.name == '' || inputs.name == 'cmake'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -2725,6 +2811,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-macos-amd64
       - name: Build wheel
@@ -2744,7 +2831,7 @@ jobs:
       - macOS
       - ARM64
     needs: PyYAML-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'cmake'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -2766,6 +2853,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-macos-aarch64
       - name: Build wheel
@@ -2792,7 +2880,7 @@ jobs:
       - pybind11-linux-amd64
       - cffi-linux-amd64
       - PyYAML-linux-amd64
-    if: inputs.name == '' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env: &id001
       MAX_JOBS: 4
       BUILD_TEST: 0
@@ -2830,26 +2918,32 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-amd64
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-amd64
       - name: Download artifacts from cmake
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cmake-linux-amd64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-amd64
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-linux-amd64
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-linux-amd64
       - name: Build wheel
@@ -2876,7 +2970,7 @@ jobs:
       - pybind11-linux-aarch64
       - cffi-linux-aarch64
       - PyYAML-linux-aarch64
-    if: inputs.name == '' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env: *id001
     steps:
       - name: Install dependencies
@@ -2912,26 +3006,32 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-linux-aarch64
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-linux-aarch64
       - name: Download artifacts from cmake
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cmake-linux-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-linux-aarch64
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-linux-aarch64
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-linux-aarch64
       - name: Build wheel
@@ -2957,7 +3057,7 @@ jobs:
       - pybind11-macos-amd64
       - cffi-macos-amd64
       - PyYAML-macos-amd64
-    if: inputs.name == '' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env: *id001
     steps:
       - name: Install dependencies
@@ -2987,26 +3087,32 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-amd64
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-amd64
       - name: Download artifacts from cmake
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cmake-macos-amd64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-amd64
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-macos-amd64
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-macos-amd64
       - name: Build wheel
@@ -3034,7 +3140,7 @@ jobs:
       - pybind11-macos-aarch64
       - cffi-macos-aarch64
       - PyYAML-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env: *id001
     steps:
       - name: Install dependencies
@@ -3064,26 +3170,32 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-aarch64
       - name: Download artifacts from cmake
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cmake-macos-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-macos-aarch64
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-macos-aarch64
       - name: Build wheel
@@ -3106,7 +3218,7 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: torch-linux-amd64
-    if: inputs.name == '' || inputs.name == 'opt_einsum'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'opt_einsum') }}
     steps:
       - name: Install dependencies
         run: |
@@ -3135,6 +3247,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from torch
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: torch-linux-amd64
       - name: Build wheel
@@ -3155,7 +3268,8 @@ jobs:
       - X64
     container: quay.io/pypa/manylinux_2_28_x86_64
     needs: opt_einsum-linux-amd64
-    if: inputs.name == '' || inputs.name == 'keras_preprocessing'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'keras_preprocessing')
+      }}
     steps:
       - name: Install dependencies
         run: |
@@ -3184,6 +3298,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from opt_einsum
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: opt_einsum-linux-amd64
       - name: Build wheel
@@ -3206,7 +3321,7 @@ jobs:
     needs:
       - opt_einsum-linux-amd64
       - keras_preprocessing-linux-amd64
-    if: inputs.name == '' || inputs.name == 'tensorflow'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'tensorflow') }}
     steps:
       - name: Install dependencies
         run: |-
@@ -3236,10 +3351,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from opt_einsum
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: opt_einsum-linux-amd64
       - name: Download artifacts from keras_preprocessing
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: keras_preprocessing-linux-amd64
       - name: Build wheel

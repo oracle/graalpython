@@ -261,16 +261,22 @@ def create_jobs(
             if spec_deps := spec.spec_dependencies:
                 needs = [spec_dep.platform_name(platform) for spec_dep in spec_deps]
                 job["needs"] = needs[0] if len(needs) == 1 else needs
-            job["if"] = " || ".join(
-                [
-                    "inputs.name == ''",
-                    f"inputs.name == '{spec.name}'",
-                    *[
-                        f"inputs.name == '{spec_dep.name}'"
-                        for spec_dep in spec.get_downstream_specs()
-                        if platform in spec_dep.platforms
-                    ],
-                ]
+            job["if"] = (
+                "${{ !cancelled() && ("
+                + (
+                    " || ".join(
+                        [
+                            "inputs.name == ''",
+                            f"inputs.name == '{spec.name}'",
+                            *[
+                                f"inputs.name == '{spec_dep.name}'"
+                                for spec_dep in spec.get_downstream_specs()
+                                if platform in spec_dep.platforms
+                            ],
+                        ]
+                    )
+                )
+                + ") }}"
             )
             if spec.environment:
                 job["env"] = spec.environment
@@ -323,6 +329,7 @@ def create_jobs(
                         {
                             "name": f"Download artifacts from {spec_dep.name}",
                             "uses": "actions/download-artifact@v3",
+                            "continue-on-error": True,
                             "with": {"name": spec_dep.platform_name(platform)},
                         }
                     )
