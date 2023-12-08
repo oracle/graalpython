@@ -43,23 +43,17 @@ package org.graalvm.python.embedding.jbang;
 
 import org.graalvm.python.embedding.utils.SubprocessLog;
 import org.graalvm.python.embedding.utils.VFSUtils;
-
-import java.io.BufferedReader;
+import org.graalvm.python.embedding.utils.GraalPyRunner;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.Proxy;
-import java.net.Proxy.Type;
-import java.net.ProxySelector;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -77,8 +71,6 @@ public class JBangIntegration {
     private static final String GRAALPY_GROUP = String.join(File.separator, "org", "graalvm", "python");
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
-    private static final String BIN_DIR = IS_WINDOWS ? "Scripts" : "bin";
-    private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
 
     /**
      *
@@ -112,21 +104,26 @@ public class JBangIntegration {
         for (String comment : comments) {
             if (comment.startsWith(PIP)) {
                 ensureVenv(venv, dependencies);
-                runPip(venv, "install", comment.substring(PIP.length()).trim());
-            }
-        }
-        var dropFolders = new ArrayList<String>();
-        dropFolders.add("pip");
-        dropFolders.add("setuptools");
-        for (String comment : comments) {
-            if (comment.startsWith(PIP_DROP)) {
-                dropFolders.add(comment.substring(PIP_DROP.length()).trim());
+                try {
+                    String[] pkgs = Arrays.stream(comment.substring(PIP.length()).trim().split(" ")).filter(s -> !s.trim().isEmpty()).toArray(String[]::new);
+                    GraalPyRunner.runPip(venv, "install", new Log(), pkgs);
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         if (Files.exists(venv)) {
             try {
                 Path libFolder = Files.list(venv.resolve("lib")).filter(p -> p.getFileName().toString().startsWith("python3")).findFirst().get();
                 if (libFolder != null) {
+                    var dropFolders = new ArrayList<String>();
+                    dropFolders.add("pip");
+                    dropFolders.add("setuptools");
+                    for (String comment : comments) {
+                        if (comment.startsWith(PIP_DROP)) {
+                            dropFolders.add(comment.substring(PIP_DROP.length()).trim());
+                        }
+                    }
                     for (var s : dropFolders) {
                         var folder = libFolder.resolve("site-packages").resolve(s);
                         if (Files.exists(folder)) {
@@ -144,7 +141,6 @@ public class JBangIntegration {
         if (nativeImage) {
             // include python stdlib in image
             try {
-                // XXX always copy, no delete?
                 VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, new Log());
                 var niConfig = temporaryJar.resolve("META-INF").resolve("native-image");
                 Files.createDirectories(niConfig);
@@ -229,16 +225,14 @@ public class JBangIntegration {
                 File tmp;
                 try {
                     tmp = File.createTempFile("create_launcher", ".py");
-                } catch (IOException e) {
+                    tmp.deleteOnExit();
+                    try (var wr = new FileWriter(tmp)) {
+                        wr.write(script);
+                    }
+                    GraalPyRunner.run(calculateClasspath(dependencies), new Log(), tmp.getAbsolutePath());
+                } catch (IOException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                tmp.deleteOnExit();
-                try (var wr = new FileWriter(tmp)) {
-                    wr.write(script);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                runGraalPy(dependencies, tmp.getAbsolutePath());
             }
         }
     }
@@ -252,126 +246,17 @@ public class JBangIntegration {
         if (parent != null) {
             String parentString = parent.toString();
             generateLaunchers(dependencies, parentString);
-            runLauncher(parentString, "-m", "venv", venvDirectory.toString(), "--without-pip");
-            runVenvBin(venvDirectory, "graalpy", List.of("-I", "-m", "ensurepip"));
-        }
-    }
-
-    private static void runLauncher(String projectPath, String... args) {
-        var cmd = new ArrayList<String>();
-        cmd.add(getLauncherPath(projectPath).toString());
-        cmd.addAll(List.of(args));
-        System.out.println(String.join(" ", cmd));
-        var pb = new ProcessBuilder(cmd);
-        runProcess(pb);
-    }
-
-    private static void runPip(Path venvDirectory, String command, String pkg) {
-        var newArgs = new ArrayList<String>();
-        newArgs.add("-m");
-        newArgs.add("pip");
-        addProxy(newArgs);
-        newArgs.add(command);
-        newArgs.add(pkg);
-
-        runVenvBin(venvDirectory, "graalpy", newArgs);
-    }
-
-    private static void runVenvBin(Path venvDirectory, String bin, Collection<String> args) {
-        var cmd = new ArrayList<String>();
-        cmd.add(venvDirectory.resolve(BIN_DIR).resolve(bin + EXE_SUFFIX).toString());
-        cmd.addAll(args);
-        System.out.println(String.join(" ", cmd));
-        var pb = new ProcessBuilder(cmd);
-        runProcess(pb);
-    }
-
-    private static void runGraalPy(List<Map.Entry<String, Path>> dependencies, String... args) {
-        var classpath = calculateClasspath(dependencies);
-        var workdir = System.getProperty("exec.workingdir");
-        var java = Paths.get(System.getProperty("java.home"), "bin", "java");
-        var cmd = new ArrayList<String>();
-        cmd.add(java.toString());
-        cmd.add("-classpath");
-        cmd.add(String.join(File.pathSeparator, classpath));
-        cmd.add("com.oracle.graal.python.shell.GraalPythonMain");
-        cmd.addAll(List.of(args));
-        var pb = new ProcessBuilder(cmd);
-        if (workdir != null) {
-            pb.directory(new File(workdir));
-            throw new RuntimeException("Not satisfied pip");
-        }
-        System.out.println(String.format("Running GraalPy: %s", String.join(" ", cmd)));
-        runProcess(pb);
-    }
-
-    private static void addProxy(ArrayList<String> args) {
-        // pip takes environment variables http_proxy and https_proxy, if there set
-        if (System.getenv("http_proxy") == null && System.getenv("https_proxy") == null) {
-            // if not set, try the same way as jbang
-            ProxySelector proxySelector = ProxySelector.getDefault();
-            List<Proxy> proxies = proxySelector.select(URI.create("https://pypi.org"));
-
-            String proxyAddr = null;
-            for (Proxy proxy : proxies) {
-                if (proxy.type() == Type.HTTP) {
-                    proxyAddr = fixProtocol(proxy.address().toString(), "http");
-                    break;
-                }
+            try {
+                GraalPyRunner.runLauncher(getLauncherPath(parentString).toString(), new Log(), "-m", "venv", venvDirectory.toString(), "--without-pip");
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
-            if (proxyAddr != null) {
-                args.add("--proxy");
-                args.add(proxyAddr);
+            try {
+                GraalPyRunner.runVenvBin(venvDirectory, "graalpy", new Log(), "-I", "-m", "ensurepip");
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
-    }
-
-    private static void runProcess(ProcessBuilder pb) {
-        Process process;
-        try {
-            pb.redirectError();
-            pb.redirectOutput();
-            process = pb.start();
-            Thread outputReader = new Thread(() -> {
-                try (InputStream is = process.getInputStream();
-                                BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.out.println(line); // Write the ouput line
-                    }
-                } catch (IOException e) {
-                    // Do noting for now. Probably is not good idea to stop the
-                    // execution in this moment
-                }
-            });
-
-            outputReader.start(); // start of ouput reader
-
-            process.waitFor(); // waiting for the build process
-            outputReader.join(); // waiging to terminate for the ouputReaded process
-
-            if (process.exitValue() != 0) {
-                // if there are some errors, print the error outut
-                printErrors(process);
-                // and terminate the build process
-                throw new RuntimeException(String.format("Running command: '%s' ended with code %d.See the error output above.",
-                                String.join(" ", pb.command()),
-                                process.exitValue()));
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Ensures that the proxy url has a protocol.
-     * 
-     * @param proxyAddress proxy server address
-     * @param protocol usually http or https
-     * @return String representation of url of the proxy
-     */
-    private static String fixProtocol(String proxyAddress, String protocol) {
-        return proxyAddress.startsWith(protocol) ? proxyAddress : protocol + "://" + proxyAddress;
     }
 
     private static Collection<Path> resolveProjectDependencies(List<Map.Entry<String, Path>> dependencies) {
@@ -403,19 +288,6 @@ public class JBangIntegration {
             classpath.add(r.toAbsolutePath().toString());
         }
         return classpath;
-    }
-
-    private static void printErrors(Process process) throws IOException {
-        InputStream errorStream = process.getErrorStream();
-        InputStreamReader errorStreamReader = new InputStreamReader(errorStream);
-        BufferedReader errorBufferedReader = new BufferedReader(errorStreamReader);
-
-        String line;
-        System.out.println("========== Error Output: =========");
-        while ((line = errorBufferedReader.readLine()) != null) {
-            System.out.println(line);
-        }
-        System.out.println("==================================");
     }
 
     private static class Log implements SubprocessLog {

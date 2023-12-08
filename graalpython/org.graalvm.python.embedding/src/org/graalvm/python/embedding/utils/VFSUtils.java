@@ -174,6 +174,9 @@ public final class VFSUtils {
                     Path relFile = sourceRoot.relativize(f);
                     Path targetPath = targetRoot.resolve(relFile.toString());
                     Path parent = targetPath.getParent();
+                    if (parent == null) {
+                        return FileVisitResult.CONTINUE;
+                    }
                     if (!Files.exists(parent)) {
                         Files.createDirectories(parent);
                     }

@@ -56,6 +56,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.graalvm.python.embedding.utils.VFSUtils;
+import org.graalvm.python.embedding.utils.GraalPyRunner;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
@@ -64,8 +66,6 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
-    private static final String BIN_DIR = IS_WINDOWS ? "Scripts" : "bin";
-    private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
 
     private static final String INCLUDE_PREFIX = "include:";
 
@@ -75,7 +75,7 @@ public class ManageResourcesMojo extends AbstractMojo {
     MavenProject project;
 
     @Parameter
-    Set<String> packages;
+    List<String> packages;
 
     @Parameter
     PythonHome pythonHome;
@@ -188,7 +188,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             throw new MojoExecutionException(String.format("Failed to generate files list in '%s'", vfs.toString()), e);
         }
     }
-    
+
     private void manageVenv() throws MojoExecutionException {
         generateLaunchers();
 
@@ -201,7 +201,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
 
         var tag = venvDirectory.resolve("contents");
-        var installedPackages = new HashSet<String>();
+        List installedPackages = new ArrayList<String>();
         var graalPyVersion = ExecGraalPyMojo.getGraalPyVersion(project);
 
         if (Files.isReadable(tag)) {
@@ -224,8 +224,8 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
 
         if (!Files.exists(venvDirectory)) {
-            runLauncher("-m", "venv", venvDirectory.toString(), "--without-pip");
-            runVenvBin(venvDirectory, "graalpy", List.of("-I", "-m", "ensurepip"));
+            runLauncher(getLauncherPath().toString(),"-m", "venv", venvDirectory.toString(), "--without-pip");
+            runVenvBin(venvDirectory, "graalpy", "-I", "-m", "ensurepip");
         }
 
         deleteUnwantedPackages(venvDirectory, installedPackages);
@@ -243,58 +243,22 @@ public class ManageResourcesMojo extends AbstractMojo {
         return Path.of(project.getBuild().getOutputDirectory(), "vfs", "venv");
     }
 
-    private void runLauncher(String... args) throws MojoExecutionException {
-        var cmd = new ArrayList<String>();
-        cmd.add(getLauncherPath().toString());
-        cmd.addAll(List.of(args));
-        getLog().info(String.join(" ", cmd));
-        var pb = new ProcessBuilder(cmd);
-        pb.inheritIO();
-        try {
-            pb.start().waitFor();
-        } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(String.format("failed to execute launcher command %s", cmd), e);
-        }
-    }
-
-    private void runPip(Path venvDirectory, String command, Collection<String> args) throws MojoExecutionException {
-        var newArgs = new ArrayList<String>(args);
-        newArgs.add(0, command);
-        newArgs.add(0, "pip");
-        newArgs.add(0, "-m");
-        runVenvBin(venvDirectory, "graalpy", newArgs);
-    }
-
-    private void runVenvBin(Path venvDirectory, String bin, Collection<String> args) throws MojoExecutionException {
-        var cmd = new ArrayList<String>();
-        cmd.add(venvDirectory.resolve(BIN_DIR).resolve(bin + EXE_SUFFIX).toString());
-        cmd.addAll(args);
-        getLog().info(String.join(" ", cmd));
-        var pb = new ProcessBuilder(cmd);
-        pb.inheritIO();
-        try {
-            pb.start().waitFor();
-        } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(String.format("failed to execute venv command %s", cmd), e);
-        }
-    }
-
-    private void installWantedPackages(Path venvDirectory, HashSet<String> installedPackages) throws MojoExecutionException {
+    private void installWantedPackages(Path venvDirectory, List<String> installedPackages) throws MojoExecutionException {
         var pkgsToInstall = new HashSet<String>(packages);
         pkgsToInstall.removeAll(installedPackages);
         if (pkgsToInstall.isEmpty()) {
             return;
         }
-        runPip(venvDirectory, "install", pkgsToInstall);
+        runPip(venvDirectory, "install", pkgsToInstall.toArray(new String[pkgsToInstall.size()]));
     }
 
-    private void deleteUnwantedPackages(Path venvDirectory, HashSet<String> installedPackages) throws MojoExecutionException {
+    private void deleteUnwantedPackages(Path venvDirectory, List<String> installedPackages) throws MojoExecutionException {
         var pkgsToRemove = new HashSet<String>(installedPackages);
         pkgsToRemove.removeAll(packages);
         if (pkgsToRemove.isEmpty()) {
             return;
         }
-        runPip(venvDirectory, "uninstall", pkgsToRemove);
+        runPip(venvDirectory, "uninstall", pkgsToRemove.toArray(new String[pkgsToRemove.size()]));
     }
 
     private Path getLauncherPath() {
@@ -353,4 +317,27 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
     }
 
+    private void runLauncher(String launcherPath, String... args) throws MojoExecutionException {
+        try {
+            GraalPyRunner.runLauncher(launcherPath, new MavenDelegateLog(getLog()), args);
+        } catch(IOException | InterruptedException e) {
+            throw new MojoExecutionException(String.format("failed to execute launcher command %s", List.of(args)));
+        }
+    }
+
+    private void runPip(Path venvDirectory, String command, String... args) throws MojoExecutionException {
+        try {
+            GraalPyRunner.runPip(venvDirectory, command, new MavenDelegateLog(getLog()), args);
+        } catch(IOException | InterruptedException e) {
+            throw new MojoExecutionException(String.format("failed to execute pip", args), e);
+        }
+    }
+
+    private void runVenvBin(Path venvDirectory, String bin, String... args) throws MojoExecutionException {
+        try {
+            GraalPyRunner.runVenvBin(venvDirectory, bin, new MavenDelegateLog(getLog()), args);
+        } catch(IOException | InterruptedException e) {
+            throw new MojoExecutionException(String.format("failed to execute venv", args), e);
+        }
+    }
 }
