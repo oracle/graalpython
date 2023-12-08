@@ -156,6 +156,31 @@ BuildSpec(
         "BUILD_TEST": 0,
     },
 )
+opt_einsum = BuildSpec(
+    name="opt_einsum",
+    platforms=[LinuxX86],
+)
+keras_preprocessing = BuildSpec(
+    name="keras_preprocessing",
+    platforms=[LinuxX86],
+)
+BuildSpec(
+    name="tensorflow",
+    platforms=[LinuxX86],
+    spec_dependencies=[opt_einsum, keras_preprocessing],
+    before_build=[
+        "export PIP_FIND_LINKS=$(pwd)",
+        "pip install pip numpy wheel packaging requests opt_einsum",
+        "pip install keras_preprocessing --no-deps",
+        "curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/graalpy/bin/bazel",
+        "chmod +x graalpy/bin/bazel",
+        "export PATH=$(pwd)/graalpy/bin/:$PATH",
+        "bazel --version",
+    ],
+    system_dependencies=[
+        "openblas-devel", "/usr/bin/cmake", "/usr/bin/sudo", "/usr/bin/curl", "java-11-openjdk-devel"
+    ],
+)
 
 
 if __name__ == "__main__":

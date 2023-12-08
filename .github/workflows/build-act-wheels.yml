@@ -3099,3 +3099,164 @@ jobs:
           name: torch-macos-aarch64
           path: torch*.whl
           if-no-files-found: error
+  opt_einsum-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: torch-linux-amd64
+    if: inputs.name == '' || inputs.name == 'opt_einsum'
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from torch
+        uses: actions/download-artifact@v3
+        with:
+          name: torch-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) opt_einsum
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: opt_einsum-linux-amd64
+          path: opt*einsum*.whl
+          if-no-files-found: error
+  keras_preprocessing-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: opt_einsum-linux-amd64
+    if: inputs.name == '' || inputs.name == 'keras_preprocessing'
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from opt_einsum
+        uses: actions/download-artifact@v3
+        with:
+          name: opt_einsum-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) keras_preprocessing
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: keras_preprocessing-linux-amd64
+          path: keras*preprocessing*.whl
+          if-no-files-found: error
+  tensorflow-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - opt_einsum-linux-amd64
+      - keras_preprocessing-linux-amd64
+    if: inputs.name == '' || inputs.name == 'tensorflow'
+    steps:
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from opt_einsum
+        uses: actions/download-artifact@v3
+        with:
+          name: opt_einsum-linux-amd64
+      - name: Download artifacts from keras_preprocessing
+        uses: actions/download-artifact@v3
+        with:
+          name: keras_preprocessing-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          pip install pip numpy wheel packaging requests opt_einsum
+          pip install keras_preprocessing --no-deps
+          curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/graalpy/bin/bazel
+          chmod +x graalpy/bin/bazel
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          bazel --version
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) tensorflow
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: tensorflow-linux-amd64
+          path: tensorflow*.whl
+          if-no-files-found: error
