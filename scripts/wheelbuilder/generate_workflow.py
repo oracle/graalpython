@@ -53,6 +53,7 @@ BuildSpec(name="psutil")
 numpy = BuildSpec(
     name="numpy",
     extra_versions=["1.21.6", "1.22.4", "1.23.1", "1.23.4"],
+    platforms=[Linux, Mac, Windows],
     system_dependencies={
         Linux: ["gcc-toolset-12-gcc-gfortran", "openblas-devel"],
         Mac: ["gcc", "openblas"],
@@ -126,8 +127,15 @@ cffi = BuildSpec(
         Mac: ["libffi"],
     },
 )
-pyyaml = BuildSpec(name="PyYAML")
+pyyaml = BuildSpec(
+    name="PyYAML",
+    platforms=[Linux, Mac, Windows],
+)
 cmake = BuildSpec(name="cmake")
+BuildSpec(
+    name="ujson",
+    platforms=[Linux, Mac, Windows],
+)
 BuildSpec(
     name="torch",
     spec_dependencies=[numpy, ninja, cmake, pybind11, cffi, pyyaml],

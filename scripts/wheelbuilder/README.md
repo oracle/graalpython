@@ -42,18 +42,19 @@ to use the GitHub Action runner script.
 ### Running actions locally with nektos/act
 
 [Act](https://github.com/nektos/act) allows running GitHub actions locally. We
-can use that to just build all the packages on a local machine:
+can use that to just build packages on a local machine:
 
 ```
 ./act --artifact-server-path /tmp/artifacts \
-      -W .github/workflows/build-act-wheels.yml \
+      -W .github/workflows/build-linux-amd64-wheels.yml \
       -P self-hosted=-self-hosted \
       -P macOS=-self-hosted -P Linux=-self-hosted \
       -P X64=-self-hosted -P ARM64=-self-hosted \
-      --input name=all
+      --input name=psutil
 ```
 
-You can vary the `--input name=` argument to build only a single package.
+You can vary the `--input name=` argument to select which package to build or to
+build all.
 
 On Linux you will need Docker or Podman. If you're using Podman, make sure you
 are running the system service (e.g. `podman system service -t 0` to run it in

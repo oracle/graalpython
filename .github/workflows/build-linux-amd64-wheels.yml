@@ -19,6 +19,7 @@ jobs:
     container: quay.io/pypa/manylinux_2_28_x86_64
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -67,6 +68,7 @@ jobs:
       inputs.name == 'scipy' || inputs.name == 'scikit-learn' || inputs.name == 'torch')
       }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -122,6 +124,7 @@ jobs:
     needs: numpy-linux-amd64
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -175,6 +178,7 @@ jobs:
       == 'contourpy' || inputs.name == 'kiwisolver' || inputs.name == 'torch' || inputs.name
       == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -226,6 +230,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja' || inputs.name
       == 'contourpy' || inputs.name == 'torch' || inputs.name == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -277,6 +282,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow' || inputs.name
       == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -333,6 +339,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy' || inputs.name
       == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -401,6 +408,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver' || inputs.name
       == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -460,6 +468,7 @@ jobs:
       - contourpy-linux-amd64
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -529,6 +538,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy' || inputs.name
       == 'scikit-learn') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -588,6 +598,7 @@ jobs:
       - scipy-linux-amd64
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -645,6 +656,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi' || inputs.name
       == 'torch') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -697,6 +709,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML' || inputs.name
       == 'torch') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -748,6 +761,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake' || inputs.name
       == 'torch') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -789,6 +803,57 @@ jobs:
           name: cmake-linux-amd64
           path: cmake*.whl
           if-no-files-found: error
+  ujson-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: cmake-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from cmake
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: cmake-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: ujson-linux-amd64
+          path: ujson*.whl
+          if-no-files-found: error
   torch-linux-amd64:
     runs-on:
       - self-hosted
@@ -802,11 +867,13 @@ jobs:
       - pybind11-linux-amd64
       - cffi-linux-amd64
       - PyYAML-linux-amd64
+      - ujson-linux-amd64
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env:
       MAX_JOBS: 4
       BUILD_TEST: 0
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
@@ -868,6 +935,11 @@ jobs:
         continue-on-error: true
         with:
           name: PyYAML-linux-amd64
+      - name: Download artifacts from ujson
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: ujson-linux-amd64
       - name: Build wheel
         run: |-
           export PIP_FIND_LINKS=$(pwd)
@@ -889,6 +961,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'opt_einsum' || inputs.name
       == 'tensorflow') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -940,6 +1013,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'keras_preprocessing'
       || inputs.name == 'tensorflow') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |
           dnf install -y epel-release
@@ -992,6 +1066,7 @@ jobs:
       - keras_preprocessing-linux-amd64
     if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'tensorflow') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: |-
           dnf install -y epel-release
