@@ -1,4 +1,4 @@
-From 1d68111b71462e8f15daa93eee333a4329db0b5d Mon Sep 17 00:00:00 2001
+From b19d1322b2a266fc98bb01939cca615ed2ccdab8 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
 Date: Tue, 5 Dec 2023 02:13:43 +0300
 Subject: [PATCH] patch for tensorflow 2.15
@@ -444,7 +444,7 @@ index 00000000000..2fda834f065
 +backend-path = ["."]
 diff --git a/requirements_graalpy.txt b/requirements_graalpy.txt
 new file mode 100644
-index 00000000000..7b97c94f958
+index 00000000000..262b347bd3d
 --- /dev/null
 +++ b/requirements_graalpy.txt
 @@ -0,0 +1,44 @@
@@ -461,7 +461,7 @@ index 00000000000..7b97c94f958
 +portpicker==1.5.2
 +tensorflow-estimator==2.15.0
 +requests==2.31.0
-+psutil==5.9.5
++psutil==5.9.6
 +charset-normalizer==3.1.0
 +google-auth-oauthlib==1.0.0
 +protobuf==4.23.4
@@ -1099,7 +1099,7 @@ index 8601192edf7..e7f5a033af9 100644
      # LINT.IfChange
 diff --git a/tf_build_backend.py b/tf_build_backend.py
 new file mode 100644
-index 00000000000..29b5295b06f
+index 00000000000..a8f8ca74729
 --- /dev/null
 +++ b/tf_build_backend.py
 @@ -0,0 +1,62 @@
@@ -1131,7 +1131,7 @@ index 00000000000..29b5295b06f
 +    return env
 +
 +def build_sdist(sdist_directory, config_settings=None):
-+    nv = 'tensorflow-2.14.0'
++    nv = 'tensorflow-2.15.0'
 +    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
 +
 +    def tarfilter(info):
@@ -1151,7 +1151,7 @@ index 00000000000..29b5295b06f
 +            str(SUB_VENV_PYTHON), 
 +            'graalpy_build.py', 
 +            '--no-install',
-+            '--no-pipreq',
++            # '--no-pipreq',
 +            '--sites', os.pathsep.join(site.getsitepackages()),
 +            '--whl-path', d,
 +        ], env=setup_venv(), check=True)
