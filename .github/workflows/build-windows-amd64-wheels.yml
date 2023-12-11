@@ -10,4 +10,146 @@ name: build-windows-amd64-wheels
         type: string
         description: GraalPy download url prefix (empty for default)
         required: false
-jobs: {}
+jobs:
+  numpy-windows-amd64:
+    runs-on:
+      - self-hosted
+      - windows
+      - X64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest ${{ inputs.graalpy }}-windows-amd64.zip -OutFile graalpy-windows-amd64.zip
+          Expand-Archive graalpy-windows-amd64.zip
+          mv graalpy-windows-amd64/* graalpy
+          graalpy/bin/graalpy.exe -s -m ensurepip
+          graalpy/bin/graalpy.exe -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Build wheel
+        run: |-
+          $env:PIP_FIND_LINKS=$PWD
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy==1.21.6
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy==1.22.4
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy==1.23.1
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy==1.23.4
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: numpy-windows-amd64
+          path: numpy*.whl
+          if-no-files-found: error
+  PyYAML-windows-amd64:
+    runs-on:
+      - self-hosted
+      - windows
+      - X64
+    needs: numpy-windows-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest ${{ inputs.graalpy }}-windows-amd64.zip -OutFile graalpy-windows-amd64.zip
+          Expand-Archive graalpy-windows-amd64.zip
+          mv graalpy-windows-amd64/* graalpy
+          graalpy/bin/graalpy.exe -s -m ensurepip
+          graalpy/bin/graalpy.exe -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-windows-amd64
+      - name: Build wheel
+        run: |-
+          $env:PIP_FIND_LINKS=$PWD
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD PyYAML
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: PyYAML-windows-amd64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  ujson-windows-amd64:
+    runs-on:
+      - self-hosted
+      - windows
+      - X64
+    needs: PyYAML-windows-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest ${{ inputs.graalpy }}-windows-amd64.zip -OutFile graalpy-windows-amd64.zip
+          Expand-Archive graalpy-windows-amd64.zip
+          mv graalpy-windows-amd64/* graalpy
+          graalpy/bin/graalpy.exe -s -m ensurepip
+          graalpy/bin/graalpy.exe -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: PyYAML-windows-amd64
+      - name: Build wheel
+        run: |-
+          $env:PIP_FIND_LINKS=$PWD
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD ujson
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: ujson-windows-amd64
+          path: ujson*.whl
+          if-no-files-found: error

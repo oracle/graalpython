@@ -16,8 +16,9 @@ jobs:
       - self-hosted
       - macOS
       - ARM64
-    if: inputs.name == '' || inputs.name == 'psutil'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -53,10 +54,12 @@ jobs:
       - macOS
       - ARM64
     needs: psutil-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'numpy' || inputs.name == 'pandas' ||
-      inputs.name == 'contourpy' || inputs.name == 'matplotlib' || inputs.name ==
-      'scipy' || inputs.name == 'scikit-learn' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy' || inputs.name
+      == 'pandas' || inputs.name == 'contourpy' || inputs.name == 'matplotlib' ||
+      inputs.name == 'scipy' || inputs.name == 'scikit-learn' || inputs.name == 'torch')
+      }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install gcc openblas
       - name: Checkout
@@ -79,6 +82,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from psutil
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: psutil-macos-aarch64
       - name: Build wheel
@@ -102,8 +106,9 @@ jobs:
       - macOS
       - ARM64
     needs: numpy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'pandas'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install openblas
       - name: Checkout
@@ -126,6 +131,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Build wheel
@@ -145,9 +151,11 @@ jobs:
       - macOS
       - ARM64
     needs: pandas-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'pybind11' || inputs.name == 'contourpy'
-      || inputs.name == 'kiwisolver' || inputs.name == 'torch' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11' || inputs.name
+      == 'contourpy' || inputs.name == 'kiwisolver' || inputs.name == 'torch' || inputs.name
+      == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -168,6 +176,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pandas
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pandas-macos-aarch64
       - name: Build wheel
@@ -187,9 +196,10 @@ jobs:
       - macOS
       - ARM64
     needs: pybind11-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'ninja' || inputs.name == 'contourpy'
-      || inputs.name == 'torch' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja' || inputs.name
+      == 'contourpy' || inputs.name == 'torch' || inputs.name == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -210,6 +220,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Build wheel
@@ -229,8 +240,10 @@ jobs:
       - macOS
       - ARM64
     needs: ninja-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'Pillow' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow' || inputs.name
+      == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install libjpeg libtiff little-cms2 openjpeg webp
       - name: Checkout
@@ -253,6 +266,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-aarch64
       - name: Build wheel
@@ -276,8 +290,10 @@ jobs:
       - pybind11-macos-aarch64
       - numpy-macos-aarch64
       - Pillow-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'contourpy' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy' || inputs.name
+      == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -298,18 +314,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-macos-aarch64
       - name: Build wheel
@@ -331,8 +351,10 @@ jobs:
     needs:
       - pybind11-macos-aarch64
       - contourpy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'kiwisolver' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver' || inputs.name
+      == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -353,10 +375,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-macos-aarch64
       - name: Build wheel
@@ -380,8 +404,9 @@ jobs:
       - kiwisolver-macos-aarch64
       - numpy-macos-aarch64
       - contourpy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'matplotlib'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install openblas
       - name: Checkout
@@ -404,18 +429,22 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from Pillow
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: Pillow-macos-aarch64
       - name: Download artifacts from kiwisolver
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: kiwisolver-macos-aarch64
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from contourpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: contourpy-macos-aarch64
       - name: Build wheel
@@ -437,8 +466,10 @@ jobs:
     needs:
       - numpy-macos-aarch64
       - matplotlib-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'scipy' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy' || inputs.name
+      == 'scikit-learn') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install gcc openblas pkg-config
       - name: Checkout
@@ -461,10 +492,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from matplotlib
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: matplotlib-macos-aarch64
       - name: Build wheel
@@ -488,8 +521,9 @@ jobs:
     needs:
       - numpy-macos-aarch64
       - scipy-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'scikit-learn'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install openblas
       - name: Checkout
@@ -512,10 +546,12 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from scipy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scipy-macos-aarch64
       - name: Build wheel
@@ -537,8 +573,10 @@ jobs:
       - macOS
       - ARM64
     needs: scikit-learn-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'cffi' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi' || inputs.name
+      == 'torch') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install libffi
       - name: Checkout
@@ -561,6 +599,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from scikit-learn
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: scikit-learn-macos-aarch64
       - name: Build wheel
@@ -580,8 +619,10 @@ jobs:
       - macOS
       - ARM64
     needs: cffi-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'PyYAML' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML' || inputs.name
+      == 'torch') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -602,6 +643,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-macos-aarch64
       - name: Build wheel
@@ -621,8 +663,10 @@ jobs:
       - macOS
       - ARM64
     needs: PyYAML-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'cmake' || inputs.name == 'torch'
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake' || inputs.name
+      == 'torch') }}
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -643,6 +687,7 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-macos-aarch64
       - name: Build wheel
@@ -656,6 +701,49 @@ jobs:
           name: cmake-macos-aarch64
           path: cmake*.whl
           if-no-files-found: error
+  ujson-macos-aarch64:
+    runs-on:
+      - self-hosted
+      - macOS
+      - ARM64
+    needs: cmake-macos-aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from cmake
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: cmake-macos-aarch64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: ujson-macos-aarch64
+          path: ujson*.whl
+          if-no-files-found: error
   torch-macos-aarch64:
     runs-on:
       - self-hosted
@@ -668,11 +756,13 @@ jobs:
       - pybind11-macos-aarch64
       - cffi-macos-aarch64
       - PyYAML-macos-aarch64
-    if: inputs.name == '' || inputs.name == 'torch'
+      - ujson-macos-aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
     env:
       MAX_JOBS: 4
       BUILD_TEST: 0
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Install dependencies
         run: brew install openblas cmake
       - name: Checkout
@@ -700,28 +790,39 @@ jobs:
         run: python -m venv graalpy
       - name: Download artifacts from numpy
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: numpy-macos-aarch64
       - name: Download artifacts from ninja
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ninja-macos-aarch64
       - name: Download artifacts from cmake
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cmake-macos-aarch64
       - name: Download artifacts from pybind11
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: pybind11-macos-aarch64
       - name: Download artifacts from cffi
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: cffi-macos-aarch64
       - name: Download artifacts from PyYAML
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: PyYAML-macos-aarch64
+      - name: Download artifacts from ujson
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: ujson-macos-aarch64
       - name: Build wheel
         run: |-
           export USE_CUDA=0

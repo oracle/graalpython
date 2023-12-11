@@ -48,6 +48,7 @@ import os
 import re
 import shutil
 import sys
+import html
 
 
 def normalize(name):
@@ -67,15 +68,23 @@ if __name__ == "__main__":
     wheels = glob.glob(os.path.join(workspace, "**/*.whl")) or glob.glob(
         os.path.join(workspace, "**/**/*.whl.gz__")
     )
-    repo = os.path.join(workspace, "repository")
+    repo = os.path.join(workspace, "repository", "simple")
     os.makedirs(repo, exist_ok=True)
+    pkg_index = [
+        "<html><head><title>Simple Index</title>",
+        "<meta name='api-version' value='2' /></head><body>",
+    ]
+    processed_wheels = set()
     for wheel in wheels:
         print("Processing", wheel)
-        parts = os.path.basename(wheel).split("-")
+        basename = os.path.basename(wheel)
+        parts = basename.split("-")
         for idx, part in enumerate(parts):
-            if part.startswith("graalpy3") or part.startswith("py3"):
+            if part.startswith("graalpy3") or part.startswith("py2") or part.startswith("py3"):
                 version_idx = idx - 1
                 break
+        else:
+            continue
         wheel_name = normalize("-".join(parts[:version_idx]))
         target_dir = os.path.join(repo, wheel_name)
         os.makedirs(target_dir, exist_ok=True)
@@ -83,12 +92,25 @@ if __name__ == "__main__":
             with gzip.open(wheel, "rb") as f_in:
                 with open(
                     os.path.join(
-                        target_dir, os.path.basename(wheel).replace(".gz__", "")
+                        target_dir, basename.replace(".gz__", "")
                     ),
                     "wb",
                 ) as f_out:
                     shutil.copyfileobj(f_in, f_out)
         else:
             shutil.copy(wheel, target_dir)
+
+        if wheel_name not in processed_wheels:
+            processed_wheels.add(wheel_name)
+            wheel_name = html.escape(wheel_name)
+            pkg_index.append(f"<a href='{wheel_name}/'>{wheel_name}</a><br />")
+
+        with open(os.path.join(target_dir, "index.html"), "a") as f:
+            basename = html.escape(basename)
+            f.write(f"<a href='{basename}'>{basename}</a><br />\n")
+
+    pkg_index.append("</body></html>")
+    with open(os.path.join(repo, "index.html"), "w") as f:
+        f.write("\n".join(pkg_index))
 
     shutil.make_archive(f"{workspace}/repository", "zip", repo)

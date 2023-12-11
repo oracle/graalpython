@@ -68,40 +68,48 @@ def generate(workflow_directory):
     # We generate separate workflow files for each platform, because github
     # chokes on workflow files with too many jobs
     original_platforms = [spec.platforms for spec in BuildSpec.get_instances()]
-
-    # We also add needs relationships between all jobs, to make a totally
-    # ordered queue. This is because there's no good way to limit concurrency
-    # on github or act, and we do not want to overload our worker
-    linked_specs = []
-    unlinked_specs = list(BuildSpec.get_instances())
-    last_spec = None
-    while unlinked_specs:
-        for spec in sorted(
-            unlinked_specs[:],
-            key=lambda s: 0 if last_spec in s.spec_dependencies else 1,
-        ):
-            if all(dep in linked_specs for dep in spec.spec_dependencies):
-                linked_specs.append(spec)
-                unlinked_specs.remove(spec)
-                if last_spec and last_spec not in spec.spec_dependencies:
-                    spec.spec_dependencies.append(last_spec)
-                last_spec = spec
+    original_dependencies = [spec.spec_dependencies[:] for spec in BuildSpec.get_instances()]
+    generated_specs = {}
 
     for p in PLATFORMS:
-        for spec, original_platform in zip(linked_specs, original_platforms):
+        unlinked_specs = []
+        for spec, (original_platform, original_dep) in zip(BuildSpec.get_instances(), zip(original_platforms, original_dependencies)):
+            spec.spec_dependencies = original_dep[:]
             if p in original_platform:
                 spec.platforms = [p]
+                unlinked_specs.append(spec)
             else:
                 spec.platforms = []
-            jobs = create_jobs(
-                linked_specs, f"build-{p.name}-{p.arch}-wheels", "workflow_dispatch"
-            )
+
+        # We also add needs relationships between all jobs, to make a totally
+        # ordered queue. This is because there's no good way to limit concurrency
+        # on github or act, and we do not want to overload our worker
+        linked_specs = []
+        last_spec = None
+        while unlinked_specs:
+            made_progress = False
+            for spec in sorted(
+                unlinked_specs[:],
+                key=lambda s: 0 if last_spec in s.spec_dependencies else 1,
+            ):
+                if all(dep in linked_specs for dep in spec.spec_dependencies):
+                    made_progress = True
+                    linked_specs.append(spec)
+                    unlinked_specs.remove(spec)
+                    if last_spec and last_spec not in spec.spec_dependencies:
+                        spec.spec_dependencies.append(last_spec)
+                    last_spec = spec
+
+        generated_specs[f"{p.name}-{p.arch}"] = linked_specs
+        jobs = create_jobs(
+            linked_specs, f"build-{p.name}-{p.arch}-wheels", "workflow_dispatch"
+        )
         with open(
             os.path.join(workflow_directory, f"build-{p.name}-{p.arch}-wheels.yml"), "w"
         ) as f:
             f.write(yaml.dump(jobs, Dumper=IndentedListDumper, sort_keys=False))
 
-    # act workflow for local execution. These need node explictly in the Linux docker containers
+    # act workflow for local execution
     for spec, original_platform in zip(linked_specs, original_platforms):
         spec.platforms = original_platform
         spec.get_downstream_specs().clear()
@@ -118,10 +126,20 @@ def generate(workflow_directory):
                 "runs-on": "ubuntu-latest",
                 "steps": [
                     {
+                        "name": "Checkout",
+                        "uses": "actions/checkout@v4",
+                    },
+                ]
+                + [
+                    {
                         "name": f"Download artifacts for {p.name}-{p.arch}",
-                        "uses": "dawidd6/action-download-artifact@v2",
+                        "uses": "dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e",
+                        "continue-on-error": True,
                         "with": {
-                            "workflow": f"build-{p.name}-{p.arch}-wheels",
+                            "workflow": f"build-{p.name}-{p.arch}-wheels.yml",
+                            "workflow_conclusion": "",
+                            "if_no_artifact_found": "warn",
+                            "allow_forks": "false",
                         },
                     }
                     for p in PLATFORMS
@@ -136,7 +154,7 @@ def generate(workflow_directory):
                     },
                     {
                         "name": "Create repository",
-                        "run": "python ${GITHUB_WORKSPACE}/generate_repository.py",
+                        "run": "python ${GITHUB_WORKSPACE}/scripts/wheelbuilder/generate_repository.py",
                     },
                     {
                         "name": "Store repository",
@@ -154,8 +172,10 @@ def generate(workflow_directory):
     with open(os.path.join(workflow_directory, "build-repository.yml"), "w") as f:
         f.write(yaml.dump(repo_job, Dumper=IndentedListDumper, sort_keys=False))
 
-    print(
-        "Generated specs to build the following packages\n\t",
-        "\n\t".join([s.name for s in linked_specs]),
-        sep="",
-    )
+    print("Generated specs to build the following packages")
+    for p, specs in generated_specs.items():
+        print(
+            f"\t{p}\n\t\t",
+            "\n\t\t".join([s.name for s in specs]),
+            sep="",
+        )

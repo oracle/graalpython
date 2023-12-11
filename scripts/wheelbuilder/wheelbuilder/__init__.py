@@ -81,6 +81,8 @@ class Platform:
                 return ["self-hosted", "macOS", "X64"]
             case ("macos", "aarch64"):
                 return ["self-hosted", "macOS", "ARM64"]
+            case ("windows", "amd64"):
+                return ["self-hosted", "windows", "X64"]
         raise RuntimeError(f"Invalid platform spec {self.name}:{self.arch}")
 
     @property
@@ -105,6 +107,12 @@ class Platform:
                 ]
             case "macos":
                 return [f"brew install {' '.join(packages)}"]
+            case "windows":
+                return [
+                    "Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip",
+                    "Expand-Archive patch.zip -DestinationPath ../patch -Force",
+                    f"winget install --force --silent --disable-interactivity --accept-package-agreements {' '.join(packages)}" if packages else "",
+                ]
         raise RuntimeError(f"Invalid platform spec {self.name}")
 
     def get_graalpy_cmd(self) -> list[str]:
@@ -117,6 +125,15 @@ class Platform:
                     "graalpy/bin/graalpy -s -m ensurepip",
                     "graalpy/bin/graalpy -m pip install wheel",
                 ]
+            case "windows":
+                return [
+                    "$ProgressPreference = 'SilentlyContinue'",
+                    f"Invoke-WebRequest ${{{{ inputs.graalpy }}}}-{self.name}-{self.arch}.zip -OutFile graalpy-{self.name}-{self.arch}.zip",
+                    f"Expand-Archive graalpy-{self.name}-{self.arch}.zip",
+                    f"mv graalpy-{self.name}-{self.arch}/* graalpy",
+                    "graalpy/bin/graalpy.exe -s -m ensurepip",
+                    "graalpy/bin/graalpy.exe -m pip install wheel",
+                ]
         raise RuntimeError(f"Invalid platform spec {self.name}")
 
     def build_cmd(self, cmds: list[str]) -> list[str]:
@@ -128,8 +145,8 @@ class Platform:
                 ] + cmds
             case "windows":
                 return [
-                    "set PIP_FIND_LINKS=%cd%",
-                    "set PATH=%cd%\\graalpy\\bin;%PATH%",
+                    "$env:PIP_FIND_LINKS=$PWD",
+                    '$env:PATH+=";$PWD\\graalpy\\bin;$PWD\\graalpy\\Scripts;$PWD\\..\\patch\\bin"',
                 ] + cmds
         raise RuntimeError(f"Invalid platform spec {self.name}")
 
@@ -145,7 +162,7 @@ class Platform:
             case "windows":
                 return self.build_cmd(
                     [
-                        f"graalpy/bin/graalpy -m pip wheel --find-links %cd% {spec}"
+                        f"graalpy/bin/graalpy -m pip wheel --find-links $PWD {spec}"
                         for spec in specs
                     ]
                 )
@@ -235,11 +252,11 @@ class BuildSpec:
                         for platform in platforms:
                             kwargs[k].setdefault(platform, os_key)
                         del kwargs[k][os]
-        if kwargs.get("platforms"):
-            for os, platforms in os_platform_map.items():
-                if os in platforms:
-                    platforms.remove(os)
-                    platforms.extend(platforms)
+        if platforms := kwargs.get("platforms"):
+            for platform in platforms[:]:
+                if platform in os_platform_map:
+                    platforms.remove(platform)
+                    platforms.extend(os_platform_map[platform])
         new_instance = super().__new__(cls)
         cls._append_instance(new_instance)
         for dependency in kwargs.get("spec_dependencies", []):
@@ -261,24 +278,35 @@ def create_jobs(
             if spec_deps := spec.spec_dependencies:
                 needs = [spec_dep.platform_name(platform) for spec_dep in spec_deps]
                 job["needs"] = needs[0] if len(needs) == 1 else needs
-            job["if"] = " || ".join(
-                [
-                    "inputs.name == ''",
-                    f"inputs.name == '{spec.name}'",
-                    *[
-                        f"inputs.name == '{spec_dep.name}'"
-                        for spec_dep in spec.get_downstream_specs()
-                        if platform in spec_dep.platforms
-                    ],
-                ]
+            job["if"] = (
+                "${{ !cancelled() && ("
+                + (
+                    " || ".join(
+                        [
+                            "inputs.name == ''",
+                            f"inputs.name == '{spec.name}'",
+                            *[
+                                f"inputs.name == '{spec_dep.name}'"
+                                for spec_dep in spec.get_downstream_specs()
+                                if platform in spec_dep.platforms
+                            ],
+                        ]
+                    )
+                )
+                + ") }}"
             )
             if spec.environment:
                 job["env"] = spec.environment
-            steps: list[dict[str, Any]] = []
+            steps: list[dict[str, Any]] = [
+                {
+                    # only for windows, but is a noop on posix
+                    "uses": "ilammy/msvc-dev-cmd@v1",
+                },
+            ]
             job["steps"] = steps
             if (
                 deps := spec.get_system_dependencies(platform)
-            ) or platform.name == "linux":
+            ) or platform.name in ("linux", "windows"):
                 steps.append(
                     {
                         "name": "Install dependencies",
@@ -323,6 +351,7 @@ def create_jobs(
                         {
                             "name": f"Download artifacts from {spec_dep.name}",
                             "uses": "actions/download-artifact@v3",
+                            "continue-on-error": True,
                             "with": {"name": spec_dep.platform_name(platform)},
                         }
                     )
