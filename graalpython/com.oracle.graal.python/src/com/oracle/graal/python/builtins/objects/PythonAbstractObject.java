@@ -73,7 +73,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -2923,40 +2922,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean hasBufferElements(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) {
-        return acquireLib.hasBuffer(this);
+    public boolean hasBufferElements(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.isBuffer(this);
     }
 
     @ExportMessage
-    public boolean isBufferWritable(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException {
-        if (acquireLib.hasBuffer(this)) {
-            try {
-                Object buffer = acquireLib.acquireWritable(this);
-                try {
-                    return true;
-                } finally {
-                    bufferLib.release(buffer);
-                }
-            } catch (PException pe) {
-                return false;
-            }
+    public boolean isBufferWritable(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException {
+        if (bufferLib.isBuffer(this)) {
+            return !bufferLib.isReadonly(this);
         } else {
             throw UnsupportedMessageException.create();
         }
     }
 
     @ExportMessage
-    public long getBufferSize(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                return bufferLib.getBufferLength(this);
-            } finally {
-                bufferLib.release(buffer);
-            }
+    public long getBufferSize(@Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException {
+        if (bufferLib.isBuffer(this)) {
+            return bufferLib.getBufferLength(this);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -2970,16 +2952,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                return bufferLib.readByte(buffer, offset);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            return bufferLib.readByte(this, offset);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -2992,16 +2968,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireWritable(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                bufferLib.writeByte(buffer, offset, value);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            bufferLib.writeByte(this, offset, value);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3015,16 +2985,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                return bufferLib.readShortByteOrder(buffer, offset, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            return bufferLib.readShortByteOrder(this, offset, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3037,16 +3001,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireWritable(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                bufferLib.writeShortByteOrder(buffer, offset, value, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            bufferLib.writeShortByteOrder(this, offset, value, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3060,16 +3018,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                return bufferLib.readIntByteOrder(buffer, offset, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            return bufferLib.readIntByteOrder(this, offset, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3082,16 +3034,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireWritable(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                bufferLib.writeIntByteOrder(buffer, offset, value, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            bufferLib.writeIntByteOrder(this, offset, value, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3105,16 +3051,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                return bufferLib.readLongByteOrder(buffer, offset, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            return bufferLib.readLongByteOrder(this, offset, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3127,16 +3067,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireWritable(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                bufferLib.writeLongByteOrder(buffer, offset, value, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            bufferLib.writeLongByteOrder(this, offset, value, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3150,16 +3084,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                return bufferLib.readFloatByteOrder(buffer, offset, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            return bufferLib.readFloatByteOrder(this, offset, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3173,16 +3101,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireWritable(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                bufferLib.writeFloatByteOrder(buffer, offset, value, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            bufferLib.writeFloatByteOrder(this, offset, value, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3196,16 +3118,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                return bufferLib.readDoubleByteOrder(buffer, offset, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            return bufferLib.readDoubleByteOrder(this, offset, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3219,16 +3135,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireWritable(this);
-            try {
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                bufferLib.writeDoubleByteOrder(buffer, offset, value, order);
-            } finally {
-                bufferLib.release(buffer);
-            }
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            bufferLib.writeDoubleByteOrder(this, offset, value, order);
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -3242,20 +3152,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("acquireLib") @CachedLibrary(limit = "1") PythonBufferAcquireLibrary acquireLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
-        if (acquireLib.hasBuffer(this)) {
-            Object buffer = acquireLib.acquireReadonly(this);
-            try {
-                if (length < 0) {
-                    throw InvalidBufferOffsetException.create(byteOffset, length);
-                }
-                int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
-                for (int i = 0; i < length; i++) {
-                    destination[destinationOffset + i] = bufferLib.readByte(buffer, offset + i);
-                }
-            } finally {
-                bufferLib.release(buffer);
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+        if (bufferLib.isBuffer(this)) {
+            if (length < 0 || (destination.length - destinationOffset > length)) {
+                throw InvalidBufferOffsetException.create(byteOffset, length);
+            }
+            int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.ValueError);
+            for (int i = 0; i < length; i++) {
+                destination[destinationOffset + i] = bufferLib.readByte(this, offset + i);
             }
         } else {
             throw UnsupportedMessageException.create();

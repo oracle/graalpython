@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.test.interop;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -504,6 +505,9 @@ public class HostInteropTest extends PythonTests {
         assertEquals(Long.MAX_VALUE, t.readBufferLong(ByteOrder.LITTLE_ENDIAN, 7));
         assertEquals(0.5f, t.readBufferFloat(ByteOrder.LITTLE_ENDIAN, 15), 0.0);
         assertEquals(12345.6789123, t.readBufferDouble(ByteOrder.LITTLE_ENDIAN, 23), 0.0);
+        byte[] dst = new byte[8];
+        t.readBuffer(23, dst, 0, 8);
+        assertArrayEquals(dst, new byte[]{(byte) 0xAD, 0x26, (byte) 0x99, (byte) 0xE6, (byte) 0xD6, 0x1C, (byte) 0xC8, 0x40});
 
         // test bytearray
         t = context.eval("python", "bytearray(10)");
