@@ -221,4 +221,12 @@ public abstract class StringLiterals {
     public static final String J_OB_REFCNT = "ob_refcnt";
     public static final String J_DEBUG = "debug";
     public static final String J_TRACE = "trace";
+
+    public static final TruffleString T_HOUR = tsLiteral("hour");
+    public static final TruffleString T_MINUTE = tsLiteral("minute");
+    public static final TruffleString T_SECOND = tsLiteral("second");
+    public static final TruffleString T_MICROSECOND = tsLiteral("microsecond");
+    public static final TruffleString T_TM_HOUR = tsLiteral("tm_hour");
+    public static final TruffleString T_TM_MIN = tsLiteral("tm_min");
+    public static final TruffleString T_TM_SEC = tsLiteral("tm_sec");
 }

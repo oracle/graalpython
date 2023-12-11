@@ -481,5 +481,23 @@ public class HostInteropTest extends PythonTests {
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
         assertTrue(t.isTimeZone());
         assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
+
+        // test builtin types
+        t = context.eval("python", """
+                from datetime import datetime
+                
+                datetime(2023, 12, 12, 3, 10, 10, 10)
+                """);
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
+
+        t = context.eval("python", """
+                import time
+                
+                # time.struct_time(tm_year=2022, tm_mon=12, tm_mday=28, tm_hour=8, tm_min=8, tm_sec=53, tm_wday=2, tm_yday=362, tm_isdst=0)
+                time.gmtime(1672214933)
+                """);
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(8, 8, 53, 0), t.asTime());
     }
 }

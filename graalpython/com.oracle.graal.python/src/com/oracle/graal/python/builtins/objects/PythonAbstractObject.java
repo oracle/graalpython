@@ -52,9 +52,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_HOUR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
+import static com.oracle.graal.python.nodes.StringLiterals.T_MICROSECOND;
+import static com.oracle.graal.python.nodes.StringLiterals.T_MINUTE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SECOND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRUCT_TIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_HOUR;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MIN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_SEC;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -104,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -995,70 +1003,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    // GR-44020: use inlined:
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.is_time;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-            } else {
-                Object objType = getClassNode.executeCached(this);
-                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
-                                    isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
-                        return true;
-                    }
-                }
-                module = importedModules.getItem(T_TIME_MODULE_NAME);
-                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    static LocalTime constructTime(Object receiver, CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        return constructTime(receiver, castToIntNode, inliningTarget, lib, raiseNode,
-                        "hour", "minute", "second", "microsecond");
-    }
-
-    static LocalTime constructTimeStruct(Object receiver, CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        return constructTime(receiver, castToIntNode, inliningTarget, lib, raiseNode,
-                        "tm_hour", "tm_min", "tm_sec", null);
-    }
-
-    static LocalTime constructTime(Object receiver, CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, PRaiseNode.Lazy raiseNode,
-                    String hourMemberName, String minuteMemberName, String secondMemberName, String microSecondMemberName) throws UnsupportedMessageException {
-        try {
-            int hour = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, hourMemberName), raiseNode);
-            int min = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, minuteMemberName), raiseNode);
-            int sec = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, secondMemberName), raiseNode);
-            int micro = 0;
-            if (microSecondMemberName != null) {
-                micro = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, microSecondMemberName), raiseNode);
-            }
-            return createLocalTime(hour, min, sec, micro);
-        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_time;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
     }
 
@@ -1068,49 +1019,40 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    // GR-44020: use inlined:
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached PyObjectGetAttr getAttr,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                Object value = getValue.execute(inliningTarget, behavior, method, this);
-                return constructTime(value, castToIntNode, inliningTarget, lib, raiseNode);
-            } else {
-                Object objType = getClassNode.executeCached(this);
-                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
-                                    isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
-                        return constructTime(this, castToIntNode, inliningTarget, lib, raiseNode);
-                    }
+                    @Exclusive @Cached IsBuiltinObjectProfile attrErrProfile) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
+            boolean mustRelease = gil.acquire();
+            try {
+                int hour, min, sec, micro;
+                try {
+                    hour = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_HOUR), raiseNode);
+                    min = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_MINUTE), raiseNode);
+                    sec = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_SECOND), raiseNode);
+                    micro = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_MICROSECOND), raiseNode);
+                } catch (PException pe) {
+                    pe.expect(inliningTarget, AttributeError, attrErrProfile);
+                    // try a time_struct like object
+                    hour = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_HOUR), raiseNode);
+                    min = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_MIN), raiseNode);
+                    sec = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_SEC), raiseNode);
+                    micro = 0;
                 }
-                module = importedModules.getItem(T_TIME_MODULE_NAME);
-                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        return constructTimeStruct(this, castToIntNode, inliningTarget, lib, raiseNode);
-                    }
-                }
-                throw UnsupportedMessageException.create();
+                return createLocalTime(hour, min, sec, micro);
+            } finally {
+                gil.release(mustRelease);
             }
-        } finally {
-            gil.release(mustRelease);
+        } else {
+            throw UnsupportedMessageException.create();
         }
     }
 
