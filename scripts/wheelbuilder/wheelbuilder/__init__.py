@@ -110,7 +110,7 @@ class Platform:
             case "windows":
                 return [
                     "Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip",
-                    "Expand-Archive patch.zip",
+                    "Expand-Archive patch.zip -DestinationPath ../patch -Force",
                     f"winget install --force --silent --disable-interactivity --accept-package-agreements {' '.join(packages)}" if packages else "",
                 ]
         raise RuntimeError(f"Invalid platform spec {self.name}")
@@ -146,7 +146,7 @@ class Platform:
             case "windows":
                 return [
                     "$env:PIP_FIND_LINKS=$PWD",
-                    '$env:PATH+=";$PWD\\graalpy\\bin;$PWD\\graalpy\\Scripts;$PWD\\patch\\bin"',
+                    '$env:PATH+=";$PWD\\graalpy\\bin;$PWD\\graalpy\\Scripts;$PWD\\..\\patch\\bin"',
                 ] + cmds
         raise RuntimeError(f"Invalid platform spec {self.name}")
 

@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
-          Expand-Archive patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -45,7 +45,7 @@ jobs:
       - name: Build wheel
         run: |-
           $env:PIP_FIND_LINKS=$PWD
-          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\patch\bin"
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
           graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy
           graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy==1.21.6
           graalpy/bin/graalpy -m pip wheel --find-links $PWD numpy==1.22.4
@@ -69,7 +69,7 @@ jobs:
       - name: Install dependencies
         run: |
           Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
-          Expand-Archive patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -97,7 +97,7 @@ jobs:
       - name: Build wheel
         run: |-
           $env:PIP_FIND_LINKS=$PWD
-          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\patch\bin"
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
           graalpy/bin/graalpy -m pip wheel --find-links $PWD PyYAML
       - name: Store wheels
         uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
@@ -117,7 +117,7 @@ jobs:
       - name: Install dependencies
         run: |
           Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
-          Expand-Archive patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup custom GraalPy
@@ -145,7 +145,7 @@ jobs:
       - name: Build wheel
         run: |-
           $env:PIP_FIND_LINKS=$PWD
-          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\patch\bin"
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
           graalpy/bin/graalpy -m pip wheel --find-links $PWD ujson
       - name: Store wheels
         uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
