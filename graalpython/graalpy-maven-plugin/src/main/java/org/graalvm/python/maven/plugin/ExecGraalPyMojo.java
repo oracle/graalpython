@@ -43,7 +43,6 @@ package org.graalvm.python.maven.plugin;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
@@ -91,13 +90,9 @@ public class ExecGraalPyMojo extends AbstractMojo {
     }
 
     static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
-        runGraalPy(project,  new MavenDelegateLog(log), args);
-    }
-
-    private static  void runGraalPy(MavenProject project, MavenDelegateLog log, String... args) throws MojoExecutionException {
         var classpath = calculateClasspath(project);
         try {
-            GraalPyRunner.run(classpath, log, args);
+            GraalPyRunner.run(classpath, new MavenDelegateLog(log), args);
         } catch (IOException | InterruptedException e) {
             throw new MojoExecutionException(String.format("failed to run Graalpy launcher"), e);
         }

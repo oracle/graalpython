@@ -50,14 +50,6 @@ final class MavenDelegateLog implements SubprocessLog {
         this.delegate = delegate;
     }
 
-    public void subProcessOut(CharSequence var1) {
-        System.out.println(var1.toString());
-    }
-
-    public void subProcessErr(CharSequence var1) {
-        System.err.println(var1.toString());
-    }
-
     public void log(CharSequence var1) {
         delegate.info(var1);
     }

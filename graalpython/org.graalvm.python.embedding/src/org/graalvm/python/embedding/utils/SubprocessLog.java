@@ -41,11 +41,21 @@
 package org.graalvm.python.embedding.utils;
 
 public interface SubprocessLog {
-    void subProcessOut(CharSequence var1);
 
-    void subProcessErr(CharSequence var1);
+    default void subProcessOut(CharSequence out) {
+        System.out.println(out);
+    }
 
-    void log(CharSequence var1);
+    default void subProcessErr(CharSequence err) {
+        System.out.println(err);
+    }
 
-    void log(CharSequence var1, Throwable t);
+    default void log(CharSequence txt) {
+        System.out.println(txt);
+    }
+
+    default void log(CharSequence txt, Throwable t) {
+        System.out.println(txt);
+        t.printStackTrace();
+    }
 }

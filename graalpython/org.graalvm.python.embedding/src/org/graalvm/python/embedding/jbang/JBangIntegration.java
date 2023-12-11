@@ -72,6 +72,9 @@ public class JBangIntegration {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
 
+    private static final SubprocessLog LOG = new SubprocessLog() {
+    };
+
     /**
      *
      * @param temporaryJar temporary JAR file path
@@ -106,7 +109,7 @@ public class JBangIntegration {
                 ensureVenv(venv, dependencies);
                 try {
                     String[] pkgs = Arrays.stream(comment.substring(PIP.length()).trim().split(" ")).filter(s -> !s.trim().isEmpty()).toArray(String[]::new);
-                    GraalPyRunner.runPip(venv, "install", new Log(), pkgs);
+                    GraalPyRunner.runPip(venv, "install", LOG, pkgs);
                 } catch (IOException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -141,7 +144,7 @@ public class JBangIntegration {
         if (nativeImage) {
             // include python stdlib in image
             try {
-                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, new Log());
+                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
                 var niConfig = temporaryJar.resolve("META-INF").resolve("native-image");
                 Files.createDirectories(niConfig);
                 Files.writeString(niConfig.resolve("native-image.properties"), "Args = -H:-CopyLanguageResources");
@@ -229,7 +232,7 @@ public class JBangIntegration {
                     try (var wr = new FileWriter(tmp)) {
                         wr.write(script);
                     }
-                    GraalPyRunner.run(calculateClasspath(dependencies), new Log(), tmp.getAbsolutePath());
+                    GraalPyRunner.run(calculateClasspath(dependencies), LOG, tmp.getAbsolutePath());
                 } catch (IOException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -247,12 +250,12 @@ public class JBangIntegration {
             String parentString = parent.toString();
             generateLaunchers(dependencies, parentString);
             try {
-                GraalPyRunner.runLauncher(getLauncherPath(parentString).toString(), new Log(), "-m", "venv", venvDirectory.toString(), "--without-pip");
+                GraalPyRunner.runLauncher(getLauncherPath(parentString).toString(), LOG, "-m", "venv", venvDirectory.toString(), "--without-pip");
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
             try {
-                GraalPyRunner.runVenvBin(venvDirectory, "graalpy", new Log(), "-I", "-m", "ensurepip");
+                GraalPyRunner.runVenvBin(venvDirectory, "graalpy", LOG, "-I", "-m", "ensurepip");
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -288,29 +291,5 @@ public class JBangIntegration {
             classpath.add(r.toAbsolutePath().toString());
         }
         return classpath;
-    }
-
-    private static class Log implements SubprocessLog {
-
-        @Override
-        public void subProcessOut(CharSequence var1) {
-            System.out.println(var1);
-        }
-
-        @Override
-        public void subProcessErr(CharSequence var1) {
-            System.err.println(var1);
-        }
-
-        @Override
-        public void log(CharSequence var1) {
-            System.out.println(var1);
-        }
-
-        @Override
-        public void log(CharSequence var1, Throwable t) {
-            System.out.println(var1);
-            t.printStackTrace();
-        }
     }
 }

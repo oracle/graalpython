@@ -107,9 +107,10 @@ public final class VFSUtils {
         String stdlibHome = null;
         String coreHome = null;
         String pathsOutputPrefix = "<=outputpaths=>";
-        List<String> homePathsOutput = new ArrayList<>();
-        GraalPyRunner.run(classpath, new CollectOutputLog(log, homePathsOutput), new String[]{"-c", "print('" + pathsOutputPrefix + "', __graalpython__.get_python_home_paths(), sep='')"});
-        for (String l : homePathsOutput) {
+
+        CollectOutputLog outputLog = new CollectOutputLog();
+        GraalPyRunner.run(classpath, outputLog, new String[]{"-c", "print('" + pathsOutputPrefix + "', __graalpython__.get_python_home_paths(), sep='')"});
+        for (String l : outputLog.output) {
             if (l.startsWith(pathsOutputPrefix)) {
                 String[] s = l.substring(pathsOutputPrefix.length()).split(File.pathSeparator);
                 stdlibHome = s[0];
@@ -231,33 +232,19 @@ public final class VFSUtils {
     }
 
     private static class CollectOutputLog implements SubprocessLog {
-        private final SubprocessLog delegate;
 
-        private final List<String> output;
-
-        private CollectOutputLog(SubprocessLog delegate, List<String> output) {
-            this.delegate = delegate;
-            this.output = output;
-        }
+        private final List<String> output = new ArrayList<>();
 
         public void subProcessOut(CharSequence var1) {
-            if (output != null) {
-                output.add(var1.toString());
-            } else {
-                delegate.subProcessOut(var1);
-            }
+            output.add(var1.toString());
         }
 
         public void subProcessErr(CharSequence var1) {
-            delegate.subProcessErr(var1);
+            System.err.println(var1);
         }
 
         public void log(CharSequence var1) {
-            delegate.log(var1);
-        }
 
-        public void log(CharSequence var1, Throwable t) {
-            delegate.log(var1, t);
         }
     }
 }

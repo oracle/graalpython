@@ -57,7 +57,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.graalvm.python.embedding.utils.VFSUtils;
 import org.graalvm.python.embedding.utils.GraalPyRunner;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
 
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
