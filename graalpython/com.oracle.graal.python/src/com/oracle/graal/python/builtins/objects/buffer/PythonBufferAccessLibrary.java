@@ -83,13 +83,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateLibrary
 public abstract class PythonBufferAccessLibrary extends Library {
     /**
-     * Whether this object responds to this buffer API. Marked {@code protected} because the code
-     * using buffers must know whether it works with a buffer object or not. Buffers should be
-     * obtained using {@link PythonBufferAcquireLibrary}. Use {@link #assertIsBuffer(Object)} for
-     * assertions.
+     * Whether this object responds to this buffer API.<br/>
+     * <strong>Use this method with caution and only when absolutely needed</strong>. Code using
+     * buffers must know whether it works with a buffer object or not. Therefore, buffers
+     * <strong>should be acquired first</strong> using {@link PythonBufferAcquireLibrary}. Use
+     * {@link #assertIsBuffer(Object)} for assertions.
      */
     @Abstract
-    protected boolean isBuffer(@SuppressWarnings("unused") Object receiver) {
+    public boolean isBuffer(@SuppressWarnings("unused") Object receiver) {
         return false;
     }
 
