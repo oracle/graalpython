@@ -28,12 +28,12 @@ index 63f67a9..e870de8 100644
      auto_http_archive(
 diff --git a/pyproject.toml b/pyproject.toml
 new file mode 100644
-index 0000000..757a6dd
+index 0000000..de2b7ad
 --- /dev/null
 +++ b/pyproject.toml
 @@ -0,0 +1,4 @@
 +[build-system]
-+requires = ["setuptools >= 40.6.0", "wheel", "pip"]
++requires = ["setuptools >= 40.6.0", "wheel", "pip", "psutil", "setproctitle", "colorama"]
 +build-backend = "ray_build_backend"
 +backend-path = ["."]
 diff --git a/python/ray/__init__.py b/python/ray/__init__.py
@@ -104,10 +104,10 @@ index bed27ab..d5b7ac3 100644
 +    from pickle import Pickler  # noqa: F401
 diff --git a/ray_build_backend.py b/ray_build_backend.py
 new file mode 100644
-index 0000000..0c32060
+index 0000000..a5d44c2
 --- /dev/null
 +++ b/ray_build_backend.py
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,41 @@
 +# We need a whole custom build backend just because the setup.py is in a subdir
 +import os
 +import re
@@ -138,8 +138,10 @@ index 0000000..0c32060
 +def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
 +    wheel_directory = Path(wheel_directory).absolute()
 +    os.chdir('python')
++    env = os.environ.copy()
++    env['SKIP_THIRDPARTY_INSTALL'] = 'true'
 +    try:
-+        subprocess.run([sys.executable, 'setup.py', 'bdist_wheel'], check=True)
++        subprocess.run([sys.executable, 'setup.py', 'bdist_wheel'], env=env, check=True)
 +        wheels = list(Path('dist').glob('*.whl'))
 +        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
 +        wheel = wheels[0]
