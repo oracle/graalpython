@@ -490,6 +490,8 @@ public class HostInteropTest extends PythonTests {
                 """);
         assertTrue(t.isTime());
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
 
         t = context.eval("python", """
                 import time
@@ -499,5 +501,7 @@ public class HostInteropTest extends PythonTests {
                 """);
         assertTrue(t.isTime());
         assertEquals(LocalTime.of(8, 8, 53, 0), t.asTime());
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2022, 12, 28), t.asDate());
     }
 }

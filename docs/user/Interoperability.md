@@ -302,7 +302,7 @@ Following is the list of currently supported interop messages:
 | asBigInteger             | as_big_integer              | int                                                                                                                        |
 | asBoolean                | as_boolean                  | bool                                                                                                                       |
 | asByte                   | as_byte                     | int                                                                                                                        |
-| asDate                   | as_date                     | a python object with the following attributes: `year`, `month`, `day`                                                      |
+| asDate                   | as_date                     | a python object with the following attributes: `year`, `month`, `day` or `tm_year`, `tm_mon`, `tm_mday`                    |
 | asDouble                 | as_double                   | float                                                                                                                      |
 | asDuration               | as_duration                 | a python object with the following attributes: `seconds`, `nano_adjustment`                                                |
 | asFloat                  | as_float                    | float                                                                                                                      |

@@ -52,16 +52,22 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DAY;
 import static com.oracle.graal.python.nodes.StringLiterals.T_HOUR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MICROSECOND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MINUTE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_MONTH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SECOND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRUCT_TIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MDAY;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_HOUR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MIN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_SEC;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_YEAR;
+import static com.oracle.graal.python.nodes.StringLiterals.T_YEAR;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -882,64 +888,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    // GR-44020: use inlined:
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.is_date;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-            } else {
-                Object objType = getClassNode.executeCached(this);
-                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
-                                    isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATE_TYPE, isTypeNode))) {
-                        return true;
-                    }
-                }
-                module = importedModules.getItem(T_TIME_MODULE_NAME);
-                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    static LocalDate constructDate(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver, PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        return constructDate(castToIntNode, inliningTarget, lib, receiver, raiseNode, "year", "month", "day");
-    }
-
-    static LocalDate constructDateStruct(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver, PRaiseNode.Lazy raiseNode) throws UnsupportedMessageException {
-        return constructDate(castToIntNode, inliningTarget, lib, receiver, raiseNode, "tm_year", "tm_mon", "tm_mday");
-    }
-
-    static LocalDate constructDate(CastToJavaIntExactNode castToIntNode, Node inliningTarget, InteropLibrary lib, Object receiver, PRaiseNode.Lazy rasiseNode,
-                    String yearMemberName, String monthMemberName, String dayMemberName) throws UnsupportedMessageException {
-        try {
-            int year = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, yearMemberName), rasiseNode);
-            int month = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, monthMemberName), rasiseNode);
-            int day = castToIntNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, dayMemberName), rasiseNode);
-            return createLocalDate(year, month, day);
-        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_date;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
     }
 
@@ -949,48 +904,38 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached PyObjectGetAttr getAttr,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                Object value = getValue.execute(inliningTarget, behavior, method, this);
-                return constructDate(castToIntNode, inliningTarget, lib, value, raiseNode);
-            } else {
-                Object objType = getClassNode.executeCached(this);
-                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
-                                    isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATE_TYPE, isTypeNode))) {
-                        return constructDate(castToIntNode, inliningTarget, lib, this, raiseNode);
-                    }
+                    @Exclusive @Cached IsBuiltinObjectProfile attrErrProfile) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
+            boolean mustRelease = gil.acquire();
+            try {
+                int year, month, day;
+                try {
+                    year = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_YEAR), raiseNode);
+                    month = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_MONTH), raiseNode);
+                    day = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_DAY), raiseNode);
+                } catch (PException pe) {
+                    pe.expect(inliningTarget, AttributeError, attrErrProfile);
+                    // try a time_struct like object
+                    year = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_YEAR), raiseNode);
+                    month = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_MON), raiseNode);
+                    day = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_MDAY), raiseNode);
                 }
-                module = importedModules.getItem(T_TIME_MODULE_NAME);
-                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        return constructDateStruct(castToIntNode, inliningTarget, lib, this, raiseNode);
-                    }
-                }
-                throw UnsupportedMessageException.create();
+                return createLocalDate(year, month, day);
+            } finally {
+                gil.release(mustRelease);
             }
-        } finally {
-            gil.release(mustRelease);
+        } else {
+            throw UnsupportedMessageException.create();
         }
     }
 
@@ -1076,7 +1021,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
+                    @CachedLibrary(limit = "2") InteropLibrary lib) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
