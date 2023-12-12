@@ -200,7 +200,8 @@ class Pool(object):
         self._initargs = initargs
 
         if processes is None:
-            processes = os.cpu_count() or 1
+            # GraalPy change: lower the number of processes
+            processes = __graalpython__.get_max_process_count()
         if processes < 1:
             raise ValueError("Number of processes must be at least 1")
         if maxtasksperchild is not None:
