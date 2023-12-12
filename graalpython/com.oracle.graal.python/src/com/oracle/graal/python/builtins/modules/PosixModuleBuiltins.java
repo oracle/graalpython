@@ -350,6 +350,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             // XXX: Until we fix pip
             environ.setItem(toTruffleStringUncached("PIP_NO_CACHE_DIR"), toTruffleStringUncached("0"));
+            // XXX: Until we have working winapi and winreg modules for MSVC discovery
+            environ.setItem(toTruffleStringUncached("DISTUTILS_USE_SDK"), toTruffleStringUncached("1"));
+            if (getenv.get("MSSdk") == null) {
+                String sdkdir = getenv.get("WindowsSdkDir");
+                if (sdkdir == null) {
+                    sdkdir = "unset";
+                }
+                environ.setItem(toTruffleStringUncached("MSSdk"), toTruffleStringUncached(sdkdir));
+            }
         }
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
