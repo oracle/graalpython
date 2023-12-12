@@ -58,11 +58,13 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MICROSECOND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MINUTE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MONTH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NANO_ADJUSTMENT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SECOND;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SECONDS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRUCT_TIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MDAY;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_HOUR;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MDAY;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MIN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TM_SEC;
@@ -1212,20 +1214,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.is_duration;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-            } else {
-                return false;
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_duration;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
     }
 
@@ -1236,34 +1231,26 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+                    @Exclusive @Cached CastToJavaLongExactNode castToLongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PyObjectGetAttr getAttr,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                Object value = getValue.execute(inliningTarget, behavior, method, this);
-                return constructDuration(value, toLongNode, inliningTarget, lib, raiseNode);
-            } else {
-                throw UnsupportedMessageException.create();
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            Object value = getValue.execute(inliningTarget, behavior, method, this);
+            boolean mustRelease = gil.acquire();
+            try {
+                long sec = castToLongNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_SECONDS), raiseNode);
+                long nano = castToLongNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_NANO_ADJUSTMENT), raiseNode);
+                return createDuration(sec, nano);
+            } finally {
+                gil.release(mustRelease);
             }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    private static Duration constructDuration(Object receiver, CastToJavaLongExactNode castToLongNode, Node inliningTarget, InteropLibrary lib, PRaiseNode.Lazy raiseNode)
-                    throws UnsupportedMessageException {
-        try {
-            long sec = castToLongNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, "seconds"), raiseNode);
-            long nano = castToLongNode.executeWithThrowSystemError(inliningTarget, lib.readMember(receiver, "nano_adjustment"), raiseNode);
-            return createDuration(sec, nano);
-        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+        } else {
             throw UnsupportedMessageException.create();
         }
     }

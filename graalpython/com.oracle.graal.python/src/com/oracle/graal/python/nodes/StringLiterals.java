@@ -228,6 +228,8 @@ public abstract class StringLiterals {
     public static final TruffleString T_HOUR = tsLiteral("hour");
     public static final TruffleString T_MINUTE = tsLiteral("minute");
     public static final TruffleString T_SECOND = tsLiteral("second");
+    public static final TruffleString T_SECONDS = tsLiteral("seconds");
+    public static final TruffleString T_NANO_ADJUSTMENT = tsLiteral("nano_adjustment");
     public static final TruffleString T_MICROSECOND = tsLiteral("microsecond");
     public static final TruffleString T_TM_YEAR = tsLiteral("tm_year");
     public static final TruffleString T_TM_MON = tsLiteral("tm_mon");
