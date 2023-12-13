@@ -139,7 +139,7 @@ public class OrderedDictIteratorBuiltins extends PythonBuiltins {
                         @Cached ListNodes.ConstructListNode constructListNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             Object iterBuiltin = getAttr.execute(frame, inliningTarget, context.getBuiltins(), T_ITER);
-            POrderedDictIterator copy = new POrderedDictIterator(self.getInitialPythonClass(), self.getShape(), self.dict, self.type, self.reversed);
+            POrderedDictIterator copy = factory.createOrderedDictIterator(self.dict, self.type, self.reversed);
             copy.current = self.current;
             /* iterate the temporary into a list */
             PList list = constructListNode.execute(frame, copy);
