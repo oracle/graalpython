@@ -452,8 +452,7 @@ public class HostInteropTest extends PythonTests {
 
                         class MyType(object):
                             # timezone
-                            tm_zone = "UTC"
-                            tm_gmtoff = 3600
+                            tz = "UTC"
                             # date
                             year = 2023
                             month = 12
@@ -470,7 +469,7 @@ public class HostInteropTest extends PythonTests {
                             is_time=True,
                             as_time=lambda t: (t.hour, t.minute, t.second, t.microsecond),
                             is_time_zone=True,
-                            as_time_zone=lambda t: t,
+                            as_time_zone=lambda t: t.tz,
                         )
 
                         MyType()
@@ -480,18 +479,20 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.isTime());
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
         assertTrue(t.isTimeZone());
-        assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
+        assertEquals(ZoneId.of("UTC"), t.asTimeZone());
 
         // test builtin types
         t = context.eval("python", """
-                        from datetime import datetime
+                        from datetime import datetime, timezone, timedelta
 
-                        datetime(2023, 12, 12, 3, 10, 10, 10)
+                        datetime(2023, 12, 12, 3, 10, 10, 10, timezone(timedelta(hours=1), 'utc'))
                         """);
         assertTrue(t.isTime());
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
         assertTrue(t.isDate());
         assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
+        assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
 
         t = context.eval("python", """
                         import time
@@ -503,5 +504,7 @@ public class HostInteropTest extends PythonTests {
         assertEquals(LocalTime.of(8, 8, 53, 0), t.asTime());
         assertTrue(t.isDate());
         assertEquals(LocalDate.of(2022, 12, 28), t.asDate());
+        assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("GMT"), t.asTimeZone());
     }
 }

@@ -125,7 +125,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorValueNode;
@@ -165,14 +164,12 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -796,7 +793,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public boolean isInstantiable(
                     @Bind("$node") Node inliningTarget,
                     // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
+                    @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -1003,97 +1000,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
-                    @Exclusive @Cached GilNode gil,
-                    @CachedLibrary(limit = "2") InteropLibrary lib) {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
-                return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
-            } else {
-                Object objType = getClassNode.executeCached(this);
-                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode))) {
-                        try {
-                            Object tzinfo = lib.readMember(this, "tzinfo");
-                            if (tzinfo != PNone.NONE) {
-                                Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
-                                if (delta != PNone.NONE) {
-                                    return true;
-                                }
-                            }
-                        } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                            return false;
-                        }
-                    } else if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
-                        try {
-                            Object tzinfo = lib.readMember(this, "tzinfo");
-                            if (tzinfo != PNone.NONE) {
-                                Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
-                                if (delta != PNone.NONE) {
-                                    return true;
-                                }
-                            }
-                        } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                            return false;
-                        }
-                    }
-                }
-                module = importedModules.getItem(T_TIME_MODULE_NAME);
-                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtype.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        try {
-                            Object tm_zone = lib.readMember(this, "tm_zone");
-                            if (tm_zone != PNone.NONE) {
-                                return true;
-                            }
-                        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                            return false;
-                        }
-                    }
-                }
-                return false;
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
+        } else {
+            return false;
         }
-    }
-
-    static ZoneId constructZoneId(Object receiver, CastToJavaIntExactNode castToIntNode, TruffleString.ToJavaStringNode toJavaStringNode, Node inliningTarget, InteropLibrary lib,
-                    PRaiseNode.Lazy raiseNode)
-                    throws UnsupportedMessageException {
-        try {
-            Object tm_zone = lib.readMember(receiver, "tm_zone");
-            if (tm_zone != PNone.NONE) {
-                Object tm_gmtoffset = lib.readMember(receiver, "tm_gmtoff");
-                if (tm_gmtoffset != PNone.NONE) {
-                    int seconds = castToIntNode.executeWithThrowSystemError(inliningTarget, tm_gmtoffset, raiseNode);
-                    return createZoneId(seconds);
-                }
-                if (tm_zone instanceof TruffleString) {
-                    return createZoneId(toJavaStringNode.execute((TruffleString) tm_zone));
-                }
-                if (isJavaString(tm_zone)) {
-                    return createZoneId((String) tm_zone);
-                }
-            }
-        } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-            throw UnsupportedMessageException.create();
-        }
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
@@ -1102,77 +1016,34 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: use inlined:
-                    @Shared("isTypeNode") @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile dateTimeModuleLoaded,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached InlinedConditionProfile timeModuleLoaded,
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                    @Exclusive @Cached GilNode gil,
-                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
-            InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
-            if (behavior != null) {
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
+        InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
+        if (behavior != null) {
+            boolean mustRelease = gil.acquire();
+            try {
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
-                return constructZoneId(value, castToIntNode, toJavaStringNode, inliningTarget, lib, raiseNode);
-            } else {
-                if (!lib.isTimeZone(this)) {
-                    throw UnsupportedMessageException.create();
-                }
-                Object objType = getClassNode.executeCached(this);
-                PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-                Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
-                if (dateTimeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_DATETIME_TYPE, isTypeNode))) {
-                        try {
-                            Object tzinfo = lib.readMember(this, "tzinfo");
-                            if (tzinfo != PNone.NONE) {
-                                Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
-                                if (delta != PNone.NONE) {
-                                    int seconds = castToIntNode.execute(inliningTarget, lib.readMember(delta, "seconds"));
-                                    int days = castToIntNode.execute(inliningTarget, lib.readMember(delta, "days"));
-                                    int offset = days * 3600 * 24 + seconds;
-                                    return createZoneId(offset);
-                                }
-                            }
-                        } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                            throw UnsupportedMessageException.create();
-                        }
-                    } else if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
-                        try {
-                            Object tzinfo = lib.readMember(this, "tzinfo");
-                            if (tzinfo != PNone.NONE) {
-                                Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
-                                if (delta != PNone.NONE) {
-                                    int seconds = castToIntNode.execute(inliningTarget, lib.readMember(delta, "seconds"));
-                                    return createZoneId(seconds);
-                                }
-                            }
-                        } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                            throw UnsupportedMessageException.create();
-                        }
+                try {
+                    if (value instanceof TruffleString tsValue) {
+                        String tmZone = toJavaStringNode.execute(tsValue);
+                        return createZoneId(tmZone);
+                    } else {
+                        int utcDeltaInSeconds = castToIntNode.execute(inliningTarget, value);
+                        return createZoneId(utcDeltaInSeconds);
                     }
+                } catch (CannotCastException cce) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "str or int", value);
                 }
-                module = importedModules.getItem(T_TIME_MODULE_NAME);
-                if (timeModuleLoaded.profile(inliningTarget, module != null)) {
-                    if (isSubtypeNode.execute(objType, readType(inliningTarget, readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
-                        return constructZoneId(this, castToIntNode, toJavaStringNode, inliningTarget, lib, raiseNode);
-                    }
-                }
-                throw UnsupportedMessageException.create();
+            } finally {
+                gil.release(mustRelease);
             }
-        } finally {
-            gil.release(mustRelease);
+        } else {
+            throw UnsupportedMessageException.create();
         }
     }
 

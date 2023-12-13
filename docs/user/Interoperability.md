@@ -311,7 +311,7 @@ Following is the list of currently supported interop messages:
 | asShort                  | as_short                    | int                                                                                                   |
 | asString                 | as_string                   | str                                                                                                   |
 | asTime                   | as_time                     | 4-tuple with the following elements:  (`hour`: int, `minute`: int, `second`: int, `microsecond`: int) |
-| asTimeZone               | as_time_zone                | 2-tuple with the following elements:  (`tm_zone`: str, `tm_gmtoff`: int)                              |
+| asTimeZone               | as_time_zone                | a string (the timezone) or int (utc delta in seconds)                                                 |
 | execute                  | execute                     | object                                                                                                |
 | readArrayElement         | read_array_element          | object                                                                                                |
 | getArraySize             | get_array_size              | int                                                                                                   |

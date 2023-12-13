@@ -41,11 +41,26 @@ import datetime
 import time
 import polyglot
 
+
+def _date_time_tz(dt: datetime.datetime):
+    utcoffset = dt.tzinfo.utcoffset(dt)
+    return utcoffset.days * 3600 * 24 + utcoffset.seconds
+
+
+polyglot.register_interop_behavior(datetime.time,
+                                   is_time=True, as_time=lambda d: (d.hour, d.minute, d.second, d.microsecond),
+                                   is_time_zone=lambda t: t.tzinfo is not None, as_time_zone=_date_time_tz)
+
 polyglot.register_interop_behavior(datetime.date,
                                    is_date=True, as_date=lambda d: (d.year, d.month, d.day))
-polyglot.register_interop_behavior(time.struct_time,
-                                   is_date=True, as_date=lambda t: (t.tm_year, t.tm_mon, t.tm_mday),
-                                   is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0))
+
 polyglot.register_interop_behavior(datetime.datetime,
                                    is_date=True, as_date=lambda d: (d.year, d.month, d.day),
-                                   is_time=True, as_time=lambda d: (d.hour, d.minute, d.second, d.microsecond))
+                                   is_time=True, as_time=lambda d: (d.hour, d.minute, d.second, d.microsecond),
+                                   is_time_zone=lambda t: t.tzinfo is not None, as_time_zone=_date_time_tz)
+
+polyglot.register_interop_behavior(time.struct_time,
+                                   is_date=True, as_date=lambda t: (t.tm_year, t.tm_mon, t.tm_mday),
+                                   is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0),
+                                   is_time_zone=lambda t: t.tm_zone is not None or t.tm_gmtoff is not None,
+                                   as_time_zone=lambda t: t.tm_gmtoff if t.tm_gmtoff else t.tm_zone)
