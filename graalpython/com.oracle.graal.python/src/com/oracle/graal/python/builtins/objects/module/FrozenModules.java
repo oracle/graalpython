@@ -199,6 +199,16 @@ public final class FrozenModules {
         private static final PythonFrozenModule OS = new PythonFrozenModule("OS", "os", false);
         private static final PythonFrozenModule SITE = new PythonFrozenModule("SITE", "site", false);
         private static final PythonFrozenModule STAT = new PythonFrozenModule("STAT", "stat", false);
+        private static final PythonFrozenModule DATETIME = new PythonFrozenModule("DATETIME", "datetime", false);
+        private static final PythonFrozenModule CONTEXTLIB = new PythonFrozenModule("CONTEXTLIB", "contextlib", false);
+        private static final PythonFrozenModule AST = new PythonFrozenModule("AST", "ast", false);
+        private static final PythonFrozenModule OPCODE = new PythonFrozenModule("OPCODE", "opcode", false);
+        private static final PythonFrozenModule DIS = new PythonFrozenModule("DIS", "dis", false);
+        private static final PythonFrozenModule WARNINGS = new PythonFrozenModule("WARNINGS", "warnings", false);
+        private static final PythonFrozenModule TOKEN = new PythonFrozenModule("TOKEN", "token", false);
+        private static final PythonFrozenModule TOKENIZE = new PythonFrozenModule("TOKENIZE", "tokenize", false);
+        private static final PythonFrozenModule LINECACHE = new PythonFrozenModule("LINECACHE", "linecache", false);
+        private static final PythonFrozenModule INSPECT = new PythonFrozenModule("INSPECT", "inspect", false);
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
@@ -531,6 +541,26 @@ public final class FrozenModules {
                 return Map.SITE;
             case "stat":
                 return Map.STAT;
+            case "datetime":
+                return Map.DATETIME;
+            case "contextlib":
+                return Map.CONTEXTLIB;
+            case "ast":
+                return Map.AST;
+            case "opcode":
+                return Map.OPCODE;
+            case "dis":
+                return Map.DIS;
+            case "warnings":
+                return Map.WARNINGS;
+            case "token":
+                return Map.TOKEN;
+            case "tokenize":
+                return Map.TOKENIZE;
+            case "linecache":
+                return Map.LINECACHE;
+            case "inspect":
+                return Map.INSPECT;
             case "__hello__":
                 return Map.__HELLO__;
             case "__hello_alias__":

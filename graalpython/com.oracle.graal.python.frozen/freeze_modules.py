@@ -74,6 +74,16 @@ FROZEN = [
             "os",
             "site",
             "stat",
+            "datetime",
+            "contextlib",
+            "ast",
+            "opcode",
+            "dis",
+            "warnings",
+            "token",
+            "tokenize",
+            "linecache",
+            "inspect",
         ],
     ),
     (
@@ -95,6 +105,7 @@ BOOTSTRAP = {
     "importlib._bootstrap_external",
     "zipimport",
 }
+
 
 # add graalpython modules and core files
 def add_graalpython_core():
