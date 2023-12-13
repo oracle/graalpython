@@ -127,7 +127,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
@@ -836,13 +835,8 @@ public abstract class TypeNodes {
             public abstract PythonAbstractClassList execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses);
 
             @Specialization
-            static PythonAbstractClassList doIt(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
-                            @Cached HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageIteratorKeyHash itKeyHash,
-                            @Cached HashingStorageIteratorValue itValue,
-                            @Cached HashingStorageGetItemWithHash getItemNode) {
-                long hash = itKeyHash.execute(inliningTarget, storage, it);
-                Object key = itKey.execute(inliningTarget, storage, it);
+            static PythonAbstractClassList doIt(Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
+                            @Cached HashingStorageIteratorValue itValue) {
                 Object value = itValue.execute(inliningTarget, storage, it);
                 subclasses.add(PythonAbstractClass.cast(value));
                 return subclasses;
@@ -850,7 +844,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static PythonAbstractClass[] doTpSubclasses(Node inliningTarget, PythonAbstractClass object,
+        static PythonAbstractClass[] doTpSubclasses(Node inliningTarget, Object object,
                         @Cached GetSubclassesNode getSubclassesNode,
                         @Cached EachSubclassAdd eachNode,
                         @Cached HashingStorageLen dictLen,
