@@ -1319,12 +1319,28 @@ class TestObject(object):
                 Py_XSETREF(value_obj->value, NULL);
                 Py_RETURN_NONE;
             }
+
+            static PyObject* own_a_lot(PyObject* self, PyObject *arg) {
+                PyObject *dummy;
+                int i;
+                for (i=0; i < 64; i++) {
+                    Py_INCREF(arg);
+                    Py_DECREF(arg);
+                    dummy = PyUnicode_FromString("abc");
+                    Py_DECREF(dummy);
+                    Py_INCREF(arg);
+                    Py_DECREF(arg);
+                }
+                Py_RETURN_NONE;
+            }
+
            ''',
            tp_methods='''
            {"set_value", (PyCFunction)set_value, METH_O, NULL},
            {"from_tuple", (PyCFunction)from_tuple, METH_O, NULL},
            {"get_value", (PyCFunction)get_value, METH_NOARGS, NULL},
-           {"clear_value", (PyCFunction)clear_value, METH_NOARGS, NULL}
+           {"clear_value", (PyCFunction)clear_value, METH_NOARGS, NULL},
+           {"own_a_lot", (PyCFunction)own_a_lot, METH_O, NULL}
            ''',
             cmembers='PyObject *value;',
         )
@@ -1357,6 +1373,9 @@ class TestObject(object):
             gc.collect()
         assert repr(obj.get_value()) == r
         obj.clear_value()
+
+        dummy = object()
+        obj.own_a_lot(dummy)
 
 
 class CBytes: 
