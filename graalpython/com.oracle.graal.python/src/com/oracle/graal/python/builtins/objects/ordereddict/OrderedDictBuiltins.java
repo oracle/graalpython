@@ -425,6 +425,10 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectHashNode hashNode,
                         @Cached ObjectHashMap.GetNode getNode,
                         @Cached PRaiseNode raiseNode) {
+            if (self.first == null) {
+                // Empty
+                throw raiseNode.raise(KeyError, new Object[]{key});
+            }
             if ((last ? self.last : self.first).key != key) {
                 long hash = hashNode.execute(frame, inliningTarget, key);
                 ODictNode node = (ODictNode) getNode.execute(frame, inliningTarget, self.nodes, key, hash);
