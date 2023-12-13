@@ -466,9 +466,9 @@ public class HostInteropTest extends PythonTests {
 
                         polyglot.register_interop_behavior(MyType,
                             is_date=True,
-                            as_date=lambda t: t,
+                            as_date=lambda t: (t.year, t.month, t.day),
                             is_time=True,
-                            as_time=lambda t: t,
+                            as_time=lambda t: (t.hour, t.minute, t.second, t.microsecond),
                             is_time_zone=True,
                             as_time_zone=lambda t: t,
                         )

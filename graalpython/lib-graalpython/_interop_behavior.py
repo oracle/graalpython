@@ -41,8 +41,11 @@ import datetime
 import time
 import polyglot
 
-polyglot.register_interop_behavior(datetime.date, is_date=True, as_date=lambda t: t)
-polyglot.register_interop_behavior(time.struct_time, is_date=True, as_date=lambda t: t,
-                                   is_time=True, as_time=lambda t: t)
-polyglot.register_interop_behavior(datetime.datetime, is_date=True, as_date=lambda t: t,
-                                   is_time=True, as_time=lambda t: t)
+polyglot.register_interop_behavior(datetime.date,
+                                   is_date=True, as_date=lambda d: (d.year, d.month, d.day))
+polyglot.register_interop_behavior(time.struct_time,
+                                   is_date=True, as_date=lambda t: (t.tm_year, t.tm_mon, t.tm_mday),
+                                   is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0))
+polyglot.register_interop_behavior(datetime.datetime,
+                                   is_date=True, as_date=lambda d: (d.year, d.month, d.day),
+                                   is_time=True, as_time=lambda d: (d.hour, d.minute, d.second, d.microsecond))

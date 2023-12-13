@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYPE_B;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_A_S_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
@@ -52,24 +55,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DAY;
-import static com.oracle.graal.python.nodes.StringLiterals.T_HOUR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
-import static com.oracle.graal.python.nodes.StringLiterals.T_MICROSECOND;
-import static com.oracle.graal.python.nodes.StringLiterals.T_MINUTE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_MONTH;
-import static com.oracle.graal.python.nodes.StringLiterals.T_NANO_ADJUSTMENT;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SECOND;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SECONDS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRUCT_TIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_HOUR;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MDAY;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MIN;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_MON;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_SEC;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TM_YEAR;
-import static com.oracle.graal.python.nodes.StringLiterals.T_YEAR;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -96,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -119,11 +108,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -161,6 +150,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -911,28 +901,29 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectGetAttr getAttr,
-                    @Exclusive @Cached GilNode gil,
-                    @Exclusive @Cached IsBuiltinObjectProfile attrErrProfile) throws UnsupportedMessageException {
+                    @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
         InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
         if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
             boolean mustRelease = gil.acquire();
             try {
-                int year, month, day;
-                try {
-                    year = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_YEAR), raiseNode);
-                    month = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_MONTH), raiseNode);
-                    day = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_DAY), raiseNode);
-                } catch (PException pe) {
-                    pe.expect(inliningTarget, AttributeError, attrErrProfile);
-                    // try a time_struct like object
-                    year = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_YEAR), raiseNode);
-                    month = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_MON), raiseNode);
-                    day = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_MDAY), raiseNode);
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                if (value instanceof PTuple tuple) {
+                    if (pyTupleSizeNode.execute(inliningTarget, tuple) != 3) {
+                        throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_A_S_TUPLE, "return value", "3");
+                    }
+                    SequenceStorage storage = tuple.getSequenceStorage();
+                    int year = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
+                    int month = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 1), raiseNode);
+                    int day = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 2), raiseNode);
+                    return createLocalDate(year, month, day);
+                } else {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
-                return createLocalDate(year, month, day);
             } finally {
                 gil.release(mustRelease);
             }
@@ -971,30 +962,30 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectGetAttr getAttr,
-                    @Exclusive @Cached GilNode gil,
-                    @Exclusive @Cached IsBuiltinObjectProfile attrErrProfile) throws UnsupportedMessageException {
+                    @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
         InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
         if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
             boolean mustRelease = gil.acquire();
             try {
-                int hour, min, sec, micro;
-                try {
-                    hour = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_HOUR), raiseNode);
-                    min = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_MINUTE), raiseNode);
-                    sec = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_SECOND), raiseNode);
-                    micro = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_MICROSECOND), raiseNode);
-                } catch (PException pe) {
-                    pe.expect(inliningTarget, AttributeError, attrErrProfile);
-                    // try a time_struct like object
-                    hour = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_HOUR), raiseNode);
-                    min = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_MIN), raiseNode);
-                    sec = castToIntNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_TM_SEC), raiseNode);
-                    micro = 0;
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                if (value instanceof PTuple tuple) {
+                    if (pyTupleSizeNode.execute(inliningTarget, tuple) != 4) {
+                        throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_A_S_TUPLE, "return value", "4");
+                    }
+                    SequenceStorage storage = tuple.getSequenceStorage();
+                    int hour = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
+                    int min = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 1), raiseNode);
+                    int sec = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 2), raiseNode);
+                    int micro = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 3), raiseNode);
+                    return createLocalTime(hour, min, sec, micro);
+                } else {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
-                return createLocalTime(hour, min, sec, micro);
             } finally {
                 gil.release(mustRelease);
             }
@@ -1235,18 +1226,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectGetAttr getAttr,
+                    @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
         InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
         if (behavior != null) {
-            Object value = getValue.execute(inliningTarget, behavior, method, this);
             boolean mustRelease = gil.acquire();
             try {
-                long sec = castToLongNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_SECONDS), raiseNode);
-                long nano = castToLongNode.executeWithThrowSystemError(inliningTarget, getAttr.execute(inliningTarget, value, T_NANO_ADJUSTMENT), raiseNode);
-                return createDuration(sec, nano);
+                Object value = getValue.execute(inliningTarget, behavior, method, this);
+                if (value instanceof PTuple tuple) {
+                    if (pyTupleSizeNode.execute(inliningTarget, tuple) != 2) {
+                        throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_A_S_TUPLE, "return value", "2");
+                    }
+                    SequenceStorage storage = tuple.getSequenceStorage();
+                    long sec = castToLongNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
+                    long nano = castToLongNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 1), raiseNode);
+                    return createDuration(sec, nano);
+                } else {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
+                }
             } finally {
                 gil.release(mustRelease);
             }

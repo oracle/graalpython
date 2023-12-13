@@ -1591,4 +1591,5 @@ public abstract class ErrorMessages {
     public static final TruffleString ASYNCGEN_RAISED_ASYNCSTOPITER = tsLiteral("async generator raised StopAsyncIteration");
     public static final TruffleString MAXSIZE_SHOULD_BE_INTEGER_OR_NONE = tsLiteral("maxsize should be integer or None");
     public static final TruffleString THE_FIRST_ARGUMENT_MUST_BE_CALLABLE = tsLiteral("the first argument must be callable");
+    public static final TruffleString S_MUST_BE_A_S_TUPLE = tsLiteral("%s must be a %s-tuple");
 }
