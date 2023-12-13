@@ -51,6 +51,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24667
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_iterators
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_iterators_empty
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_iterators_pickling
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_merge_operator
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_move_to_end
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_move_to_end_issue25406
@@ -101,6 +102,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_issue24667
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_iterators
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_iterators_empty
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_iterators_pickling
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_merge_operator
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_move_to_end
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_move_to_end_issue25406
