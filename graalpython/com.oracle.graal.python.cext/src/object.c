@@ -64,7 +64,7 @@ void _Py_DecRef(PyObject *op) {
         const Py_ssize_t updated_refcnt = refcnt - 1;
         Py_SET_REFCNT(op, updated_refcnt);
         if (updated_refcnt != 0) {
-            _decref_notify(op, refcnt);
+            _decref_notify(op, updated_refcnt);
         }
         else {
             _Py_Dealloc(op);
