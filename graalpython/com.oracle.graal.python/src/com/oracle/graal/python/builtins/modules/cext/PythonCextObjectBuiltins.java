@@ -185,7 +185,7 @@ public abstract class PythonCextObjectBuiltins {
             PythonNativeWrapper[] resolved = new PythonNativeWrapper[len];
             for (int i = 0; i < resolved.length; i++) {
                 Object elem = readPointerNode.readArrayElement(arrayPointer, i);
-                resolved[i] = toPythonWrapperNode.executeWrapper(elem);
+                resolved[i] = toPythonWrapperNode.executeWrapper(elem, false);
             }
             for (int i = 0; i < resolved.length; i++) {
                 if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
