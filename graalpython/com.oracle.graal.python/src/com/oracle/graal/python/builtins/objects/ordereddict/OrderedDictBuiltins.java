@@ -369,6 +369,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         static Object popitem(VirtualFrame frame, POrderedDict self, boolean last,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageDelItem delItem,
+                        @Cached ObjectHashMap.RemoveNode removeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raise) {
             ODictNode node = last ? self.last : self.first;
@@ -376,6 +377,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                 throw raise.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "dictionary");
             }
             self.remove(node);
+            removeNode.execute(frame, inliningTarget, self.nodes, node.key, node.hash);
             // TODO with hash
             Object value = delItem.executePop(frame, inliningTarget, self.getDictStorage(), node.key, self);
             return factory.createTuple(new Object[]{node.key, value});
