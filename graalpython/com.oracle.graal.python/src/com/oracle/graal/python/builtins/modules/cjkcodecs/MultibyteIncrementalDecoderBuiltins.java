@@ -243,6 +243,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
 
         // _multibytecodec_MultibyteIncrementalDecoder_getstate_impl
+        @Specialization
         static Object getstate(MultibyteIncrementalDecoderObject self,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
                         @Cached PythonObjectFactory factory) {
@@ -264,6 +265,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         }
 
         // _multibytecodec_MultibyteIncrementalDecoder_setstate_impl
+        @Specialization
         static Object setstate(VirtualFrame frame, MultibyteIncrementalDecoderObject self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode,

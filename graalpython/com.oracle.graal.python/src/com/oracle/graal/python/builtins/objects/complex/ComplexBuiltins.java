@@ -421,16 +421,6 @@ public final class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class RDivNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doComplex(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
     @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
