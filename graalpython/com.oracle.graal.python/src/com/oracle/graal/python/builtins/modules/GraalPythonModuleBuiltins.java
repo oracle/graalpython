@@ -66,6 +66,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1025,6 +1027,38 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString get() {
             return TruffleString.fromJavaStringUncached(System.getProperty("java.version"), TS_ENCODING);
+        }
+    }
+
+    @Builtin(name = "get_max_process_count", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetMaxProcessCount extends PythonBuiltinNode {
+
+        @TruffleBoundary
+        @Specialization
+        int get() {
+            int numCpu = Runtime.getRuntime().availableProcessors();
+            if (numCpu < 2) {
+                return 1;
+            }
+            // Try a heuristic based on total memory
+            int processCount;
+            try {
+                // Don't think of parsing /proc/meminfo, it doesn't account for cgroups
+                Class<?> beanClass = Class.forName("com.sun.management.OperatingSystemMXBean");
+                Method method = beanClass.getDeclaredMethod("getTotalMemorySize");
+                long totalMemory = (long) method.invoke(ManagementFactory.getOperatingSystemMXBean());
+                // Let's say we don't want to use more than 50% of total memory
+                long usableMemory = totalMemory / 2;
+                // Conservative estimate of how much memory GraalPy might use when loading many
+                // heavy modules
+                long memoryPerProcess = 3L * 1024 * 1024 * 1024;
+                processCount = (int) (usableMemory / memoryPerProcess) - 1;
+            } catch (Exception e) {
+                // Do a coarse guess
+                processCount = numCpu / 5;
+            }
+            return Math.min(numCpu, Math.max(1, processCount));
         }
     }
 

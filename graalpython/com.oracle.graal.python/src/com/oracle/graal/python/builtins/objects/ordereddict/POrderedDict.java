@@ -91,10 +91,10 @@ public final class POrderedDict extends PDict {
 
     void remove(POrderedDict.ODictNode node) {
         if (first == node) {
-            first = node.next != null ? node.next : node.prev;
+            first = node.next;
         }
         if (last == node) {
-            last = node.prev != null ? node.prev : node.next;
+            last = node.prev;
         }
         if (node.prev != null) {
             node.prev.next = node.next;

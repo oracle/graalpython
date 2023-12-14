@@ -1470,7 +1470,8 @@ def _allow_reckless_class_checks(depth=3):
     issubclass() on the whole MRO of a user class, which may contain protocols.
     """
     try:
-        return sys._getframe(depth).f_globals['__name__'] in ['abc', 'functools']
+        # GraalPy change: add _py_abc
+        return sys._getframe(depth).f_globals['__name__'] in ['abc', 'functools', "_py_abc"]
     except (AttributeError, ValueError):  # For platforms without _getframe().
         return True
 
