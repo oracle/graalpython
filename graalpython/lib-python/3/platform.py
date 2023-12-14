@@ -416,20 +416,20 @@ def _mac_ver_xml():
     if not os.path.exists(fn):
         return None
 
-    try:
-        import plistlib
-    except ImportError:
-        return None
-
     # this would require xml parsing
+    # try:
+    #     import plistlib
+    # except ImportError:
+    #     return None
+    #
     # with open(fn, 'rb') as f:
     #     pl = plistlib.load(f)
     import re
     with open(fn, 'r') as f:
         content = f.read()
     m = re.search(r'ProductVersion</key>\s*<string>(.*?)</string>', content)
-    pl = {'ProductVersion': '10.14.1' if not m else m.group(1)}
-    release = pl['ProductVersion']
+    pl = {'ProductVersion': '' if not m else m.group(1)}
+    release = pl['ProductVersion'] or '10.14.1'
     versioninfo = ('', '', '')
     machine = os.uname().machine
     if machine in ('ppc', 'Power Macintosh'):
