@@ -78,7 +78,7 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -2272,6 +2272,9 @@ def _register_vms(namespace):
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
         '--experimental-options', '--engine.MultiTier=true', '--python.HPyBackend=JNI'
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_PANAMA, extra_polyglot_args=[
+        '--experimental-options', '--python.UsePanama=true'
     ]), SUITE, 10)
 
     # java embedding driver
