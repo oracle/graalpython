@@ -1148,10 +1148,15 @@ public abstract class CApiTransitions {
     @ImportStatic(CApiGuards.class)
     public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
 
-        public abstract PythonNativeWrapper executeWrapper(Object obj);
+        @Override
+        public final Object execute(Object object) {
+            return executeWrapper(object, true);
+        }
+
+        public abstract PythonNativeWrapper executeWrapper(Object obj, boolean strict);
 
         @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
-        static PythonNativeWrapper doNonWrapper(Object obj,
+        static PythonNativeWrapper doNonWrapper(Object obj, boolean strict,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("obj") InteropLibrary interopLibrary,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1182,7 +1187,12 @@ public abstract class CApiTransitions {
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer);
                 PythonNativeWrapper wrapper;
-                if (reference == null || (wrapper = reference.get()) == null) {
+                if (reference == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
+                }
+                wrapper = reference.get();
+                if (strict && wrapper == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
@@ -1205,7 +1215,7 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        static PythonNativeWrapper doWrapper(PythonNativeWrapper wrapper) {
+        static PythonNativeWrapper doWrapper(PythonNativeWrapper wrapper, @SuppressWarnings("unused") boolean strict) {
             return wrapper;
         }
     }

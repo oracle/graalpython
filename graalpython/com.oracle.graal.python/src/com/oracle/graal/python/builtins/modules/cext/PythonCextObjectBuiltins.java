@@ -175,10 +175,20 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
 
-            for (int i = 0; i < len; i++) {
+            /*
+             * It may happen that due to several inc- and decrefs applied to a borrowed reference,
+             * that the same pointer is in the list several times. To avoid crashed, we do the
+             * processing in two phases: first, we resolve the pointers to wrappers and second, we
+             * update the reference counts. In this way, we avoid that a reference is made weak when
+             * processed the first time and may then be invalid if processed the second time.
+             */
+            PythonNativeWrapper[] resolved = new PythonNativeWrapper[len];
+            for (int i = 0; i < resolved.length; i++) {
                 Object elem = readPointerNode.readArrayElement(arrayPointer, i);
-                PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(elem);
-                if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                resolved[i] = toPythonWrapperNode.executeWrapper(elem, false);
+            }
+            for (int i = 0; i < resolved.length; i++) {
+                if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                     long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
                     objectNativeWrapper.updateRef(inliningTarget, refCount, hasRefProfile);
                 }
