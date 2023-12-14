@@ -263,62 +263,62 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    short readShort(int byteOffset,
+    short readShortByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readShort(storage, byteOffset);
+        return bufferLib.readShortByteOrder(storage, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeShort(int byteOffset, short value,
+    void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeShort(storage, byteOffset, value);
+        bufferLib.writeShortByteOrder(storage, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    int readInt(int byteOffset,
+    int readIntByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readInt(storage, byteOffset);
+        return bufferLib.readIntByteOrder(storage, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeInt(int byteOffset, int value,
+    void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeInt(storage, byteOffset, value);
+        bufferLib.writeIntByteOrder(storage, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    long readLong(int byteOffset,
+    long readLongByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readLong(storage, byteOffset);
+        return bufferLib.readLongByteOrder(storage, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeLong(int byteOffset, long value,
+    void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeLong(storage, byteOffset, value);
+        bufferLib.writeLongByteOrder(storage, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    float readFloat(int byteOffset,
+    float readFloatByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readFloat(storage, byteOffset);
+        return bufferLib.readFloatByteOrder(storage, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeFloat(int byteOffset, float value,
+    void writeFloatByteOrder(int byteOffset, float value, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeFloat(storage, byteOffset, value);
+        bufferLib.writeFloatByteOrder(storage, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    double readDouble(int byteOffset,
+    double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readDouble(storage, byteOffset);
+        return bufferLib.readDoubleByteOrder(storage, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    void writeDouble(int byteOffset, double value,
+    void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeDouble(storage, byteOffset, value);
+        bufferLib.writeDoubleByteOrder(storage, byteOffset, value, byteOrder);
     }
 }

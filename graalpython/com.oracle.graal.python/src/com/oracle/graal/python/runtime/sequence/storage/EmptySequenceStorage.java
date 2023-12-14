@@ -35,6 +35,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
+import java.nio.ByteOrder;
+
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class EmptySequenceStorage extends SequenceStorage {
 
@@ -173,32 +175,32 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    short readShort(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+    @SuppressWarnings({"static-method", "unused"})
+    short readShortByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    int readInt(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+    @SuppressWarnings({"static-method", "unused"})
+    int readIntByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    long readLong(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+    @SuppressWarnings({"static-method", "unused"})
+    long readLongByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    float readFloat(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+    @SuppressWarnings({"static-method", "unused"})
+    float readFloatByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    double readDouble(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+    @SuppressWarnings({"static-method", "unused"})
+    double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 }

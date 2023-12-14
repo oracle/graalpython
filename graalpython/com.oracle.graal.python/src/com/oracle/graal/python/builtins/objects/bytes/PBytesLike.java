@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -121,32 +123,32 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
-    short readShort(int byteOffset,
+    short readShortByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readShort(store, byteOffset);
+        return bufferLib.readShortByteOrder(store, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    int readInt(int byteOffset,
+    int readIntByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readInt(store, byteOffset);
+        return bufferLib.readIntByteOrder(store, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    long readLong(int byteOffset,
+    long readLongByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readLong(store, byteOffset);
+        return bufferLib.readLongByteOrder(store, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    float readFloat(int byteOffset,
+    float readFloatByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readFloat(store, byteOffset);
+        return bufferLib.readFloatByteOrder(store, byteOffset, byteOrder);
     }
 
     @ExportMessage
-    double readDouble(int byteOffset,
+    double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        return bufferLib.readDouble(store, byteOffset);
+        return bufferLib.readDoubleByteOrder(store, byteOffset, byteOrder);
     }
 }

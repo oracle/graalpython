@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.test.interop;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -481,5 +483,48 @@ public class HostInteropTest extends PythonTests {
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
         assertTrue(t.isTimeZone());
         assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
+    }
+
+    @Test
+    public void testByteBuffer() {
+        Value t;
+        // test bytes
+        t = context.eval("python", "bytes([" +
+                        "10, " + // 10 (byte)
+                        "0xFF, 0x7F, " + // Short.MAX_VALUE
+                        "0xFF, 0xFF, 0xFF, 0x7F, " + // Integer.MAX_VALUE
+                        "0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, " + // Long.MAX_VALUE
+                        "0, 0, 0, 0x3F, 0xFF, 0xFF, 0xFF, 0x7F, " + // 0.5f
+                        "0xAD, 0x26, 0x99, 0xE6, 0xD6, 0x1C, 0xC8, 0x40])"); // 12345.6789123
+        assertTrue(t.hasBufferElements());
+        assertFalse(t.isBufferWritable());
+        assertEquals(31, t.getBufferSize());
+        assertEquals(10, t.readBufferByte(0));
+        assertEquals(Short.MAX_VALUE, t.readBufferShort(ByteOrder.LITTLE_ENDIAN, 1));
+        assertEquals(Integer.MAX_VALUE, t.readBufferInt(ByteOrder.LITTLE_ENDIAN, 3));
+        assertEquals(Long.MAX_VALUE, t.readBufferLong(ByteOrder.LITTLE_ENDIAN, 7));
+        assertEquals(0.5f, t.readBufferFloat(ByteOrder.LITTLE_ENDIAN, 15), 0.0);
+        assertEquals(12345.6789123, t.readBufferDouble(ByteOrder.LITTLE_ENDIAN, 23), 0.0);
+        byte[] dst = new byte[8];
+        t.readBuffer(23, dst, 0, 8);
+        assertArrayEquals(dst, new byte[]{(byte) 0xAD, 0x26, (byte) 0x99, (byte) 0xE6, (byte) 0xD6, 0x1C, (byte) 0xC8, 0x40});
+
+        // test bytearray
+        t = context.eval("python", "bytearray(10)");
+        assertTrue(t.hasBufferElements());
+        assertTrue(t.isBufferWritable());
+        assertEquals(10, t.getBufferSize());
+        t.writeBufferByte(0, (byte) 10);
+        assertEquals(10, t.readBufferByte(0));
+        t.writeBufferShort(ByteOrder.LITTLE_ENDIAN, 0, Short.MAX_VALUE);
+        assertEquals(Short.MAX_VALUE, t.readBufferShort(ByteOrder.LITTLE_ENDIAN, 0));
+        t.writeBufferInt(ByteOrder.LITTLE_ENDIAN, 0, Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, t.readBufferInt(ByteOrder.LITTLE_ENDIAN, 0));
+        t.writeBufferLong(ByteOrder.LITTLE_ENDIAN, 0, Long.MAX_VALUE);
+        assertEquals(Long.MAX_VALUE, t.readBufferLong(ByteOrder.LITTLE_ENDIAN, 0));
+        t.writeBufferFloat(ByteOrder.LITTLE_ENDIAN, 0, 0.5f);
+        assertEquals(0.5f, t.readBufferFloat(ByteOrder.LITTLE_ENDIAN, 0), 0.0);
+        t.writeBufferDouble(ByteOrder.LITTLE_ENDIAN, 0, 12345.6789123);
+        assertEquals(12345.6789123, t.readBufferDouble(ByteOrder.LITTLE_ENDIAN, 0), 0.0);
     }
 }
