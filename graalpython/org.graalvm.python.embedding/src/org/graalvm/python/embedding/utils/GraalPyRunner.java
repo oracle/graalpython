@@ -45,6 +45,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -53,7 +56,11 @@ import java.util.Set;
 
 public class GraalPyRunner {
 
-    public static void run(Set<String> classpath, Log log, String... args) throws IOException, InterruptedException {
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
+    private static final String BIN_DIR = IS_WINDOWS ? "Scripts" : "bin";
+    private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
+
+    public static void run(Set<String> classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
         String workdir = System.getProperty("exec.workingdir");
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
@@ -66,9 +73,69 @@ public class GraalPyRunner {
         if (workdir != null) {
             pb.directory(new File(workdir));
         }
+        log.log(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        runProcess(pb, log);
+    }
 
-        log.mvnDebug(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+    public static void runLauncher(String launcherPath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+        var cmd = new ArrayList<String>();
+        cmd.add(launcherPath);
+        cmd.addAll(List.of(args));
+        log.log(String.format("Running: %s", String.join(" ", cmd)));
+        var pb = new ProcessBuilder(cmd);
+        runProcess(pb, log);
+    }
 
+    public static void runPip(Path venvDirectory, String command, SubprocessLog log, String... pkgs) throws IOException, InterruptedException {
+        var newArgs = new ArrayList<String>();
+        newArgs.add("-m");
+        newArgs.add("pip");
+        addProxy(newArgs);
+        newArgs.add(command);
+        newArgs.addAll(List.of(pkgs));
+
+        runVenvBin(venvDirectory, "graalpy", log, newArgs);
+    }
+
+    public static void runVenvBin(Path venvDirectory, String command, SubprocessLog log, String... args) throws IOException, InterruptedException {
+        runVenvBin(venvDirectory, command, log, List.of(args));
+    }
+
+    private static void runVenvBin(Path venvDirectory, String command, SubprocessLog log, List<String> args) throws IOException, InterruptedException {
+        var cmd = new ArrayList<String>();
+        cmd.add(venvDirectory.resolve(BIN_DIR).resolve(command + EXE_SUFFIX).toString());
+        cmd.addAll(args);
+        log.log(String.join(" ", cmd));
+        var pb = new ProcessBuilder(cmd);
+        runProcess(pb, log);
+    }
+
+    private static void addProxy(ArrayList<String> args) {
+        // if set, pip takes environment variables http_proxy and https_proxy
+        if (System.getenv("http_proxy") == null && System.getenv("https_proxy") == null) {
+            // if not set, use --proxy param
+            ProxySelector proxySelector = ProxySelector.getDefault();
+            List<Proxy> proxies = proxySelector.select(URI.create("https://pypi.org"));
+
+            String proxyAddr = null;
+            for (Proxy proxy : proxies) {
+                if (proxy.type() == Proxy.Type.HTTP) {
+                    proxyAddr = fixProtocol(proxy.address().toString(), "http");
+                    break;
+                }
+            }
+            if (proxyAddr != null) {
+                args.add("--proxy");
+                args.add(proxyAddr);
+            }
+        }
+    }
+
+    private static String fixProtocol(String proxyAddress, String protocol) {
+        return proxyAddress.startsWith(protocol) ? proxyAddress : protocol + "://" + proxyAddress;
+    }
+
+    private static void runProcess(ProcessBuilder pb, SubprocessLog log) throws IOException, InterruptedException {
         pb.redirectError();
         pb.redirectOutput();
         Process process = pb.start();
@@ -81,7 +148,7 @@ public class GraalPyRunner {
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.subProcessErr(e);
+                log.log("exception while reading subprocess out", e);
             }
         });
         outputReader.start();
@@ -96,7 +163,7 @@ public class GraalPyRunner {
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.subProcessErr(e);
+                log.log("exception while reading subprocess err", e);
             }
         });
         errorReader.start();
@@ -110,38 +177,4 @@ public class GraalPyRunner {
         }
     }
 
-    public static interface Log {
-
-        void subProcessOut(CharSequence var1);
-
-        void subProcessErr(CharSequence var1);
-
-        void subProcessOut(Throwable var1);
-
-        void subProcessErr(Throwable var1);
-
-        void mvnDebug(CharSequence var1);
-
-        void mvnDebug(CharSequence var1, Throwable var2);
-
-        void mvnDebug(Throwable var1);
-
-        void mvnInfo(CharSequence var1);
-
-        void mvnInfo(CharSequence var1, Throwable var2);
-
-        void mvnInfo(Throwable var1);
-
-        void mvnWarn(CharSequence var1);
-
-        void mvnWarn(CharSequence var1, Throwable var2);
-
-        void mvnWarn(Throwable var1);
-
-        void mvnError(CharSequence var1);
-
-        void mvnError(CharSequence var1, Throwable var2);
-
-        void mvnError(Throwable var1);
-    }
 }
