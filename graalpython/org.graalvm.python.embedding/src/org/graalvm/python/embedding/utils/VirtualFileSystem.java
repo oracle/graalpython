@@ -716,7 +716,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
         Entry e = file(path);
         if (e == null) {
-            throw new IOException("no such file " + path);
+            throw new NoSuchFileException("no such file or directory");
         }
         HashMap<String, Object> attrs = new HashMap<>();
         if (attributes.startsWith("unix:") || attributes.startsWith("posix:")) {
