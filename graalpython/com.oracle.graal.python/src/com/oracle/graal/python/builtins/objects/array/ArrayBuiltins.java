@@ -95,6 +95,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -127,9 +128,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -334,15 +336,21 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(BufferFormat.class)
-    abstract static class AbstractComparisonNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({BufferFormat.class, PGuards.class})
+    abstract static class ComparisonHelperNode extends Node {
+
+        @FunctionalInterface
+        public interface LenComparator {
+            boolean compare(int a, int b);
+        }
+
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, LenComparator lenCmp, BinaryComparisonNode compareNode);
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
-        @SuppressWarnings("truffle-static-method")
-        boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
+        static boolean cmpItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, LenComparator lenCmp, BinaryComparisonNode compareNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Exclusive @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
@@ -354,15 +362,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
-            return compareLengths(left.getLength(), right.getLength());
+            return lenCmp.compare(left.getLength(), right.getLength());
         }
 
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
-        @SuppressWarnings("truffle-static-method")
-        boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached("createComparison()") BinaryComparisonNode compareNode,
+        static boolean cmpDoubles(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, LenComparator lenCmp, BinaryComparisonNode compareNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
@@ -374,87 +379,65 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
-            return compareLengths(left.getLength(), right.getLength());
+            return lenCmp.compare(left.getLength(), right.getLength());
         }
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object cmp(PArray left, Object right) {
+        static Object cmp(PArray left, Object right, LenComparator lenCmp, BinaryComparisonNode compareNode) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        protected boolean compareLengths(int a, int b) {
-            throw new AbstractMethodError("compareLengths");
-        }
-
-        @NeverDefault
-        protected BinaryComparisonNode createComparison() {
-            throw new AbstractMethodError("createComparison");
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends AbstractComparisonNode {
+    abstract static class LtNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.LtNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a < b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.LtNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a < b, cmpNode);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends AbstractComparisonNode {
+    abstract static class GtNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.GtNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a > b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.GtNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a > b, cmpNode);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LeNode extends AbstractComparisonNode {
+    abstract static class LeNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.LeNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a <= b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.LeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a <= b, cmpNode);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GeNode extends AbstractComparisonNode {
+    abstract static class GeNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.GeNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a >= b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.GeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a >= b, cmpNode);
         }
     }
 
