@@ -103,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.LStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesLikeCheck;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ComparisonOp;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.NeedleToBytesNode;
@@ -551,107 +552,110 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
     @GenerateCached(false)
     // N.B. bytes only allow comparing to bytes, bytearray has its own implementation that uses
     // buffer API
-    abstract static class AbstractComparisonNode extends BytesNodes.AbstractComparisonBaseNode {
+    abstract static class ComparisonHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object self, Object other, ComparisonOp op);
+
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean cmp(PBytes self, PBytes other,
-                        @Bind("this") Node inliningTarget,
+        static boolean cmp(Node inliningTarget, PBytes self, PBytes other, ComparisonOp op,
                         @Exclusive @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
-            return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
+            return op.doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
         }
 
         @Fallback
-        @SuppressWarnings("truffle-static-method")
-        Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+        static Object cmp(Node inliningTarget, Object self, Object other, ComparisonOp op,
                         @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
-                        @Cached GetInternalByteArrayNode getArray,
+                        @Exclusive @Cached GetInternalByteArrayNode getArray,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (check.execute(inliningTarget, self)) {
                 if (check.execute(inliningTarget, other)) {
                     SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
                     SequenceStorage otherStorage = getBytesStorage.execute(inliningTarget, other);
-                    return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
+                    return op.doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
                 } else {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTES, self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.name, J_BYTES, self);
         }
     }
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends AbstractComparisonNode {
-        @Override
-        protected boolean fromCompareResult(int compareResult) {
-            return compareResult == 0;
-        }
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean shortcutLength() {
-            return true;
+        @Specialization
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode) {
+            return helperNode.execute(inliningTarget, self, other, ComparisonOp.EQ);
         }
     }
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NeNode extends AbstractComparisonNode {
-        @Override
-        protected boolean fromCompareResult(int compareResult) {
-            return compareResult != 0;
-        }
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean shortcutLength() {
-            return true;
-        }
-
-        @Override
-        protected boolean shortcutLengthResult() {
-            return true;
+        @Specialization
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode) {
+            return helperNode.execute(inliningTarget, self, other, ComparisonOp.NE);
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends AbstractComparisonNode {
-        @Override
-        protected boolean fromCompareResult(int compareResult) {
-            return compareResult < 0;
+    abstract static class LtNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode) {
+            return helperNode.execute(inliningTarget, self, other, ComparisonOp.LT);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LeNode extends AbstractComparisonNode {
-        @Override
-        protected boolean fromCompareResult(int compareResult) {
-            return compareResult <= 0;
+    abstract static class LeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode) {
+            return helperNode.execute(inliningTarget, self, other, ComparisonOp.LE);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends AbstractComparisonNode {
-        @Override
-        protected boolean fromCompareResult(int compareResult) {
-            return compareResult > 0;
+    abstract static class GtNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode) {
+            return helperNode.execute(inliningTarget, self, other, ComparisonOp.GT);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GeNode extends AbstractComparisonNode {
-        @Override
-        protected boolean fromCompareResult(int compareResult) {
-            return compareResult >= 0;
+    abstract static class GeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode) {
+            return helperNode.execute(inliningTarget, self, other, ComparisonOp.GE);
         }
     }
 
@@ -918,7 +922,7 @@ public final class BytesBuiltins extends PythonBuiltins {
     public abstract static class PartitionAbstractNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
+        @SuppressWarnings("truffle-static-method")  // TODO: inh
         PTuple partition(VirtualFrame frame, Object self, Object sep,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -1499,7 +1503,7 @@ public final class BytesBuiltins extends PythonBuiltins {
     abstract static class CenterNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
+        @SuppressWarnings("truffle-static-method")  // TODO: inh
         PBytesLike bytes(VirtualFrame frame, Object self, Object widthObj, Object fillObj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,

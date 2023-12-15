@@ -46,6 +46,12 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyBy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NON_HEX_NUMBER_IN_FROMHEX;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -88,7 +94,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -101,6 +106,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.IntPredicate;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -238,7 +244,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
+        @SuppressWarnings("truffle-static-method")  // TODO: arg
         byte[] doBuffer(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -976,12 +982,26 @@ public abstract class BytesNodes {
         return endIn;
     }
 
-    @GenerateCached(false)
-    public abstract static class AbstractComparisonBaseNode extends PythonBinaryBuiltinNode {
-        protected boolean doCmp(byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+    enum ComparisonOp {
+        EQ(J___EQ__, a -> a == 0),
+        NE(J___NE__, a -> a != 0),
+        LT(J___LT__, a -> a < 0),
+        GT(J___GT__, a -> a > 0),
+        LE(J___LE__, a -> a <= 0),
+        GE(J___GE__, a -> a >= 0);
+
+        final String name;
+        final IntPredicate fromCompareResult;
+
+        ComparisonOp(String name, IntPredicate fromCompareResult) {
+            this.name = name;
+            this.fromCompareResult = fromCompareResult;
+        }
+
+        boolean doCmp(byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
             int compareResult = 0;
-            if (shortcutLength() && selfLength != otherLength) {
-                return shortcutLengthResult();
+            if ((this == EQ || this == NE) && selfLength != otherLength) {
+                return this == NE;
             }
             for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
                 compareResult = Byte.compareUnsigned(selfArray[i], otherArray[i]);
@@ -992,17 +1012,7 @@ public abstract class BytesNodes {
             if (compareResult == 0) {
                 compareResult = Integer.compare(selfLength, otherLength);
             }
-            return fromCompareResult(compareResult);
+            return fromCompareResult.test(compareResult);
         }
-
-        protected boolean shortcutLength() {
-            return false;
-        }
-
-        protected boolean shortcutLengthResult() {
-            return false;
-        }
-
-        protected abstract boolean fromCompareResult(int compareResult);
     }
 }
