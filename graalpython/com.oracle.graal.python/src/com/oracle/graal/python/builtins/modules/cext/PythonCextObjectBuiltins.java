@@ -412,7 +412,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = CImpl)
     abstract static class PyObject_RichCompare extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "op == 0")

@@ -2296,10 +2296,6 @@ PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject* a, Py_ssize_t b) {
 PyAPI_FUNC(PyObject*) PyObject_Repr(PyObject* a) {
     return GraalPyObject_Repr(a);
 }
-#undef PyObject_RichCompare
-PyAPI_FUNC(PyObject*) PyObject_RichCompare(PyObject* a, PyObject* b, int c) {
-    return GraalPyObject_RichCompare(a, b, c);
-}
 #undef PyObject_SetArenaAllocator
 PyAPI_FUNC(void) PyObject_SetArenaAllocator(PyObjectArenaAllocator* a) {
     FUNC_NOT_IMPLEMENTED
