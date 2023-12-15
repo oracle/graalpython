@@ -93,3 +93,23 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                                   defs, defcount,
                                   kwdefs, closure);
 }
+
+#if defined(__GNUC__)
+static __thread int _tls_recursion_depth = 0;
+#elif defined(_MSC_VER)
+static __declspec(thread) int _tls_recursion_depth = 0;
+#else
+#error "don't know how to declare thread local variable"
+#endif
+
+int Py_EnterRecursiveCall(const char *where) {
+    if (++_tls_recursion_depth > Py_DEFAULT_RECURSION_LIMIT) {
+        PyErr_SetString(PyExc_RecursionError, where);
+        return -1;
+    }
+    return 0;
+}
+
+void Py_LeaveRecursiveCall()  {
+    _tls_recursion_depth--;
+}

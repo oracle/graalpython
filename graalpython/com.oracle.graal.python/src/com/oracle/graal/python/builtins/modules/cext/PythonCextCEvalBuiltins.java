@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
@@ -206,7 +207,7 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {ConstCharPtr}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {ConstCharPtr}, call = CImpl)
     abstract static class Py_EnterRecursiveCall extends CApiUnaryBuiltinNode {
         @Specialization
         int doGeneric(Object where) {
@@ -227,7 +228,7 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {}, call = CImpl)
     abstract static class Py_LeaveRecursiveCall extends CApiNullaryBuiltinNode {
         @Specialization
         Object doGeneric() {
