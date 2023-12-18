@@ -44,8 +44,6 @@ from textwrap import dedent
 
 import mx_urlrewrites
 
-HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
-
 if sys.version_info[0] < 3:
     raise RuntimeError("The build scripts are no longer compatible with Python 2")
 
@@ -102,6 +100,9 @@ GRAAL_VERSION = SUITE.suiteDict['version']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
+
+MAIN_BRANCH = 'master'
+HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -517,6 +518,10 @@ def retag_unittests(args):
     parser.add_argument('--jvm', action='store_true')
     parser.add_argument('--timeout')
     parsed_args, remaining_args = parser.parse_known_args(args)
+    active_branch = mx.VC.get_vc(SUITE.dir).active_branch(SUITE.dir)
+    if parsed_args.upload_results_to and active_branch != MAIN_BRANCH:
+        mx.log("Skipping retagger when not on main branch")
+        return
     env = extend_os_env(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
@@ -1688,15 +1693,14 @@ class ArchiveProject(mx.ArchivableProject):
 
 def deploy_binary_if_main(args):
     """if the active branch is the main branch, deploy binaries for the primary suite to remote maven repository."""
-    main_branch = 'master'
     active_branch = mx.VC.get_vc(SUITE.dir).active_branch(SUITE.dir)
-    if active_branch == main_branch:
+    if active_branch == MAIN_BRANCH:
         if sys.platform == "darwin":
             args.insert(0, "--platform-dependent")
         return mx.command_function('deploy-binary')(args)
     else:
         mx.log('The active branch is "%s". Binaries are deployed only if the active branch is "%s".' % (
-            active_branch, main_branch))
+            active_branch, MAIN_BRANCH))
         return 0
 
 
