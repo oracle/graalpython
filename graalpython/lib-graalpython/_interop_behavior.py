@@ -47,6 +47,12 @@ def _date_time_tz(dt: datetime.datetime):
     return utcoffset.days * 3600 * 24 + utcoffset.seconds
 
 
+def _struct_time_tz(st: time.struct_time):
+    if st.tm_gmtoff is not None:
+        return st.tm_gmtoff
+    return st.tm_zone
+
+
 polyglot.register_interop_behavior(datetime.time,
                                    is_time=True, as_time=lambda d: (d.hour, d.minute, d.second, d.microsecond),
                                    is_time_zone=lambda t: t.tzinfo is not None, as_time_zone=_date_time_tz)
@@ -63,7 +69,7 @@ polyglot.register_interop_behavior(time.struct_time,
                                    is_date=True, as_date=lambda t: (t.tm_year, t.tm_mon, t.tm_mday),
                                    is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0),
                                    is_time_zone=lambda t: t.tm_zone is not None or t.tm_gmtoff is not None,
-                                   as_time_zone=lambda t: t.tm_gmtoff if t.tm_gmtoff else t.tm_zone)
+                                   as_time_zone=_struct_time_tz)
 
 
 # example extending time.struct_time using the decorator wrapper
@@ -92,4 +98,6 @@ polyglot.register_interop_behavior(time.struct_time,
 #
 #     @staticmethod
 #     def as_time_zone(t):
-#         return t.tm_gmtoff if t.tm_gmtoff else t.tm_zone
+#         if t.tm_gmtoff is not None:
+#             return t.tm_gmtoff
+#         return t.tm_zone
