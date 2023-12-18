@@ -213,6 +213,7 @@ public final class FrozenModules {
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", "graalpy.__graalpython__", false);
+        private static final PythonFrozenModule GRAALPY__INTEROP_BEHAVIOR = new PythonFrozenModule("GRAALPY__INTEROP_BEHAVIOR", "graalpy._interop_behavior", false);
         private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", "graalpy._sre", false);
         private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", "graalpy._struct", false);
         private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", "graalpy._sysconfig", false);
@@ -579,6 +580,8 @@ public final class FrozenModules {
                 return Map._SYSCONFIGDATA;
             case "graalpy.__graalpython__":
                 return Map.GRAALPY___GRAALPYTHON__;
+            case "graalpy._interop_behavior":
+                return Map.GRAALPY__INTEROP_BEHAVIOR;
             case "graalpy._sre":
                 return Map.GRAALPY__SRE;
             case "graalpy._struct":

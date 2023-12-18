@@ -119,6 +119,7 @@ def add_graalpython_core():
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
+        "_interop_behavior",
         "_sre",
         "_struct",
         "_sysconfig",
