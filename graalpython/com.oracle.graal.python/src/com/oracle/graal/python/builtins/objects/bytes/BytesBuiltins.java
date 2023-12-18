@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.adjustEndIndex;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.adjustStartIndex;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareByteArrays;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toLower;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toUpper;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
@@ -103,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.LStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesLikeCheck;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ComparisonOp;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.NeedleToBytesNode;
@@ -155,6 +155,7 @@ import com.oracle.graal.python.runtime.formatting.BytesFormatProcessor;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -565,7 +566,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
-            return op.doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
+            return compareByteArrays(op, getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
         }
 
         @Fallback
@@ -578,12 +579,12 @@ public final class BytesBuiltins extends PythonBuiltins {
                 if (check.execute(inliningTarget, other)) {
                     SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
                     SequenceStorage otherStorage = getBytesStorage.execute(inliningTarget, other);
-                    return op.doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
+                    return compareByteArrays(op, getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
                 } else {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.name, J_BYTES, self);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_BYTES, self);
         }
     }
 

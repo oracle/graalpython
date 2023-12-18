@@ -34,6 +34,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
@@ -52,6 +53,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
@@ -115,11 +117,13 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -274,65 +278,96 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @ImportStatic(BufferFormat.class)
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({BufferFormat.class, PGuards.class})
+    abstract static class EqNeHelperNode extends Node {
+
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, ComparisonOp op);
 
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "!isFloatingPoint(left.getFormat())"})
-        static boolean eqBytes(PArray left, PArray right,
+        static boolean eqBytes(PArray left, PArray right, ComparisonOp op,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             if (left.getBytesLength() != right.getBytesLength()) {
-                return false;
+                return op == ComparisonOp.NE;
             }
             for (int i = 0; i < left.getBytesLength(); i++) {
                 if (bufferLib.readByte(left.getBuffer(), i) != bufferLib.readByte(right.getBuffer(), i)) {
-                    return false;
+                    return op == ComparisonOp.NE;
                 }
             }
-            return true;
+            return op == ComparisonOp.EQ;
         }
 
         @Specialization(guards = "left.getFormat() != right.getFormat()")
-        static boolean eqItems(VirtualFrame frame, PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
+        static boolean eqItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
-                return false;
+                return op == ComparisonOp.NE;
             }
             for (int i = 0; i < left.getLength(); i++) {
                 if (!eqNode.compare(frame, inliningTarget, getLeft.execute(inliningTarget, left, i), getRight.execute(inliningTarget, right, i))) {
-                    return false;
+                    return op == ComparisonOp.NE;
                 }
             }
-            return true;
+            return op == ComparisonOp.EQ;
         }
 
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
-        static boolean eqDoubles(PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
+        static boolean eqDoubles(Node inliningTarget, PArray left, PArray right, ComparisonOp op,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
-                return false;
+                return op == ComparisonOp.NE;
             }
             for (int i = 0; i < left.getLength(); i++) {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return false;
+                    return op == ComparisonOp.NE;
                 }
             }
-            return true;
+            return op == ComparisonOp.EQ;
         }
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object eq(PArray left, Object right) {
+        static Object eq(PArray left, Object right, ComparisonOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @Specialization(guards = "!isArray(left)")
+        @SuppressWarnings("unused")
+        static Object error(Object left, Object right, ComparisonOp op,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_ARRAY + "." + J_ARRAY, left);
+        }
+    }
+
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object eqBytes(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EqNeHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.EQ);
+        }
+    }
+
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class NeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object eqBytes(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EqNeHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.NE);
         }
     }
 
@@ -341,15 +376,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @ImportStatic({BufferFormat.class, PGuards.class})
     abstract static class ComparisonHelperNode extends Node {
 
-        @FunctionalInterface
-        public interface LenComparator {
-            boolean compare(int a, int b);
-        }
-
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, LenComparator lenCmp, BinaryComparisonNode compareNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, ComparisonOp op, BinaryComparisonNode compareNode);
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
-        static boolean cmpItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, LenComparator lenCmp, BinaryComparisonNode compareNode,
+        static boolean cmpItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
@@ -362,12 +392,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
-            return lenCmp.compare(left.getLength(), right.getLength());
+            return op.cmpResultToBool(left.getLength() - right.getLength());
         }
 
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
-        static boolean cmpDoubles(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, LenComparator lenCmp, BinaryComparisonNode compareNode,
+        static boolean cmpDoubles(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
@@ -379,14 +409,22 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
-            return lenCmp.compare(left.getLength(), right.getLength());
+            return op.cmpResultToBool(left.getLength() - right.getLength());
         }
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object cmp(PArray left, Object right, LenComparator lenCmp, BinaryComparisonNode compareNode) {
+        static Object cmp(PArray left, Object right, ComparisonOp op, BinaryComparisonNode compareNode) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        @Specialization(guards = "!isArray(left)")
+        @SuppressWarnings("unused")
+        static Object error(Object left, Object right, ComparisonOp op, BinaryComparisonNode compareNode,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_ARRAY + "." + J_ARRAY, left);
+        }
+
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
@@ -398,7 +436,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode helperNode,
                         @Cached BinaryComparisonNode.LtNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a < b, cmpNode);
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.LT, cmpNode);
         }
     }
 
@@ -411,7 +449,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode helperNode,
                         @Cached BinaryComparisonNode.GtNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a > b, cmpNode);
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.GT, cmpNode);
         }
     }
 
@@ -424,7 +462,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode helperNode,
                         @Cached BinaryComparisonNode.LeNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a <= b, cmpNode);
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.LE, cmpNode);
         }
     }
 
@@ -437,7 +475,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode helperNode,
                         @Cached BinaryComparisonNode.GeNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, (a, b) -> a >= b, cmpNode);
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.GE, cmpNode);
         }
     }
 

@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareByteArrays;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ComparisonOp;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
@@ -110,6 +110,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -867,7 +868,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
-            return op.doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
+            return compareByteArrays(op, getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
         }
 
         @Specialization(guards = {"check.execute(inliningTarget, self)", "acquireLib.hasBuffer(other)"}, limit = "3")
@@ -881,7 +882,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
             Object otherBuffer = acquireLib.acquireReadonly(other, frame, indirectCallData);
             try {
-                return op.doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(),
+                return compareByteArrays(op, getArray.execute(inliningTarget, selfStorage), selfStorage.length(),
                                 bufferLib.getInternalOrCopiedByteArray(otherBuffer), bufferLib.getBufferLength(otherBuffer));
             } finally {
                 bufferLib.release(otherBuffer);
@@ -901,7 +902,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         static Object error(VirtualFrame frame, Node inliningTarget, Object self, Object other, ComparisonOp op,
                         @Shared @Cached PyByteArrayCheckNode check,
                         @Cached(inline = false) PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.name, J_BYTEARRAY, self);
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_BYTEARRAY, self);
         }
     }
 
