@@ -481,6 +481,58 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.isTimeZone());
         assertEquals(ZoneId.of("UTC"), t.asTimeZone());
 
+        // test decorator api
+        t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            # timezone
+                            tz = "UTC"
+                            # date
+                            year = 2023
+                            month = 12
+                            day = 12
+                            # time
+                            hour = 3
+                            minute = 10
+                            second = 10
+                            microsecond = 10
+
+                        @polyglot.interop_behavior(MyType)
+                        class MyTypeInteropBehaviorSupplier:
+                            @staticmethod
+                            def is_date(t):
+                                return True
+
+                            @staticmethod
+                            def as_date(t):
+                                return t.year, t.month, t.day
+
+                            @staticmethod
+                            def is_time(t):
+                                return True
+
+                            @staticmethod
+                            def as_time(t):
+                                return t.hour, t.minute, t.second, t.microsecond
+
+                            @staticmethod
+                            def is_time_zone(t):
+                                return True
+
+                            @staticmethod
+                            def as_time_zone(t):
+                                return t.tz
+
+                        MyType()
+                        """);
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
+        assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("UTC"), t.asTimeZone());
+
         // test builtin types
         t = context.eval("python", """
                         from datetime import datetime, timezone, timedelta
