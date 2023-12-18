@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -676,6 +677,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
             @Child private ListNodes.ConstructListNode constructListNode = ListNodes.ConstructListNode.create();
             @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode = SequenceNodes.GetSequenceStorageNode.create();
+            @Child private SequenceStorageNodes.GetItemNode getItemNode = SequenceStorageNodes.GetItemNode.createNotNormalized();
             @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
             @Child private CastToTruffleStringNode toTruffleStringNode = CastToTruffleStringNode.create();
             @Child private CallVarargsMethodNode callVarargsMethodNode = CallVarargsMethodNode.create();
@@ -713,7 +715,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             private PKeyword[] getFunctions(SequenceStorage namesStorage, Object supplierClass) {
                 ArrayList<PKeyword> functions = new ArrayList<>();
-                for (Object name : namesStorage.getInternalArray()) {
+                for (int i = 0; i < namesStorage.length(); i++) {
+                    Object name = getItemNode.execute(namesStorage, i);
                     Object value = getAttr.execute(this, supplierClass, name);
                     if (value instanceof PFunction function) {
                         functions.add(new PKeyword(toTruffleStringNode.execute(this, name), function));
