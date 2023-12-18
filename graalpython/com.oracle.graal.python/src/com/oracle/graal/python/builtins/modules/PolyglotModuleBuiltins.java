@@ -82,8 +82,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -103,7 +105,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -675,12 +676,12 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
             @Child private PRaiseNode.Lazy raiseNode = PRaiseNode.Lazy.getUncached();
             @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
-            @Child private ListNodes.ConstructListNode constructListNode = ListNodes.ConstructListNode.create();
-            @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode = SequenceNodes.GetSequenceStorageNode.create();
-            @Child private SequenceStorageNodes.GetItemNode getItemNode = SequenceStorageNodes.GetItemNode.createNotNormalized();
             @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
             @Child private CastToTruffleStringNode toTruffleStringNode = CastToTruffleStringNode.create();
             @Child private CallVarargsMethodNode callVarargsMethodNode = CallVarargsMethodNode.create();
+            @Child private HashingStorageNodes.HashingStorageIteratorNext hashingStorageIteratorNext = HashingStorageNodes.HashingStorageIteratorNext.create();
+            @Child private HashingStorageNodes.HashingStorageGetIterator hashingStorageGetIterator = HashingStorageNodes.HashingStorageGetIterator.create();
+            @Child private HashingStorageNodes.HashingStorageIteratorKey hashingStorageIteratorKey = HashingStorageNodes.HashingStorageIteratorKey.create();
 
             protected RegisterWrapper(TruffleLanguage<?> language) {
                 super(language);
@@ -696,10 +697,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 try {
                     if (supplierClass instanceof PythonClass klass) {
                         // extract methods and do the registration on the receiver type
-                        Object names = dirNode.execute(frame, klass);
-                        PList namesList = constructListNode.execute(frame, names);
-                        SequenceStorage namesStorage = getSequenceStorageNode.execute(this, namesList);
-                        PKeyword[] kwargs = getFunctions(namesStorage, supplierClass);
+                        PSet names = dirNode.execute(frame, klass);
+                        PKeyword[] kwargs = getFunctions(names.getDictStorage(), supplierClass);
                         PythonContext context = PythonContext.get(this);
                         PythonModule polyglotModule = context.lookupBuiltinModule(M_POLYGLOT);
                         Object register = getAttr.execute(this, polyglotModule, T_REGISTER_INTEROP_BEHAVIOR);
@@ -713,10 +712,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
 
             @TruffleBoundary
-            private PKeyword[] getFunctions(SequenceStorage namesStorage, Object supplierClass) {
+            private PKeyword[] getFunctions(HashingStorage namesStorage, Object supplierClass) {
                 ArrayList<PKeyword> functions = new ArrayList<>();
-                for (int i = 0; i < namesStorage.length(); i++) {
-                    Object name = getItemNode.execute(namesStorage, i);
+                HashingStorageNodes.HashingStorageIterator iterator = hashingStorageGetIterator.execute(this, namesStorage);
+                while (hashingStorageIteratorNext.execute(this, namesStorage, iterator)) {
+                    Object name = hashingStorageIteratorKey.execute(this, namesStorage, iterator);
                     Object value = getAttr.execute(this, supplierClass, name);
                     if (value instanceof PFunction function) {
                         functions.add(new PKeyword(toTruffleStringNode.execute(this, name), function));

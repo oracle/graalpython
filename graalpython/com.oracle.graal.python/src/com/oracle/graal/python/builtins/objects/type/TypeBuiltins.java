@@ -1429,8 +1429,10 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1, doc = "__dir__ for type objects\n\n\tThis includes all attributes of klass and all of the base\n\tclasses recursively.")
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonUnaryBuiltinNode {
+        public abstract PSet execute(VirtualFrame frame, Object klass);
+
         @Specialization
-        static Object dir(VirtualFrame frame, Object klass,
+        static PSet dir(VirtualFrame frame, Object klass,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
