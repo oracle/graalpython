@@ -244,6 +244,10 @@ public enum InteropBehaviorMethod {
         return this.takesVarArgs || extraArguments.length == this.extraArguments;
     }
 
+    public int getNumPositionalArguments() {
+        return this.extraArguments + 1;
+    }
+
     @Override
     public String toString() {
         return "InteropBehaviorMethod{" +

@@ -1437,8 +1437,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached ToArrayNode toArrayNode,
                         @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
                         @Cached PythonObjectFactory factory) {
-            PSet names = dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, factory);
-            return names;
+            return dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, factory);
         }
 
         private static PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,
@@ -1465,6 +1464,11 @@ public final class TypeBuiltins extends PythonBuiltins {
         @NeverDefault
         protected GetFixedAttributeNode createGetAttrNode() {
             return GetFixedAttributeNode.create(T___BASES__);
+        }
+
+        @NeverDefault
+        public static DirNode create() {
+            return TypeBuiltinsFactory.DirNodeFactory.create();
         }
     }
 

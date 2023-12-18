@@ -349,8 +349,9 @@ public abstract class ErrorMessages {
     public static final TruffleString FORMATED_S_TOO_LONG = tsLiteral("formatted %s is too long (precision too large?)");
     public static final TruffleString FUNC_CONSTRUCTION_NOT_SUPPORTED = tsLiteral("function construction not supported for (%p, %p, %p, %p, %p, %p)");
     public static final TruffleString FUNC_TAKES_EXACTLY_D_ARGS = tsLiteral("function takes exaclty %d arguments (%d given)");
-    public static final TruffleString FUNC_S_MUST_BE_S_NOT_P = tsLiteral("%s() %s must be %s, not %p");
-    public static final TruffleString GENERATOR_EXPR_MUST_BE_PARENTHESIZED = tsLiteral("Generator expression must be parenthesized");
+    public static final TruffleString S_TAKES_EXACTLY_D_ARGS = tsLiteral("%s takes exaclty %d arguments (%d given)");
+    public static final TruffleString S_TAKES_VARARGS = tsLiteral("%s takes varargs");
+    public static final TruffleString S_DOES_NOT_TAKE_VARARGS = tsLiteral("%s does not take varargs");
     public static final TruffleString GCD_FOR_NATIVE_NOT_SUPPORTED = tsLiteral("gcd for native objects is not yet supported on GraalPy");
     public static final TruffleString GENERATOR_IGNORED_EXIT = tsLiteral("generator ignored GeneratorExit");
     public static final TruffleString GENERATOR_RAISED_STOPITER = tsLiteral("generator raised StopIteration");
