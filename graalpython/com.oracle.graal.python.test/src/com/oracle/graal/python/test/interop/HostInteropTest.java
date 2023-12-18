@@ -557,6 +557,6 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.isDate());
         assertEquals(LocalDate.of(2022, 12, 28), t.asDate());
         assertTrue(t.isTimeZone());
-        assertEquals(ZoneId.of("GMT"), t.asTimeZone());
+        assertEquals(ZoneId.of("UTC"), t.asTimeZone());
     }
 }
