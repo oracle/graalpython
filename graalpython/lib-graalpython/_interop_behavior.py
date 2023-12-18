@@ -59,35 +59,37 @@ polyglot.register_interop_behavior(datetime.datetime,
                                    is_time=True, as_time=lambda d: (d.hour, d.minute, d.second, d.microsecond),
                                    is_time_zone=lambda t: t.tzinfo is not None, as_time_zone=_date_time_tz)
 
-# polyglot.register_interop_behavior(time.struct_time,
-#                                    is_date=True, as_date=lambda t: (t.tm_year, t.tm_mon, t.tm_mday),
-#                                    is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0),
-#                                    is_time_zone=lambda t: t.tm_zone is not None or t.tm_gmtoff is not None,
-#                                    as_time_zone=lambda t: t.tm_gmtoff if t.tm_gmtoff else t.tm_zone)
+polyglot.register_interop_behavior(time.struct_time,
+                                   is_date=True, as_date=lambda t: (t.tm_year, t.tm_mon, t.tm_mday),
+                                   is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0),
+                                   is_time_zone=lambda t: t.tm_zone is not None or t.tm_gmtoff is not None,
+                                   as_time_zone=lambda t: t.tm_gmtoff if t.tm_gmtoff else t.tm_zone)
 
 
-@polyglot.interop_behavior(time.struct_time)
-class StructTimeInteropBehavior:
-    @staticmethod
-    def is_date(t):
-        return True
-
-    @staticmethod
-    def as_date(t):
-        return t.tm_year, t.tm_mon, t.tm_mday
-
-    @staticmethod
-    def is_time(t):
-        return True
-
-    @staticmethod
-    def as_time(t):
-        return t.tm_hour, t.tm_min, t.tm_sec, 0
-
-    @staticmethod
-    def is_time_zone(t):
-        return t.tm_zone is not None or t.tm_gmtoff is not None
-
-    @staticmethod
-    def as_time_zone(t):
-        return t.tm_gmtoff if t.tm_gmtoff else t.tm_zone
+# example extending time.struct_time using the decorator wrapper
+#
+# @polyglot.interop_behavior(time.struct_time)
+# class StructTimeInteropBehavior:
+#     @staticmethod
+#     def is_date(t):
+#         return True
+#
+#     @staticmethod
+#     def as_date(t):
+#         return t.tm_year, t.tm_mon, t.tm_mday
+#
+#     @staticmethod
+#     def is_time(t):
+#         return True
+#
+#     @staticmethod
+#     def as_time(t):
+#         return t.tm_hour, t.tm_min, t.tm_sec, 0
+#
+#     @staticmethod
+#     def is_time_zone(t):
+#         return t.tm_zone is not None or t.tm_gmtoff is not None
+#
+#     @staticmethod
+#     def as_time_zone(t):
+#         return t.tm_gmtoff if t.tm_gmtoff else t.tm_zone
