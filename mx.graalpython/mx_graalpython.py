@@ -383,19 +383,21 @@ def punittest(ars, report=False):
         skip_leak_tests = True
         args.remove("--no-leak-tests")
 
+    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
+
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
     graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test']
     configs += [
-        TestConfig(graalpy_tests + args, True),
-        TestConfig(graalpy_tests + args, False),
+        TestConfig(vm_args + graalpy_tests + args, True),
+        TestConfig(vm_args + graalpy_tests + args, False),
         # TCK suite is not compatible with the PythonMxUnittestConfig,
         # so it must have its own run and the useResources config is ignored
-        TestConfig(['com.oracle.truffle.tck.tests'] + args, False),
+        TestConfig(vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
     ]
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
-        configs.append(TestConfig(['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
+        configs.append(TestConfig(vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
 
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")
