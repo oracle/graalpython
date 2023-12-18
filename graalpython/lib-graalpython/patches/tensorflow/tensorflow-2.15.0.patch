@@ -1,15 +1,15 @@
-From e79a28c5a8ab11660e44495a0939185b21920f61 Mon Sep 17 00:00:00 2001
+From f98b6e23eaf51be6d2513f0b96f5d1a199b26eb4 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
 Date: Tue, 5 Dec 2023 02:13:43 +0300
 Subject: [PATCH] patch for tensorflow 2.15
 
 ---
  WORKSPACE                                     |  10 +-
- graalpy_build.py                              | 282 ++++++++++++++++++
+ graalpy_build.py                              | 284 ++++++++++++++++++
  graalpy_patch.py                              | 105 +++++++
  pyproject.toml                                |   9 +
  requirements_graalpy.txt                      |  46 +++
- rules_python-0.26.0.patch                     | 166 +++++++++++
+ rules_python-0.26.0.patch                     | 166 ++++++++++
  .../dtensor/python/tests/test_backend_util.py |   2 +-
  tensorflow/python/autograph/impl/api_test.py  |   3 +
  .../python/client/tf_session_wrapper.cc       |   4 +-
@@ -34,7 +34,7 @@ Subject: [PATCH] patch for tensorflow 2.15
  tf_build_backend.py                           |  67 +++++
  third_party/protobuf/protobuf.patch           |   2 +-
  third_party/repo.bzl                          |   8 +-
- 30 files changed, 818 insertions(+), 27 deletions(-)
+ 30 files changed, 820 insertions(+), 27 deletions(-)
  create mode 100644 graalpy_build.py
  create mode 100644 graalpy_patch.py
  create mode 100644 pyproject.toml
@@ -79,10 +79,10 @@ index 6a85ffeb29a..bbaa063c108 100644
  load("@pypi//:requirements.bzl", "install_deps")
 diff --git a/graalpy_build.py b/graalpy_build.py
 new file mode 100644
-index 00000000000..c603fd7b2b3
+index 00000000000..2b3824c8765
 --- /dev/null
 +++ b/graalpy_build.py
-@@ -0,0 +1,282 @@
+@@ -0,0 +1,284 @@
 +
 +import subprocess
 +import os
@@ -214,9 +214,11 @@ index 00000000000..c603fd7b2b3
 +    with open(os.path.join((os.path.dirname(__file__)), 'requirements_graalpy.txt'), 'r') as fp:
 +        reqirements = fp.readlines()
 +        for r in reqirements:
++            if not r:
++                continue
++            r = r.strip()
++            run(PIP + ["install", r])
 +            if '==' in r:
-+                r = r.strip()
-+                run(PIP + ["install", r])
 +                run(PIP + ["wheel", "--no-deps", r], cwd=whl_tmp_path)
 +                whl_name = find_tf_whl(whl_tmp_path)
 +                whl_path = os.path.join(CACHED_WHEELS_PATH, whl_name)
@@ -365,7 +367,6 @@ index 00000000000..c603fd7b2b3
 +
 +if __name__ == '__main__':
 +  main()
-\ No newline at end of file
 diff --git a/graalpy_patch.py b/graalpy_patch.py
 new file mode 100644
 index 00000000000..dc67a9fc453
