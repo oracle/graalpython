@@ -269,10 +269,11 @@ An example in this sense are the `numpy` numeric types (e.g., `numpy.int32`) whi
 
 ### The API 
 
-| function                        | Description                                                                                                                                                               |
-|:--------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| function                        | Description                                                                                                                                                                   |
+|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective Truffle Interop messages. Not All interop messages are supported. |
 | get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended Truffle Interop messages for the given type.                                                      |
+| @interop_behavior               | Class decorator, takes the receiver **type** as only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).            |
 
 #### Supported messages 
 
@@ -341,6 +342,8 @@ Following is the list of currently supported interop messages:
 
 ### Usage Example
 
+#### the simple `register_interop_behavior` API
+
 ```python
 import polyglot
 
@@ -351,4 +354,26 @@ polyglot.register_interop_behavior(MyType,
     is_string=True,
     as_string=lambda t: f"MyType({t.data})",
 )
+```
+
+#### the decorator `@interop_behavior` API
+
+This API is sugar for the simpler `register_interop_behavior` API and requires that interop message extension is achieved via **static** methods of the decorated class.   
+The names of the static methods are identical to the keyword names expected by `register_interop_behavior`. 
+
+```python
+import polyglot
+
+class MyType(object):
+    data = 10
+
+@polyglot.interop_behavior(MyType)
+class MyTypeInteropBehaviorSupplier:
+    @staticmethod
+    def is_string(t): 
+        return True
+
+    @staticmethod
+    def as_string(t):
+        return f"MyType({t.data})"
 ```
