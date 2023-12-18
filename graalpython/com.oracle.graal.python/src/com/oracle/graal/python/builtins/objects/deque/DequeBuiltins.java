@@ -70,6 +70,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
@@ -109,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -117,11 +117,6 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GeNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GtNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.LeNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.LtNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -137,12 +132,14 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1008,56 +1005,50 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-static-method")
-    public abstract static class DequeCompareNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class DequeCompareHelperNode extends Node {
 
-        @Child PyObjectRichCompareBool.EqNode eqNode;
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object self, Object other, ComparisonOp op, PyObjectRichCompareBool.ComparisonBaseNode cmpNode);
 
-        @Specialization(guards = "shortcutIdentityCheck(self, other)")
+        @Specialization(guards = {"self == other", "op.isEqualityOp()"})
         @SuppressWarnings("unused")
-        static boolean doSame(PDeque self, PDeque other) {
-            return true;
+        static boolean doSame(PDeque self, PDeque other, ComparisonOp op, PyObjectRichCompareBool.ComparisonBaseNode cmpNode) {
+            return op == ComparisonOp.EQ;
         }
 
-        @Specialization(guards = "!isPDeque(other)")
+        @Specialization(guards = {"self.getSize() != other.getSize()", "op.isEqualityOp()"})
         @SuppressWarnings("unused")
-        static Object doOther(PDeque self, Object other) {
+        static boolean doDifferentLengths(PDeque self, PDeque other, ComparisonOp op, PyObjectRichCompareBool.ComparisonBaseNode cmpNode) {
+            return op == ComparisonOp.NE;
+        }
+
+        @Specialization(guards = "!isPDeque(self) || !isPDeque(other)")
+        @SuppressWarnings("unused")
+        static Object doOther(Object self, Object other, ComparisonOp op, PyObjectRichCompareBool.ComparisonBaseNode cmpNode) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization
-        Object doGeneric(VirtualFrame frame, PDeque self, Object other,
-                        @Bind("this") Node inliningTarget,
+        @Specialization(guards = "isGenericCase(self, other, op)")
+        static Object doGeneric(VirtualFrame frame, Node inliningTarget, PDeque self, PDeque other, @SuppressWarnings("unused") ComparisonOp op, PyObjectRichCompareBool.ComparisonBaseNode cmpNode,
                         @Cached PyObjectGetIter getIterSelf,
                         @Cached PyObjectGetIter getIterOther,
-                        @Cached GetNextNode selfItNextNode,
-                        @Cached GetNextNode otherItNextNode,
+                        @Cached(inline = false) GetNextNode selfItNextNode,
+                        @Cached(inline = false) GetNextNode otherItNextNode,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached IsBuiltinObjectProfile profile) {
-            if (!isPDeque(other)) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-
-            if (shortcutIdentityCheck(self, other)) {
-                return true;
-            }
-
-            PDeque otherDeque = (PDeque) other;
-            if (!shortcutLengthCheck(self, otherDeque)) {
-                return false;
-            }
-
             Object ait = getIterSelf.execute(frame, inliningTarget, self);
-            Object bit = getIterOther.execute(frame, inliningTarget, otherDeque);
+            Object bit = getIterOther.execute(frame, inliningTarget, other);
             while (true) {
                 try {
                     Object selfItem = selfItNextNode.execute(frame, ait);
                     Object otherItem = otherItNextNode.execute(frame, bit);
-                    if (!compareEq(frame, selfItem, otherItem)) {
-                        return compare(frame, selfItem, otherItem);
+                    if (!eqNode.compare(frame, inliningTarget, selfItem, otherItem)) {
+                        return cmpNode.compare(frame, inliningTarget, selfItem, otherItem);
                     }
                 } catch (PException e) {
                     e.expect(inliningTarget, StopIteration, profile);
-                    return compare(frame, self.getSize(), otherDeque.getSize());
+                    return cmpNode.compare(frame, inliningTarget, self.getSize(), other.getSize());
                 }
             }
         }
@@ -1066,122 +1057,83 @@ public final class DequeBuiltins extends PythonBuiltins {
             return object instanceof PDeque;
         }
 
-        @SuppressWarnings("unused")
-        boolean shortcutIdentityCheck(Object self, Object other) {
-            return false;
-        }
-
-        @SuppressWarnings("unused")
-        boolean shortcutLengthCheck(PDeque self, PDeque other) {
-            return true;
-        }
-
-        final boolean compareEq(VirtualFrame frame, Object selfItem, Object otherItem) {
-            if (eqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(PyObjectRichCompareBool.EqNode.create());
-            }
-            return eqNode.compareCached(frame, selfItem, otherItem);
-        }
-
-        @SuppressWarnings("unused")
-        boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
-            throw CompilerDirectives.shouldNotReachHere();
+        static boolean isGenericCase(PDeque self, PDeque other, ComparisonOp op) {
+            return !op.isEqualityOp() || (self != other && self.getSize() == other.getSize());
         }
     }
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeEqNode extends DequeCompareNode {
-        @Specialization(guards = "!shortcutLengthCheck(self, other)", insertBefore = "doGeneric")
-        @SuppressWarnings("unused")
-        static boolean doDifferentLength(PDeque self, PDeque other) {
-            return false;
-        }
-
-        @Override
-        boolean shortcutIdentityCheck(Object self, Object other) {
-            return self == other;
-        }
-
-        @Override
-        boolean shortcutLengthCheck(PDeque self, PDeque other) {
-            return self.getSize() == other.getSize();
-        }
-
-        @Override
-        boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
-            return compareEq(frame, selfItem, otherItem);
+    public abstract static class DequeEqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DequeCompareHelperNode helperNode,
+                        @Cached PyObjectRichCompareBool.EqNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.EQ, cmpNode);
         }
     }
 
-    public abstract static class DequeRelCompareNode extends DequeCompareNode {
-
-        @Child private BinaryComparisonNode comparisonNode;
-        @Child private PyObjectIsTrueNode isTrueNode;
-
-        @Override
-        boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
-            if (comparisonNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                comparisonNode = insert(createCmp());
-            }
-            if (isTrueNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isTrueNode = insert(PyObjectIsTrueNode.create());
-            }
-            return isTrueNode.executeCached(frame, comparisonNode.executeObject(frame, selfItem, otherItem));
-        }
-
-        BinaryComparisonNode createCmp() {
-            throw CompilerDirectives.shouldNotReachHere();
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class DequeNeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DequeCompareHelperNode helperNode,
+                        @Cached PyObjectRichCompareBool.NeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.NE, cmpNode);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeLeNode extends DequeRelCompareNode {
-        @Override
-        boolean shortcutIdentityCheck(Object self, Object other) {
-            return self == other;
-        }
-
-        @Override
-        BinaryComparisonNode createCmp() {
-            return LeNode.create();
+    public abstract static class DequeLeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DequeCompareHelperNode helperNode,
+                        @Cached PyObjectRichCompareBool.LeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.LE, cmpNode);
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeLtNode extends DequeRelCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return LtNode.create();
+    public abstract static class DequeLtNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DequeCompareHelperNode helperNode,
+                        @Cached PyObjectRichCompareBool.LtNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.LT, cmpNode);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeGeNode extends DequeRelCompareNode {
-        @Override
-        boolean shortcutIdentityCheck(Object self, Object other) {
-            return self == other;
+    public abstract static class DequeGeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DequeCompareHelperNode helperNode,
+                        @Cached PyObjectRichCompareBool.GeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.GE, cmpNode);
         }
 
-        @Override
-        BinaryComparisonNode createCmp() {
-            return GeNode.create();
-        }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeGtNode extends DequeRelCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return GtNode.create();
+    public abstract static class DequeGtNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DequeCompareHelperNode helperNode,
+                        @Cached PyObjectRichCompareBool.GtNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.GT, cmpNode);
         }
+
     }
 
     @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)

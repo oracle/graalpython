@@ -66,4 +66,8 @@ public enum ComparisonOp {
     public boolean cmpResultToBool(int cmpResult) {
         return fromCompareResult.test(cmpResult);
     }
+
+    public boolean isEqualityOp() {
+        return this == EQ || this == NE;
+    }
 }
