@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYPE_B;
@@ -903,7 +904,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     int year = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
                     int month = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 1), raiseNode);
                     int day = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 2), raiseNode);
-                    return createLocalDate(year, month, day);
+                    try {
+                        return createLocalDate(year, month, day);
+                    } catch (Exception e) {
+                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                    }
                 } else {
                     throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
@@ -973,7 +978,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     int min = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 1), raiseNode);
                     int sec = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 2), raiseNode);
                     int micro = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 3), raiseNode);
-                    return createLocalTime(hour, min, sec, micro);
+                    try {
+                        return createLocalTime(hour, min, sec, micro);
+                    } catch (Exception e) {
+                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                    }
                 } else {
                     throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
@@ -1032,12 +1041,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
                 try {
-                    if (value instanceof TruffleString tsValue) {
-                        String tmZone = toJavaStringNode.execute(tsValue);
-                        return createZoneId(tmZone);
-                    } else {
-                        int utcDeltaInSeconds = castToIntNode.execute(inliningTarget, value);
-                        return createZoneId(utcDeltaInSeconds);
+                    try {
+                        if (value instanceof TruffleString tsValue) {
+                            String tmZone = toJavaStringNode.execute(tsValue);
+                            return createZoneId(tmZone);
+                        } else {
+                            int utcDeltaInSeconds = castToIntNode.execute(inliningTarget, value);
+                            return createZoneId(utcDeltaInSeconds);
+                        }
+                    } catch (Exception e) {
+                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
                     }
                 } catch (CannotCastException cce) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "str or int", value);
@@ -1125,7 +1138,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     SequenceStorage storage = tuple.getSequenceStorage();
                     long sec = castToLongNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
                     long nano = castToLongNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 1), raiseNode);
-                    return createDuration(sec, nano);
+                    try {
+                        return createDuration(sec, nano);
+                    } catch (Exception e) {
+                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                    }
                 } else {
                     throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
