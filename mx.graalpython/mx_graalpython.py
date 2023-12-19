@@ -1768,6 +1768,7 @@ def graalpy_ext(llvm_mode, **kwargs):
 
 def dev_tag(arg=None, **kwargs):
     if not get_boolean_env('GRAALPYTHONDEVMODE', True) or 'dev' not in SUITE.release_version():
+        mx.logv("GraalPy dev_tag: <empty because not in dev mode>")
         return ''
 
     rev_list = [
@@ -1782,7 +1783,10 @@ def dev_tag(arg=None, **kwargs):
                                            '--format=short',
                                            '--'] + rev_list, abortOnError=True)
 
-    return 'dev' + rev.split()[1][:10]
+    mx.logvv("GraalPy dev_tag: got output: \n" + repr(rev))
+    res = 'dev' + rev.split()[1][:10]
+    mx.logv("GraalPy dev_tag: " + res)
+    return res
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
