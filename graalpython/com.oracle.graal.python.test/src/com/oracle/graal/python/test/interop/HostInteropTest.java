@@ -454,8 +454,7 @@ public class HostInteropTest extends PythonTests {
 
                         class MyType(object):
                             # timezone
-                            tm_zone = "UTC"
-                            tm_gmtoff = 3600
+                            tz = "UTC"
                             # date
                             year = 2023
                             month = 12
@@ -468,11 +467,11 @@ public class HostInteropTest extends PythonTests {
 
                         polyglot.register_interop_behavior(MyType,
                             is_date=True,
-                            as_date=lambda t: t,
+                            as_date=lambda t: (t.year, t.month, t.day),
                             is_time=True,
-                            as_time=lambda t: t,
+                            as_time=lambda t: (t.hour, t.minute, t.second, t.microsecond),
                             is_time_zone=True,
-                            as_time_zone=lambda t: t,
+                            as_time_zone=lambda t: t.tz,
                         )
 
                         MyType()
@@ -482,7 +481,85 @@ public class HostInteropTest extends PythonTests {
         assertTrue(t.isTime());
         assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
         assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("UTC"), t.asTimeZone());
+
+        // test decorator api
+        t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            # timezone
+                            tz = "UTC"
+                            # date
+                            year = 2023
+                            month = 12
+                            day = 12
+                            # time
+                            hour = 3
+                            minute = 10
+                            second = 10
+                            microsecond = 10
+
+                        @polyglot.interop_behavior(MyType)
+                        class MyTypeInteropBehaviorSupplier:
+                            @staticmethod
+                            def is_date(t):
+                                return True
+
+                            @staticmethod
+                            def as_date(t):
+                                return t.year, t.month, t.day
+
+                            @staticmethod
+                            def is_time(t):
+                                return True
+
+                            @staticmethod
+                            def as_time(t):
+                                return t.hour, t.minute, t.second, t.microsecond
+
+                            @staticmethod
+                            def is_time_zone(t):
+                                return True
+
+                            @staticmethod
+                            def as_time_zone(t):
+                                return t.tz
+
+                        MyType()
+                        """);
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
+        assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("UTC"), t.asTimeZone());
+
+        // test builtin types
+        t = context.eval("python", """
+                        from datetime import datetime, timezone, timedelta
+
+                        datetime(2023, 12, 12, 3, 10, 10, 10, timezone(timedelta(hours=1), 'utc'))
+                        """);
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(3, 10, 10, 10 * 1000), t.asTime());
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2023, 12, 12), t.asDate());
+        assertTrue(t.isTimeZone());
         assertEquals(ZoneId.of("UTC+1"), t.asTimeZone());
+
+        t = context.eval("python", """
+                        import time
+
+                        # time.struct_time(tm_year=2022, tm_mon=12, tm_mday=28, tm_hour=8, tm_min=8, tm_sec=53, tm_wday=2, tm_yday=362, tm_isdst=0)
+                        time.gmtime(1672214933)
+                        """);
+        assertTrue(t.isTime());
+        assertEquals(LocalTime.of(8, 8, 53, 0), t.asTime());
+        assertTrue(t.isDate());
+        assertEquals(LocalDate.of(2022, 12, 28), t.asDate());
+        assertTrue(t.isTimeZone());
+        assertEquals(ZoneId.of("UTC"), t.asTimeZone());
     }
 
     @Test

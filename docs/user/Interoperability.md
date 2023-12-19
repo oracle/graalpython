@@ -269,10 +269,11 @@ An example in this sense are the `numpy` numeric types (e.g., `numpy.int32`) whi
 
 ### The API 
 
-| function                        | Description                                                                                                                                                               |
-|:--------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| function                        | Description                                                                                                                                                                   |
+|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective Truffle Interop messages. Not All interop messages are supported. |
 | get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended Truffle Interop messages for the given type.                                                      |
+| @interop_behavior               | Class decorator, takes the receiver **type** as only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).            |
 
 #### Supported messages 
 
@@ -281,65 +282,67 @@ The naming convention for the `register_interop_behavior` keyword arguments foll
 becomes `fits_in_long` and so on. Each message can be extended with a **pure python function** (default keyword arguments, free vars and cell vars are not allowed) or a **boolean constant**. 
 Following is the list of currently supported interop messages:
 
-| Truffle Message          | Extension argument name     | Expected return type                                                                      |
-|:-------------------------|:----------------------------|-------------------------------------------------------------------------------------------|
-| isBoolean                | is_boolean                  | bool                                                                                      |
-| isDate                   | is_date                     | bool                                                                                      |
-| isDuration               | is_duration                 | bool                                                                                      |
-| isIterator               | is_iterator                 | bool                                                                                      |
-| isNumber                 | is_number                   | bool                                                                                      |
-| isString                 | is_string                   | bool                                                                                      |
-| isTime                   | is_time                     | bool                                                                                      |
-| isTimeZone               | is_time_zone                | bool                                                                                      |
-| isExecutable             | is_executable               | bool                                                                                      |
-| fitsInBigInteger         | fits_in_big_integer         | bool                                                                                      |
-| fitsInByte               | fits_in_byte                | bool                                                                                      |
-| fitsInDouble             | fits_in_double              | bool                                                                                      |
-| fitsInFloat              | fits_in_float               | bool                                                                                      |
-| fitsInInt                | fits_in_int                 | bool                                                                                      |
-| fitsInLong               | fits_in_long                | bool                                                                                      |
-| fitsInShort              | fits_in_short               | bool                                                                                      |
-| asBigInteger             | as_big_integer              | int                                                                                       |
-| asBoolean                | as_boolean                  | bool                                                                                      |
-| asByte                   | as_byte                     | int                                                                                       |
-| asDate                   | as_date                     | a python object with the following attributes: `year`, `month`, `day`                     |
-| asDouble                 | as_double                   | float                                                                                     |
-| asDuration               | as_duration                 | a python object with the following attributes: `seconds`, `nano_adjustment`               |
-| asFloat                  | as_float                    | float                                                                                     |
-| asInt                    | as_int                      | int                                                                                       |
-| asLong                   | as_long                     | int                                                                                       |
-| asShort                  | as_short                    | int                                                                                       |
-| asString                 | as_string                   | str                                                                                       |
-| asTime                   | as_time                     | a python object with the following attributes:  `hour`, `minute`, `second`, `microsecond` |
-| asTimeZone               | as_time_zone                | a python object with the following attributes:  `tm_zone`, `tm_gmtoff`                    |
-| execute                  | execute                     | object                                                                                    |
-| readArrayElement         | read_array_element          | object                                                                                    |
-| getArraySize             | get_array_size              | int                                                                                       |
-| hasArrayElements         | has_array_elements          | bool                                                                                      |
-| isArrayElementReadable   | is_array_element_readable   | bool                                                                                      |
-| isArrayElementModifiable | is_array_element_modifiable | bool                                                                                      |
-| isArrayElementInsertable | is_array_element_insertable | bool                                                                                      |
-| isArrayElementRemovable  | is_array_element_removable  | bool                                                                                      |
-| removeArrayElement       | remove_array_element        | NoneType                                                                                  |
-| writeArrayElement        | write_array_element         | NoneType                                                                                  |
-| hasIterator              | has_iterator                | bool                                                                                      |
-| hasIteratorNextElement   | has_iterator_next_element   | bool                                                                                      |
-| getIterator              | get_iterator                | a python iterator                                                                         |
-| getIteratorNextElement   | get_iterator_next_element   | object                                                                                    |
-| hasHashEntries           | has_hash_entries            | bool                                                                                      |
-| getHashEntriesIterator   | get_hash_entries_iterator   | a python iterator                                                                         |
-| getHashKeysIterator      | get_hash_keys_iterator      | a python iterator                                                                         |
-| getHashSize              | get_hash_size               | int                                                                                       |
-| getHashValuesIterator    | get_hash_values_iterator    | a python iterator                                                                         |
-| isHashEntryReadable      | is_hash_entry_readable      | bool                                                                                      |
-| isHashEntryModifiable    | is_hash_entry_modifiable    | bool                                                                                      |
-| isHashEntryInsertable    | is_hash_entry_insertable    | bool                                                                                      |
-| isHashEntryRemovable     | is_hash_entry_removable     | bool                                                                                      |
-| readHashValue            | read_hash_value             | object                                                                                    |
-| writeHashEntry           | write_hash_entry            | NoneType                                                                                  |
-| removeHashEntry          | remove_hash_entry           | NoneType                                                                                  | 
+| Truffle Message          | Extension argument name     | Expected return type                                                                                  |
+|:-------------------------|:----------------------------|-------------------------------------------------------------------------------------------------------|
+| isBoolean                | is_boolean                  | bool                                                                                                  |
+| isDate                   | is_date                     | bool                                                                                                  |
+| isDuration               | is_duration                 | bool                                                                                                  |
+| isIterator               | is_iterator                 | bool                                                                                                  |
+| isNumber                 | is_number                   | bool                                                                                                  |
+| isString                 | is_string                   | bool                                                                                                  |
+| isTime                   | is_time                     | bool                                                                                                  |
+| isTimeZone               | is_time_zone                | bool                                                                                                  |
+| isExecutable             | is_executable               | bool                                                                                                  |
+| fitsInBigInteger         | fits_in_big_integer         | bool                                                                                                  |
+| fitsInByte               | fits_in_byte                | bool                                                                                                  |
+| fitsInDouble             | fits_in_double              | bool                                                                                                  |
+| fitsInFloat              | fits_in_float               | bool                                                                                                  |
+| fitsInInt                | fits_in_int                 | bool                                                                                                  |
+| fitsInLong               | fits_in_long                | bool                                                                                                  |
+| fitsInShort              | fits_in_short               | bool                                                                                                  |
+| asBigInteger             | as_big_integer              | int                                                                                                   |
+| asBoolean                | as_boolean                  | bool                                                                                                  |
+| asByte                   | as_byte                     | int                                                                                                   |
+| asDate                   | as_date                     | 3-tuple with the following elements: (`year`: int, `month`: int, `day`: int)                          |
+| asDouble                 | as_double                   | float                                                                                                 |
+| asDuration               | as_duration                 | 2-tuple with the following elements: (`seconds`: long, `nano_adjustment`: long)                       |
+| asFloat                  | as_float                    | float                                                                                                 |
+| asInt                    | as_int                      | int                                                                                                   |
+| asLong                   | as_long                     | int                                                                                                   |
+| asShort                  | as_short                    | int                                                                                                   |
+| asString                 | as_string                   | str                                                                                                   |
+| asTime                   | as_time                     | 4-tuple with the following elements:  (`hour`: int, `minute`: int, `second`: int, `microsecond`: int) |
+| asTimeZone               | as_time_zone                | a string (the timezone) or int (utc delta in seconds)                                                 |
+| execute                  | execute                     | object                                                                                                |
+| readArrayElement         | read_array_element          | object                                                                                                |
+| getArraySize             | get_array_size              | int                                                                                                   |
+| hasArrayElements         | has_array_elements          | bool                                                                                                  |
+| isArrayElementReadable   | is_array_element_readable   | bool                                                                                                  |
+| isArrayElementModifiable | is_array_element_modifiable | bool                                                                                                  |
+| isArrayElementInsertable | is_array_element_insertable | bool                                                                                                  |
+| isArrayElementRemovable  | is_array_element_removable  | bool                                                                                                  |
+| removeArrayElement       | remove_array_element        | NoneType                                                                                              |
+| writeArrayElement        | write_array_element         | NoneType                                                                                              |
+| hasIterator              | has_iterator                | bool                                                                                                  |
+| hasIteratorNextElement   | has_iterator_next_element   | bool                                                                                                  |
+| getIterator              | get_iterator                | a python iterator                                                                                     |
+| getIteratorNextElement   | get_iterator_next_element   | object                                                                                                |
+| hasHashEntries           | has_hash_entries            | bool                                                                                                  |
+| getHashEntriesIterator   | get_hash_entries_iterator   | a python iterator                                                                                     |
+| getHashKeysIterator      | get_hash_keys_iterator      | a python iterator                                                                                     |
+| getHashSize              | get_hash_size               | int                                                                                                   |
+| getHashValuesIterator    | get_hash_values_iterator    | a python iterator                                                                                     |
+| isHashEntryReadable      | is_hash_entry_readable      | bool                                                                                                  |
+| isHashEntryModifiable    | is_hash_entry_modifiable    | bool                                                                                                  |
+| isHashEntryInsertable    | is_hash_entry_insertable    | bool                                                                                                  |
+| isHashEntryRemovable     | is_hash_entry_removable     | bool                                                                                                  |
+| readHashValue            | read_hash_value             | object                                                                                                |
+| writeHashEntry           | write_hash_entry            | NoneType                                                                                              |
+| removeHashEntry          | remove_hash_entry           | NoneType                                                                                              | 
 
 ### Usage Example
+
+#### the simple `register_interop_behavior` API
 
 ```python
 import polyglot
@@ -351,4 +354,26 @@ polyglot.register_interop_behavior(MyType,
     is_string=True,
     as_string=lambda t: f"MyType({t.data})",
 )
+```
+
+#### the decorator `@interop_behavior` API
+
+This API is sugar for the simpler `register_interop_behavior` API and requires that interop message extension is achieved via **static** methods of the decorated class.   
+The names of the static methods are identical to the keyword names expected by `register_interop_behavior`. 
+
+```python
+import polyglot
+
+class MyType(object):
+    data = 10
+
+@polyglot.interop_behavior(MyType)
+class MyTypeInteropBehaviorSupplier:
+    @staticmethod
+    def is_string(t): 
+        return True
+
+    @staticmethod
+    def as_string(t):
+        return f"MyType({t.data})"
 ```

@@ -1011,6 +1011,9 @@ public abstract class Python3Core {
                 }
             }
 
+            // import special interop predefined behavior
+            loadFile(toTruffleStringUncached("_interop_behavior"), getContext().getCoreHomeOrFail());
+
             initialized = true;
         }
     }

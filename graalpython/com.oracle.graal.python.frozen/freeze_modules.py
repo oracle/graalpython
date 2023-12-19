@@ -74,6 +74,10 @@ FROZEN = [
             "os",
             "site",
             "stat",
+            "datetime",
+            "contextlib",
+            "warnings",
+            "inspect",
         ],
     ),
     (
@@ -96,6 +100,7 @@ BOOTSTRAP = {
     "zipimport",
 }
 
+
 # add graalpython modules and core files
 def add_graalpython_core():
     lib_graalpython = os.path.join(os.path.dirname(__file__), "..", "lib-graalpython")
@@ -108,6 +113,7 @@ def add_graalpython_core():
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
+        "_interop_behavior",
         "_sre",
         "_struct",
         "_sysconfig",

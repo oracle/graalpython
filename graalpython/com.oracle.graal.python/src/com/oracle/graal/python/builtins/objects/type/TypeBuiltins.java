@@ -1429,16 +1429,17 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1, doc = "__dir__ for type objects\n\n\tThis includes all attributes of klass and all of the base\n\tclasses recursively.")
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonUnaryBuiltinNode {
+        public abstract PSet execute(VirtualFrame frame, Object klass);
+
         @Specialization
-        static Object dir(VirtualFrame frame, Object klass,
+        static PSet dir(VirtualFrame frame, Object klass,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
                         @Cached ToArrayNode toArrayNode,
                         @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
                         @Cached PythonObjectFactory factory) {
-            PSet names = dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, factory);
-            return names;
+            return dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, factory);
         }
 
         private static PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,
@@ -1465,6 +1466,11 @@ public final class TypeBuiltins extends PythonBuiltins {
         @NeverDefault
         protected GetFixedAttributeNode createGetAttrNode() {
             return GetFixedAttributeNode.create(T___BASES__);
+        }
+
+        @NeverDefault
+        public static DirNode create() {
+            return TypeBuiltinsFactory.DirNodeFactory.create();
         }
     }
 

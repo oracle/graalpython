@@ -41,12 +41,17 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_DOES_NOT_TAKE_VARARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_EXACTLY_D_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_VARARGS;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_BIG_INTEGER;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_BYTE;
 import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_DOUBLE;
@@ -61,9 +66,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -75,19 +82,30 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -96,15 +114,20 @@ import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -642,6 +665,112 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class InteropBehaviorDecoratorNode extends PythonUnaryBuiltinNode {
+
+        static class RegisterWrapper extends PRootNode {
+            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_RECEIVER};
+            private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("supplierClass"), KEYWORDS_HIDDEN_RECEIVER);
+            private static final TruffleString M_POLYGLOT = tsLiteral("polyglot");
+            @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
+            @Child private PRaiseNode.Lazy raiseNode = PRaiseNode.Lazy.getUncached();
+            @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
+            @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
+            @Child private CastToTruffleStringNode toTruffleStringNode = CastToTruffleStringNode.create();
+            @Child private CallVarargsMethodNode callVarargsMethodNode = CallVarargsMethodNode.create();
+            @Child private HashingStorageNodes.HashingStorageIteratorNext hashingStorageIteratorNext = HashingStorageNodes.HashingStorageIteratorNext.create();
+            @Child private HashingStorageNodes.HashingStorageGetIterator hashingStorageGetIterator = HashingStorageNodes.HashingStorageGetIterator.create();
+            @Child private HashingStorageNodes.HashingStorageIteratorKey hashingStorageIteratorKey = HashingStorageNodes.HashingStorageIteratorKey.create();
+
+            protected RegisterWrapper(TruffleLanguage<?> language) {
+                super(language);
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                calleeContext.enter(frame);
+                Object[] frameArguments = frame.getArguments();
+                Object supplierClass = PArguments.getArgument(frameArguments, 0);
+                // note: the hidden kwarg is stored at the end of the positional args
+                Object receiver = PArguments.getArgument(frameArguments, 1);
+                try {
+                    if (supplierClass instanceof PythonClass klass) {
+                        // extract methods and do the registration on the receiver type
+                        PSet names = dirNode.execute(frame, klass);
+                        PKeyword[] kwargs = getFunctions(names.getDictStorage(), supplierClass);
+                        PythonContext context = PythonContext.get(this);
+                        PythonModule polyglotModule = context.lookupBuiltinModule(M_POLYGLOT);
+                        Object register = getAttr.execute(this, polyglotModule, T_REGISTER_INTEROP_BEHAVIOR);
+                        callVarargsMethodNode.execute(frame, register, new Object[]{receiver}, kwargs);
+                        return klass;
+                    }
+                    throw raiseNode.get(this).raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", supplierClass);
+                } finally {
+                    calleeContext.exit(frame, this);
+                }
+            }
+
+            @TruffleBoundary
+            private PKeyword[] getFunctions(HashingStorage namesStorage, Object supplierClass) {
+                ArrayList<PKeyword> functions = new ArrayList<>();
+                HashingStorageNodes.HashingStorageIterator iterator = hashingStorageGetIterator.execute(this, namesStorage);
+                while (hashingStorageIteratorNext.execute(this, namesStorage, iterator)) {
+                    Object name = hashingStorageIteratorKey.execute(this, namesStorage, iterator);
+                    Object value = getAttr.execute(this, supplierClass, name);
+                    if (value instanceof PFunction function) {
+                        functions.add(new PKeyword(toTruffleStringNode.execute(this, name), function));
+                    }
+                }
+                return functions.toArray(PKeyword.EMPTY_KEYWORDS);
+            }
+
+            @Override
+            public Signature getSignature() {
+                return SIGNATURE;
+            }
+
+            @Override
+            public boolean isPythonInternal() {
+                return true;
+            }
+
+            @Override
+            public boolean isInternal() {
+                return true;
+            }
+
+            @Override
+            public boolean setsUpCalleeContext() {
+                return true;
+            }
+        }
+
+        static final TruffleString WRAPPER = tsLiteral("wrapper");
+        public static final TruffleString KW_RECEIVER = tsLiteral("$receiver");
+
+        @Specialization
+        @TruffleBoundary
+        public Object decorate(PythonAbstractObject receiver,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory) {
+            if (isTypeNode.execute(inliningTarget, receiver)) {
+                RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapper::new, RegisterWrapper.class);
+                return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver), 0, callTarget);
+            }
+            throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
+        }
+
+        public static PKeyword[] createKwDefaults(Object receiver) {
+            assert InteropLibrary.getUncached().isExecutable(receiver);
+            // the receiver is passed in a hidden keyword argument
+            // in a real decorator this would be passed as a cell
+            return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
+        }
+    }
+
     @Builtin(name = J_REGISTER_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"is_boolean", "is_date",
                     "is_duration", "is_iterator", "is_number", "is_string", "is_time", "is_time_zone", "is_executable", "fits_in_big_integer", "fits_in_byte", "fits_in_double", "fits_in_float",
                     "fits_in_int", "fits_in_long", "fits_in_short", "as_big_integer", "as_boolean", "as_byte", "as_date", "as_double", "as_duration", "as_float", "as_int", "as_long", "as_short",
@@ -680,13 +809,21 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 interopBehavior.defineBehavior(method, boolValue);
             } else if (value instanceof PFunction function) {
                 interopBehavior.defineBehavior(method, function);
+                Signature signature = function.getCode().getSignature();
                 // validate the function
                 if (function.getKwDefaults().length != 0) {
-                    throw raiseNode.raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, "function");
+                    throw raiseNode.raise(ValueError, S_TAKES_NO_KEYWORD_ARGS, method.name);
                 } else if (function.getCode().getCellVars().length != 0) {
-                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, "function", "cell vars");
+                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, method.name, "cell vars");
                 } else if (function.getCode().getFreeVars().length != 0) {
-                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, "function", "free vars");
+                    throw raiseNode.raise(ValueError, S_CANNOT_HAVE_S, method.name, "free vars");
+                } else {
+                    // check signature
+                    if (method.takesVarArgs != signature.takesVarArgs()) {
+                        throw raiseNode.raise(ValueError, method.takesVarArgs ? S_TAKES_VARARGS : S_DOES_NOT_TAKE_VARARGS, method.name);
+                    } else if (signature.getMaxNumOfPositionalArgs() != method.getNumPositionalArguments()) {
+                        throw raiseNode.raise(ValueError, S_TAKES_EXACTLY_D_ARGS, method.name, method.getNumPositionalArguments(), signature.getMaxNumOfPositionalArgs());
+                    }
                 }
             }
         }

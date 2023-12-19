@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaShortNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -177,11 +178,17 @@ public abstract class GetInteropBehaviorValueNode extends PNodeWithContext {
     @Specialization(guards = {"!behavior.isConstant(method)", "method.checkArity(extraArguments)"})
     static Object getValue(Node inliningTarget, InteropBehavior behavior, InteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments,
                     @Cached SimpleInvokeNodeDispatch invokeNode,
-                    @Cached ConvertJavaStringArguments convertArgs) {
+                    @Cached ConvertJavaStringArguments convertArgs,
+                    @Cached GilNode gil) {
         assert behavior.isDefined(method) : "interop behavior method is not defined!";
         CallTarget callTarget = behavior.getCallTarget(method);
         Object[] pArguments = behavior.createArguments(method, receiver, convertArgs.execute(inliningTarget, extraArguments));
-        return invokeNode.execute(inliningTarget, callTarget, pArguments);
+        boolean mustRelease = gil.acquire();
+        try {
+            return invokeNode.execute(inliningTarget, callTarget, pArguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Specialization(guards = {"!behavior.isConstant(method)", "!method.checkArity(extraArguments)"})
