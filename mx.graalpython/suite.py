@@ -632,6 +632,19 @@ suite = {
             ],
         },
 
+        "graalpy-versions": {
+            "subDir": "graalpython",
+            "class": "CMakeNinjaProject",
+            "max_jobs": "1",
+            "ninja_targets": ["all"],
+            "cmakeConfig": {
+                "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><dev_tag:none>",
+            },
+            "results": [
+                "graalpy_versions"
+            ],
+        },
+
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
@@ -885,13 +898,13 @@ suite = {
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
             "layout": {
-                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"]
+                "./": "dependency:graalpy-versions/graalpy_versions",
             },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
             "layout": {
-                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"],
+                "./": "dependency:graalpy-versions/graalpy_versions",
             },
         },
 
