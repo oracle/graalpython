@@ -1,3 +1,29 @@
+diff --git a/joblib/_parallel_backends.py b/joblib/_parallel_backends.py
+index 1852b0d..7b99112 100644
+--- a/joblib/_parallel_backends.py
++++ b/joblib/_parallel_backends.py
+@@ -511,6 +511,10 @@ class MultiprocessingBackend(PoolManagerMixin, AutoBatchingMixin,
+                     stacklevel=3)
+             return 1
+ 
++        # GraalPy change:
++        if n_jobs < 0:
++            return max(__graalpython__.get_max_process_count() + 1 + n_jobs, 1)
++
+         return super(MultiprocessingBackend, self).effective_n_jobs(n_jobs)
+ 
+     def configure(self, n_jobs=1, parallel=None, prefer=None, require=None,
+@@ -592,7 +596,9 @@ class LokyBackend(AutoBatchingMixin, ParallelBackendBase):
+                     stacklevel=3)
+             return 1
+         elif n_jobs < 0:
+-            n_jobs = max(cpu_count() + 1 + n_jobs, 1)
++            # GraalPy change:
++            # n_jobs = max(cpu_count() + 1 + n_jobs, 1)
++            n_jobs = max(__graalpython__.get_max_process_count() + 1 + n_jobs, 1)
+         return n_jobs
+ 
+     def apply_async(self, func, callback=None):
 diff --git a/joblib/externals/cloudpickle/cloudpickle.py b/joblib/externals/cloudpickle/cloudpickle.py
 index 317be69..0c23e88 100644
 --- a/joblib/externals/cloudpickle/cloudpickle.py
