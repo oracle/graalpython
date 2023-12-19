@@ -765,6 +765,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         public static PKeyword[] createKwDefaults(Object receiver) {
             assert InteropLibrary.getUncached().isExecutable(receiver);
+            // the receiver is passed in a hidden keyword argument
+            // in a real decorator this would be passed as a cell
             return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
         }
     }
