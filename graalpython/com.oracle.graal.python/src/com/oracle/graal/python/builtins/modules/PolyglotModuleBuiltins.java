@@ -668,22 +668,24 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class InteropBehaviorDecoratorNode extends PythonUnaryBuiltinNode {
+        static final TruffleString WRAPPER = tsLiteral("wrapper");
+        public static final TruffleString KW_RECEIVER = tsLiteral("$receiver");
 
-        static class RegisterWrapper extends PRootNode {
+        static class RegisterWrapperRootNode extends PRootNode {
             static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_RECEIVER};
             private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("supplierClass"), KEYWORDS_HIDDEN_RECEIVER);
-            private static final TruffleString M_POLYGLOT = tsLiteral("polyglot");
+            private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
             @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
             @Child private PRaiseNode.Lazy raiseNode = PRaiseNode.Lazy.getUncached();
             @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
             @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
-            @Child private CastToTruffleStringNode toTruffleStringNode = CastToTruffleStringNode.create();
-            @Child private CallVarargsMethodNode callVarargsMethodNode = CallVarargsMethodNode.create();
-            @Child private HashingStorageNodes.HashingStorageIteratorNext hashingStorageIteratorNext = HashingStorageNodes.HashingStorageIteratorNext.create();
-            @Child private HashingStorageNodes.HashingStorageGetIterator hashingStorageGetIterator = HashingStorageNodes.HashingStorageGetIterator.create();
-            @Child private HashingStorageNodes.HashingStorageIteratorKey hashingStorageIteratorKey = HashingStorageNodes.HashingStorageIteratorKey.create();
+            @Child private CastToTruffleStringNode toTruffleString = CastToTruffleStringNode.create();
+            @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
+            @Child private HashingStorageNodes.HashingStorageGetIterator getIterator = HashingStorageNodes.HashingStorageGetIterator.create();
+            @Child private HashingStorageNodes.HashingStorageIteratorNext iteratorNext = HashingStorageNodes.HashingStorageIteratorNext.create();
+            @Child private HashingStorageNodes.HashingStorageIteratorKey iteratorKey = HashingStorageNodes.HashingStorageIteratorKey.create();
 
-            protected RegisterWrapper(TruffleLanguage<?> language) {
+            protected RegisterWrapperRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
 
@@ -692,17 +694,16 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 calleeContext.enter(frame);
                 Object[] frameArguments = frame.getArguments();
                 Object supplierClass = PArguments.getArgument(frameArguments, 0);
-                // note: the hidden kwarg is stored at the end of the positional args
+                // note: the hidden kwargs are stored at the end of the positional args
                 Object receiver = PArguments.getArgument(frameArguments, 1);
                 try {
                     if (supplierClass instanceof PythonClass klass) {
                         // extract methods and do the registration on the receiver type
                         PSet names = dirNode.execute(frame, klass);
-                        PKeyword[] kwargs = getFunctions(names.getDictStorage(), supplierClass);
-                        PythonContext context = PythonContext.get(this);
-                        PythonModule polyglotModule = context.lookupBuiltinModule(M_POLYGLOT);
+                        PKeyword[] kwargs = getFunctionsAsKwArgs(names.getDictStorage(), supplierClass);
+                        PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
                         Object register = getAttr.execute(this, polyglotModule, T_REGISTER_INTEROP_BEHAVIOR);
-                        callVarargsMethodNode.execute(frame, register, new Object[]{receiver}, kwargs);
+                        callVarargsMethod.execute(frame, register, new Object[]{receiver}, kwargs);
                         return klass;
                     }
                     throw raiseNode.get(this).raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", supplierClass);
@@ -712,14 +713,14 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
 
             @TruffleBoundary
-            private PKeyword[] getFunctions(HashingStorage namesStorage, Object supplierClass) {
+            private PKeyword[] getFunctionsAsKwArgs(HashingStorage namesStorage, Object supplierClass) {
                 ArrayList<PKeyword> functions = new ArrayList<>();
-                HashingStorageNodes.HashingStorageIterator iterator = hashingStorageGetIterator.execute(this, namesStorage);
-                while (hashingStorageIteratorNext.execute(this, namesStorage, iterator)) {
-                    Object name = hashingStorageIteratorKey.execute(this, namesStorage, iterator);
+                HashingStorageNodes.HashingStorageIterator iterator = getIterator.execute(this, namesStorage);
+                while (iteratorNext.execute(this, namesStorage, iterator)) {
+                    Object name = iteratorKey.execute(this, namesStorage, iterator);
                     Object value = getAttr.execute(this, supplierClass, name);
                     if (value instanceof PFunction function) {
-                        functions.add(new PKeyword(toTruffleStringNode.execute(this, name), function));
+                        functions.add(new PKeyword(toTruffleString.execute(this, name), function));
                     }
                 }
                 return functions.toArray(PKeyword.EMPTY_KEYWORDS);
@@ -746,9 +747,6 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        static final TruffleString WRAPPER = tsLiteral("wrapper");
-        public static final TruffleString KW_RECEIVER = tsLiteral("$receiver");
-
         @Specialization
         @TruffleBoundary
         public Object decorate(PythonAbstractObject receiver,
@@ -757,16 +755,15 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
-                RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapper::new, RegisterWrapper.class);
+                RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapperRootNode::new, RegisterWrapperRootNode.class);
                 return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver), 0, callTarget);
             }
             throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
         }
 
         public static PKeyword[] createKwDefaults(Object receiver) {
-            assert InteropLibrary.getUncached().isExecutable(receiver);
             // the receiver is passed in a hidden keyword argument
-            // in a real decorator this would be passed as a cell
+            // in a pure python decorator this would be passed as a cell
             return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
         }
     }
