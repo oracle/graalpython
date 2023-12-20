@@ -630,7 +630,7 @@ index 2c19e15..9321f33 100644
 +            result_maxrss += r_maxrss.result
 +            has_maxrss = True
 +        else:
-+            result_maxrss.append(math.nan)
++            result_maxrss.append(util.nan)
 +        ignored_maxrss.append(None)
  
 -        if res.stderr:
