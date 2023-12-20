@@ -365,6 +365,16 @@ PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
 		COMPUTE_FLAGS(mp_ass_subscript, MP_ASS_SUBSCRIPT)
 #undef COMPUTE_FLAGS
     }
+
+    PyAsyncMethods *async = cls->tp_as_async;
+    if (async != NULL) {
+#define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((async->NAME != NULL) * BIT_IDX);
+		COMPUTE_FLAGS(am_await, AM_AWAIT)
+		COMPUTE_FLAGS(am_aiter, AM_AITER)
+		COMPUTE_FLAGS(am_anext, AM_ANEXT)
+		COMPUTE_FLAGS(am_send, AM_SEND)
+#undef COMPUTE_FLAGS
+    }
     return flags;
 }
 

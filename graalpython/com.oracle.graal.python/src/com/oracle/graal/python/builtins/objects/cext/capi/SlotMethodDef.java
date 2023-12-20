@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_aiter;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_anext;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMappingMethods__mp_ass_subscript;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMappingMethods__mp_length;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMappingMethods__mp_subscript;
@@ -99,7 +102,10 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
@@ -180,6 +186,11 @@ public enum SlotMethodDef {
     MP_LENGTH(PyMappingMethods__mp_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.MP_LENGTH),
     MP_SUBSCRIPT(PyMappingMethods__mp_subscript, T___GETITEM__, BinaryFuncWrapper::new, MethodsFlags.MP_SUBSCRIPT),
     MP_ASS_SUBSCRIPT(PyMappingMethods__mp_ass_subscript, T___SETITEM__, SetAttrWrapper::new, MethodsFlags.MP_ASS_SUBSCRIPT),
+
+    AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncWrapper::new, MethodsFlags.AM_AWAIT),
+    AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncWrapper::new, MethodsFlags.AM_AITER),
+    AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, UnaryFuncWrapper::new, MethodsFlags.AM_ANEXT),
+    /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, TernaryFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
     SQ_LENGTH(PySequenceMethods__sq_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.SQ_LENGTH),
     SQ_ITEM(PySequenceMethods__sq_item, T___GETITEM__, SsizeargfuncWrapper::new, MethodsFlags.SQ_ITEM),
