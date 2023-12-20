@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 
 import java.util.Objects;
@@ -302,8 +303,19 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     @SuppressWarnings("truffle-unused")
-    public boolean hasArrayElements(@Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                                    @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+    public boolean hasArrayElements(// GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
         return ((int) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(this))) != 0;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public long getArraySize(// GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+        return (long) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(this));
     }
 }

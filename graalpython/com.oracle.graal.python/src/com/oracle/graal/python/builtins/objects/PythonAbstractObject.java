@@ -386,31 +386,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_array_size;
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
-                // todo: cbasca - once we remove the default behavior, we should probably use a cast
-                // to long node
-                return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
+                return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    throw UnsupportedMessageException.create();
-                }
-                long len = sizeNode.execute(null, inliningTarget, this);
-                if (len >= 0) {
-                    return len;
-                }
-                CompilerDirectives.transferToInterpreter();
                 throw UnsupportedMessageException.create();
             }
         } finally {
