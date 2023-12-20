@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 
 import java.util.Objects;
@@ -47,6 +48,7 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -296,5 +298,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         PMemoryView mv = createMemoryView.execute(inliningTarget, this, flags);
         mv.setShouldReleaseImmediately(true);
         return mv;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public boolean hasArrayElements(@Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                                    @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+        return ((int) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(this))) != 0;
     }
 }

@@ -186,5 +186,4 @@ public abstract class PSequence extends PythonBuiltinObject {
             gil.release(mustRelease);
         }
     }
-
 }
