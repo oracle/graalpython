@@ -251,7 +251,7 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number,
                         IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, hasSlot(clazz, SlotMethodDef.SQ_LENGTH) ? allocatePySequenceMethods(clazz, nullValue) : nullValue);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, (hasSlot(clazz, SlotMethodDef.SQ_LENGTH) || hasSlot(clazz, SlotMethodDef.SQ_ITEM)) ? allocatePySequenceMethods(clazz, nullValue) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocatePyMappingMethods(clazz) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
