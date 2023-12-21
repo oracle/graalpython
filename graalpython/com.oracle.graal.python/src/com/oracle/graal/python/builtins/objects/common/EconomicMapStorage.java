@@ -160,9 +160,13 @@ public class EconomicMapStorage extends HashingStorage {
         ObjectHashMap.PutNode.putUncachedWithJavaEq(this.map, key, keyHash, value);
     }
 
+    public void putUncachedWithJavaEq(TruffleString key, Object value) {
+        putUncachedWithJavaEq(key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
+    }
+
     public void putUncachedWithJavaEq(String key, Object value) {
         TruffleString ts = toTruffleStringUncached(key);
-        putUncachedWithJavaEq(ts, PyObjectHashNode.hash(ts, HashCodeNode.getUncached()), value);
+        putUncachedWithJavaEq(ts, value);
     }
 
     private static void putAllUncached(LinkedHashMap<String, Object> map, EconomicMapStorage result) {

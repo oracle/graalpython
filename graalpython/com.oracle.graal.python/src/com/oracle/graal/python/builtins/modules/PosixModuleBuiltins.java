@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -2778,10 +2777,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         public static final TruffleString T_SC_CLK_TCK = tsLiteral("SC_CLK_TCK");
         public static final int SC_CLK_TCK = 2;
-        public static final HashingStorage SYSCONF_NAMES = EconomicMapStorage.create();
+        public static final EconomicMapStorage SYSCONF_NAMES = EconomicMapStorage.create();
         static {
             // TODO populate from constants
-            HashingStorageNodes.HashingStorageSetItem.executeUncached(SYSCONF_NAMES, T_SC_CLK_TCK, SC_CLK_TCK);
+            SYSCONF_NAMES.putUncachedWithJavaEq(T_SC_CLK_TCK, SC_CLK_TCK);
         }
 
         @Specialization
