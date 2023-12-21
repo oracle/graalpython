@@ -36,6 +36,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -193,6 +194,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int GRAALVM_MINOR = 0;
     public static final String DEV_TAG;
 
+    /**
+     * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
+     * added the ordinal value of some base character (in this case {@code '!'}) to ensure that we
+     * have a printable character.
+     */
+    private static final int VERSION_BASE = '!';
+
     static {
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
@@ -211,25 +219,26 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
-            if (MAJOR != (ch = is.read() - ' ')) {
+            if (MAJOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
             }
-            if (MINOR != (ch = is.read() - ' ')) {
+            if (MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
             }
-            if (MICRO != (ch = is.read() - ' ')) {
+            if (MICRO != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
             }
-            if (GRAALVM_MAJOR != (ch = is.read() - ' ')) {
+            if (GRAALVM_MAJOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
             }
-            if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
+            if (GRAALVM_MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
+            is.read(); // skip GraalVM micro version
             // see mx.graalpython/mx_graalpython.py:dev_tag
-            byte[] rev = new byte[1 /* ' ' */ + 3 /* 'dev' */ + 10 /* revision */];
+            byte[] rev = new byte[3 /* 'dev' */ + 10 /* revision */];
             if (is.read(rev) == rev.length) {
-                DEV_TAG = new String(rev).strip();
+                DEV_TAG = new String(rev, StandardCharsets.US_ASCII).strip();
             } else {
                 DEV_TAG = "";
             }
