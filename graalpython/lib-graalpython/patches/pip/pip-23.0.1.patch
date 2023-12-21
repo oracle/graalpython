@@ -56,14 +56,14 @@ index b6f8d57..6c37e0b 100644
      def make_candidate_evaluator(
          self,
 diff --git a/pip/_internal/network/download.py b/pip/_internal/network/download.py
-index 79b82a5..1eddfa3 100644
+index 79b82a5..3ee418a 100644
 --- a/pip/_internal/network/download.py
 +++ b/pip/_internal/network/download.py
 @@ -6,6 +6,7 @@ import mimetypes
  import os
  from typing import Iterable, Optional, Tuple
  
-+from pip._internal.utils.graalpy import LinkWithFilename
++from pip._internal.utils.graalpy import AddedSourceLink
  from pip._vendor.requests.models import CONTENT_CHUNK_SIZE, Response
  
  from pip._internal.cli.progress_bars import get_download_progress_renderer
@@ -72,7 +72,7 @@ index 79b82a5..1eddfa3 100644
      # Have a look at the Content-Disposition header for a better guess
      content_disposition = resp.headers.get("content-disposition")
 -    if content_disposition:
-+    if content_disposition and not isinstance(link, LinkWithFilename):
++    if content_disposition and not isinstance(link, AddedSourceLink):
          filename = parse_content_disposition(content_disposition, filename)
      ext: Optional[str] = splitext(filename)[1]
      if not ext:
@@ -92,7 +92,7 @@ index c799413..bf52f00 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..f9b8dcc
+index 0000000..b456846
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,214 @@
@@ -264,7 +264,7 @@ index 0000000..f9b8dcc
 +    return wrapper
 +
 +
-+class LinkWithFilename(Link):
++class AddedSourceLink(Link):
 +    def __init__(self, url: str, filename: str):
 +        super().__init__(url)
 +        self._filename = filename
@@ -284,7 +284,7 @@ index 0000000..f9b8dcc
 +        assert match, "Couldn't determine URL suffix"
 +        suffix = match.group(1)
 +        # We need to force the filename to match the usual convention, otherwise we won't find a patch
-+        link = LinkWithFilename(url, f'{name}-{version}.{suffix}')
++        link = AddedSourceLink(url, f'{name}-{version}.{suffix}')
 +        candidates.append(InstallationCandidate(name=name, version=version, link=link))
 +    return candidates
 +
@@ -321,7 +321,7 @@ index 78b5c13..18a184c 100644
 +    from pip._internal.utils.graalpy import apply_graalpy_patches
 +    apply_graalpy_patches(filename, location)
 diff --git a/pip/_internal/wheel_builder.py b/pip/_internal/wheel_builder.py
-index 15b30af..f28355d 100644
+index 15b30af..5be1f13 100644
 --- a/pip/_internal/wheel_builder.py
 +++ b/pip/_internal/wheel_builder.py
 @@ -7,6 +7,7 @@ import re
@@ -332,7 +332,18 @@ index 15b30af..f28355d 100644
  from pip._vendor.packaging.utils import canonicalize_name, canonicalize_version
  from pip._vendor.packaging.version import InvalidVersion, Version
  
-@@ -275,6 +276,8 @@ def _build_one_inside_env(
+@@ -142,6 +143,10 @@ def _should_cache(
+     if _contains_egg_info(base):
+         return True
+ 
++    # GraalPy change
++    if isinstance(req.link, graalpy.AddedSourceLink):
++        return True
++
+     # Otherwise, do not cache.
+     return False
+ 
+@@ -275,6 +280,8 @@ def _build_one_inside_env(
              )
  
          if wheel_path is not None:
