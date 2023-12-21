@@ -36,6 +36,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -233,10 +234,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (GRAALVM_MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
+            is.read(); // skip GraalVM micro version
             // see mx.graalpython/mx_graalpython.py:dev_tag
-            byte[] rev = new byte[1 /* ' ' */ + 3 /* 'dev' */ + 10 /* revision */];
+            byte[] rev = new byte[3 /* 'dev' */ + 10 /* revision */];
             if (is.read(rev) == rev.length) {
-                DEV_TAG = new String(rev).strip();
+                DEV_TAG = new String(rev, StandardCharsets.US_ASCII).strip();
             } else {
                 DEV_TAG = "";
             }

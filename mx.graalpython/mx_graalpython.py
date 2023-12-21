@@ -1778,7 +1778,7 @@ def graalpy_ext(llvm_mode, **kwargs):
 def dev_tag(arg=None, **kwargs):
     if not get_boolean_env('GRAALPYTHONDEVMODE', True) or 'dev' not in SUITE.release_version():
         mx.logv("GraalPy dev_tag: <0 because not in dev mode>")
-        return VERSION_BASE
+        return ''
 
     rev_list = [
         os.path.join('graalpython', 'lib-graalpython', 'patches'),
