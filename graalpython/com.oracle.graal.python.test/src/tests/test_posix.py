@@ -860,5 +860,19 @@ class RenameTests(unittest.TestCase):
             os.replace(TEST_FILENAME1, 3.14)
 
 
+class SysconfTests(unittest.TestCase):
+    def test_sysconf_names(self):
+        self.assertIn('SC_CLK_TCK', os.sysconf_names)
+
+    def test_sysconf(self):
+        self.assertGreaterEqual(os.sysconf('SC_CLK_TCK'), 0)
+        with self.assertRaisesRegex(TypeError, 'strings or integers'):
+            os.sysconf(object())
+        with self.assertRaisesRegex(ValueError, 'unrecognized'):
+            os.sysconf("nonexistent")
+        with self.assertRaisesRegex(OSError, "Invalid argument"):
+            os.sysconf(123456)
+
+
 if __name__ == '__main__':
     unittest.main()

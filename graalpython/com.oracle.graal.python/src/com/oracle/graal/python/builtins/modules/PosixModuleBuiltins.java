@@ -2801,7 +2801,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 if (idObj instanceof Integer idInt) {
                     id = idInt;
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME, arg);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME);
                 }
             } else {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CONFIGURATION_NAMES_MUST_BE_STRINGS_OR_INTEGERS);
