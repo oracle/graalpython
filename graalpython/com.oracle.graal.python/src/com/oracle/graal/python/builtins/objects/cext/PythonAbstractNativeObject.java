@@ -306,8 +306,19 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     public boolean hasArrayElements(// GR-44020: make shared:
                     @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-        return ((int) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(this))) != 0;
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) {
+        Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(this));
+        if (result instanceof Integer integer) {
+            return integer != 0;
+        } else if (ilib.fitsInInt(result)) {
+            try {
+                return ilib.asInt(result) != 0;
+            } catch (UnsupportedMessageException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     @ExportMessage
@@ -315,7 +326,14 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     public long getArraySize(// GR-44020: make shared:
                     @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-        return (long) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(this));
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) throws UnsupportedMessageException {
+        Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(this));
+        if (result instanceof Long longResult) {
+            return longResult;
+        } else if (ilib.fitsInLong(result)) {
+            return ilib.asLong(result);
+        }
+        throw UnsupportedMessageException.create();
     }
 }
