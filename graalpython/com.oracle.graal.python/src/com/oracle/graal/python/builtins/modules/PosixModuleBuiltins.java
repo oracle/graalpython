@@ -372,6 +372,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
             posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("geteuid"), PNone.NO_VALUE);
+            posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
         }
     }
 
@@ -608,6 +609,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long getGid(@CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             return posixLib.getgid(getPosixSupport());
+        }
+    }
+
+    @Builtin(name = "getegid", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetEGidNode extends PythonBuiltinNode {
+        @Specialization
+        long getGid(@CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+            return posixLib.getegid(getPosixSupport());
         }
     }
 

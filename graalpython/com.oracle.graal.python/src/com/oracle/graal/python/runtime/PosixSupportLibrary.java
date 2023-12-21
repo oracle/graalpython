@@ -282,6 +282,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getgid(Object receiver);
 
+    public abstract long getegid(Object receiver);
+
     public abstract long getppid(Object receiver);
 
     public abstract long getpgid(Object receiver, long pid) throws PosixException;
