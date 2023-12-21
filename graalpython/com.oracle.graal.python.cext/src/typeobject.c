@@ -907,9 +907,9 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
 
     PyAsyncMethods* async = cls->tp_as_async;
     if (async) {
-        ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_DIRECT);
-        ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_DIRECT);
-        ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_DIRECT);
+        ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_UNARYFUNC);
     }
 
     PyBufferProcs* buffers = cls->tp_as_buffer;
