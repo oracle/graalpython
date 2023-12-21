@@ -2049,6 +2049,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public long getegid() {
+        throw new UnsupportedPosixFeatureException("Emulated getegid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public long getppid() {
         throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
     }

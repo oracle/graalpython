@@ -236,6 +236,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getuid("():sint64"),
         call_geteuid("():sint64"),
         call_getgid("():sint64"),
+        call_getegid("():sint64"),
         call_getppid("():sint64"),
         call_getpgid("(sint64):sint64"),
         call_setpgid("(sint64,sint64):sint32"),
@@ -1194,6 +1195,11 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public long getgid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callLong(this, PosixNativeFunction.call_getgid);
+    }
+
+    @ExportMessage
+    public long getegid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callLong(this, PosixNativeFunction.call_getegid);
     }
 
     @ExportMessage

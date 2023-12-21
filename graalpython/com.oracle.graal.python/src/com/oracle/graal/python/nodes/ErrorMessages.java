@@ -951,7 +951,8 @@ public abstract class ErrorMessages {
     public static final TruffleString SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS = tsLiteral("Second argument must be a string type code or a java.lang.Class object, not %p");
     public static final TruffleString READ_RETURNED_NOT_BYTES = tsLiteral("file.read() returned not bytes but %p");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES = tsLiteral("unsupported operand types(s) or combination of types: '%p' and '%p'");
-    public static final TruffleString UNRECOGNIZED_CONF_NAME = tsLiteral("unrecognized configuration name: %s");
+    public static final TruffleString UNRECOGNIZED_CONF_NAME = tsLiteral("unrecognized configuration name");
+    public static final TruffleString CONFIGURATION_NAMES_MUST_BE_STRINGS_OR_INTEGERS = tsLiteral("configuration names must be strings or integers");
     public static final TruffleString GETPWNAM_NAME_NOT_FOUND = tsLiteral("getpwnam(): name not found: '%s'");
     public static final TruffleString MOD_GLOBALS_MUST_BE_DICT = tsLiteral("module_globals must be a dict, not '%p'");
     public static final TruffleString REENTRANT_CALL_INSIDE_P_REPR = tsLiteral("reentrant call inside %p.__repr__");

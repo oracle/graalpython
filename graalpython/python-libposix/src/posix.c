@@ -581,6 +581,10 @@ int64_t call_getgid() {
     return getgid();
 }
 
+int64_t call_getegid() {
+    return getegid();
+}
+
 int64_t call_getppid() {
     return getppid();
 }
