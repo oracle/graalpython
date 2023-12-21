@@ -61,13 +61,20 @@ public final class PythonResource implements InternalResource {
     private static final int GRAALVM_MAJOR;
     private static final int GRAALVM_MINOR;
 
+    /**
+     * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
+     * added the ordinal value of some base character (in this case {@code '!'}) to ensure that we
+     * have a printable character.
+     */
+    private static final int VERSION_BASE = '!';
+
     static {
         try (InputStream is = PythonResource.class.getResourceAsStream("/graalpy_versions")) {
-            PYTHON_MAJOR = is.read() - ' ';
-            PYTHON_MINOR = is.read() - ' ';
+            PYTHON_MAJOR = is.read() - VERSION_BASE;
+            PYTHON_MINOR = is.read() - VERSION_BASE;
             is.read(); // skip python micro version
-            GRAALVM_MAJOR = is.read() - ' ';
-            GRAALVM_MINOR = is.read() - ' ';
+            GRAALVM_MAJOR = is.read() - VERSION_BASE;
+            GRAALVM_MINOR = is.read() - VERSION_BASE;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

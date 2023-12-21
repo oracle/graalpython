@@ -1728,12 +1728,19 @@ def _get_output_root(projectname):
                 return p.get_output_root()
     mx.abort("Could not find out dir for project %s" % projectname)
 
+# We use the ordinal value of this character and add it to the version parts to
+# ensure that we store ASCII-compatible printable characters into the versions
+# file.
+#
+# IMPORTANT: This needs to be in sync with 'PythonLanguage.VERSION_BASE' and
+#            'PythonResource.VERSION_BASE'.
+VERSION_BASE = '!'
 
 def py_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return PYTHON_VERSION_MAJ_MIN.replace(".", "")
     elif variant == 'binary':
-        return "".join([chr(int(p) + ord(' ')) for p in PYTHON_VERSION.split(".")])
+        return "".join([chr(int(p) + ord(VERSION_BASE)) for p in PYTHON_VERSION.split(".")])
     else:
         return PYTHON_VERSION_MAJ_MIN
 
@@ -1742,7 +1749,7 @@ def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
     elif variant == 'binary':
-        return "".join([chr(int(p) + ord(' ')) for p in GRAAL_VERSION.split(".")])
+        return "".join([chr(int(p) + ord(VERSION_BASE)) for p in GRAAL_VERSION.split(".")])
     else:
         return GRAAL_VERSION_MAJ_MIN
 
@@ -1770,8 +1777,8 @@ def graalpy_ext(llvm_mode, **kwargs):
 
 def dev_tag(arg=None, **kwargs):
     if not get_boolean_env('GRAALPYTHONDEVMODE', True) or 'dev' not in SUITE.release_version():
-        mx.logv("GraalPy dev_tag: <empty because not in dev mode>")
-        return ''
+        mx.logv("GraalPy dev_tag: <0 because not in dev mode>")
+        return VERSION_BASE
 
     rev_list = [
         os.path.join('graalpython', 'lib-graalpython', 'patches'),

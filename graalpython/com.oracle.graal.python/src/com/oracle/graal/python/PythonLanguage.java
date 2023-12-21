@@ -193,6 +193,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int GRAALVM_MINOR = 0;
     public static final String DEV_TAG;
 
+    /**
+     * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
+     * added the ordinal value of some base character (in this case {@code '!'}) to ensure that we
+     * have a printable character.
+     */
+    private static final int VERSION_BASE = '!';
+
     static {
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
@@ -211,19 +218,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
-            if (MAJOR != (ch = is.read() - ' ')) {
+            if (MAJOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
             }
-            if (MINOR != (ch = is.read() - ' ')) {
+            if (MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
             }
-            if (MICRO != (ch = is.read() - ' ')) {
+            if (MICRO != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
             }
-            if (GRAALVM_MAJOR != (ch = is.read() - ' ')) {
+            if (GRAALVM_MAJOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
             }
-            if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
+            if (GRAALVM_MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
             // see mx.graalpython/mx_graalpython.py:dev_tag
