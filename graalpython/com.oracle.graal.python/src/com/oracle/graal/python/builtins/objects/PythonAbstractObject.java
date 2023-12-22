@@ -293,8 +293,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -303,13 +301,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.execute(inliningTarget, behavior, method, this, key);
             } else {
-                if (interopLib.hasArrayElements(this)) {
-                    try {
-                        return getItemNode.execute(this, key);
-                    } catch (PException e) {
-                        throw InvalidArrayIndexException.create(key);
-                    }
-                }
                 throw UnsupportedMessageException.create();
             }
         } finally {
@@ -323,8 +314,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -333,13 +322,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 getValue.execute(inliningTarget, behavior, method, this, key, value);
             } else {
-                if (interopLib.hasArrayElements(this)) {
-                    try {
-                        setItemNode.execute(this, key, value);
-                    } catch (PException e) {
-                        throw InvalidArrayIndexException.create(key);
-                    }
-                }
                 throw UnsupportedMessageException.create();
             }
         } finally {
@@ -353,8 +335,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -363,15 +343,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 getValue.execute(inliningTarget, behavior, method, this, key);
             } else {
-                if (interopLib.hasArrayElements(this)) {
-                    try {
-                        deleteItemNode.execute(inliningTarget, this, key);
-                    } catch (PException e) {
-                        throw InvalidArrayIndexException.create(key);
-                    }
-                } else {
-                    throw UnsupportedMessageException.create();
-                }
+                throw UnsupportedMessageException.create();
             }
         } finally {
             gil.release(mustRelease);
@@ -658,7 +630,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,

@@ -41,6 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_DEL_ITEM;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SET_ITEM;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 
@@ -52,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -60,6 +64,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -71,6 +76,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -319,6 +325,56 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             }
         }
         return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public Object readArrayElement(long index,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.NativeToPythonNode toPythonNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) throws InvalidArrayIndexException {
+        try {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM, toSulongNode.execute(this), PInt.intValueExact(index));
+            return toPythonNode.execute(result);
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public void writeArrayElement(long index, Object value,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) throws InvalidArrayIndexException {
+        try {
+            // todo: cbasca - the func returns -1 on failure, 0 on success unlike the interop API
+            callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SET_ITEM, toSulongNode.execute(this), PInt.intValueExact(index), toSulongNode.execute(value));
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public void removeArrayElement(long index,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) throws InvalidArrayIndexException {
+        try {
+            // todo: cbasca - the func returns -1 on failure, 0 on success unlike the interop API
+            callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_DEL_ITEM, toSulongNode.execute(this), PInt.intValueExact(index));
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
     }
 
     private long getSequenceSize(CApiTransitions.PythonToNativeNode toSulongNode, CExtNodes.PCallCapiFunction callCapiFunction, InteropLibrary ilib) throws UnsupportedMessageException {
