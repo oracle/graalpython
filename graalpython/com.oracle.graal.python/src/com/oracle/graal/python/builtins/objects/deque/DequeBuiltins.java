@@ -1066,7 +1066,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeEqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+        static Object doCmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached DequeCompareHelperNode helperNode,
                         @Cached PyObjectRichCompareBool.EqNode cmpNode) {
@@ -1078,7 +1078,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeNeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+        static Object doCmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached DequeCompareHelperNode helperNode,
                         @Cached PyObjectRichCompareBool.NeNode cmpNode) {
@@ -1090,7 +1090,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeLeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+        static Object doCmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached DequeCompareHelperNode helperNode,
                         @Cached PyObjectRichCompareBool.LeNode cmpNode) {
@@ -1102,7 +1102,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeLtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+        static Object doCmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached DequeCompareHelperNode helperNode,
                         @Cached PyObjectRichCompareBool.LtNode cmpNode) {
@@ -1114,7 +1114,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeGeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+        static Object doCmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached DequeCompareHelperNode helperNode,
                         @Cached PyObjectRichCompareBool.GeNode cmpNode) {
@@ -1127,7 +1127,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeGtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doCmp(VirtualFrame frame, PDeque self, PDeque other,
+        static Object doCmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached DequeCompareHelperNode helperNode,
                         @Cached PyObjectRichCompareBool.GtNode cmpNode) {

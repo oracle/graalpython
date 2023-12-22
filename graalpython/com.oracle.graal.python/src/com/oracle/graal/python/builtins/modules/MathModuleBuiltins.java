@@ -1300,7 +1300,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AsinNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1317,7 +1317,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CosNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1333,7 +1333,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CoshNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1351,7 +1351,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SinNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1367,7 +1367,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SinhNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1385,7 +1385,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TanNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1401,7 +1401,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TanhNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1417,7 +1417,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AtanNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1435,7 +1435,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         private static final double TWO_POW_M28 = 0x1.0p-28;
 
-        @Specialization(guards = "!isPInt(value)")
+        @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
@@ -1569,7 +1569,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    @SuppressWarnings("truffle-static-method")      // TODO: recursive
+    @SuppressWarnings("truffle-static-method")
     public abstract static class LogNode extends PythonBinaryBuiltinNode {
 
         @Child private LogNode recLogNode;
@@ -1823,7 +1823,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return LogNode.logBigInteger(bValue) / LOG2;
         }
 
-        @Specialization
+        @Specialization(guards = "!isPInt(value)")
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
