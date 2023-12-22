@@ -73,7 +73,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -109,7 +108,6 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -408,15 +406,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementReadable(long idx,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -437,15 +431,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementModifiable(long idx,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -456,10 +446,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return false;
             }
         } finally {
             gil.release(mustRelease);
@@ -475,11 +462,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -488,10 +471,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return false;
             }
         } finally {
             gil.release(mustRelease);
@@ -507,11 +487,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -520,26 +496,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return false;
             }
         } finally {
             gil.release(mustRelease);
-        }
-    }
-
-    private boolean isInBounds(int len, PInteropSubscriptNode getItemNode, long idx) {
-        if (0 <= idx && idx < len) {
-            try {
-                getItemNode.execute(this, idx);
-                return true;
-            } catch (PException e) {
-                return false;
-            }
-        } else {
-            return false;
         }
     }
 

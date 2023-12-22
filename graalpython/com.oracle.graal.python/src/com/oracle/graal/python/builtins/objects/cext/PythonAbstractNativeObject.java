@@ -331,6 +331,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         throw UnsupportedMessageException.create();
     }
 
+    private boolean isInBounds(long idx, CApiTransitions.PythonToNativeNode toSulongNode, CExtNodes.PCallCapiFunction callCapiFunction, InteropLibrary ilib) {
+        try {
+            long length = getSequenceSize(toSulongNode, callCapiFunction, ilib);
+            return 0 <= idx && idx < length;
+        } catch (UnsupportedMessageException e) {
+            return false;
+        }
+    }
+
     @ExportMessage
     @SuppressWarnings("truffle-unused")
     public long getArraySize(// GR-44020: make shared:
@@ -342,18 +351,47 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
+    @SuppressWarnings("truffle-unused")
     public boolean isArrayElementReadable(long idx,
                     // GR-44020: make shared:
                     @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
                     @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) {
-        try {
-            long length = getSequenceSize(toSulongNode, callCapiFunction, ilib);
-            // todo: cbasca - should we attempt to actually "read" the element before?
-            return 0 <= idx && idx < length;
-        } catch (UnsupportedMessageException e) {
-            return false;
-        }
+        // todo: cbasca - should we attempt to actually "read" the element before?
+        return isInBounds(idx, toSulongNode, callCapiFunction, ilib);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public boolean isArrayElementModifiable(long idx,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) {
+        return isInBounds(idx, toSulongNode, callCapiFunction, ilib);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public boolean isArrayElementInsertable(long idx,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) {
+        return !isInBounds(idx, toSulongNode, callCapiFunction, ilib);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public boolean isArrayElementRemovable(long idx,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) {
+        return isInBounds(idx, toSulongNode, callCapiFunction, ilib);
     }
 }

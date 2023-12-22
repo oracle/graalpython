@@ -187,6 +187,11 @@ public abstract class PSequence extends PythonBuiltinObject {
         }
     }
 
+    private boolean isInBounds(long idx, Node inliningTarget, SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
+        int length = getSequenceStorageNode.execute(inliningTarget, this).length();
+        return 0 <= idx && idx < length;
+    }
+
     @ExportMessage
     public boolean isArrayElementReadable(long idx,
                     @Bind("$node") Node inliningTarget,
@@ -194,9 +199,47 @@ public abstract class PSequence extends PythonBuiltinObject {
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            int length = getSequenceStorageNode.execute(inliningTarget, this).length();
             // todo: cbasca - should we attempt to actually "read" the element before?
-            return 0 <= idx && idx < length;
+            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean isArrayElementModifiable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean isArrayElementInsertable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return !isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean isArrayElementRemovable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
         } finally {
             gil.release(mustRelease);
         }
