@@ -427,10 +427,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return false;
             }
         } finally {
             gil.release(mustRelease);

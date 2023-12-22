@@ -186,4 +186,19 @@ public abstract class PSequence extends PythonBuiltinObject {
             gil.release(mustRelease);
         }
     }
+
+    @ExportMessage
+    public boolean isArrayElementReadable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            int length = getSequenceStorageNode.execute(inliningTarget, this).length();
+            // todo: cbasca - should we attempt to actually "read" the element before?
+            return 0 <= idx && idx < length;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
 }

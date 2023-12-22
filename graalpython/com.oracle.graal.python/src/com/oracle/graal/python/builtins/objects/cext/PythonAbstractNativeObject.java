@@ -321,13 +321,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         return false;
     }
 
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public long getArraySize(// GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
-                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) throws UnsupportedMessageException {
+    private long getSequenceSize(CApiTransitions.PythonToNativeNode toSulongNode, CExtNodes.PCallCapiFunction callCapiFunction, InteropLibrary ilib) throws UnsupportedMessageException {
         Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(this));
         if (result instanceof Long longResult) {
             return longResult;
@@ -335,5 +329,31 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return ilib.asLong(result);
         }
         throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("truffle-unused")
+    public long getArraySize(// GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) throws UnsupportedMessageException {
+        return getSequenceSize(toSulongNode, callCapiFunction, ilib);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementReadable(long idx,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
+                    // GR-44020: make shared:
+                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary ilib) {
+        try {
+            long length = getSequenceSize(toSulongNode, callCapiFunction, ilib);
+            // todo: cbasca - should we attempt to actually "read" the element before?
+            return 0 <= idx && idx < length;
+        } catch (UnsupportedMessageException e) {
+            return false;
+        }
     }
 }
