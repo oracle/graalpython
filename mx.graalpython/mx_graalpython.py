@@ -1932,6 +1932,15 @@ def update_import_cmd(args):
         join(overlaydir, "python", "graal", "ci"),
         dirs_exist_ok=True)
 
+    enterprisedir = join(SUITE.dir, "..", "graal-enterprise")
+    shutil.copy(
+        join(enterprisedir, "common.json"),
+        join(overlaydir, "python", "graal-enterprise", "common.json"))
+    shutil.copytree(
+        join(enterprisedir, "ci"),
+        join(overlaydir, "python", "graal-enterprise", "ci"),
+        dirs_exist_ok=True)
+
     # update the graal-enterprise revision in the overlay (used by benchmarks)
     with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
         d = {'GRAAL_ENTERPRISE_REVISION': revisions['graalpython-enterprise']}
