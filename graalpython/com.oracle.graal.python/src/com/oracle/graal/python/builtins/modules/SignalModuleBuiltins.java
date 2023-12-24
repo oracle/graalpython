@@ -375,6 +375,23 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "siginterrupt", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"signalnum", "flag"})
+    @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "flag", conversion = ArgumentClinic.ClinicConversion.Boolean)
+    @GenerateNodeFactory
+    abstract static class SigInterruptNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static PNone doInt(int signalnum, boolean flag) {
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.SigInterruptNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "raise_signal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"signalnum"})
     @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
