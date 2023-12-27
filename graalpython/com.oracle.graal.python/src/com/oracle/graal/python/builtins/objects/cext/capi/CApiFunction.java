@@ -694,6 +694,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_dg_infinity", ret = Double, args = {Int}, call = CImpl)
     @CApiBuiltin(name = "_Py_dg_stdnan", ret = Double, args = {Int}, call = CImpl)
     @CApiBuiltin(name = "_Py_dg_strtod", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = CImpl)
+    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
 
     /*
      * Functions that are not implemented at the moment:
@@ -1170,7 +1171,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_New", ret = PyInterpreterState, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_Next", ret = PyInterpreterState, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_ThreadHead", ret = PyThreadState, args = {PyInterpreterState}, call = NotImplemented)
-    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_InitAddressRange", ret = Void, args = {ConstCharPtr, Py_ssize_t, Int, PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_NextAddressRange", ret = Int, args = {PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_PreviousAddressRange", ret = Int, args = {PyCodeAddressRange}, call = NotImplemented)

@@ -323,6 +323,7 @@ typedef struct {
     BUILTIN(PyTruffleGILState_Ensure, int) \
     BUILTIN(PyTruffleGILState_Release, void) \
     BUILTIN(PyTruffleHash_InitSecret, void, int8_t*) \
+    BUILTIN(PyTruffleIter_Send, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
     BUILTIN(PyTruffleLong_FromString, PyObject*, PyObject*, int, int) \
     BUILTIN(PyTruffleLong_One, PyObject*) \

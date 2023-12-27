@@ -65,7 +65,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline(false) // used in BCI root node
 public abstract class SendNode extends PNodeWithContext {
-    private static final TruffleString T_SEND = tsLiteral("send");
+    public static final TruffleString T_SEND = tsLiteral("send");
 
     // Returns true when the generator finished
     public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Object iter, Object arg);

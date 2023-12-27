@@ -1830,10 +1830,6 @@ PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
     return GraalPyIter_Next(a);
 }
-#undef PyIter_Send
-PyAPI_FUNC(PySendResult) PyIter_Send(PyObject* a, PyObject* b, PyObject** c) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyLineTable_InitAddressRange
 PyAPI_FUNC(void) PyLineTable_InitAddressRange(const char* a, Py_ssize_t b, int c, PyCodeAddressRange* d) {
     FUNC_NOT_IMPLEMENTED
@@ -2785,6 +2781,10 @@ PyAPI_FUNC(int) PyTruffleGILState_Ensure() {
 #undef PyTruffleGILState_Release
 PyAPI_FUNC(void) PyTruffleGILState_Release() {
     GraalPyTruffleGILState_Release();
+}
+#undef PyTruffleIter_Send
+PyAPI_FUNC(PyObject*) PyTruffleIter_Send(PyObject* a, PyObject* b) {
+    return GraalPyTruffleIter_Send(a, b);
 }
 #undef PyTruffle_Debug
 PyAPI_FUNC(int) PyTruffle_Debug(void* a) {

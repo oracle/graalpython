@@ -67,6 +67,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.bytecode.SendNode.T_SEND;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
@@ -102,11 +103,14 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -958,6 +962,31 @@ public final class PythonCextAbstractBuiltins {
                         @Cached IsBuiltinObjectProfile isClassProfile) {
             try {
                 return nextNode.execute(null, object, PNone.NO_VALUE);
+            } catch (PException e) {
+                if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
+                    return getNativeNull();
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyTruffleIter_Send extends CApiBinaryBuiltinNode {
+        @Specialization
+        Object send(Object iter, Object arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyIterCheckNode pyiterCheck,
+                        @Cached PyObjectCallMethodObjArgs callMethodNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinObjectProfile isClassProfile) {
+            try {
+                if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
+                    return getNextNode.execute(iter);
+                } else {
+                    return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);
+                }
             } catch (PException e) {
                 if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
                     return getNativeNull();
