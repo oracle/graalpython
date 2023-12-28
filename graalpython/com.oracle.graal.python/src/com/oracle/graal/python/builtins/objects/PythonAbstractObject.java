@@ -1028,6 +1028,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public ZoneId asTimeZone(
                     @Bind("$node") Node inliningTarget,
+                    @CachedLibrary("this") InteropLibrary lib,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1039,6 +1040,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
+            if (!lib.isTimeZone(this)) {
+                throw UnsupportedMessageException.create();
+            }
             InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
