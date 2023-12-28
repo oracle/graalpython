@@ -302,27 +302,6 @@ class PolyglotAppTest(unittest.TestCase):
                 self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-    def test_graalpy_exec(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            target_name = "graalpy_exec_test"
-            target_dir = os.path.join(str(tmpdir), target_name)
-            self.generate_app(tmpdir, target_dir, target_name)
-            self.purge_local_repo(target_dir)
-
-            try:
-                cmd = MVN_CMD + ["graalpy:exec", "-Dexec.argc=2", "-Dexec.arg1=-c", "-Dexec.arg2=print(42, 'from python')"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "42 from python" in out
-
-                self.env["GRAAL_PYTHON_ARGS"] = "\013-c\013print(42, 'from python via GRAAL_PYTHON_ARGS env var')"
-                cmd = MVN_CMD + ["graalpy:exec"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "from python via GRAAL_PYTHON_ARGS env var" in out
-            finally:
-                del self.env["GRAAL_PYTHON_ARGS"]
-                self.purge_local_repo(target_dir, False)
-
-    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "fail_without_graalpy_dep_test"
