@@ -323,7 +323,6 @@ class PolyglotAppTest(unittest.TestCase):
                 self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-    @unittest.skipUnless(sys.platform != 'win32', "ujson install fails on windows")
     def test_gen_launcher_and_venv(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "gen_launcher_and_venv_test"
