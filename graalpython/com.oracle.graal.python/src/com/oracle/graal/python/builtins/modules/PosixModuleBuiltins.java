@@ -32,12 +32,14 @@ import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_SYMLINK_FOLLOW;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.management.ManagementFactory;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -634,6 +636,30 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long getPpid(@CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             return posixLib.getppid(getPosixSupport());
+        }
+    }
+
+    @Builtin(name = "getloadavg", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetLoadAvgNode extends PythonBuiltinNode {
+
+        /*
+         * Return average recent system load information.
+         * 
+         * Return the number of processes in the system run queue averaged over the last 1, 5, and
+         * 15 minutes as a tuple of three floats. Raises OSError if the load average was
+         * unobtainable.
+         */
+        @TruffleBoundary
+        @Specialization
+        PTuple getloadavg(@Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory) {
+            // (mq) without native call we can only obtain system load average for the last minute.
+            double load = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+            if (load < 0) {
+                PRaiseNode.raiseUncached(inliningTarget, OSError);
+            }
+            return factory.createTuple(new Object[]{load, load, load});
         }
     }
 
