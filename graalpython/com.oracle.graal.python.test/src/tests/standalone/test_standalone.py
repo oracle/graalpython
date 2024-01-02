@@ -340,13 +340,27 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "termcolor" in out
 
                 # run again and assert that we do not regenerate the venv
-                cmd = MVN_CMD + ["generate-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "-m venv" not in out
                 assert "-m ensurepip" not in out
                 assert "ujson" not in out
                 assert "termcolor" not in out
-
+                
+                # remove ujson pkg from plugin config and check if unistalled
+                with open(os.path.join(target_dir, "pom.xml"), "r") as f:
+                    contents = f.read()
+                
+                with open(os.path.join(target_dir, "pom.xml"), "w") as f:
+                    f.write(contents.replace("<package>ujson</package>", ""))               
+                
+                cmd = MVN_CMD + ["process-resources"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                assert "-m venv" not in out
+                assert "-m ensurepip" not in out
+                assert "Uninstalling ujson" in out
+                assert "termcolor" not in out
+                
             finally:
                 self.purge_local_repo(target_dir, False)
 

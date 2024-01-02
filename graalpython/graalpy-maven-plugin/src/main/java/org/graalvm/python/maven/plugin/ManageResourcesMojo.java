@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -261,12 +261,13 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private void deleteUnwantedPackages(Path venvDirectory, List<String> installedPackages) throws MojoExecutionException {
-        var pkgsToRemove = new HashSet<String>(installedPackages);
-        pkgsToRemove.removeAll(packages);
-        if (pkgsToRemove.isEmpty()) {
+        List<String> args = new ArrayList<String>(installedPackages);
+        args.removeAll(packages);
+        if (args.isEmpty()) {
             return;
         }
-        runPip(venvDirectory, "uninstall", pkgsToRemove.toArray(new String[pkgsToRemove.size()]));
+        args.add(0, "-y");
+        runPip(venvDirectory, "uninstall", args.toArray(new String[args.size()]));
     }
 
     private Path getLauncherPath() {
