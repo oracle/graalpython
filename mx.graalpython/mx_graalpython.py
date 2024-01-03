@@ -942,8 +942,7 @@ def deploy_local_maven_repo():
         # build GraalPy and all the necessary dependencies, so that we can deploy them
         mx.run_mx(["build"])
     # deploy maven artifacts
-    import mx_sdk_vm_impl
-    version = mx_sdk_vm_impl.graalvm_version('graalvm')
+    version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
     deploy_args = [
@@ -961,7 +960,7 @@ def deploy_local_maven_repo():
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
         mx.maven_deploy(deploy_args)
-    return path
+    return path, version
 
 
 def python_jvm(_=None):
@@ -1410,10 +1409,10 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
         if task:
-            mvn_repo_path = pathlib.Path(deploy_local_maven_repo()).as_uri()
+            mvn_repo_path, artifacts_version = deploy_local_maven_repo()
+            mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
             central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
-            artifacts_version = GRAAL_VERSION + '-dev'
             mvn_cmd_base = ['-f', pom_path,
                             f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
                             f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
@@ -1488,14 +1487,13 @@ def graalpython_gate_runner(args, tasks):
                 'JAVA_HOME': graalvm_jdk(),
                 'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')
             }
-            mvn_repo_path = deploy_local_maven_repo()
+            mvn_repo_path, version = deploy_local_maven_repo()
             # setup maven downloader overrides
             env['MAVEN_REPO_OVERRIDE'] = ",".join([
                 f"{pathlib.Path(mvn_repo_path).as_uri()}/",
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
-            import mx_sdk_vm_impl
-            env["org.graalvm.maven.downloader.version"] = mx_sdk_vm_impl.graalvm_version('graalvm')
+            env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")

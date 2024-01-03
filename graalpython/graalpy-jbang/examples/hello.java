@@ -40,10 +40,10 @@
  */
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 
-//DEPS org.graalvm.python:python-language:24.0.0-dev
-//DEPS org.graalvm.python:python-resources:24.0.0-dev
-//DEPS org.graalvm.python:python-launcher:24.0.0-dev
-//DEPS org.graalvm.python:python-embedding:24.0.0-dev
+//DEPS org.graalvm.python:python-language:24.0.0
+//DEPS org.graalvm.python:python-resources:24.0.0
+//DEPS org.graalvm.python:python-launcher:24.0.0
+//DEPS org.graalvm.python:python-embedding:24.0.0
 //PIP termcolor
 
 import org.graalvm.polyglot.Context;
