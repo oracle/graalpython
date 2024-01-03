@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -112,6 +112,10 @@ if sys.implementation.name == "graalpy":
         def __delitem__(self, key):
             del self._items[key]
 
+    polyglot.register_interop_behavior(
+        CustomObject, is_array_element_readable=True, read_array_element=lambda t, k: t[k],
+        has_array_elements=True, get_array_size=lambda t: len(t))
+
     class PyString(str):
         pass
 
@@ -199,6 +203,10 @@ if sys.implementation.name == "graalpy":
                 nonlocal called
                 called = True
                 return 1
+
+        polyglot.register_interop_behavior(
+            LenObject, is_array_element_readable=True, read_array_element=lambda t, k: t[k],
+            has_array_elements=True, get_array_size=lambda t: len(t))
 
         assert polyglot.__get_size__(LenObject()) == 1
         assert called

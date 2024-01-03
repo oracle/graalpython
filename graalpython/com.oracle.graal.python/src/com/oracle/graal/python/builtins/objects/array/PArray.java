@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,17 +37,25 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -56,9 +64,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-// TODO interop library
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
     private final TruffleString formatString;
@@ -320,5 +328,93 @@ public final class PArray extends PythonBuiltinObject {
     void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
                     @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
         bufferLib.writeDoubleByteOrder(storage, byteOffset, value, byteOrder);
+    }
+
+    @ExportMessage
+    public boolean hasArrayElements() {
+        return true;
+    }
+
+    @ExportMessage
+    public long getArraySize() {
+        return storage.length();
+    }
+
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Bind("$node") Node inliningTarget,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                    @Cached.Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            try {
+                return getItem.execute(inliningTarget, storage, PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public void writeArrayElement(long index, Object value,
+                    @Bind("$node") Node inliningTarget,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Cached.Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            try {
+                setItem.execute(inliningTarget, storage, PInt.intValueExact(index), value);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public void removeArrayElement(long index,
+                    @Bind("$node") Node inliningTarget,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Cached.Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            try {
+                delItem.execute(inliningTarget, storage, PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    private boolean isInBounds(long idx) {
+        return 0 <= idx && idx < storage.length();
+    }
+
+    @ExportMessage
+    public boolean isArrayElementReadable(long idx) {
+        return isInBounds(idx);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementModifiable(long idx) {
+        return isInBounds(idx);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementInsertable(long idx) {
+        return !isInBounds(idx);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementRemovable(long idx) {
+        return isInBounds(idx);
     }
 }
