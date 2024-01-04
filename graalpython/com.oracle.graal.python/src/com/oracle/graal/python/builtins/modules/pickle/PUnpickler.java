@@ -147,7 +147,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.IntNodesFactory;
@@ -156,7 +155,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -1620,12 +1618,12 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             Object dict = self.stack.data[x - 1];
-            final boolean isHashingCollection = dict instanceof PHashingCollection && PGuards.cannotBeOverriddenForImmutableType((PythonObject) dict);
+            final boolean isBuiltinDict = dict instanceof PDict pDict && PGuards.isBuiltinDict(pDict);
             for (i = x + 1; i < len; i += 2) {
                 key = self.stack.data[i - 1];
                 value = self.stack.data[i];
-                if (isHashingCollection) {
-                    setDictItem(frame, (PHashingCollection) dict, key, value);
+                if (isBuiltinDict) {
+                    setDictItem(frame, (PDict) dict, key, value);
                 } else {
                     setItem(frame, dict, key, value);
                 }
@@ -1767,8 +1765,8 @@ public class PUnpickler extends PythonBuiltinObject {
 
             // Cache code -> obj.
             // cpython expects a PyDict so this is a safe cast
-            assert st.extensionCache instanceof PHashingCollection;
-            setDictItem(frame, (PHashingCollection) st.extensionCache, code, obj);
+            assert st.extensionCache instanceof PDict;
+            setDictItem(frame, (PDict) st.extensionCache, code, obj);
             pDataPush(self, obj);
         }
 

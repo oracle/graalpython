@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -546,7 +545,7 @@ public final class PicklerNodes {
             return getHashingStorageItemNode.execute(frame, hashingStorage, key);
         }
 
-        protected void setDictItem(VirtualFrame frame, PHashingCollection dict, Object key, Object value) {
+        protected void setDictItem(VirtualFrame frame, PDict dict, Object key, Object value) {
             HashingStorage newStorage = setHashingStorageItem(frame, dict.getDictStorage(), key, value);
             dict.setDictStorage(newStorage);
         }
