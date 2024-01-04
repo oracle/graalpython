@@ -212,20 +212,12 @@ public class PPickler extends PythonBuiltinObject {
         return fast != 0;
     }
 
-    public boolean isFixImports() {
-        return fixImports;
-    }
-
     public boolean isFraming() {
         return framing;
     }
 
     public Object getWrite() {
         return write;
-    }
-
-    public Object getBufferCallback() {
-        return bufferCallback;
     }
 
     public Object getDispatchTable() {
@@ -273,11 +265,6 @@ public class PPickler extends PythonBuiltinObject {
     @TruffleBoundary
     private void fastMemoRemove(Object object) {
         this.fastMemo.remove(object);
-    }
-
-    @TruffleBoundary
-    private void fastMemoClear() {
-        this.fastMemo.clear();
     }
 
     // helper methods
@@ -589,7 +576,6 @@ public class PPickler extends PythonBuiltinObject {
 
     public abstract static class SaveNode extends BasePickleWriteNode {
         @Child private SaveNode recursiveSaveNode;
-        @Child private PyFloatAsDoubleNode pyFloatAsDoubleNode;
         @Child private PyLongAsLongNode pyLongAsLongNode;
         @Child private PyObjectStrAsObjectNode pyObjectStrAsObjectNode;
         @Child private PyObjectIsTrueNode isTrueNode;
@@ -683,7 +669,7 @@ public class PPickler extends PythonBuiltinObject {
         public abstract void execute(VirtualFrame frame, PPickler pickler, Object obj, int persSave);
 
         // collections
-        private <T> void saveHashingStorageBatched(VirtualFrame frame, PPickler pickler, HashingStorage storage,
+        private void saveHashingStorageBatched(VirtualFrame frame, PPickler pickler, HashingStorage storage,
                         byte opcodeBatch, TruffleString name, boolean saveValues) {
             int initialSize = getHashingStorageLength(storage);
             HashingStorageIterator it = getHashingStorageIterator(storage);
@@ -794,9 +780,7 @@ public class PPickler extends PythonBuiltinObject {
             saveIteratorBatchedUnrolled(frame, pickler, iterator, PickleUtils.OPCODE_APPEND, PickleUtils.OPCODE_APPENDS,
                             (Object item) -> {
                             },
-                            (Object item) -> {
-                                save(frame, pickler, item, 0);
-                            });
+                            (Object item) -> save(frame, pickler, item, 0));
         }
 
         private void saveIterator(VirtualFrame frame, PPickler pickler, Object iterator, byte opcode, Consumer<Object> itemConsumer) {
@@ -814,16 +798,12 @@ public class PPickler extends PythonBuiltinObject {
 
         private void saveListIterator(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIterator(frame, pickler, iterator, PickleUtils.OPCODE_APPEND,
-                            (Object item) -> {
-                                save(frame, pickler, item, 0);
-                            });
+                            (Object item) -> save(frame, pickler, item, 0));
         }
 
         private void saveFrozenSetIterator(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIterator(frame, pickler, iterator, PickleUtils.NO_OPCODE,
-                            (Object item) -> {
-                                save(frame, pickler, item, 0);
-                            });
+                            (Object item) -> save(frame, pickler, item, 0));
         }
 
         private void saveDictIterator(VirtualFrame frame, PPickler pickler, Object iterator) {

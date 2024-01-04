@@ -120,7 +120,6 @@ public final class PicklerNodes {
         public static final TruffleString T_CODEC_RAW_UNICODE_ESCAPE = tsLiteral("raw_unicode_escape");
         public static final TruffleString T_CODEC_BYTES = tsLiteral("bytes");
         public static final TruffleString T_CODEC_ASCII = tsLiteral("ascii");
-        public static final TruffleString T_CODEC_LATIN1 = tsLiteral("latin1");
         public static final TruffleString T_ERRORS_SURROGATEPASS = tsLiteral("surrogatepass");
         public static final TruffleString T_ERRORS_STRICT = tsLiteral("strict");
 
@@ -363,14 +362,6 @@ public final class PicklerNodes {
             return decode(frame, factory().createBytes(bytes, 0, len), T_CODEC_RAW_UNICODE_ESCAPE);
         }
 
-        protected Object decodeLATIN1(VirtualFrame frame, Object value, TruffleString errors) {
-            return decode(frame, value, T_CODEC_LATIN1, errors);
-        }
-
-        protected Object decodeLATIN1(VirtualFrame frame, byte[] bytes, int len, TruffleString errors) {
-            return decode(frame, factory().createBytes(bytes, 0, len), T_CODEC_LATIN1, errors);
-        }
-
         protected Object decodeASCII(VirtualFrame frame, byte[] bytes, int len, TruffleString errors) {
             return decode(frame, factory().createBytes(bytes, 0, len), T_CODEC_ASCII, errors);
         }
@@ -396,10 +387,6 @@ public final class PicklerNodes {
 
         protected Object escapeDecode(VirtualFrame frame, byte[] data) {
             return getItem(frame, ensureEscapeDecodeNode().execute(frame, data, T_ERRORS_STRICT), 0);
-        }
-
-        protected Object escapeDecode(VirtualFrame frame, byte[] data, TruffleString errors) {
-            return getItem(frame, ensureEscapeDecodeNode().execute(frame, data, errors), 0);
         }
 
         protected Object parseInt(VirtualFrame frame, byte[] bytes) {

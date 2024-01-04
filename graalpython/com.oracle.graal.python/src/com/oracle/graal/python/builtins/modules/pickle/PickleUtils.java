@@ -241,13 +241,6 @@ public final class PickleUtils {
         return importModule(simpleModuleName);
     }
 
-    @ExplodeLoop
-    public static void smallArrayCopy(byte[] src, int srcPos, byte[] dest, int destPos, int len) {
-        for (int i = 0; i < len; i++) {
-            dest[destPos + i] = src[srcPos + i];
-        }
-    }
-
     public static byte[] resize(byte[] src, int newSize) {
         byte[] newBytes = new byte[newSize];
         if (src != null) {

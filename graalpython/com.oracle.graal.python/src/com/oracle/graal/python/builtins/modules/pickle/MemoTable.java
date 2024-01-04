@@ -54,11 +54,11 @@ public final class MemoTable {
     private static final int OCCUPANCY_EXPONENT = 1; // 2^X relation between capacity and size
     private static final int CAPACITY_INC_EXPONENT = 2; // 2^X increase in capacity when resizing
 
-    public final class MemoIterator {
+    public static final class MemoIterator {
 
         private int index;
-        private Object[] keys;
-        private int[] values;
+        private final Object[] keys;
+        private final int[] values;
 
         public MemoIterator(MemoTable table) {
             this.keys = table.keys;
