@@ -790,6 +790,18 @@ public final class PythonUtils {
         return result;
     }
 
+    public static boolean isAscii(TruffleString string, TruffleString.GetCodeRangeNode getCodeRangeNode) {
+        return getCodeRangeNode.execute(string, TS_ENCODING) == TruffleString.CodeRange.ASCII;
+    }
+
+    public static byte[] getAsciiBytes(TruffleString string, TruffleString.CopyToByteArrayNode copyToByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        assert string.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
+        TruffleString ascii = switchEncodingNode.execute(string, Encoding.US_ASCII);
+        byte[] data = new byte[ascii.byteLength(Encoding.US_ASCII)];
+        copyToByteArrayNode.execute(ascii, 0, data, 0, data.length, Encoding.US_ASCII);
+        return data;
+    }
+
     public static final class NodeCounterWithLimit implements NodeVisitor {
         private int count;
         private final int limit;
