@@ -45,19 +45,6 @@ index 317be69..0c23e88 100644
  
  
  def _extract_class_dict(cls):
-diff --git a/joblib/externals/cloudpickle/cloudpickle_fast.py b/joblib/externals/cloudpickle/cloudpickle_fast.py
-index 8741dcb..6c8b938 100644
---- a/joblib/externals/cloudpickle/cloudpickle_fast.py
-+++ b/joblib/externals/cloudpickle/cloudpickle_fast.py
-@@ -663,7 +663,7 @@ class CloudPickler(Pickler):
-             self.globals_ref = {}
-             assert hasattr(self, 'proto')
- 
--    if pickle.HIGHEST_PROTOCOL >= 5 and not PYPY:
-+    if pickle.HIGHEST_PROTOCOL >= 5 and not hasattr(Pickler, 'dispatch'):
-         # Pickler is the C implementation of the CPython pickler and therefore
-         # we rely on reduce_override method to customize the pickler behavior.
- 
 diff --git a/joblib/externals/loky/backend/fork_exec.py b/joblib/externals/loky/backend/fork_exec.py
 index 2353c42..f083a63 100644
 --- a/joblib/externals/loky/backend/fork_exec.py

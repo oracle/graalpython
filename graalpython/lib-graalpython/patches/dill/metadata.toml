@@ -1,5 +1,0 @@
-[[rules]]
-# This patch deserves some explanation. Dill installs its own extensions into the pure-python Pickler. It seems like
-# legacy from the times, where `import pickle` got you the python pickler. Since that is no longer true in CPython,
-# we turn it off to not diverge from CPython.
-patch = 'dill.patch'
