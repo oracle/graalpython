@@ -60,7 +60,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class JBangIntegration {
     private static final String PIP = "//PIP";
@@ -117,7 +119,10 @@ public class JBangIntegration {
         }
         if (Files.exists(venv)) {
             try {
-                Path libFolder = Files.list(venv.resolve("lib")).filter(p -> p.getFileName().toString().startsWith("python3")).findFirst().get();
+                Stream<Path> filter = Files.list(venv.resolve("lib")).filter(p -> p.getFileName().toString().startsWith("python3"));
+                // on windows, there doesn't have to be python3xxxx folder. 
+                Optional<Path> libFolderOptional = filter.findFirst();
+                Path libFolder = libFolderOptional.orElse(venv.resolve("lib"));
                 if (libFolder != null) {
                     var dropFolders = new ArrayList<String>();
                     dropFolders.add("pip");
@@ -178,19 +183,12 @@ public class JBangIntegration {
         System.out.println("Generating GraalPy launchers");
         var launcher = getLauncherPath(projectPath);
         if (!Files.exists(launcher)) {
+            var classpath = calculateClasspath(dependencies);
+            var java = Paths.get(System.getProperty("java.home"), "bin", "java");
             if (!IS_WINDOWS) {
-                var classpath = calculateClasspath(dependencies);
-                var java = Paths.get(System.getProperty("java.home"), "bin", "java");
                 var script = String.format("""
                                 #!/usr/bin/env bash
-                                source="${BASH_SOURCE[0]}"
-                                source="$(readlink "$source")";
-                                location="$( cd -P "$( dirname "$source" )" && pwd )"
-                                args="$(printf "\\v")--python.Executable=$0"
-                                for var in "$@"; do args="${args}$(printf "\\v")${var}"; done
-                                curdir=`pwd`
-                                export GRAAL_PYTHON_ARGS="${args}$(printf "\\v")"
-                                %s -classpath %s %s
+                                %s -classpath %s %s --python.Executable="$0" "$@"
                                 """,
                                 java,
                                 String.join(File.pathSeparator, classpath),
@@ -208,23 +206,24 @@ public class JBangIntegration {
                     throw new RuntimeException(e);
                 }
             } else {
-                // on windows, generate a venv launcher that executes our mvn target
+                // on windows, generate a venv launcher
                 var script = String.format("""
                                 import os, shutil, struct, venv
                                 from pathlib import Path
                                 vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
                                 tl = os.path.join(r'%s')
-                                os.makedirs(Path(tl).parent.absolute())
+                                os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
                                 shutil.copy(vl, tl)
-                                cmd = r'mvn.cmd -f "%s" graalpy:exec "-Dexec.workingdir=%s"'
+                                cmd = r'%s -classpath "%s" %s'
                                 pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
                                 with open(pyvenvcfg, 'w', encoding='utf-8') as f:
                                     f.write('venvlauncher_command = ')
                                     f.write(cmd)
                                 """,
-                                launcher,
-                                Paths.get(projectPath, "pom.xml").toString(),
-                                projectPath);
+                            launcher,
+                            java,
+                            String.join(File.pathSeparator, classpath),
+                            "com.oracle.graal.python.shell.GraalPythonMain");
                 File tmp;
                 try {
                     tmp = File.createTempFile("create_launcher", ".py");
