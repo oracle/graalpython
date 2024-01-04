@@ -84,11 +84,11 @@ public abstract class PRange extends PythonBuiltinObject {
         return lenNode.execute(this);
     }
 
-// @ExportMessage
-// public Object readArrayElement(long index,
-// @Cached RangeBuiltins.GetItemNode getItemNode) throws InvalidArrayIndexException {
-// return getItemNode.execute(this, index);
-// }
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Cached RangeBuiltins.GetItemNode getItemNode) {
+        return getItemNode.execute(this, index);
+    }
 
     @ExportMessage
     public boolean isArrayElementReadable(long idx,

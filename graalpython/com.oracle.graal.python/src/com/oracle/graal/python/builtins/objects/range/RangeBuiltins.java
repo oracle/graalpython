@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.range;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.ErrorMessages.RANGE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -49,7 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.CoerceToBigRange;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNodeExact;
@@ -394,6 +395,7 @@ public final class RangeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
@@ -421,8 +423,8 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached("forRange()") NormalizeIndexNode normalize) {
-            return self.getIntItemNormalized(normalize.execute(asSizeNode.executeExact(frame, inliningTarget, idx), self.getIntLength()));
+                        @Shared @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
+            return self.getIntItemNormalized(normalize.execute(asSizeNode.executeExact(frame, inliningTarget, idx), self.getIntLength(), RANGE_OUT_OF_BOUNDS));
         }
 
         @Specialization(guards = "canBeIndex(this, idx, indexCheckNode)")
@@ -516,7 +518,7 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @Shared @Cached CastToJavaBigIntegerNode toBigInt,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached("forRange()") NormalizeIndexNode normalize,
+                        @Shared @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (isNumIndexProfile.profile(inliningTarget, canBeIndex(inliningTarget, idx, indexCheckNode))) {
@@ -579,6 +581,10 @@ public final class RangeBuiltins extends PythonBuiltins {
         @NeverDefault
         public static GetItemNode create() {
             return RangeBuiltinsFactory.GetItemNodeFactory.create();
+        }
+
+        public static GetItemNode getUncached() {
+            return RangeBuiltinsFactory.GetItemNodeFactory.getUncached();
         }
     }
 
