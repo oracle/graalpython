@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -95,6 +95,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -179,7 +180,14 @@ public final class RangeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class LenNode extends PythonUnaryBuiltinNode {
+    @GenerateUncached
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+        public abstract int execute(VirtualFrame frame, PRange range);
+
+        public final int execute(PRange range) {
+            return execute(null, range);
+        }
+
         @Specialization
         static int doPIntRange(PIntRange self) {
             return self.getIntLength();
@@ -196,6 +204,15 @@ public final class RangeBuiltins extends PythonBuiltins {
                 return asSizeNode.executeExact(frame, inliningTarget, length);
             }
             throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, length);
+        }
+
+        @NeverDefault
+        public static LenNode create() {
+            return RangeBuiltinsFactory.LenNodeFactory.create();
+        }
+
+        public static LenNode getUncached() {
+            return RangeBuiltinsFactory.LenNodeFactory.getUncached();
         }
     }
 
@@ -378,7 +395,13 @@ public final class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
-    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+
+        public abstract Object execute(VirtualFrame frame, PRange range, Object index);
+
+        public final Object execute(PRange range, Object index) {
+            return execute(null, range, index);
+        }
 
         protected static boolean allNone(PObjectSlice slice) {
             return slice.getStart() == PNone.NONE && slice.getStop() == PNone.NONE && slice.getStep() == PNone.NONE;
@@ -551,6 +574,11 @@ public final class RangeBuiltins extends PythonBuiltins {
             BigInteger len = lenOfRangeNode.execute(inliningTarget, start, stop, step);
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createBigRange(factory.createInt(start), factory.createInt(stop), factory.createInt(step), factory.createInt(len));
+        }
+
+        @NeverDefault
+        public static GetItemNode create() {
+            return RangeBuiltinsFactory.GetItemNodeFactory.create();
         }
     }
 
