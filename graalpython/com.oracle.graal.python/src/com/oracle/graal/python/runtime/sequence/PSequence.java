@@ -237,7 +237,6 @@ public abstract class PSequence extends PythonBuiltinObject {
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            // todo: cbasca - should we attempt to actually "read" the element before?
             return isInBounds(idx, inliningTarget, getSequenceStorageNode);
         } finally {
             gil.release(mustRelease);
