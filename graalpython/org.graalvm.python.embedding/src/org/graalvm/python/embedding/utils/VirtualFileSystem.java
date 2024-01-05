@@ -241,7 +241,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             this.extractDir = extractDir;
         }
 
-        private final SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
+        private static final SimpleFileVisitor<Path> deleteVisitor = new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
@@ -261,9 +261,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
 
         private void removeExtractDir() {
-            if (extractDir != null) {
+            if (extractDir != null && Files.exists(extractDir)) {
                 try {
-                    Files.walkFileTree(extractDir, visitor);
+                    Files.walkFileTree(extractDir, deleteVisitor);
                 } catch (IOException e) {
                     System.err.format("Could not delete temp directory '%s': %s", extractDir, e);
                 }
