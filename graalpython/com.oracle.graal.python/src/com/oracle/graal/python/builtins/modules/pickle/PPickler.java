@@ -1778,7 +1778,7 @@ public class PPickler extends PythonBuiltinObject {
                 inBand = isTrue(frame, ret);
             }
 
-            boolean readOnly = bufferLib.isReadonly(bufferLib);
+            boolean readOnly = bufferLib.isReadonly(buffer);
             if (inBand) {
                 // Write data in-band
                 if (readOnly) {
