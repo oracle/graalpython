@@ -100,6 +100,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -579,6 +580,7 @@ public class PPickler extends PythonBuiltinObject {
         @Child private PyLongAsLongNode pyLongAsLongNode;
         @Child private PyObjectStrAsObjectNode pyObjectStrAsObjectNode;
         @Child private PyObjectIsTrueNode isTrueNode;
+        @Child private IsNode isNode;
         @Child private PythonBufferAcquireLibrary bufferAcquireLibrary;
         @Child private PythonBufferAccessLibrary bufferLibrary;
         @Child private PyCallableCheckNode callableCheckNode;
@@ -624,6 +626,14 @@ public class PPickler extends PythonBuiltinObject {
                 isTrueNode = insert(PyObjectIsTrueNode.create());
             }
             return isTrueNode.executeCached(frame, object);
+        }
+
+        private boolean isSame(Object a, Object b) {
+            if (isNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isNode = insert(IsNode.create());
+            }
+            return isNode.execute(a, b);
         }
 
         private boolean isCallable(Object object) {
@@ -1831,7 +1841,7 @@ public class PPickler extends PythonBuiltinObject {
             }
             Object cls = pair.getLeft();
             Object parent = pair.getRight();
-            if (cls != obj) {
+            if (!isSame(cls, obj)) {
                 throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_NOT_SAME_OBJ_AS_S_S, obj, moduleName, globalName);
             }
 
