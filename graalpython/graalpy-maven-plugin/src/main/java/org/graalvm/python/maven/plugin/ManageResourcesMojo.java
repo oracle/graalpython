@@ -389,9 +389,6 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
         var classpath = new HashSet<String>();
-        getGraalPyArtifact(project, PYTHON_LANGUAGE);
-        getGraalPyArtifact(project, PYTHON_LAUNCHER);
-        getGraalPyArtifact(project, PYTHON_RESOURCES);
         for (var r : resolveProjectDependencies(project)) {
             classpath.add(r.getFile().getAbsolutePath());
         }
