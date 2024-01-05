@@ -861,6 +861,8 @@ public class PUnpickler extends PythonBuiltinObject {
                 long x = PickleUtils.asciiBytesToLong(s, ensureTsParseLongNode(), ensureTsFromByteArray());
                 if (s.length == 3 && (x == 0 || x == 1)) {
                     value = x != 0;
+                } else if (x == (int) x) {
+                    value = (int) x;
                 } else {
                     value = x;
                 }
