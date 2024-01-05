@@ -130,7 +130,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import org.graalvm.collections.Pair;
 
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -1772,8 +1771,8 @@ public class PUnpickler extends PythonBuiltinObject {
             pDataPush(self, obj);
         }
 
-        private void loadBool(PUnpickler self, Python3Core core, boolean bool) {
-            pDataPush(self, bool ? core.getTrue() : core.getFalse());
+        private void loadBool(PUnpickler self, boolean bool) {
+            pDataPush(self, bool);
         }
 
         @Specialization
@@ -1993,10 +1992,10 @@ public class PUnpickler extends PythonBuiltinObject {
                         loadExtension(frame, ctx, self, 4);
                         continue;
                     case OPCODE_NEWTRUE:
-                        loadBool(self, ctx.getCore(), true);
+                        loadBool(self, true);
                         continue;
                     case OPCODE_NEWFALSE:
-                        loadBool(self, ctx.getCore(), false);
+                        loadBool(self, false);
                         continue;
                     case OPCODE_STOP:
                         break;
