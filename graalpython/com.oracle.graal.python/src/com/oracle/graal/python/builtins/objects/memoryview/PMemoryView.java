@@ -212,6 +212,10 @@ public final class PMemoryView extends PythonBuiltinObject {
         return (flags & (FLAG_FORTRAN | FLAG_SCALAR)) != 0;
     }
 
+    public boolean isAnyContiguous() {
+        return isCContiguous() || isFortranContiguous();
+    }
+
     public int getFlags() {
         return flags;
     }
@@ -297,7 +301,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
             throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
         }
-        if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isCContiguous() && !isFortranContiguous()) {
+        if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isAnyContiguous()) {
             throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
         }
         if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
@@ -344,7 +348,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     boolean hasInternalByteArray(
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         // Allow direct access only when we have no offset
         return offset == 0 && bufferLib.hasInternalByteArray(buffer);
     }
@@ -359,35 +363,35 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         bufferLib.readIntoByteArray(buffer, offset + srcOffset, dest, destOffset, length);
     }
 
     @ExportMessage
     void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         bufferLib.writeFromByteArray(buffer, offset + destOffset, src, srcOffset, length);
     }
 
     @ExportMessage
     void readIntoBuffer(int srcOffset, Object dest, int destOffset, int length, PythonBufferAccessLibrary otherLib,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         bufferLib.readIntoBuffer(buffer, offset + srcOffset, dest, destOffset, length, otherLib);
     }
 
     @ExportMessage
     byte readByte(int byteOffset,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         return bufferLib.readByte(buffer, offset + byteOffset);
     }
 
     @ExportMessage
     void writeByte(int byteOffset, byte value,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         assert !readonly;
         bufferLib.writeByte(buffer, offset + byteOffset, value);
     }
@@ -395,14 +399,14 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     short readShortByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         return bufferLib.readShortByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
     @ExportMessage
     void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         assert !readonly;
         bufferLib.writeShortByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }
@@ -410,14 +414,14 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     int readIntByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         return bufferLib.readIntByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
     @ExportMessage
     void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         assert !readonly;
         bufferLib.writeIntByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }
@@ -425,14 +429,14 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     long readLongByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         return bufferLib.readLongByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
     @ExportMessage
     void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         assert !readonly;
         bufferLib.writeLongByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }
@@ -440,7 +444,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     float readFloatByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         return bufferLib.readFloatByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
@@ -454,14 +458,14 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         return bufferLib.readDoubleByteOrder(buffer, offset + byteOffset, byteOrder);
     }
 
     @ExportMessage
     void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous() && !isReleased();
+        assert isAnyContiguous() && !isReleased();
         assert !readonly;
         bufferLib.writeDoubleByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }

@@ -93,7 +93,7 @@ public class PickleBufferBuiltins extends PythonBuiltins {
             PMemoryView mv = memoryViewFromObject.execute(frame, self);
             // Make it into raw (1-dimensional bytes) memoryview
             try {
-                if (!mv.isCContiguous() && !mv.isFortranContiguous()) {
+                if (!mv.isAnyContiguous()) {
                     throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.CANNOT_EXTRACT_RAW_BUFFER_FROM_NON_CONTIGUOUS);
                 }
                 int[] shape = new int[]{mv.getLength()};

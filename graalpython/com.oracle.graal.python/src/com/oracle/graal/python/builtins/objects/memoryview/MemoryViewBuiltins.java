@@ -953,7 +953,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
-            return self.isCContiguous() || self.isFortranContiguous();
+            return self.isAnyContiguous();
         }
     }
 }

@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -101,8 +102,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
                         @Cached PythonObjectFactory factory) {
-            // TODO FULL_RO buffer access
-            Object buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);
+            Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
             return factory.createPickleBuffer(buffer);
         }
     }
