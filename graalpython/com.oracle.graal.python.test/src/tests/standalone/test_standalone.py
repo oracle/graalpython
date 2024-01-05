@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -286,6 +286,10 @@ class PolyglotAppTest(unittest.TestCase):
                 cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"] 
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "hello java" in out
+                
+                #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
+                assert "java.lang.NoClassDefFoundError" not in out
+                
             finally:
                 self.purge_local_repo(target_dir, False)
 
