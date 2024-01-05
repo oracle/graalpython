@@ -1819,13 +1819,12 @@ public class PPickler extends PythonBuiltinObject {
             TruffleString[] dottedPath = getDottedPath(obj, globalName);
             TruffleString moduleName = whichModule(frame, ctx, obj, dottedPath);
 
-            // XXX: Change to use the import C API directly with level=0 to disallow relative
-            // imports.
-            // XXX: PyImport_ImportModuleLevel could be used. However, this bypasses
-            // builtins.__import__. Therefore, _pickle, unlike pickle.py, will ignore custom import
-            // functions (IMHO, this would be a nice security feature). The import C API would need
-            // to be extended to support the extra parameters of __import__ to fix that.
-            Object module = PickleUtils.importDottedModule(moduleName);
+            Object module;
+            try {
+                module = PickleUtils.importDottedModule(moduleName);
+            } catch (PException e) {
+                throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED, obj, moduleName);
+            }
             final Pair<Object, Object> pair = getDeepAttribute(frame, getLookupAttrNode(), module, dottedPath);
             if (pair == null) {
                 throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_ATTR_LOOKUP_FAIL_S_S, obj, globalName, moduleName);

@@ -1621,6 +1621,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANT_PICKLE_LOCAL_OBJ_S = tsLiteral("Can't pickle local object %s");
     public static final TruffleString CANT_PICKLE_ATTR_S_OF_P = tsLiteral("Can't pickle local attribute %s on %p");
     public static final TruffleString CANT_PICKLE_P_ATTR_LOOKUP_FAIL_S_S = tsLiteral("Can't pickle %p: attribute lookup %s on %s failed");
+    public static final TruffleString CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED = tsLiteral("Can't pickle %p: import of module %s failed");
     public static final TruffleString CANT_PICKLE_P_NOT_SAME_OBJ_AS_S_S = tsLiteral("Can't pickle %p: it's not the same object as %s.%s");
     public static final TruffleString CANT_PICKLE_P_EXT_CODE_P_NOT_AN_INT = tsLiteral("Can't pickle %p: extension code %p isn't an integer");
     public static final TruffleString CANT_PICKLE_P_EXT_CODE_OO_RANGE = tsLiteral("Can't pickle %p: extension code %d is out of range");
