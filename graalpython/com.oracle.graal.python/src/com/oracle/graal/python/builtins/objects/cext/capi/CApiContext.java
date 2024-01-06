@@ -530,21 +530,26 @@ public final class CApiContext extends CExtContext {
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded() {
         try {
+            System.out.println("ensureCapiWasLoaded called  python context: " + PythonContext.get(null));
             return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
         } catch (Exception e) {
+            System.err.println("Error loading CAPI: " + e.getMessage());
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
+        System.err.println("ensureCapiWasLoaded called with context " + context + " and name " + name + " and path " + path + " and node " + node);
         if (!context.hasCApiContext()) {
+            System.err.println("Loading CAPI");
             Env env = context.getEnv();
             InteropLibrary U = InteropLibrary.getUncached();
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
             String libName = context.getLLVMSupportExt("python");
+            System.err.println("Loading CAPI from " + libName);
             TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
             try {
                 SourceBuilder capiSrcBuilder;
@@ -555,11 +560,12 @@ public final class CApiContext extends CExtContext {
                         LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
                                         "but only one context in the process can use native modules, " +
                                         "second and other contexts fallback to NativeModules=false and " +
-                                        "will use LLVM bitcode execution via GraalVM LLVM.");
+                                        "will use LLVM bitcode executxion via GraalVM LLVM.");
                     }
                 } else {
                     useNative = false;
                 }
+                System.err.println("Loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
                 if (useNative) {
                     context.ensureNFILanguage(node, "NativeModules", "true");
                     capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
@@ -574,17 +580,20 @@ public final class CApiContext extends CExtContext {
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
 
                 Object capiLibrary = capiLibraryCallTarget.call();
+                System.err.println("Checking init function");
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
                 if (!U.isExecutable(initFunction)) {
                     Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                    System.err.println("Bound & calling init function");
                     U.execute(initFunction, new GetBuiltin());
                 } else {
+                    System.err.println("Executing init function");
                     U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
-
+                System.err.println("Checking builtins");
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
                 cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();

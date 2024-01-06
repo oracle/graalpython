@@ -651,6 +651,31 @@ suite = {
             ],
         },
 
+        "com.oracle.graal.python.c_embed": {
+            "subDir": "graalpython",
+            "class": "CMakeNinjaProject",
+            "toolchain": "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+            "max_jobs": "8",
+            "vpath": True,
+            "ninja_targets": ["all"],
+            "ninja_install_targets": ["install"],
+            "os_arch": {
+                "<others>": {
+                    "<others>": {
+                        "cmakeConfig": {
+                            "CEXT_H_INC": "<path:com.oracle.graal.python.cext>/include",
+                            # TODO make dynamic
+                            "RUNTIME_LIB_DIR": "/Users/mkind/Dev/Uni/RE23/graal/sdk/mxbuild/darwin-aarch64/libpythonvm.dylib.image",
+                            "PYTHON_NATIVE_LIB": "/Users/mkind/Dev/Uni/RE23/graalpython/mxbuild/darwin-aarch64/com.oracle.graal.python.cext/aarch64/bin/libpython-native.dylib"
+                        },
+                        "results": [
+                            # "bin/<lib:python-native>"
+                            # TODO
+                        ],
+                    },
+                },
+            }
+        },
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
@@ -677,7 +702,6 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
-                            "bin/modules/_sha3<graalpy_ext:native>",
                         ],
                     },
                 },
@@ -696,7 +720,6 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
-                            "bin/modules/_sha3<graalpy_ext:native>",
                             "bin/modules/_testcapi<graalpy_ext:native>",
                             "bin/modules/_testbuffer<graalpy_ext:native>",
                             "bin/modules/_testmultiphase<graalpy_ext:native>",
@@ -906,13 +929,13 @@ suite = {
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/graalpy_versions",
+                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"]
             },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/graalpy_versions",
+                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"],
             },
         },
 

@@ -142,7 +142,7 @@ public final class CApiCodeGen {
      *
      * @return true if the file was modified, false if there were no changes
      */
-    private static boolean writeGenerated(Path path, List<String> contents) throws IOException {
+    static boolean writeGenerated(Path path, List<String> contents) throws IOException {
         Path capi = CApiCodeGen.resolvePath(path);
         List<String> lines = Files.readAllLines(capi);
         int start = -1;
@@ -440,6 +440,8 @@ public final class CApiCodeGen {
         changed |= generateCApiHeader(javaBuiltins);
         changed |= generateBuiltinRegistry(javaBuiltins);
         changed |= checkImports(allBuiltins);
+        changed |= CEmbedCodeGen.generateCPyEmbedHeader(javaBuiltins);
+        changed |= CEmbedCodeGen.generateCPyEmbedSource(javaBuiltins);
         if (changed) {
             System.exit(-1);
         }

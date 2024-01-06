@@ -1150,6 +1150,7 @@ public final class PythonContext extends Python3Core {
     private static final ContextReference<PythonContext> REFERENCE = ContextReference.create(PythonLanguage.class);
 
     public static PythonContext get(Node node) {
+        // System.out.println("PythonContext.get " + REFERENCE.get(node));
         return REFERENCE.get(node);
     }
 
