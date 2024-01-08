@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -296,7 +296,19 @@ typedef struct {
 static Py_ssize_t
 get_nmemb(PyObject *s)
 {
-    return ((PyPartialStructObject *)s)->s_len;
+    // GraalPy change: avoid direct C struct access
+    // return ((PyPartialStructObject *)s)->s_len;
+    // Facepalm-worthy solution: call pack with no args and parse the expected count from the error message
+    PyObject_CallMethod(s, "pack", NULL);
+    assert(PyErr_Occurred());
+    PyObject *et, *exception, *tb;
+    PyErr_Fetch(&et, &exception, &tb);
+    PyObject* messageObj = PyObject_Str(exception);
+    char* message = PyUnicode_AsUTF8(messageObj);
+    char* expected = strstr(message, "expected") + sizeof("expected");
+    int nmemb = -1;
+    sscanf(expected, "%d", &nmemb);
+    return nmemb;
 }
 
 /* Pack all items into the buffer of 'obj'. The 'format' parameter must be
