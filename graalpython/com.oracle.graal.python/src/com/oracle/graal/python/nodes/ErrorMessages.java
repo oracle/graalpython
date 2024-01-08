@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1595,4 +1595,74 @@ public abstract class ErrorMessages {
     public static final TruffleString MAXSIZE_SHOULD_BE_INTEGER_OR_NONE = tsLiteral("maxsize should be integer or None");
     public static final TruffleString THE_FIRST_ARGUMENT_MUST_BE_CALLABLE = tsLiteral("the first argument must be callable");
     public static final TruffleString S_MUST_BE_A_S_TUPLE = tsLiteral("%s must be a %s-tuple");
+
+    // pickle
+    public static final TruffleString STRUCT_SIZE_TOO_LONG = tsLiteral("total struct size too long");
+    public static final TruffleString OP_FORBIDDEN_ON_OBJECT = tsLiteral("operation forbidden on released %s object");
+    public static final TruffleString PICKLE_PROTO_MUST_BE_LE = tsLiteral("pickle protocol must be <= %sd");
+    public static final TruffleString UNSUPPORTED_PICKLE_PROTO = tsLiteral("unsupported pickle protocol: %d");
+    public static final TruffleString FILE_MUST_HAVE_WRITE_ATTR = tsLiteral("file must have a 'write' attribute");
+    public static final TruffleString BUFFCB_NEEDS_PROTO_GE_5 = tsLiteral("buffer_callback needs protocol >= 5");
+    public static final TruffleString FILE_MUST_HAVE_A_AND_B_ATTRS = tsLiteral("file must have '%s' and '%s' attributes");
+    public static final TruffleString INIT_CALLED_WITH = tsLiteral("%s.__init__() was not called by %p.__init__()");
+    public static final TruffleString ATTR_MUST_BE_A_OR_B_NOT_C = tsLiteral("'%s' attribute must be a %s object or %s, not %p");
+    public static final TruffleString VALUES_MUST_BE_2TUPLES = tsLiteral("'%s' values must be 2-item tuples");
+    public static final TruffleString ATTR_MUST_BE_A_CALLABLE = tsLiteral("%s must be a callable taking %s");
+    public static final TruffleString PIDS_MUST_BE_ASCII_STRS = tsLiteral("persistent IDs in protocol 0 must be ASCII strings");
+    public static final TruffleString CANNOT_PICKLE_P_P = tsLiteral("can't pickle '%p' object: %p");
+    public static final TruffleString S_SHOULD_BE_A_S_NOT_A_P = tsLiteral("%s should be a %s not a %p");
+    public static final TruffleString MEMO_ID_TOO_LARGE_FOR_S = tsLiteral("memo id too large for %s");
+    public static final TruffleString MEMO_KEY_MUST_BE_INT = tsLiteral("memo key must be integers");
+    public static final TruffleString MEMO_KEY_MUST_BE_POS_INT = tsLiteral("memo key must be positive integers.");
+    public static final TruffleString S_TO_LARGE_TO_PICKLE = tsLiteral("%s too large to pickle");
+    public static final TruffleString SER_OVER_4GB = tsLiteral("serializing a bytes object larger than 4 GiB requires pickle protocol 4 or higher");
+    public static final TruffleString FAST_MEMO_CANT_PICKLE_CYCLIC_OBJ_P_S = tsLiteral("fast mode: can't pickle cyclic objects including object type %p at %s");
+    public static final TruffleString PICKLEBUFF_CANNOT_PICKLE_WITH_PROTO5 = tsLiteral("PickleBuffer can only pickled with protocol >= 5");
+    public static final TruffleString CANT_PICKLE_LOCAL_OBJ_S = tsLiteral("Can't pickle local object %s");
+    public static final TruffleString CANT_PICKLE_ATTR_S_OF_P = tsLiteral("Can't pickle local attribute %s on %p");
+    public static final TruffleString CANT_PICKLE_P_ATTR_LOOKUP_FAIL_S_S = tsLiteral("Can't pickle %p: attribute lookup %s on %s failed");
+    public static final TruffleString CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED = tsLiteral("Can't pickle %p: import of module %s failed");
+    public static final TruffleString CANT_PICKLE_P_NOT_SAME_OBJ_AS_S_S = tsLiteral("Can't pickle %p: it's not the same object as %s.%s");
+    public static final TruffleString CANT_PICKLE_P_EXT_CODE_P_NOT_AN_INT = tsLiteral("Can't pickle %p: extension code %p isn't an integer");
+    public static final TruffleString CANT_PICKLE_P_EXT_CODE_OO_RANGE = tsLiteral("Can't pickle %p: extension code %d is out of range");
+    public static final TruffleString CANT_PICKLE_MODULE_S_USING_PROTO_D = tsLiteral("can't pickle module identifier '%s' using pickle protocol %d");
+    public static final TruffleString TUPLE_RET_BY_REDUCE_2_6 = tsLiteral("tuple returned by __reduce__ must contain 2 through 6 elements");
+    public static final TruffleString S_ITEM_REDUCE_MUST_BE_S = tsLiteral("%s item of the tuple returned by __reduce__ must be %s");
+    public static final TruffleString S_ITEM_FROM_S_MUST_BE_S_NOT_P = tsLiteral("%s item from %s argument tuple must be %s, not %p");
+    public static final TruffleString S_ELEM_REDUCE_MUST_BE_S_NOT_P = tsLiteral("%s element of the tuple returned by __reduce__ must be %s, not %p");
+    public static final TruffleString LEN_OF_S_MUST_BE_D_NOT_D = tsLiteral("length of the %s argument tuple must be exactly %d, not %d");
+    public static final TruffleString ARGS_0_FROM_S_ARGS_S = tsLiteral("args[0] from %s args %s");
+    public static final TruffleString PDATA_UNEXPECTED_MARK_FOUND = tsLiteral("unexpected MARK found");
+    public static final TruffleString PDATA_UNPICKLING_STACK_UNDERFLOW = tsLiteral("unpickling stack underflow");
+    public static final TruffleString READ_OVERFLOW = tsLiteral("read would overflow (invalid bytecode)");
+    public static final TruffleString PICKLE_DATA_WAS_TRUNCATED = tsLiteral("pickle data was truncated");
+    public static final TruffleString LONG_PICKLE_HAS_NEG_BYTE_CNT = tsLiteral("LONG pickle has negative byte count");
+    public static final TruffleString S_EXCEEDS_MAX_SIZE_N_BYTES = tsLiteral("%s exceeds system's maximum size of %d bytes");
+    public static final TruffleString S_RETURNED_NON_BYTES_P = tsLiteral("%s returned non-bytes object (%p)");
+    public static final TruffleString S_RETURNED_NEG_SIZE = tsLiteral("%s returned negative size");
+    public static final TruffleString PICKLE_STREAM_NO_BUFFERS = tsLiteral("pickle stream refers to out-of-band data but no *buffers* argument was given");
+    public static final TruffleString NOT_ENOUGH_BUFFERS = tsLiteral("not enough out-of-band buffers");
+    public static final TruffleString COULD_NOT_FIND_MARK = tsLiteral("could not find MARK");
+    public static final TruffleString ODD_NR_ITEMS_FOR_S = tsLiteral("odd number of items for %s");
+    public static final TruffleString S_OPCODE_ARG_MUST_BE_QUOTED = tsLiteral("the %s opcode argument must be quoted");
+    public static final TruffleString NEG_S_ARG = tsLiteral("negative %s argument");
+    public static final TruffleString S_REQ_STR = tsLiteral("%s requires str");
+    public static final TruffleString PID_PROTO_0 = tsLiteral("persistent IDs in protocol 0 must be ASCII strings");
+    public static final TruffleString PID_NO_FUNC = tsLiteral("A load persistent id instruction was encountered,\nbut no persistent_load function was specified");
+    public static final TruffleString S_EXPECTED_AN_ARG_S = tsLiteral("%s expected an arg %s");
+    public static final TruffleString S_CLASS_ARG_S = tsLiteral("%s class argument %s");
+    public static final TruffleString S_CLASS_ARG_MUST_BE_TYPE_NOT_P = tsLiteral("%s class argument must be a type, not %p");
+    public static final TruffleString S_CLASS_ARG_DOES_NOT_HAVE_S = tsLiteral("$s class argument doesn't have %s");
+    public static final TruffleString S_STATE_NOT_DICT = tsLiteral("%sstate is not a dictionary");
+    public static final TruffleString EXT_CODE_LE_0 = tsLiteral("EXT specifies code <= 0");
+    public static final TruffleString EXT_UNREGISTERED = tsLiteral("unregistered extension code %d");
+    public static final TruffleString INV_REG_NOT_2TUPLE = tsLiteral("_inverted_registry[%d] isn't a 2-tuple of strings");
+    public static final TruffleString INVALID_LOAD_KEY_CHR = tsLiteral("invalid load key, '%c'.");
+    public static final TruffleString INVALID_LOAD_KEY_HEX = tsLiteral("invalid load key, '0x%02X'.");
+    public static final TruffleString S_SHOULD_BE_S_NOT_P = tsLiteral("%s values should be %s, not %p");
+    public static final TruffleString S_SHOULD_BE_S_NOT_P_P = tsLiteral("%s values should be %s, not (%p, %p)");
+    public static final TruffleString RAN_OUT_OF_INPUT = tsLiteral("Ran out of input");
+    public static final TruffleString CANNOT_EXTRACT_RAW_BUFFER_FROM_NON_CONTIGUOUS = tsLiteral("cannot extract raw buffer from non-contiguous buffer");
+    public static final TruffleString MEMO_VALUE_NOT_FOUND_AT_INDEX_D = tsLiteral("Memo value not found at index %d");
+    public static final TruffleString ATRIBUTE_DELETION_NOT_SUPPORTED = tsLiteral("attribute deletion is not supported");
 }

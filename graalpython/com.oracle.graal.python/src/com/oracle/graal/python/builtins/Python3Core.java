@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -202,6 +202,12 @@ import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBu
 import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingGraalPyModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PickleBufferBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PickleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -694,6 +700,14 @@ public abstract class Python3Core {
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
+
+                        // pickle
+                        new PickleModuleBuiltins(),
+                        new PicklerBuiltins(),
+                        new UnpicklerBuiltins(),
+                        new PickleBufferBuiltins(),
+                        new PicklerMemoProxyBuiltins(),
+                        new UnpicklerMemoProxyBuiltins(),
 
                         // lzma
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMAModuleBuiltins(),

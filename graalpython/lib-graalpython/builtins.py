@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,6 @@
 # IMPORTANT! Any files added here also need to be added to
 # Python3Core.INDIRECT_CORE_FILES, because during bootstrap we pre-parse (but do
 # not run!) all core files.
-
-def __gr__(self, name, mode='r', closefd=True, opener=None):
-    pass
-
-
-# TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
-#  on 'descriptor'. We should revisit that.
-def _f(): pass
-FunctionType = type(_f)
-descriptor = type(FunctionType.__code__)
 
 
 @__graalpython__.builtin

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -953,7 +953,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
-            return self.isCContiguous() || self.isFortranContiguous();
+            return self.isAnyContiguous();
         }
     }
 }

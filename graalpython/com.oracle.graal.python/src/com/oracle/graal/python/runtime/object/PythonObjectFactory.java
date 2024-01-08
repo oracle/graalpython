@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -75,6 +75,11 @@ import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
+import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
+import com.oracle.graal.python.builtins.modules.pickle.PPickler;
+import com.oracle.graal.python.builtins.modules.pickle.PPicklerMemoProxy;
+import com.oracle.graal.python.builtins.modules.pickle.PUnpickler;
+import com.oracle.graal.python.builtins.modules.pickle.PUnpicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -1592,6 +1597,48 @@ public abstract class PythonObjectFactory extends Node {
 
     public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {
         return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
+    }
+
+    // pickle
+
+    public PPickleBuffer createPickleBuffer(Object view) {
+        return createPickleBuffer(view, PythonBuiltinClassType.PickleBuffer);
+    }
+
+    public PPickleBuffer createPickleBuffer(Object view, Object cls) {
+        return trace(new PPickleBuffer(cls, getShape(cls), view));
+    }
+
+    public PPickler createPickler() {
+        return createPickler(PythonBuiltinClassType.Pickler);
+    }
+
+    public PPickler createPickler(Object cls) {
+        return trace(new PPickler(cls, getShape(cls)));
+    }
+
+    public PUnpickler createUnpickler() {
+        return createUnpickler(PythonBuiltinClassType.Unpickler);
+    }
+
+    public PUnpickler createUnpickler(Object cls) {
+        return trace(new PUnpickler(cls, getShape(cls)));
+    }
+
+    public PPicklerMemoProxy createPicklerMemoProxy(PPickler pickler) {
+        return createPicklerMemoProxy(pickler, PythonBuiltinClassType.PicklerMemoProxy);
+    }
+
+    public PPicklerMemoProxy createPicklerMemoProxy(PPickler pickler, Object cls) {
+        return trace(new PPicklerMemoProxy(cls, getShape(cls), pickler));
+    }
+
+    public PUnpicklerMemoProxy createUnpicklerMemoProxy(PUnpickler unpickler) {
+        return createUnpicklerMemoProxy(unpickler, PythonBuiltinClassType.UnpicklerMemoProxy);
+    }
+
+    public PUnpicklerMemoProxy createUnpicklerMemoProxy(PUnpickler unpickler, Object cls) {
+        return trace(new PUnpicklerMemoProxy(cls, getShape(cls), unpickler));
     }
 
     @GenerateInline

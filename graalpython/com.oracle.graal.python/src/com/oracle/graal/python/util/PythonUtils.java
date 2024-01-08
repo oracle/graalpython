@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -788,6 +788,18 @@ public final class PythonUtils {
         result[0] = primary;
         arraycopy(arguments, 0, result, 1, arguments.length);
         return result;
+    }
+
+    public static boolean isAscii(TruffleString string, TruffleString.GetCodeRangeNode getCodeRangeNode) {
+        return getCodeRangeNode.execute(string, TS_ENCODING) == TruffleString.CodeRange.ASCII;
+    }
+
+    public static byte[] getAsciiBytes(TruffleString string, TruffleString.CopyToByteArrayNode copyToByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        assert string.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
+        TruffleString ascii = switchEncodingNode.execute(string, Encoding.US_ASCII);
+        byte[] data = new byte[ascii.byteLength(Encoding.US_ASCII)];
+        copyToByteArrayNode.execute(ascii, 0, data, 0, data.length, Encoding.US_ASCII);
+        return data;
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {

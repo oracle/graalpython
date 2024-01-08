@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,8 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import unittest
 import pickle
+import unittest
+
 
 class TestPickle(unittest.TestCase):
 
@@ -63,14 +64,12 @@ class TestPickle(unittest.TestCase):
         [next(teeit) for i in range(1, 16)]
         b_obj = pickle.dumps(teeit, protocol=0)
         teeit2 = pickle.loads(b_obj)
-        assert [16,17,18,19] == [next(teeit2) for i in range(1, 5)]
-        assert [16,17,18,19] == [next(teeit) for i in range(1, 5)]
+        assert [16, 17, 18, 19] == [next(teeit2) for i in range(1, 5)]
+        assert [16, 17, 18, 19] == [next(teeit) for i in range(1, 5)]
 
-    def test_is_builtin_on_enterprise(self):
-        import sys
-        if sys.implementation.name == "graalpy" and __graalpython__.is_managed_launcher():
-            import _pickle
-            assert "built-in" in repr(_pickle)
+    def test_intrinsified_module(self):
+        import _pickle
+        assert pickle.Pickler is _pickle.Pickler
 
 
 if __name__ == '__main__':

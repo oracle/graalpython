@@ -79,29 +79,6 @@ index 9c67ec6..12fda5a 100644
  
  
  def _extract_class_dict(cls):
-diff --git a/python/ray/cloudpickle/cloudpickle_fast.py b/python/ray/cloudpickle/cloudpickle_fast.py
-index b3c20b9..4e41ccc 100644
---- a/python/ray/cloudpickle/cloudpickle_fast.py
-+++ b/python/ray/cloudpickle/cloudpickle_fast.py
-@@ -766,7 +766,7 @@ class CloudPickler(Pickler):
-             self.globals_ref = {}
-             assert hasattr(self, "proto")
- 
--    if pickle.HIGHEST_PROTOCOL >= 5 and not PYPY:
-+    if pickle.HIGHEST_PROTOCOL >= 5 and not hasattr(Pickler, 'dispatch'):
-         # Pickler is the C implementation of the CPython pickler and therefore
-         # we rely on reduce_override method to customize the pickler behavior.
- 
-diff --git a/python/ray/cloudpickle/compat.py b/python/ray/cloudpickle/compat.py
-index bed27ab..d5b7ac3 100644
---- a/python/ray/cloudpickle/compat.py
-+++ b/python/ray/cloudpickle/compat.py
-@@ -24,4 +24,4 @@ elif sys.version_info < (3, 8):
-         from pickle import _Pickler as Pickler  # noqa: F401
- else:
-     import pickle  # noqa: F401
--    from _pickle import Pickler  # noqa: F401
-+    from pickle import Pickler  # noqa: F401
 diff --git a/ray_build_backend.py b/ray_build_backend.py
 new file mode 100644
 index 0000000..a5d44c2
