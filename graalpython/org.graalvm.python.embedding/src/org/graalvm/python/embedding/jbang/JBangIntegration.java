@@ -120,7 +120,7 @@ public class JBangIntegration {
         if (Files.exists(venv)) {
             try {
                 Stream<Path> filter = Files.list(venv.resolve("lib")).filter(p -> p.getFileName().toString().startsWith("python3"));
-                // on windows, there doesn't have to be python3xxxx folder. 
+                // on windows, there doesn't have to be python3xxxx folder.
                 Optional<Path> libFolderOptional = filter.findFirst();
                 Path libFolder = libFolderOptional.orElse(venv.resolve("lib"));
                 if (libFolder != null) {
@@ -220,10 +220,10 @@ public class JBangIntegration {
                                     f.write('venvlauncher_command = ')
                                     f.write(cmd)
                                 """,
-                            launcher,
-                            java,
-                            String.join(File.pathSeparator, classpath),
-                            "com.oracle.graal.python.shell.GraalPythonMain");
+                                launcher,
+                                java,
+                                String.join(File.pathSeparator, classpath),
+                                "com.oracle.graal.python.shell.GraalPythonMain");
                 File tmp;
                 try {
                     tmp = File.createTempFile("create_launcher", ".py");
