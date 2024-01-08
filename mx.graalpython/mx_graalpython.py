@@ -2100,6 +2100,9 @@ def _python_checkpatchfiles():
             'safetensors-0.3.3.patch',
             'tensorflow-io-0.34.0.patch',
             'tensorflow-io-gcs-filesystem-0.34.0.patch',
+            # Puts whole license into the field. It's BSD 3-Clause
+            'pythran-0.12.0.patch',
+            'pythran-0.13.patch',
         }
         allowed_licenses = [
             "MIT",
