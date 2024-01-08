@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -99,6 +99,16 @@ def get_gp():
 
     return graalpy
 
+
+def get_graalvm_version():
+    graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], os.environ.copy())
+    # when JLine is cannot detect a terminal, it prints logging info
+    graalvmVersion = graalvmVersion.split("\n")[-1]
+    # we never test -dev versions here, we always pretend to use release versions
+    graalvmVersion = graalvmVersion.split("-dev")[0]
+    return graalvmVersion
+
+
 class PolyglotAppTest(unittest.TestCase):
 
     def setUpClass(self):
@@ -111,9 +121,7 @@ class PolyglotAppTest(unittest.TestCase):
         self.archetypeGroupId = "org.graalvm.python"
         self.archetypeArtifactId = "graalpy-archetype-polyglot-app"
         self.pluginArtifactId = "graalpy-maven-plugin"
-        graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], self.env)
-        # when JLine is cannot detect a terminal, it prints logging info
-        self.graalvmVersion = graalvmVersion.split("\n")[-1]
+        self.graalvmVersion = get_graalvm_version()
 
         for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
             url = urllib.parse.urlparse(custom_repo)
@@ -392,7 +400,8 @@ def test_native_executable_one_file():
     graalpy = get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy() 
+    env = os.environ.copy()
+    env["MVN_GRAALPY_VERSION"] = get_graalvm_version()
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
@@ -417,6 +426,7 @@ def test_native_executable_venv_and_one_file():
     if graalpy is None:
         return
     env = os.environ.copy()
+    env["MVN_GRAALPY_VERSION"] = get_graalvm_version()
 
     with tempfile.TemporaryDirectory() as target_dir:
         source_file = os.path.join(target_dir, "hello.py")
@@ -453,6 +463,7 @@ def test_native_executable_module():
     if graalpy is None:
         return
     env = os.environ.copy()
+    env["MVN_GRAALPY_VERSION"] = get_graalvm_version()
 
     with tempfile.TemporaryDirectory() as tmp_dir:
 
