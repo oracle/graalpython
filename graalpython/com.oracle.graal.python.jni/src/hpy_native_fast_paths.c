@@ -80,6 +80,8 @@ static HPy (*original_Long_FromInt32_t)(HPyContext *ctx, int32_t l);
 static HPy (*original_Long_FromUInt32_t)(HPyContext *ctx, uint32_t l);
 static HPy (*original_Long_FromInt64_t)(HPyContext *ctx, int64_t l);
 static HPy (*original_Long_FromUInt64_t)(HPyContext *ctx, uint64_t l);
+static HPy (*original_Long_FromSsize_t)(HPyContext *ctx, HPy_ssize_t l);
+static HPy (*original_Long_FromSize_t)(HPyContext *ctx, size_t l);
 static int (*original_List_Check)(HPyContext *ctx, HPy h);
 static int (*original_Number_Check)(HPyContext *ctx, HPy h);
 static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
@@ -90,6 +92,9 @@ static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
 static HPy (*original_Type)(HPyContext *ctx, HPy obj);
+static HPy (*original_Add)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_Subtract)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_Multiply)(HPyContext *ctx, HPy h1, HPy h2);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     uint64_t bitsA = toBits(a);
@@ -219,6 +224,22 @@ static HPy augment_Long_FromUInt64_t(HPyContext *ctx, uint64_t l) {
     }
 }
 
+static HPy augment_Long_FromSsize_t(HPyContext *ctx, HPy_ssize_t l) {
+    if (isBoxableInt(l)) {
+        return toPtr(boxInt((int32_t) l));
+    } else {
+        return original_Long_FromSsize_t(ctx, l);
+    }
+}
+
+static HPy augment_Long_FromSize_t(HPyContext *ctx, size_t l) {
+    if (isBoxableUnsignedInt(l)) {
+        return toPtr(boxInt((int32_t) l));
+    } else {
+        return original_Long_FromSize_t(ctx, l);
+    }
+}
+
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (!bits) {
@@ -326,6 +347,26 @@ HPy augment_Type(HPyContext *ctx, HPy obj) {
     }
 }
 
+#define GENERATE_AUGMENTED_BINOP(NAME, OP) \
+    static HPy augment_##NAME(HPyContext *ctx, HPy h1, HPy h2) { \
+        uint64_t bits1 = toBits(h1); \
+        uint64_t bits2 = toBits(h2); \
+        if (isBoxedInt(bits1) && isBoxedInt(bits2)) { \
+            int64_t i1 = (int64_t) unboxInt(bits1); \
+            int64_t i2 = (int64_t) unboxInt(bits2); \
+            return augment_Long_FromInt64_t(ctx, i1 OP i2); \
+        } else if (isBoxedDouble(bits1) && isBoxedDouble(bits2)) { \
+            double f1 = unboxDouble(bits1); \
+            double f2 = unboxDouble(bits2); \
+            return augment_Float_FromDouble(ctx, f1 OP f2); \
+        } \
+        return original_##NAME(ctx, h1, h2); \
+    }
+
+GENERATE_AUGMENTED_BINOP(Add, +)
+GENERATE_AUGMENTED_BINOP(Subtract, -)
+GENERATE_AUGMENTED_BINOP(Multiply, *)
+
 void init_native_fast_paths(HPyContext *context) {
     LOG("%p", context);
 
@@ -354,6 +395,10 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(Long_FromInt64_t);
 
     AUGMENT(Long_FromUInt64_t);
+
+    AUGMENT(Long_FromSsize_t);
+
+    AUGMENT(Long_FromSize_t);
 
     AUGMENT(Close);
 
@@ -386,6 +431,12 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(Is);
 
     AUGMENT(Type);
+
+    AUGMENT(Add);
+
+    AUGMENT(Subtract);
+
+    AUGMENT(Multiply);
 
 #undef AUGMENT
 }
