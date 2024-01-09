@@ -191,7 +191,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * version during the build that are checked against these constants.
      */
     public static final int GRAALVM_MAJOR = 24;
-    public static final int GRAALVM_MINOR = 0;
+    public static final int GRAALVM_MINOR = 1;
     public static final String DEV_TAG;
 
     /**
