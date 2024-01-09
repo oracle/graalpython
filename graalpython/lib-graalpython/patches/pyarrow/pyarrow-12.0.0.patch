@@ -1,6 +1,6 @@
 diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
 new file mode 100644
-index 0000000..dfb18b7
+index 0000000..9046e34
 --- /dev/null
 +++ b/pyarrow_build_backend.py
 @@ -0,0 +1,89 @@
@@ -15,7 +15,7 @@ index 0000000..dfb18b7
 +import urllib.request
 +from pathlib import Path
 +
-+VERSION = '11.0.0'
++VERSION = '12.0.0'
 +
 +
 +def build_sdist(sdist_directory, config_settings=None):
@@ -94,7 +94,7 @@ index 0000000..dfb18b7
 +        shutil.copyfile(wheel, wheel_directory / wheel.name)
 +        return str(wheel.name)
 diff --git a/pyproject.toml b/pyproject.toml
-index edbc4ad..141419f 100644
+index fe8c938..8945652 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
 @@ -23,3 +23,5 @@ requires = [
