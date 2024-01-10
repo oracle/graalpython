@@ -75,6 +75,8 @@ static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
 static int32_t (*original_Long_AsInt32_t)(HPyContext *ctx, HPy h);
 static int64_t (*original_Long_AsInt64_t)(HPyContext *ctx, HPy h);
 static uint32_t (*original_Long_AsUInt32_t)(HPyContext *ctx, HPy h);
+static size_t (*original_Long_AsSize_t)(HPyContext *ctx, HPy h);
+static HPy_ssize_t (*original_Long_AsSsize_t)(HPyContext *ctx, HPy h);
 static double (*original_Long_AsDouble)(HPyContext *ctx, HPy h);
 static HPy (*original_Long_FromInt32_t)(HPyContext *ctx, int32_t l);
 static HPy (*original_Long_FromUInt32_t)(HPyContext *ctx, uint32_t l);
@@ -185,6 +187,28 @@ static uint32_t augment_Long_AsUInt32_t(HPyContext *ctx, HPy h) {
         }
     }
     return original_Long_AsUInt32_t(ctx, h);
+}
+
+static HPy_ssize_t augment_Long_AsSsize_t(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        int32_t unboxed = unboxInt(bits);
+        if (unboxed >= 0) {
+            return unboxed;
+        }
+    }
+    return original_Long_AsSsize_t(ctx, h);
+}
+
+static size_t augment_Long_AsSize_t(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        int32_t unboxed = unboxInt(bits);
+        if (unboxed >= 0) {
+            return unboxed;
+        }
+    }
+    return original_Long_AsSize_t(ctx, h);
 }
 
 static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
@@ -387,6 +411,10 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(Long_AsUInt32_t);
 
     AUGMENT(Long_AsDouble);
+
+    AUGMENT(Long_AsSsize_t);
+
+    AUGMENT(Long_AsSize_t);
 
     AUGMENT(Long_FromInt32_t);
 
