@@ -66,12 +66,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -159,14 +162,19 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset=0])
         @Specialization(guards = "!isIllegal(fd)")
-        PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
+        static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
                         @Bind("this") Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
-            checkLength(lengthIn);
-            checkOffset(offset);
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (lengthIn < 0) {
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
+            }
+            if (offset < 0) {
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MEM_MAPPED_OFFSET_MUST_BE_POSITIVE);
+            }
             int flags = flagsIn;
             int prot = protIn;
             int access = accessIn;
@@ -194,7 +202,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                     }
                     break;
                 default:
-                    throw raise(ValueError, ErrorMessages.MEM_MAPPED_OFFSET_INVALID_ACCESS);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEM_MAPPED_OFFSET_INVALID_ACCESS);
             }
 
             auditNode.audit(inliningTarget, "mmap.__new__", fd, lengthIn, access, offset);
@@ -202,23 +210,24 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
             // For file mappings we use fstat to validate the length or to initialize the length if
             // it is 0 meaning that we should find it out for the user
             long length = lengthIn;
+            PosixSupport posixSupport1 = PosixSupport.get(inliningTarget);
             if (fd != ANONYMOUS_FD) {
                 long[] fstatResult = null;
                 try {
-                    fstatResult = posixSupport.fstat(getPosixSupport(), fd);
+                    fstatResult = posixSupport.fstat(posixSupport1, fd);
                 } catch (PosixException ignored) {
                 }
                 if (fstatResult != null && length == 0) {
                     if (fstatResult[ST_SIZE] == 0) {
-                        throw raise(ValueError, ErrorMessages.CANNOT_MMAP_AN_EMPTY_FILE);
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANNOT_MMAP_AN_EMPTY_FILE);
                     }
                     if (offset >= fstatResult[ST_SIZE]) {
-                        throw raise(ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "offset");
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "offset");
                     }
                     // Unlike in CPython, this always fits in the long range
                     length = fstatResult[ST_SIZE] - offset;
                 } else if (fstatResult != null && (offset > fstatResult[ST_SIZE] || fstatResult[ST_SIZE] - offset < length)) {
-                    throw raise(ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "length");
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "length");
                 }
             }
 
@@ -231,7 +240,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                 // MAP_ANONYMOUS, maybe this can be detected and handled by the POSIX layer
             } else {
                 try {
-                    dupFd = posixSupport.dup(getPosixSupport(), fd);
+                    dupFd = posixSupport.dup(posixSupport1, fd);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
@@ -239,33 +248,23 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
 
             Object mmapHandle;
             try {
-                mmapHandle = posixSupport.mmap(getPosixSupport(), length, prot, flags, dupFd, offset);
+                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, dupFd, offset);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
-            return factory.createMMap(getContext(), clazz, mmapHandle, dupFd, length, access);
+            return factory.createMMap(PythonContext.get(inliningTarget), clazz, mmapHandle, dupFd, length, access);
         }
 
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
-        PMMap doIllegal(Object clazz, int fd, long lengthIn, int flagsIn, int protIn, int accessIn, long offset) {
-            throw raise(PythonBuiltinClassType.OSError);
+        static PMMap doIllegal(Object clazz, int fd, long lengthIn, int flagsIn, int protIn, int accessIn, long offset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.OSError);
         }
 
         protected static boolean isIllegal(int fd) {
             return fd < -1;
         }
 
-        private void checkLength(long length) {
-            if (length < 0) {
-                throw raise(OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
-            }
-        }
-
-        private void checkOffset(long offset) {
-            if (offset < 0) {
-                throw raise(OverflowError, ErrorMessages.MEM_MAPPED_OFFSET_MUST_BE_POSITIVE);
-            }
-        }
     }
 }

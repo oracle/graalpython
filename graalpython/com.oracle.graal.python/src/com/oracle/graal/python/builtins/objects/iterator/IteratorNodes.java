@@ -70,7 +70,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -380,7 +379,9 @@ public abstract class IteratorNodes {
         }
     }
 
-    public abstract static class ToArrayNode extends PNodeWithRaise {
+    @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    public abstract static class ToArrayNode extends Node {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 
         @Specialization(guards = "isString(iterableObj)")

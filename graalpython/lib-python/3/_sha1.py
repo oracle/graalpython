@@ -371,6 +371,7 @@ def sha1(arg=None, usedforsecurity=True):
     """Return a new sha crypto object.
 
     If arg is present, the method call update(arg) is made.
+    usedforsecurity is ignored
     """
 
     crypto = sha()

@@ -69,6 +69,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTupleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -95,10 +96,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -110,8 +111,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -144,14 +145,16 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
@@ -162,11 +165,14 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
@@ -206,10 +212,10 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         int get(PString object,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile storageProfile,
+                        @Cached InlinedConditionProfile storageProfile,
                         @Cached StringMaterializeNode materializeNode) {
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(object.isNativeCharSequence())) {
+            if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().isAsciiOnly() ? 1 : 0;
             }
 
@@ -235,9 +241,10 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static int get(PString object,
-                        @Cached ConditionProfile storageProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile storageProfile) {
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(object.isNativeCharSequence())) {
+            if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().getElementSize() & 0b111;
             }
             return CStructs.wchar_t.size() & 0b111;
@@ -258,6 +265,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             int elementSize = CStructs.wchar_t.size();
             /*
@@ -265,11 +273,11 @@ public final class PythonCextSlotBuiltins {
              * proper solution needs to differentiate here, and maybe use the "toNative" of
              * TruffleString.
              */
-            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(object, elementSize));
+            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(inliningTarget, object, elementSize));
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObject, args = {PyCMethodObject}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyCMethodObject}, call = Ignored)
     abstract static class Py_get_PyCMethodObject_mm_class extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
@@ -364,9 +372,10 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             long sizeofWchar = CStructs.wchar_t.size();
-            PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar);
+            PBytes result = asWideCharNode.executeNativeOrder(inliningTarget, object, sizeofWchar);
             return result.getSequenceStorage().length() / sizeofWchar;
         }
     }
@@ -385,7 +394,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObject, args = {PyDescrObject}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyDescrObject}, call = Ignored)
     abstract static class Py_get_PyDescrObject_d_type extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -666,18 +675,32 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonNativeWrapper wrapper) {
-            return wrapper.getRefCount();
+        static Object get(PythonAbstractObjectNativeWrapper wrapper) {
+            /*
+             * We are allocating native object stubs for each wrapper. Therefore, reference counting
+             * should only be done on the native side. However, we allow access for debugging
+             * purposes.
+             */
+            if (PythonContext.DEBUG_CAPI) {
+                return wrapper.getRefCount();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObject, args = {PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyObject}, call = Ignored)
     abstract static class Py_get_PyObject_ob_type extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object,
-                        @Cached GetClassNode getClassNode) {
-            Object result = getClassNode.execute(this, object);
+        static Object get(Object object,
+                        @Bind("this") Node inliningTarget) {
+            /*
+             * We are allocating native object stubs for each wrapper. Therefore, accesses to
+             * 'ob_type' should only be done on the native side. However, we allow access for
+             * debugging purposes and in managed mode.
+             */
+            assert PythonContext.DEBUG_CAPI || !PythonContext.get(inliningTarget).isNativeAccessAllowed();
+            Object result = GetClassNode.executeUncached(object);
             assert !(result instanceof Integer);
             return result;
         }
@@ -694,27 +717,61 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class GetSliceField extends Node {
+        abstract Object execute(Node inliningTarget, PSlice object, HiddenKey key, Object value);
+
+        @Specialization
+        static Object get(Node inliningTarget, PSlice object, HiddenKey key, Object value,
+                        @Cached(inline = false) ReadAttributeFromDynamicObjectNode read,
+                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write,
+                        @Cached PythonCextBuiltins.PromoteBorrowedValue promote) {
+            Object promotedValue = read.execute(object, key);
+            if (promotedValue == PNone.NO_VALUE) {
+                promotedValue = promote.execute(inliningTarget, value);
+                if (promotedValue == null) {
+                    return value;
+                }
+                write.execute(object, key, promotedValue);
+            }
+            return promotedValue;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_start extends CApiUnaryBuiltinNode {
+        private static final HiddenKey START_KEY = new HiddenKey("promoted_start");
+
         @Specialization
-        static Object doStart(PSlice object) {
-            return object.getStart();
+        static Object doStart(PSlice object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetSliceField getSliceField) {
+            return getSliceField.execute(inliningTarget, object, START_KEY, object.getStart());
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_step extends CApiUnaryBuiltinNode {
+        private static final HiddenKey STEP_KEY = new HiddenKey("promoted_step");
+
         @Specialization
-        static Object doStep(PSlice object) {
-            return object.getStep();
+        static Object doStep(PSlice object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetSliceField getSliceField) {
+            return getSliceField.execute(inliningTarget, object, STEP_KEY, object.getStep());
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_stop extends CApiUnaryBuiltinNode {
+        private static final HiddenKey STOP_KEY = new HiddenKey("promoted_stop");
+
         @Specialization
-        static Object doStop(PSlice object) {
-            return object.getStop();
+        static Object doStop(PSlice object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetSliceField getSliceField) {
+            return getSliceField.execute(inliningTarget, object, STOP_KEY, object.getStop());
         }
     }
 
@@ -723,12 +780,13 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PString object,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
                 return object.getNativeCharSequence().getPtr();
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(object, CStructs.wchar_t.size()));
+            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(inliningTarget, object, CStructs.wchar_t.size()));
         }
     }
 
@@ -737,8 +795,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObSizeNode obSizeNode) {
-            return obSizeNode.execute(object);
+            return obSizeNode.execute(inliningTarget, object);
         }
     }
 
@@ -773,9 +832,13 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_set_PyObject_ob_refcnt extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object set(PythonNativeWrapper wrapper, long value) {
-            CApiTransitions.setRefCount(wrapper, value);
-            return PNone.NONE;
+        @SuppressWarnings("unused")
+        static Object set(PythonAbstractObjectNativeWrapper wrapper, long value) {
+            /*
+             * We are allocating native object stubs for each wrapper. Therefore, reference counting
+             * should only be done on the native side.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -802,34 +865,25 @@ public final class PythonCextSlotBuiltins {
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
-                        @Cached HashingStorageIteratorValue itValue,
-                        @Cached IsBuiltinObjectProfile isPrimitiveDictProfile1,
-                        @Cached IsBuiltinObjectProfile isPrimitiveDictProfile2) {
-            if (isBuiltinDict(inliningTarget, isPrimitiveDictProfile1, isPrimitiveDictProfile2, value)) {
+                        @Cached HashingStorageIteratorValue itValue) {
+            if (value instanceof PDict dict && (PGuards.isBuiltinDict(dict) || value instanceof StgDictObject)) {
                 // special and fast case: commit items and change store
-                PDict d = (PDict) value;
-                HashingStorage storage = d.getDictStorage();
+                HashingStorage storage = dict.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                 while (itNext.execute(inliningTarget, storage, it)) {
                     writeAttrNode.execute(object, itKey.execute(inliningTarget, storage, it), itValue.execute(inliningTarget, storage, it));
                 }
                 PDict existing = getDict.execute(object);
                 if (existing != null) {
-                    d.setDictStorage(existing.getDictStorage());
+                    dict.setDictStorage(existing.getDictStorage());
                 } else {
-                    d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
+                    dict.setDictStorage(new DynamicObjectStorage(object.getStorage()));
                 }
-                setDict.execute(inliningTarget, object, d);
+                setDict.execute(inliningTarget, object, dict);
             } else {
                 // TODO custom mapping object
             }
             return PNone.NO_VALUE;
-        }
-
-        private static boolean isBuiltinDict(Node inliningTarget, IsBuiltinObjectProfile isPrimitiveDictProfile1, IsBuiltinObjectProfile isPrimitiveDictProfile2, Object value) {
-            return value instanceof PDict &&
-                            (isPrimitiveDictProfile1.profileObject(inliningTarget, value, PythonBuiltinClassType.PDict) ||
-                                            isPrimitiveDictProfile2.profileObject(inliningTarget, value, PythonBuiltinClassType.StgDict));
         }
     }
 

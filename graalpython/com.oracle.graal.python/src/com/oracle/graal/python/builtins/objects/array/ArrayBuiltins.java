@@ -34,6 +34,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
@@ -52,6 +53,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
@@ -95,6 +97,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -111,13 +114,16 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -126,9 +132,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -137,6 +144,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedByteValueProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -161,26 +169,28 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             try {
                 int newLength = PythonUtils.addExact(left.getLength(), right.getLength());
-                int itemsize = left.getFormat().bytesize;
+                int itemShift = left.getItemSizeShift();
                 PArray newArray = factory.createArray(left.getFormatString(), left.getFormat(), newLength);
-                bufferLib.readIntoBuffer(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() * itemsize, bufferLib);
-                bufferLib.readIntoBuffer(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() * itemsize, right.getLength() * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() << itemShift, bufferLib);
+                bufferLib.readIntoBuffer(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() << itemShift, right.getLength() << itemShift, bufferLib);
                 return newArray;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(this, MemoryError);
             }
         }
 
         @Specialization(guards = "left.getFormat() != right.getFormat()")
         @SuppressWarnings("unused")
-        Object error(PArray left, PArray right) {
-            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        static Object error(PArray left, PArray right,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_APPEND_ARRAY_TO_ARRAY, right);
+        static Object error(@SuppressWarnings("unused") Object left, Object right,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_APPEND_ARRAY_TO_ARRAY, right);
         }
     }
 
@@ -195,8 +205,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_EXTEND_ARRAY_WITH_ARRAY, right);
+        static Object error(@SuppressWarnings("unused") Object left, Object right,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_EXTEND_ARRAY_WITH_ARRAY, right);
         }
     }
 
@@ -210,16 +221,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
-                int itemsize = self.getFormat().bytesize;
                 PArray newArray = factory.createArray(self.getFormatString(), self.getFormat(), newLength);
-                int segmentLength = self.getLength() * itemsize;
+                int segmentLength = self.getBytesLength();
                 for (int i = 0; i < value; i++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength, bufferLib);
                 }
                 return newArray;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(this, MemoryError);
             }
         }
 
@@ -238,18 +248,18 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object concat(PArray self, int value,
+        static Object concat(PArray self, int value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Cached ArrayNodes.SetLengthNode setLengthNode) {
+                        @Cached ArrayNodes.SetLengthNode setLengthNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 if (newLength != self.getLength()) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(inliningTarget, raiseNode);
                 }
-                int itemsize = self.getFormat().bytesize;
-                int segmentLength = self.getLength() * itemsize;
+                int segmentLength = self.getBytesLength();
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 for (int i = 0; i < value; i++) {
@@ -258,7 +268,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 return self;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
@@ -268,78 +278,109 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @ImportStatic(BufferFormat.class)
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({BufferFormat.class, PGuards.class})
+    abstract static class EqNeHelperNode extends Node {
+
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, ComparisonOp op);
 
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "!isFloatingPoint(left.getFormat())"})
-        static boolean eqBytes(PArray left, PArray right,
+        static boolean eqBytes(PArray left, PArray right, ComparisonOp op,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            if (left.getLength() != right.getLength()) {
-                return false;
+            if (left.getBytesLength() != right.getBytesLength()) {
+                return op == ComparisonOp.NE;
             }
-            int itemsize = left.getFormat().bytesize;
-            for (int i = 0; i < left.getLength() * itemsize; i++) {
+            for (int i = 0; i < left.getBytesLength(); i++) {
                 if (bufferLib.readByte(left.getBuffer(), i) != bufferLib.readByte(right.getBuffer(), i)) {
-                    return false;
+                    return op == ComparisonOp.NE;
                 }
             }
-            return true;
+            return op == ComparisonOp.EQ;
         }
 
         @Specialization(guards = "left.getFormat() != right.getFormat()")
-        static boolean eqItems(VirtualFrame frame, PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
+        static boolean eqItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
-                return false;
+                return op == ComparisonOp.NE;
             }
             for (int i = 0; i < left.getLength(); i++) {
                 if (!eqNode.compare(frame, inliningTarget, getLeft.execute(inliningTarget, left, i), getRight.execute(inliningTarget, right, i))) {
-                    return false;
+                    return op == ComparisonOp.NE;
                 }
             }
-            return true;
+            return op == ComparisonOp.EQ;
         }
 
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
-        static boolean eqDoubles(PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
+        static boolean eqDoubles(Node inliningTarget, PArray left, PArray right, ComparisonOp op,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
-                return false;
+                return op == ComparisonOp.NE;
             }
             for (int i = 0; i < left.getLength(); i++) {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return false;
+                    return op == ComparisonOp.NE;
                 }
             }
-            return true;
+            return op == ComparisonOp.EQ;
         }
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object eq(PArray left, Object right) {
+        static Object eq(PArray left, Object right, ComparisonOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @Specialization(guards = "!isArray(left)")
+        @SuppressWarnings("unused")
+        static Object error(Object left, Object right, ComparisonOp op,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_ARRAY + "." + J_ARRAY, left);
         }
     }
 
-    @ImportStatic(BufferFormat.class)
-    abstract static class AbstractComparisonNode extends PythonBinaryBuiltinNode {
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object eqBytes(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EqNeHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.EQ);
+        }
+    }
+
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class NeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        static Object eqBytes(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EqNeHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.NE);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({BufferFormat.class, PGuards.class})
+    abstract static class ComparisonHelperNode extends Node {
+
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, ComparisonOp op, BinaryComparisonNode compareNode);
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
-        @SuppressWarnings("truffle-static-method")
-        boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
+        static boolean cmpItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Exclusive @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
@@ -351,15 +392,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
-            return compareLengths(left.getLength(), right.getLength());
+            return op.cmpResultToBool(left.getLength() - right.getLength());
         }
 
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
-        @SuppressWarnings("truffle-static-method")
-        boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached("createComparison()") BinaryComparisonNode compareNode,
+        static boolean cmpDoubles(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
                         @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
@@ -371,87 +409,73 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
-            return compareLengths(left.getLength(), right.getLength());
+            return op.cmpResultToBool(left.getLength() - right.getLength());
         }
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object cmp(PArray left, Object right) {
+        static Object cmp(PArray left, Object right, ComparisonOp op, BinaryComparisonNode compareNode) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @Specialization(guards = "!isArray(left)")
         @SuppressWarnings("unused")
-        protected boolean compareLengths(int a, int b) {
-            throw new AbstractMethodError("compareLengths");
+        static Object error(Object left, Object right, ComparisonOp op, BinaryComparisonNode compareNode,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_ARRAY + "." + J_ARRAY, left);
         }
 
-        @NeverDefault
-        protected BinaryComparisonNode createComparison() {
-            throw new AbstractMethodError("createComparison");
-        }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends AbstractComparisonNode {
+    abstract static class LtNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.LtNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a < b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.LtNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.LT, cmpNode);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends AbstractComparisonNode {
+    abstract static class GtNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.GtNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a > b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.GtNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.GT, cmpNode);
         }
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LeNode extends AbstractComparisonNode {
+    abstract static class LeNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.LeNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a <= b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.LeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.LE, cmpNode);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GeNode extends AbstractComparisonNode {
+    abstract static class GeNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        @NeverDefault
-        protected final BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.GeNode.create();
-        }
-
-        @Override
-        protected boolean compareLengths(int a, int b) {
-            return a >= b;
+        @Specialization
+        static Object cmp(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ComparisonHelperNode helperNode,
+                        @Cached BinaryComparisonNode.GeNode cmpNode) {
+            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.GE, cmpNode);
         }
     }
 
@@ -492,14 +516,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
             appendStringNode.execute(sb, self.getFormatString());
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
-            if (isEmptyProfile.profile(inliningTarget, self.getLength() != 0)) {
+            int length = self.getLength();
+            if (isEmptyProfile.profile(inliningTarget, length != 0)) {
                 if (isUnicodeProfile.profile(inliningTarget, self.getFormat() == BufferFormat.UNICODE)) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, cast.execute(inliningTarget, reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, T_LBRACKET);
-                    for (int i = 0; i < self.getLength(); i++) {
+                    for (int i = 0; i < length; i++) {
                         if (i > 0) {
                             appendStringNode.execute(sb, T_COMMA_SPACE);
                         }
@@ -532,12 +557,14 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static Object getitem(PArray self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached PythonObjectFactory factory) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
-            int itemsize = self.getFormat().bytesize;
+            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
+            int itemsize = self.getItemSize();
             PArray newArray;
             try {
                 newArray = factory.createArray(self.getFormatString(), self.getFormat(), sliceInfo.sliceLength);
@@ -547,10 +574,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
 
             if (simpleStepProfile.profile(inliningTarget, sliceInfo.step == 1)) {
-                bufferLib.readIntoBuffer(self.getBuffer(), sliceInfo.start * itemsize, newArray.getBuffer(), 0, sliceInfo.sliceLength * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(self.getBuffer(), sliceInfo.start << itemShift, newArray.getBuffer(), 0, sliceInfo.sliceLength << itemShift, bufferLib);
             } else {
                 for (int i = sliceInfo.start, j = 0; j < sliceInfo.sliceLength; i += sliceInfo.step, j++) {
-                    bufferLib.readIntoBuffer(self.getBuffer(), i * itemsize, newArray.getBuffer(), j * itemsize, itemsize, bufferLib);
+                    bufferLib.readIntoBuffer(self.getBuffer(), i << itemShift, newArray.getBuffer(), j << itemShift, itemsize, bufferLib);
                 }
             }
             return newArray;
@@ -573,8 +600,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getFormat() == other.getFormat()")
-        @SuppressWarnings("truffle-static-method")
-        Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
+        static Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile sameArrayProfile,
@@ -583,17 +609,20 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile differentLengthProfile,
                         @Cached InlinedConditionProfile growProfile,
                         @Cached InlinedConditionProfile stepAssignProfile,
+                        @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached ArrayNodes.ShiftNode shiftNode,
-                        @Cached DelItemNode delItemNode) {
+                        @Cached DelItemNode delItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
             int stop = sliceInfo.stop;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
-            int itemsize = self.getFormat().bytesize;
+            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
+            int itemsize = self.getItemSize();
             Object sourceBuffer = other.getBuffer();
             int needed = other.getLength();
             if (sameArrayProfile.profile(inliningTarget, sourceBuffer == self.getBuffer())) {
@@ -603,7 +632,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             if (simpleStepProfile.profile(inliningTarget, step == 1)) {
                 if (differentLengthProfile.profile(inliningTarget, sliceLength != needed)) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(inliningTarget, raiseNode);
                     if (growProfile.profile(inliningTarget, sliceLength < needed)) {
                         if (stop < start) {
                             stop = start;
@@ -613,29 +642,31 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         deleteSliceNode.execute(inliningTarget, self, start, sliceLength - needed);
                     }
                 }
-                bufferLib.readIntoBuffer(sourceBuffer, 0, self.getBuffer(), start * itemsize, needed * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(sourceBuffer, 0, self.getBuffer(), start << itemShift, needed << itemShift, bufferLib);
             } else if (complexDeleteProfile.profile(inliningTarget, needed == 0)) {
                 delItemNode.executeSlice(frame, self, slice);
             } else if (stepAssignProfile.profile(inliningTarget, needed == sliceLength)) {
                 for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
-                    bufferLib.readIntoBuffer(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize, bufferLib);
+                    bufferLib.readIntoBuffer(sourceBuffer, i << itemShift, self.getBuffer(), cur << itemShift, itemsize, bufferLib);
                 }
             } else {
-                throw raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
             }
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.getFormat() != other.getFormat()")
         @SuppressWarnings("unused")
-        Object setitemWrongFormat(PArray self, PSlice slice, PArray other) {
-            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        static Object setitemWrongFormat(PArray self, PSlice slice, PArray other,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @Specialization(guards = "!isArray(other)")
         @SuppressWarnings("unused")
-        Object setitemWrongType(PArray self, PSlice slice, Object other) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
+        static Object setitemWrongType(PArray self, PSlice slice, Object other,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
         }
     }
 
@@ -645,35 +676,36 @@ public final class ArrayBuiltins extends PythonBuiltins {
         public abstract Object executeSlice(VirtualFrame frame, PArray self, PSlice slice);
 
         @Specialization(guards = "!isPSlice(idx)")
-        @SuppressWarnings("truffle-static-method")
-        Object delitem(VirtualFrame frame, PArray self, Object idx,
+        static Object delitem(VirtualFrame frame, PArray self, Object idx,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
-                        @Shared @Cached DeleteArraySliceNode deleteSliceNode) {
-            self.checkCanResize(this);
+                        @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             deleteSliceNode.execute(inliningTarget, self, index, 1);
             return PNone.NONE;
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object delitem(PArray self, PSlice slice,
+        static Object delitem(PArray self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
                         @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
-                        @Cached SliceNodes.AdjustIndices adjustIndices) {
-            self.checkCanResize(this);
+                        @Cached SliceNodes.AdjustIndices adjustIndices,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             int length = self.getLength();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
-            int itemsize = self.getFormat().bytesize;
+            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
             if (sliceLength > 0) {
                 if (simpleStepProfile.profile(inliningTarget, step == 1)) {
                     deleteSliceNode.execute(inliningTarget, self, start, sliceLength);
@@ -684,9 +716,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     }
                     int cur, offset;
                     for (cur = start, offset = 0; offset < sliceLength - 1; cur += step, offset++) {
-                        bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (step - 1) * itemsize, bufferLib);
+                        bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (step - 1) << itemShift, bufferLib);
                     }
-                    bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (length - cur - 1) * itemsize, bufferLib);
+                    bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (length - cur - 1) << itemShift, bufferLib);
                     setLengthNode.execute(inliningTarget, self, length - sliceLength);
                 }
             }
@@ -809,22 +841,23 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AppendNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object append(VirtualFrame frame, PArray self, Object value,
+        static Object append(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
-                        @Cached ArrayNodes.PutValueNode putValueNode) {
+                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int index = self.getLength();
                 int newLength = PythonUtils.addExact(index, 1);
-                self.checkCanResize(this);
+                self.checkCanResize(inliningTarget, raiseNode);
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 putValueNode.execute(frame, inliningTarget, self, index, value);
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
     }
@@ -833,47 +866,48 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ExtendNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "self.getFormat() == value.getFormat()")
-        Object extend(PArray self, PArray value,
+        static Object extend(PArray self, PArray value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Shared @Cached ArrayNodes.SetLengthNode setLengthNode) {
+                        @Exclusive @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached ArrayNodes.SetLengthNode setLengthNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), value.getLength());
                 if (newLength != self.getLength()) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(inliningTarget, raiseNode);
                 }
-                int itemsize = self.getFormat().bytesize;
+                int itemShift = self.getItemSizeShift();
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
-                bufferLib.readIntoBuffer(value.getBuffer(), 0, self.getBuffer(), self.getLength() * itemsize, value.getLength() * itemsize, bufferLib);
+                bufferLib.readIntoBuffer(value.getBuffer(), 0, self.getBuffer(), self.getLength() << itemShift, value.getLength() << itemShift, bufferLib);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object extend(VirtualFrame frame, PArray self, PSequence value,
+        static Object extend(VirtualFrame frame, PArray self, PSequence value,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Exclusive ArrayNodes.PutValueNode putValueNode,
+                        @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Shared @Cached ArrayNodes.SetLengthNode setLengthNode) {
+                        @Exclusive @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached ArrayNodes.SetLengthNode setLengthNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, value);
             int storageLength = storage.length();
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), storageLength);
                 if (newLength != self.getLength()) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(inliningTarget, raiseNode);
                     ensureCapacityNode.execute(inliningTarget, self, newLength);
                 }
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
             int length = self.getLength();
             for (int i = 0; i < storageLength; i++) {
@@ -887,15 +921,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isArray(value)")
-        @SuppressWarnings("truffle-static-method")
-        Object extend(VirtualFrame frame, PArray self, Object value,
+        static Object extend(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached @Exclusive ArrayNodes.PutValueNode putValueNode,
+                        @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Shared @Cached ArrayNodes.SetLengthNode setLengthNode) {
+                        @Exclusive @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached ArrayNodes.SetLengthNode setLengthNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object iter = getIter.execute(frame, inliningTarget, value);
             int length = self.getLength();
             while (true) {
@@ -910,11 +944,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 // in CPython
                 try {
                     length = PythonUtils.addExact(length, 1);
-                    self.checkCanResize(this);
+                    self.checkCanResize(inliningTarget, raiseNode);
                     ensureCapacityNode.execute(inliningTarget, self, length);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raise(MemoryError);
+                    throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
                 }
                 putValueNode.execute(frame, inliningTarget, self, length - 1, nextValue);
                 setLengthNode.execute(inliningTarget, self, length);
@@ -925,10 +959,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getFormat() != value.getFormat()")
         @SuppressWarnings("unused")
-        Object error(PArray self, PArray value) {
+        static Object error(PArray self, PArray value,
+                        @Cached PRaiseNode raiseNode) {
             // CPython allows extending an array with an arbitrary iterable. Except a differently
             // formatted array. Weird
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_EXTEND_WITH_ARRAY_OF_SAME_KIND);
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_EXTEND_WITH_ARRAY_OF_SAME_KIND);
         }
     }
 
@@ -937,12 +972,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
+        static Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(false)") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.CheckValueNode checkValueNode,
                         @Cached ArrayNodes.PutValueNode putValueNode,
-                        @Cached ArrayNodes.ShiftNode shiftNode) {
+                        @Cached ArrayNodes.ShiftNode shiftNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
             if (index > self.getLength()) {
                 index = self.getLength();
@@ -952,7 +988,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             // Need to check the validity of the value before moving the memory around to ensure the
             // operation can fail atomically
             checkValueNode.execute(frame, inliningTarget, self, value);
-            self.checkCanResize(this);
+            self.checkCanResize(inliningTarget, raiseNode);
             shiftNode.execute(inliningTarget, self, index, 1);
             putValueNode.execute(frame, inliningTarget, self, index, value);
             return PNone.NONE;
@@ -968,20 +1004,21 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object remove(VirtualFrame frame, PArray self, Object value,
+        static Object remove(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
-                        @Cached DeleteArraySliceNode deleteSliceNode) {
+                        @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(inliningTarget, self, i);
                 if (eqNode.compare(frame, inliningTarget, item, value)) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(inliningTarget, raiseNode);
                     deleteSliceNode.execute(inliningTarget, self, i, 1);
                     return PNone.NONE;
                 }
             }
-            throw raise(ValueError, ErrorMessages.ARRAY_REMOVE_X_NOT_IN_ARRAY);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ARRAY_REMOVE_X_NOT_IN_ARRAY);
         }
     }
 
@@ -990,17 +1027,18 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PopNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object pop(PArray self, int inputIndex,
+        static Object pop(PArray self, int inputIndex,
                         @Bind("this") Node inliningTarget,
                         @Cached("forPop()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
-                        @Cached DeleteArraySliceNode deleteSliceNode) {
+                        @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getLength() == 0) {
-                throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_ARRAY);
+                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POP_FROM_EMPTY_ARRAY);
             }
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
             Object value = getValueNode.execute(inliningTarget, self, index);
-            self.checkCanResize(this);
+            self.checkCanResize(inliningTarget, raiseNode);
             deleteSliceNode.execute(inliningTarget, self, index, 1);
             return value;
         }
@@ -1021,31 +1059,33 @@ public final class ArrayBuiltins extends PythonBuiltins {
         public abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
 
         @Specialization
-        Object frombytes(VirtualFrame frame, PArray self, Object buffer,
+        static Object frombytes(VirtualFrame frame, PArray self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Cached ArrayNodes.SetLengthNode setLengthNode) {
+                        @Cached ArrayNodes.SetLengthNode setLengthNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                int itemsize = self.getFormat().bytesize;
+                int itemShift = self.getItemSizeShift();
                 int oldSize = self.getLength();
                 try {
                     int bufferLength = bufferLib.getBufferLength(buffer);
-                    if (bufferLength % itemsize != 0) {
-                        throw raise(ValueError, ErrorMessages.BYTES_ARRAY_NOT_MULTIPLE_OF_ARRAY_SIZE);
+                    if (!PythonUtils.isDivisible(bufferLength, itemShift)) {
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BYTES_ARRAY_NOT_MULTIPLE_OF_ARRAY_SIZE);
                     }
-                    int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
-                    self.checkCanResize(this);
+                    int newLength = PythonUtils.addExact(oldSize, bufferLength >> itemShift);
+                    self.checkCanResize(inliningTarget, raiseNode);
                     ensureCapacityNode.execute(inliningTarget, self, newLength);
                     setLengthNode.execute(inliningTarget, self, newLength);
-                    bufferLib.readIntoBuffer(buffer, 0, self.getBuffer(), oldSize * itemsize, bufferLength, bufferLib);
+                    bufferLib.readIntoBuffer(buffer, 0, self.getBuffer(), oldSize << itemShift, bufferLength, bufferLib);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw PRaiseNode.raiseUncached(this, MemoryError);
+                    throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -1060,17 +1100,17 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromFileNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
+        static Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached InlinedConditionProfile nNegativeProfile,
-                        @Cached FromBytesNode fromBytesNode) {
+                        @Cached FromBytesNode fromBytesNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (nNegativeProfile.profile(inliningTarget, n < 0)) {
-                throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
             }
-            int itemsize = self.getFormat().bytesize;
-            int nbytes = n * itemsize;
+            int nbytes = n << self.getItemSizeShift();
             Object readResult = callMethod.execute(frame, inliningTarget, file, T_READ, nbytes);
             if (readResult instanceof PBytes) {
                 int readLength = sizeNode.execute(frame, inliningTarget, readResult);
@@ -1078,10 +1118,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
                 if (readLength != nbytes) {
-                    throw raise(EOFError, ErrorMessages.READ_DIDNT_RETURN_ENOUGH_BYTES);
+                    throw raiseNode.get(inliningTarget).raise(EOFError, ErrorMessages.READ_DIDNT_RETURN_ENOUGH_BYTES);
                 }
             } else {
-                throw raise(TypeError, ErrorMessages.READ_DIDNT_RETURN_BYTES);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.READ_DIDNT_RETURN_BYTES);
             }
             return PNone.NONE;
         }
@@ -1096,19 +1136,19 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FromListNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object fromlist(VirtualFrame frame, PArray self, PList list,
+        static Object fromlist(VirtualFrame frame, PArray self, PList list,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
-                        @Cached ArrayNodes.PutValueNode putValueNode) {
+                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, list);
                 int length = storage.length();
                 int newLength = PythonUtils.addExact(self.getLength(), length);
-                self.checkCanResize(this);
+                self.checkCanResize(inliningTarget, raiseNode);
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 for (int i = 0; i < length; i++) {
                     putValueNode.execute(frame, inliningTarget, self, self.getLength() + i, getItemScalarNode.execute(inliningTarget, storage, i));
@@ -1117,14 +1157,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(Object self, Object arg) {
-            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_LIST);
+        static Object error(Object self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ARG_MUST_BE_LIST);
         }
     }
 
@@ -1133,8 +1174,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromUnicodeNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object fromunicode(VirtualFrame frame, PArray self, TruffleString str,
+        static Object fromunicode(VirtualFrame frame, PArray self, TruffleString str,
                         @Bind("this") Node inliningTarget,
                         @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
@@ -1142,11 +1182,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int length = codePointLengthNode.execute(str, TS_ENCODING);
                 int newLength = PythonUtils.addExact(self.getLength(), length);
-                self.checkCanResize(this);
+                self.checkCanResize(inliningTarget, raiseNode);
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
                 int codePointIndex = 0;
@@ -1158,14 +1199,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(Object self, Object arg) {
-            throw raise(TypeError, ErrorMessages.FROMUNICODE_ARG_MUST_BE_STR_NOT_P, arg);
+        static Object error(Object self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.FROMUNICODE_ARG_MUST_BE_STR_NOT_P, arg);
         }
 
         @Override
@@ -1181,7 +1223,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         Object tobytes(PArray self,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
-            byte[] bytes = new byte[self.getLength() * self.getFormat().bytesize];
+            byte[] bytes = new byte[self.getBytesLength()];
             bufferLib.readIntoByteArray(self.getBuffer(), 0, bytes, 0, bytes.length);
             return factory.createBytes(bytes);
         }
@@ -1201,17 +1243,19 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ToUnicodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString tounicode(PArray self,
+        static TruffleString tounicode(PArray self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile formatProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (formatProfile.profile(inliningTarget, self.getFormat() != BufferFormat.UNICODE)) {
-                throw raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
             }
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            for (int i = 0; i < self.getLength(); i++) {
+            int length = self.getLength();
+            for (int i = 0; i < length; i++) {
                 appendStringNode.execute(sb, (TruffleString) getValueNode.execute(inliningTarget, self, i));
             }
             return toStringNode.execute(sb);
@@ -1228,7 +1272,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PythonObjectFactory factory) {
             if (self.getLength() > 0) {
-                int remaining = self.getLength() * self.getFormat().bytesize;
+                int remaining = self.getBytesLength();
                 int blocksize = 64 * 1024;
                 int nblocks = (remaining + blocksize - 1) / blocksize;
                 byte[] buffer = null;
@@ -1278,7 +1322,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         private static void doByteSwapExploded(PArray self, int itemsize, Object buffer, PythonBufferAccessLibrary bufferLib) {
-            for (int i = 0; i < self.getLength() * itemsize; i += itemsize) {
+            for (int i = 0; i < self.getBytesLength(); i += itemsize) {
                 doByteSwapExplodedInnerLoop(buffer, itemsize, i, bufferLib);
             }
         }
@@ -1299,25 +1343,27 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
-        int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
+        static int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached ArrayNodes.GetValueNode getValueNode) {
+                        @Cached ArrayNodes.GetValueNode getValueNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            int length = self.getLength();
             if (start < 0) {
-                start += self.getLength();
+                start += length;
                 if (start < 0) {
                     start = 0;
                 }
             }
             if (stop < 0) {
-                stop += self.getLength();
+                stop += length;
             }
-            for (int i = start; i < stop && i < self.getLength(); i++) {
+            for (int i = start; i < stop && i < length; i++) {
                 if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
                     return i;
                 }
             }
-            throw raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
         }
 
         @Override
@@ -1352,12 +1398,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static Object reverse(PArray self,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             int itemsize = self.getFormat().bytesize;
+            int itemShift = self.getItemSizeShift();
             byte[] tmp = new byte[itemsize];
             int length = self.getLength();
             for (int i = 0; i < length / 2; i++) {
-                bufferLib.readIntoByteArray(self.getBuffer(), i * itemsize, tmp, 0, itemsize);
-                bufferLib.readIntoBuffer(self.getBuffer(), (length - i - 1) * itemsize, self.getBuffer(), i * itemsize, itemsize, bufferLib);
-                bufferLib.writeFromByteArray(self.getBuffer(), (length - i - 1) * itemsize, tmp, 0, itemsize);
+                bufferLib.readIntoByteArray(self.getBuffer(), i << itemShift, tmp, 0, itemsize);
+                bufferLib.readIntoBuffer(self.getBuffer(), (length - i - 1) << itemShift, self.getBuffer(), i << itemShift, itemsize, bufferLib);
+                bufferLib.writeFromByteArray(self.getBuffer(), (length - i - 1) << itemShift, tmp, 0, itemsize);
             }
             return PNone.NONE;
         }

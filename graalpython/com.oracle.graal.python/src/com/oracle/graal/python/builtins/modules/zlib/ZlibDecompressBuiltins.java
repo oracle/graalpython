@@ -146,14 +146,16 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"maxLength >= 0", "!self.isInitialized()"})
-        PBytes error(ZLibCompObject self, Object data, int maxLength) {
-            throw raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while decompressing data", "inconsistent stream state");
+        static PBytes error(ZLibCompObject self, Object data, int maxLength,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while decompressing data", "inconsistent stream state");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "maxLength < 0")
-        PNone err(ZLibCompObject self, Object data, int maxLength) {
-            throw raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "max_length");
+        static PNone err(ZLibCompObject self, Object data, int maxLength,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "max_length");
         }
     }
 
@@ -300,8 +302,9 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "length <= 0")
-        PBytes error(ZLibCompObject self, int length) {
-            throw raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
+        static PBytes error(ZLibCompObject self, int length,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
         }
     }
 

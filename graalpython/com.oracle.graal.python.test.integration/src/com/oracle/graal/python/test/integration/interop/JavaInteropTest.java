@@ -49,6 +49,7 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -216,6 +217,78 @@ public class JavaInteropTest {
             Value main = context.getPolyglotBindings().getMember("foo");
             main.execute((float) 1.0, (float) 2.0);
             assertEquals("2.0\n", out.toString("UTF-8"));
+        }
+
+        @Test
+        public void testPassingBigIntegers() throws UnsupportedEncodingException {
+            String source = "import polyglot\n" +
+                            "@polyglot.export_value\n" +
+                            "def foo(x, y):\n" +
+                            "    print(int(x) * int(y))\n\n";
+            Source script = Source.create("python", source);
+            context.eval(script);
+            Value main = context.getPolyglotBindings().getMember("foo");
+            main.execute(BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.TWO), BigInteger.valueOf(7));
+            assertEquals("129127208515966861298\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(Long.MAX_VALUE, 14);
+            assertEquals("129127208515966861298\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 7);
+            assertEquals("42\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, true);
+            assertEquals("1\n", out.toString("UTF-8"));
+        }
+
+        @Test
+        public void testBigIntegersAdd() throws UnsupportedEncodingException {
+            String source = "import polyglot\n" +
+                            "@polyglot.export_value\n" +
+                            "def foo(x, y):\n" +
+                            "    print(int(x) + int(y))\n\n";
+            Source script = Source.create("python", source);
+            context.eval(script);
+            Value main = context.getPolyglotBindings().getMember("foo");
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(7));
+            assertEquals("60847228810955011271841753858055\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(24).shiftLeft(101));
+            assertEquals("121694457621910022543683507716096\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 7);
+            assertEquals("13\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, true);
+            assertEquals("2\n", out.toString("UTF-8"));
+        }
+
+        @Test
+        public void testBigIntegersEg() throws UnsupportedEncodingException {
+            String source = "import polyglot\n" +
+                            "@polyglot.export_value\n" +
+                            "def foo(x, y):\n" +
+                            "    print(int(x) == int(y))\n\n";
+            Source script = Source.create("python", source);
+            context.eval(script);
+            Value main = context.getPolyglotBindings().getMember("foo");
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(7));
+            assertEquals("False\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(24).shiftLeft(101));
+            assertEquals("True\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 7);
+            assertEquals("False\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 6);
+            assertEquals("True\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, BigInteger.ONE);
+            assertEquals("True\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, BigInteger.ZERO);
+            assertEquals("False\n", out.toString("UTF-8"));
         }
 
         @Test

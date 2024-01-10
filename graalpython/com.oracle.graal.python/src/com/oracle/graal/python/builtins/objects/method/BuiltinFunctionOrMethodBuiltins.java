@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -81,11 +82,11 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         static boolean isBuiltinFunction(PBuiltinMethod self) {
-            return self.getSelf() instanceof PythonModule;
+            return self.getSelf() == PNone.NO_VALUE || self.getSelf() instanceof PythonModule;
         }
 
         static boolean isBuiltinFunction(PMethod self) {
-            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).isBuiltin();
+            return self.getSelf() == PNone.NO_VALUE || (self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).isBuiltin());
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")

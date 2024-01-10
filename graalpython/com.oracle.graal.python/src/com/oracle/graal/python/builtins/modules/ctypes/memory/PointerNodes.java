@@ -851,14 +851,14 @@ public abstract class PointerNodes {
         @Fallback
         static Object doGeneric(Node inliningTarget, MemoryBlock memory, Storage storage, int offset,
                         @Cached GetPointerValueAsObjectNode getPointerValueAsObjectNode,
-                        @Cached(inline = false) CExtNodes.ResolveHandleNode resolveHandleNode,
+                        @Cached CExtNodes.ResolvePointerNode resolveHandleNode,
                         @Cached(inline = false) CApiTransitions.NativeToPythonNode nativeToPythonNode) {
             /*
              * We might get a pointer to a PyObject as a long when calling Python C API functions
              * through ctypes.
              */
             Object pointerObject = getPointerValueAsObjectNode.execute(inliningTarget, memory, storage, offset);
-            return nativeToPythonNode.execute(resolveHandleNode.execute(pointerObject));
+            return nativeToPythonNode.execute(resolveHandleNode.execute(inliningTarget, pointerObject));
         }
     }
 

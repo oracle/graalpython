@@ -307,16 +307,18 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object txt2obj(TruffleString txt, boolean name,
+        static Object txt2obj(TruffleString txt, boolean name,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // TODO implement properly
             if (equalNode.execute(T_OID_TLS_SERVER, txt, TS_ENCODING)) {
                 return factory.createTuple(new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
             } else if (equalNode.execute(T_OID_TLS_CLIENT, txt, TS_ENCODING)) {
                 return factory.createTuple(new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
             }
-            throw raise(NotImplementedError);
+            throw raiseNode.get(inliningTarget).raise(NotImplementedError);
         }
 
         @Override
@@ -330,8 +332,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class Nid2ObjNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object nid2obj(Object nid) {
-            throw raise(NotImplementedError);
+        static Object nid2obj(Object nid,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -339,8 +342,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RandStatusNode extends PythonBuiltinNode {
         @Specialization
-        Object randStatus() {
-            throw raise(NotImplementedError);
+        static Object randStatus(
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -349,8 +353,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object randAdd(Object string, Object entropy) {
-            throw raise(NotImplementedError);
+        static Object randAdd(Object string, Object entropy,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -359,8 +364,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object randBytes(Object n) {
-            throw raise(NotImplementedError);
+        static Object randBytes(Object n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -369,8 +375,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandPseudoBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object randPseudoBytes(Object n) {
-            throw raise(NotImplementedError);
+        static Object randPseudoBytes(Object n,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 

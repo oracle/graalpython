@@ -46,10 +46,10 @@ the rest of the GraalPy sources on top of any supported JDK, e.g., OpenJDK, Graa
 When testing with custom Maven repository, i.e., locally built, one can pass -Dpolyglot_repo
 pointing to the Maven repository, for example:
 
-mvn test -Dpolyglot_repo=file:///some/path/to/repo
+mvn test -Dcom.oracle.graal.python.test.polyglot_repo=file:///some/path/to/repo
 
 Additionally, one can change the polyglot artifacts version with
--Dpolyglot.version=24.0-SNAPSHOT, for example.
+-Dcom.oracle.graal.python.test.polyglot.version=24.0-SNAPSHOT, for example.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -64,7 +64,7 @@ Additionally, one can change the polyglot artifacts version with
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <polyglot.version>24.0.0-dev</polyglot.version>
+        <com.oracle.graal.python.test.polyglot.version>24.0.0-dev</com.oracle.graal.python.test.polyglot.version>
     </properties>
 
     <build>
@@ -87,6 +87,7 @@ Additionally, one can change the polyglot artifacts version with
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <trimStackTrace>false</trimStackTrace>
                     <testSourceDirectory>src</testSourceDirectory>
                     <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
                     <includes>
@@ -102,13 +103,13 @@ Additionally, one can change the polyglot artifacts version with
             <id>Custom central repo</id>
             <activation>
                 <property>
-                    <name>central_repo</name>
+                    <name>com.oracle.graal.python.test.central_repo</name>
                 </property>
             </activation>
             <repositories>
                 <repository>
                     <id>release</id>
-                    <url>${central_repo}</url>
+                    <url>${com.oracle.graal.python.test.central_repo}</url>
                     <releases>
                         <enabled>true</enabled>
                     </releases>
@@ -122,13 +123,13 @@ Additionally, one can change the polyglot artifacts version with
             <id>Custom polyglot repo</id>
             <activation>
                 <property>
-                    <name>polyglot_repo</name>
+                    <name>com.oracle.graal.python.test.polyglot_repo</name>
                 </property>
             </activation>
             <repositories>
                 <repository>
                     <id>release</id>
-                    <url>${polyglot_repo}</url>
+                    <url>${com.oracle.graal.python.test.polyglot_repo}</url>
                     <releases>
                         <enabled>true</enabled>
                     </releases>
@@ -144,12 +145,12 @@ Additionally, one can change the polyglot artifacts version with
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>
-            <version>${polyglot.version}</version>
+            <version>${com.oracle.graal.python.test.polyglot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>python-community</artifactId>
-            <version>${polyglot.version}</version>
+            <version>${com.oracle.graal.python.test.polyglot.version}</version>
             <scope>runtime</scope>
             <type>pom</type>
         </dependency>
@@ -157,7 +158,7 @@ Additionally, one can change the polyglot artifacts version with
             <!-- See MultiContextTest#testSharingWithStruct -->
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>llvm-community</artifactId>
-            <version>${polyglot.version}</version>
+            <version>${com.oracle.graal.python.test.polyglot.version}</version>
             <scope>runtime</scope>
             <type>pom</type>
         </dependency>

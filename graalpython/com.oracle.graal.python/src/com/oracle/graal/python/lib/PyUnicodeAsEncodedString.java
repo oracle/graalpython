@@ -150,7 +150,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isString(unicode)")
-    @SuppressWarnings({"unused", "truffle-static-method"})
+    @SuppressWarnings("unused")
     static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object unicode, Object encoding, Object errors,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         throw raiseNode.get(inliningTarget).raiseBadInternalCall();

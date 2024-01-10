@@ -62,12 +62,14 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,11 +94,12 @@ public final class StructureBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
 
         @Specialization
-        Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
@@ -107,8 +110,9 @@ public final class StructureBuiltins extends PythonBuiltins {
         private static final int RECURSION_LIMIT = 5;
 
         @Specialization
-        Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
+        static Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetItem getItemNode,
@@ -116,12 +120,13 @@ public final class StructureBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (args.length > 0) {
                 int res = _init_pos_args(frame, inliningTarget, self, getClassNode.execute(inliningTarget, self), args, kwds, 0,
-                                setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, RECURSION_LIMIT);
+                                indirectCallData, setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, raiseNode, RECURSION_LIMIT);
                 if (res < args.length) {
-                    throw raise(TypeError, TOO_MANY_INITIALIZERS);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, TOO_MANY_INITIALIZERS);
                 }
             }
 
@@ -144,7 +149,8 @@ public final class StructureBuiltins extends PythonBuiltins {
          *
          * Returns -1 on error, or the index of next argument on success.
          */
-        int _init_pos_args(VirtualFrame frame, Node inliningTarget, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+        static int _init_pos_args(VirtualFrame frame, Node inliningTarget, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+                        IndirectCallData indirectCallData,
                         SetAttributeNode.Dynamic setAttr,
                         PyObjectGetItem getItemNode,
                         CastToTruffleStringNode toString,
@@ -152,27 +158,28 @@ public final class StructureBuiltins extends PythonBuiltins {
                         PyTypeStgDictNode pyTypeStgDictNode,
                         GetBaseClassNode getBaseClassNode,
                         EqualNode equalNode,
+                        PRaiseNode.Lazy raiseNode,
                         int recursionLimit) {
             Object fields;
             int index = idx;
 
             Object base = getBaseClassNode.execute(inliningTarget, type);
-            if (pyTypeStgDictNode.execute(base) != null) {
+            if (pyTypeStgDictNode.execute(inliningTarget, base) != null) {
                 if (recursionLimit > 0) {
                     index = _init_pos_args(frame, inliningTarget, self, base, args, kwds, index,
-                                    setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
-                                    recursionLimit - 1);
+                                    indirectCallData, setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
+                                    raiseNode, recursionLimit - 1);
                 } else {
-                    Object savedState = IndirectCallContext.enter(frame, this);
+                    Object savedState = IndirectCallContext.enter(frame, indirectCallData);
                     try {
-                        index = _init_pos_args_boundary(self, base, args, kwds, index, setAttr, getItemNode);
+                        index = _init_pos_args_boundary(self, base, args, kwds, index, indirectCallData, setAttr, getItemNode);
                     } finally {
-                        IndirectCallContext.exit(frame, this, savedState);
+                        IndirectCallContext.exit(frame, indirectCallData, savedState);
                     }
                 }
             }
 
-            StgDictObject dict = pyTypeStgDictNode.execute(type);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, type);
             fields = getItem.execute(inliningTarget, dict.getDictStorage(), T__FIELDS_);
             if (fields == null) {
                 return index;
@@ -184,7 +191,9 @@ public final class StructureBuiltins extends PythonBuiltins {
                 Object val = args[i + index];
                 if (kwds.length > 0) {
                     if (KeywordsStorage.findStringKey(kwds, name, equalNode) != -1) {
-                        throw raise(TypeError, DUPLICATE_VALUES_FOR_FIELD_S, name);
+                        // using execute() instead of raise() because we need to pass raisingNode
+                        // explicitly (raiseNode might be uncached)
+                        throw raiseNode.get(inliningTarget).execute(inliningTarget, TypeError, null, PNone.NO_VALUE, DUPLICATE_VALUES_FOR_FIELD_S, new Object[]{name});
                     }
                 }
 
@@ -194,13 +203,14 @@ public final class StructureBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+        static int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+                        IndirectCallData indirectCallData,
                         SetAttributeNode.Dynamic setAttr,
                         PyObjectGetItem getItemNode) {
-            return _init_pos_args(null, null, self, type, args, kwds, idx, setAttr,
+            return _init_pos_args(null, null, self, type, args, kwds, idx, indirectCallData, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),
                             HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),
-                            GetBaseClassNode.getUncached(), TruffleString.EqualNode.getUncached(), 0);
+                            GetBaseClassNode.getUncached(), TruffleString.EqualNode.getUncached(), PRaiseNode.Lazy.getUncached(), 0);
         }
     }
 

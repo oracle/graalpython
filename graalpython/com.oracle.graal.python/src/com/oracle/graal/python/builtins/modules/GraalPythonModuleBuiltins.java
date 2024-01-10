@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
@@ -63,23 +62,18 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 
 import org.graalvm.home.Version;
@@ -128,6 +122,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -769,6 +764,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object doSet(PSet set, TruffleString strategyName) {
             validate(set.getDictStorage());
             set.setDictStorage(getStrategy(strategyName, getLanguage()));
@@ -776,6 +772,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         Object doDict(PDict dict, TruffleString strategyName) {
             validate(dict.getDictStorage());
             dict.setDictStorage(getStrategy(strategyName, getLanguage()));
@@ -792,13 +789,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 case "economicmap":
                     return EconomicMapStorage.create();
                 default:
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
             }
         }
 
         private void validate(HashingStorage dictStorage) {
             if (HashingStorageLen.executeUncached(dictStorage) != 0) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
             }
         }
     }
@@ -809,8 +806,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PBytesLike bytes) {
-            ensureCapi();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(bytes.getSequenceStorage(), true);
+            CApiContext.ensureCapiWasLoaded();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(bytes.getSequenceStorage(), true);
             bytes.setSequenceStorage(newStorage);
             return bytes;
         }
@@ -818,8 +815,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PArray array) {
-            ensureCapi();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(array.getSequenceStorage(), true);
+            CApiContext.ensureCapiWasLoaded();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true);
             array.setSequenceStorage(newStorage);
             return array;
         }
@@ -827,18 +824,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PSequence sequence) {
-            ensureCapi();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(sequence.getSequenceStorage(), false);
+            CApiContext.ensureCapiWasLoaded();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), false);
             sequence.setSequenceStorage(newStorage);
             return sequence;
-        }
-
-        private void ensureCapi() {
-            try {
-                CApiContext.ensureCapiWasLoaded(null, getContext(), T_EMPTY_STRING, T_EMPTY_STRING);
-            } catch (Exception e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
     }
 
@@ -846,26 +835,28 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doIt(Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+        static Object doIt(Object value,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM.toJavaStringUncached());
             }
             if (ImageInfo.inImageRuntimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
+                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
             }
 
-            Env env = getContext().getEnv();
+            Env env = PythonContext.get(inliningTarget).getEnv();
             if (!isType(value, env, lib)) {
-                throw raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
             }
 
             try {
                 return env.createHostAdapter(new Object[]{value});
             } catch (Exception ex) {
-                throw raise(TypeError, PythonUtils.getMessage(ex), ex);
+                throw raiseNode.get(inliningTarget).raise(TypeError, PythonUtils.getMessage(ex), ex);
             }
         }
 
@@ -1018,94 +1009,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "list_files", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class ListFiles extends PythonBinaryBuiltinNode {
-        @TruffleBoundary
-        @Specialization
-        Object list(TruffleString dirPath, TruffleString filesListPath) {
-            if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            print(getContext().getStandardOut(), String.format("listing files from '%s' to '%s'\n", dirPath, filesListPath));
-
-            TruffleFile dir = getContext().getPublicTruffleFileRelaxed(dirPath);
-            if (!dir.exists() || !dir.isDirectory()) {
-                print(getContext().getStandardErr(), String.format("'%s' has to exist and be a directory.\n", dirPath));
-            }
-
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
-                TruffleFile p = getContext().getPublicTruffleFileRelaxed(filesListPath).getParent();
-                if (!p.exists()) {
-                    getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
-                }
-                Set<String> ret = list(dir, null);
-                String[] a = ret.toArray(new String[ret.size()]);
-                Arrays.sort(a);
-                for (String f : a) {
-                    if (f.charAt(0) == '\\') {
-                        f = f.replace("\\", "/");
-                    }
-
-                    bw.write(f);
-                    bw.write("\n");
-                }
-            } catch (IOException e) {
-                String msg = String.format("error while creating '%s': %s \n", filesListPath, e);
-                print(getContext().getStandardErr(), msg);
-            }
-            return PNone.NONE;
-        }
-
-        private static Set<String> list(TruffleFile dir, TruffleFile rd) throws IOException {
-            HashSet<String> ret = new HashSet<>();
-            Collection<TruffleFile> files = dir.list();
-            String dirPath = makeDirPath(dir.getAbsoluteFile().getPath());
-
-            // add dir
-            TruffleFile rootDir = rd == null ? dir : rd;
-            String rootPath = makeDirPath(rootDir.getAbsoluteFile().getPath());
-            int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
-            ret.add(dirPath.substring(rootEndIdx));
-
-            // add parents up to root
-            TruffleFile parent = dir;
-            while (!parent.equals(rootDir)) {
-                String p = makeDirPath(parent.getAbsoluteFile().getPath());
-                p = p.substring(rootEndIdx);
-                ret.add(p);
-                parent = parent.getParent();
-            }
-
-            // add children
-            if (files != null) {
-                for (TruffleFile f : files) {
-                    if (f.isRegularFile()) {
-                        ret.add(f.getAbsoluteFile().getPath().substring(rootEndIdx));
-                    } else {
-                        ret.addAll(list(f, rootDir));
-                    }
-                }
-            }
-            return ret;
-        }
-
-        private static String makeDirPath(String p) {
-            if (!p.endsWith(File.separator)) {
-                p = p + File.separator;
-            }
-            return p;
-        }
-
-        private void print(OutputStream out, String msg) {
-            try {
-                out.write(String.format("%s: %s", getContext().getOption(PythonOptions.Executable), msg).getBytes(StandardCharsets.UTF_8));
-            } catch (IOException ioException) {
-                // Ignore
-            }
-        }
-    }
-
     @Builtin(name = "get_graalvm_version", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetGraalVmVersion extends PythonBuiltinNode {
@@ -1124,6 +1027,50 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString get() {
             return TruffleString.fromJavaStringUncached(System.getProperty("java.version"), TS_ENCODING);
+        }
+    }
+
+    @Builtin(name = "get_max_process_count", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetMaxProcessCount extends PythonBuiltinNode {
+
+        @TruffleBoundary
+        @Specialization
+        int get() {
+            int numCpu = Runtime.getRuntime().availableProcessors();
+            if (numCpu < 2) {
+                return 1;
+            }
+            // Try a heuristic based on total memory
+            int processCount;
+            try {
+                // Don't think of parsing /proc/meminfo, it doesn't account for cgroups
+                Class<?> beanClass = Class.forName("com.sun.management.OperatingSystemMXBean");
+                Method method = beanClass.getDeclaredMethod("getTotalMemorySize");
+                long totalMemory = (long) method.invoke(ManagementFactory.getOperatingSystemMXBean());
+                // Let's say we don't want to use more than 50% of total memory
+                long usableMemory = totalMemory / 2;
+                // Conservative estimate of how much memory GraalPy might use when loading many
+                // heavy modules
+                long memoryPerProcess = 3L * 1024 * 1024 * 1024;
+                processCount = (int) (usableMemory / memoryPerProcess) - 1;
+            } catch (Exception e) {
+                // Do a coarse guess
+                processCount = numCpu / 5;
+            }
+            return Math.min(numCpu, Math.max(1, processCount));
+        }
+    }
+
+    @Builtin(name = "get_python_home_paths", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetPythonHomePaths extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        TruffleString get() {
+            PythonContext context = getContext();
+            TruffleString sep = TruffleString.fromJavaStringUncached(File.pathSeparator, TS_ENCODING);
+            return context.getStdlibHome().concatUncached(sep, TS_ENCODING, false).concatUncached(context.getCoreHome(), TS_ENCODING, false);
         }
     }
 }

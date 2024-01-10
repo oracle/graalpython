@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_ZERO;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
@@ -104,7 +106,9 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -147,14 +151,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static int findProtocolByName(Node node, String protocolName) {
+    static int findProtocolByName(Node raisingNode, String protocolName) {
         String protoConstant = "IPPROTO_" + protocolName.toUpperCase();
         for (PosixConstants.IntConstant constant : PosixConstants.ipProto) {
             if (constant.defined && constant.name.equals(protoConstant)) {
                 return constant.getValueIfDefined();
             }
         }
-        throw PRaiseNode.raiseUncached(node, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+        throw PRaiseNode.raiseUncached(raisingNode, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
     }
 
     @Override
@@ -243,9 +247,10 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class SetDefaultTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object set(VirtualFrame frame, PythonModule module, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
                         @Cached WriteAttributeToObjectNode writeNode) {
-            long timeout = parseTimeoutNode.execute(frame, value);
+            long timeout = parseTimeoutNode.execute(frame, inliningTarget, value);
             writeNode.execute(module, DEFAULT_TIMEOUT_KEY, timeout);
             return PNone.NONE;
         }
@@ -317,7 +322,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     try {
                         do {
                             UniversalSockAddr forwardAddr = addrInfoCursorLib.getSockAddr(cursor);
-                            storage = appendNode.execute(inliningTarget, storage, makeIpAddrNode.execute(frame, forwardAddr), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                            storage = appendNode.execute(inliningTarget, storage, makeIpAddrNode.execute(frame, inliningTarget, forwardAddr), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                         } while (addrInfoCursorLib.next(cursor));
                     } finally {
                         addrInfoCursorLib.release(cursor);
@@ -368,13 +373,62 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "gethostbyname_ex", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetHostByNameExNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(VirtualFrame frame, Object nameObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            byte[] name = idnaConverter.execute(frame, nameObj);
+            // The event name is really without the _ex, it's not a copy-paste error
+            auditNode.audit(inliningTarget, "socket.gethostbyname", factory.createTuple(new Object[]{nameObj}));
+            /*
+             * TODO this uses getaddrinfo to emulate the legacy gethostbyname. It doesn't support
+             * aliases and multiple addresses. We might want to use the legacy gethostbyname_r API
+             * in the future
+             */
+            try {
+                AddrInfoCursor cursor = posixLib.getaddrinfo(getPosixSupport(), posixLib.createPathFromBytes(getPosixSupport(), name),
+                                null, AF_INET.value, 0, 0, AI_CANONNAME.value);
+                try {
+                    TruffleString canonName = posixLib.getPathAsString(getPosixSupport(), addrInfoCursorLib.getCanonName(cursor));
+                    Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addrInfoCursorLib.getSockAddr(cursor));
+                    TruffleString addr = posixLib.getPathAsString(getPosixSupport(), posixLib.inet_ntop(getPosixSupport(), AF_INET.value, inet4SockAddr.getAddressAsBytes()));
+                    // getaddrinfo doesn't support aliases
+                    PList aliases = factory.createList();
+                    // we support just one address for now
+                    PList addrs = factory.createList(new Object[]{addr});
+                    return factory.createTuple(new Object[]{canonName, aliases, addrs});
+                } finally {
+                    addrInfoCursorLib.release(cursor);
+                }
+            } catch (GetAddrInfoException e) {
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketHError, new Object[]{e.getMessageAsTruffleString()});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @NeverDefault
+        protected static IdnaFromStringOrBytesConverterNode createIdnaConverter() {
+            return IdnaFromStringOrBytesConverterNode.create("gethostbyname_ex", 1);
+        }
+    }
+
     @Builtin(name = "getservbyname", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"servicename", "protocolname"})
     @ArgumentClinic(name = "servicename", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "protocolname", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NO_VALUE")
     @GenerateNodeFactory
     public abstract static class GetServByNameNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object getServByName(TruffleString serviceName, Object protocolNameObj,
+        static Object getServByName(TruffleString serviceName, Object protocolNameObj,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile noneProtocol,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
@@ -382,7 +436,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString protocolName;
             if (noneProtocol.profile(inliningTarget, PGuards.isNoValue(protocolNameObj))) {
                 protocolName = null;
@@ -399,14 +454,15 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
 
             int protocol = 0;
             if (protocolName != null) {
-                protocol = findProtocolByName(this, toJavaStringNode.execute(protocolName));
+                protocol = findProtocolByName(inliningTarget, toJavaStringNode.execute(protocolName));
             }
 
             try {
                 gil.release(true);
                 AddrInfoCursor cursor;
                 try {
-                    cursor = posixLib.getaddrinfo(getPosixSupport(), null, posixLib.createPathFromString(getPosixSupport(), serviceName), AF_INET.value, 0, protocol, 0);
+                    PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                    cursor = posixLib.getaddrinfo(posixSupport, null, posixLib.createPathFromString(posixSupport, serviceName), AF_INET.value, 0, protocol, 0);
                 } finally {
                     gil.acquire();
                 }
@@ -417,7 +473,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     addrInfoCursorLib.release(cursor);
                 }
             } catch (GetAddrInfoException e) {
-                throw raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
@@ -442,7 +498,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString protocolName;
             if (nonProtocol.profile(inliningTarget, PGuards.isNoValue(protocolNameObj))) {
                 protocolName = null;
@@ -456,7 +513,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
              * the legacy API in the future
              */
             if (port < 0 || port > 0xffff) {
-                throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, "getservbyport");
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_PORT_RANGE, "getservbyport");
             }
             auditNode.audit(inliningTarget, "socket.getservbyport", port, protocolName != null ? protocolName : "");
 
@@ -476,14 +533,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (GetAddrInfoException e) {
-                throw raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
         @TruffleBoundary
         private void checkName(TruffleString name) {
             if (name.toJavaStringUncached().matches("^\\d+$")) {
-                throw raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
@@ -498,8 +555,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNameInfoNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object getNameInfo(VirtualFrame frame, PTuple sockaddr, int flags,
+        static Object getNameInfo(VirtualFrame frame, PTuple sockaddr, int flags,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
@@ -511,11 +567,12 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
             int addrLen = addr.length();
             if (addrLen < 2 || addrLen > 4) {
-                throw raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
             }
             TruffleString address;
             int port, flowinfo = 0, scopeid = 0;
@@ -523,13 +580,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 address = castAddress.execute(inliningTarget, arg0);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, arg0);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, arg0);
             }
             port = asIntNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, addr, 1));
             if (addrLen > 2) {
                 flowinfo = asIntNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, addr, 2));
                 if (flowinfo < 0 || flowinfo > 0xfffff) {
-                    throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, "getnameinfo");
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, "getnameinfo");
                 }
             }
             if (addrLen > 3) {
@@ -543,15 +600,16 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 int family;
                 // TODO getaddrinfo lock?
                 gil.release(true);
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
                 try {
-                    AddrInfoCursor cursor = posixLib.getaddrinfo(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), address),
-                                    posixLib.createPathFromString(getPosixSupport(), fromLongNode.execute(port, TS_ENCODING, false)),
+                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromString(posixSupport, address),
+                                    posixLib.createPathFromString(posixSupport, fromLongNode.execute(port, TS_ENCODING, false)),
                                     AF_UNSPEC.value, SOCK_DGRAM.value, 0, AI_NUMERICHOST.value);
                     try {
                         family = addrInfoCursorLib.getFamily(cursor);
                         resolvedAddr = addrInfoCursorLib.getSockAddr(cursor);
                         if (addrInfoCursorLib.next(cursor)) {
-                            throw raise(OSError, ErrorMessages.SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES);
+                            throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES);
                         }
                     } finally {
                         addrInfoCursorLib.release(cursor);
@@ -563,18 +621,18 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 UniversalSockAddr queryAddr;
                 if (family == AF_INET.value) {
                     if (addrLen != 2) {
-                        throw raise(OSError, ErrorMessages.IPV4_MUST_BE_2_TUPLE);
+                        throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.IPV4_MUST_BE_2_TUPLE);
                     }
-                    queryAddr = posixLib.createUniversalSockAddrInet4(getPosixSupport(), new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress()));
+                    queryAddr = posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress()));
                 } else if (family == AF_INET6.value) {
-                    queryAddr = posixLib.createUniversalSockAddrInet6(getPosixSupport(), new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid));
+                    queryAddr = posixLib.createUniversalSockAddrInet6(posixSupport, new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid));
                 } else {
-                    throw raise(OSError, ErrorMessages.UNKNOWN_FAMILY);
+                    throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.UNKNOWN_FAMILY);
                 }
 
-                Object[] getnameinfo = posixLib.getnameinfo(getPosixSupport(), queryAddr, flags);
-                TruffleString host = posixLib.getPathAsString(getPosixSupport(), getnameinfo[0]);
-                TruffleString service = posixLib.getPathAsString(getPosixSupport(), getnameinfo[1]);
+                Object[] getnameinfo = posixLib.getnameinfo(posixSupport, queryAddr, flags);
+                TruffleString host = posixLib.getPathAsString(posixSupport, getnameinfo[0]);
+                TruffleString service = posixLib.getPathAsString(posixSupport, getnameinfo[1]);
                 return factory.createTuple(new Object[]{host, service});
             } catch (GetAddrInfoException e) {
                 throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
@@ -583,8 +641,9 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(Object sockaddr, Object flags) {
-            throw raise(TypeError, ErrorMessages.GETNAMEINFO_ARG1_MUST_BE_TUPLE);
+        static Object error(Object sockaddr, Object flags,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.GETNAMEINFO_ARG1_MUST_BE_TUPLE);
         }
 
         @Override
@@ -601,7 +660,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetAddrInfoNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
+        static Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary cursorLib,
@@ -616,24 +675,26 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object host = null;
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             if (hostObject != PNone.NONE) {
-                host = posixLib.createPathFromBytes(getPosixSupport(), idna.execute(frame, hostObject));
+                host = posixLib.createPathFromBytes(posixSupport, idna.execute(frame, hostObject));
             }
 
             Object port;
             Object portObjectProfiled = profile.profile(inliningTarget, portObject);
             if (PGuards.canBeInteger(portObjectProfiled)) {
-                port = posixLib.createPathFromString(getPosixSupport(), fromLongNode.execute(asLongNode.execute(frame, inliningTarget, portObjectProfiled), TS_ENCODING, false));
+                port = posixLib.createPathFromString(posixSupport, fromLongNode.execute(asLongNode.execute(frame, inliningTarget, portObjectProfiled), TS_ENCODING, false));
             } else if (PGuards.isString(portObjectProfiled)) {
-                port = posixLib.createPathFromString(getPosixSupport(), castToString.execute(inliningTarget, portObjectProfiled));
+                port = posixLib.createPathFromString(posixSupport, castToString.execute(inliningTarget, portObjectProfiled));
             } else if (PGuards.isBytes(portObjectProfiled)) {
-                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(frame, portObjectProfiled));
+                port = posixLib.createPathFromBytes(posixSupport, toBytes.execute(frame, portObjectProfiled));
             } else if (portObject == PNone.NONE) {
                 port = null;
             } else {
-                throw raise(OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
             }
 
             auditNode.audit(inliningTarget, "socket.getaddrinfo", hostObject, portObjectProfiled, family, type, proto, flags);
@@ -643,7 +704,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 // TODO getaddrinfo lock
                 gil.release(true);
                 try {
-                    cursor = posixLib.getaddrinfo(getPosixSupport(), host, port, family, type, proto, flags);
+                    cursor = posixLib.getaddrinfo(posixSupport, host, port, family, type, proto, flags);
                 } finally {
                     gil.acquire();
                 }
@@ -653,10 +714,10 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 SequenceStorage storage = new ObjectSequenceStorage(5);
                 do {
-                    Object addr = makeSockAddrNode.execute(frame, cursorLib.getSockAddr(cursor));
+                    Object addr = makeSockAddrNode.execute(frame, inliningTarget, cursorLib.getSockAddr(cursor));
                     TruffleString canonName = T_EMPTY_STRING;
                     if (cursorLib.getCanonName(cursor) != null) {
-                        canonName = posixLib.getPathAsString(getPosixSupport(), cursorLib.getCanonName(cursor));
+                        canonName = posixLib.getPathAsString(posixSupport, cursorLib.getCanonName(cursor));
                     }
                     PTuple tuple = factory.createTuple(new Object[]{cursorLib.getFamily(cursor), cursorLib.getSockType(cursor), cursorLib.getProtocol(cursor), canonName, addr});
                     storage = appendNode.execute(inliningTarget, storage, tuple, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
@@ -745,16 +806,19 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetAtoNNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PBytes doConvert(TruffleString addr,
+        static PBytes doConvert(TruffleString addr,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                int converted = posixLib.inet_aton(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), addr));
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                int converted = posixLib.inet_aton(posixSupport, posixLib.createPathFromString(posixSupport, addr));
                 byte[] bytes = new byte[4];
                 ByteArraySupport.bigEndian().putInt(bytes, 0, converted);
                 return factory.createBytes(bytes);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
-                throw raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
             }
         }
 
@@ -768,21 +832,25 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        TruffleString doGeneric(VirtualFrame frame, Object addr,
+        static TruffleString doGeneric(VirtualFrame frame, Object addr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, this);
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (len != 4) {
-                    throw raise(OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
+                    throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
                 }
-                Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
-                return posixLib.getPathAsString(getPosixSupport(), result);
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                Object result = posixLib.inet_ntoa(posixSupport, ByteArraySupport.bigEndian().getInt(bytes, 0));
+                return posixLib.getPathAsString(posixSupport, result);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }
@@ -793,18 +861,20 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetPtoNNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        PBytes doConvert(VirtualFrame frame, int family, TruffleString addr,
+        static PBytes doConvert(VirtualFrame frame, int family, TruffleString addr,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                byte[] bytes = posixLib.inet_pton(getPosixSupport(), family, posixLib.createPathFromString(getPosixSupport(), addr));
+                PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                byte[] bytes = posixLib.inet_pton(posixSupport, family, posixLib.createPathFromString(posixSupport, addr));
                 return factory.createBytes(bytes);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
-                throw raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_PTON);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_PTON);
             }
         }
 
@@ -819,36 +889,38 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
+        static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (family == AF_INET.value) {
                     if (len != 4) {
-                        throw raise(ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
                     }
                 } else if (family == AF_INET6.value) {
                     if (len != 16) {
-                        throw raise(ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
                     }
                 } else {
-                    throw raise(ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, family);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, family);
                 }
                 try {
-                    Object result = posixLib.inet_ntop(getPosixSupport(), family, bytes);
-                    return posixLib.getPathAsString(getPosixSupport(), result);
+                    PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                    Object result = posixLib.inet_ntop(posixSupport, family, bytes);
+                    return posixLib.getPathAsString(posixSupport, result);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -863,13 +935,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NToHSNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int convert(VirtualFrame frame, Object xObj,
+        static int convert(VirtualFrame frame, Object xObj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int x = asIntNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
-                throw raise(OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
             }
             if (x > 0xFFFF) {
                 warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.NTOH_PYTHON_STRING_TOO_LARGE_TO_CONVERT, 1);
@@ -887,15 +960,16 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NToHLNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long convert(VirtualFrame frame, Object xObj,
+        static long convert(VirtualFrame frame, Object xObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyLongAsLongNode asLongNode) {
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             long x = asLongNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
-                throw raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
             }
             if (x > 0xFFFFFFFFL) {
-                throw raise(OverflowError, ErrorMessages.INT_LATGER_THAN_32_BITS);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.INT_LATGER_THAN_32_BITS);
             }
             int i = (int) x;
             if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {

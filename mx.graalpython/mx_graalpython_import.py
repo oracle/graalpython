@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -130,7 +130,9 @@ CPYTHON_SOURCES_MAPPING = {
 
     # C API
     "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
+    "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
+    "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
@@ -154,7 +156,9 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/getversion.c": CopyFrom("Python/getversion.c"),
     "graalpython/com.oracle.graal.python.cext/src/mysnprintf.c": CopyFrom("Python/mysnprintf.c"),
     "graalpython/com.oracle.graal.python.cext/src/mystrtoul.c": CopyFrom("Python/mystrtoul.c"),
-    "graalpython/com.oracle.graal.python.cext/src/pystrhex.c": CopyFrom("Python/pystrhex.c"),
+    "graalpython/com.oracle.graal.python.cext/src/longobject.c": CopyFrom("Objects/longobject.c"),
+    "graalpython/com.oracle.graal.python.cext/src/moduleobject.c": CopyFrom("Objects/moduleobject.c"),
+    "graalpython/com.oracle.graal.python.cext/src/object.c": CopyFrom("Objects/object.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrcmp.c": CopyFrom("Python/pystrcmp.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrtod.c": CopyFrom("Python/pystrtod.c"),
     # These files take functions from CPython, but they don't follow the same structure, so they are impossible
@@ -169,12 +173,13 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/call.c": Ignore(),
     # Just few functions are taken from CPython
     "graalpython/python-libposix/src/fork_exec.c": Ignore(),
+
+    # Largely rewritten
     "graalpython/python-venvlauncher/src/venvlauncher.c": Ignore(),
 
     # PEG Parser
     "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen"),
     "graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py": CopyFrom("Parser/asdl.py"),
-    "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Python.asdl": CopyFrom("Parser/Python.asdl"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/python.gram": CopyFrom("Grammar/python.gram"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Tokens": CopyFrom("Grammar/Tokens"),
     "graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py": Ignore(),

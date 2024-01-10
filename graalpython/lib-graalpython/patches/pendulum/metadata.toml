@@ -1,0 +1,3 @@
+[[rules]]
+# Pin version before they started using rust
+version = '< 3'

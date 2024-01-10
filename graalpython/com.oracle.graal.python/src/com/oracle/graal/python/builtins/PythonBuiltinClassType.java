@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -81,6 +81,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
@@ -151,6 +152,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PTupleGetter(J_TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDequeIter(J_DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PDequeRevIter(J_DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
+    POrderedDict(J_ORDERED_DICT, "_collections", Flags.PUBLIC_BASE_WDICT, DICT_M_FLAGS),
+    POrderedDictKeys("odict_keys", Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS),
+    POrderedDictValues("odict_values", Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS),
+    POrderedDictItems("odict_items", Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS),
+    POrderedDictIterator("odict_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PComplex("complex", J_BUILTINS, COMPLEX_M_FLAGS),
     PDict("dict", J_BUILTINS, DICT_M_FLAGS),
     PDictItemIterator(J_DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
@@ -162,7 +168,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDictValueIterator(J_DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictValuesView(J_DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS),
-    PEllipsis("ellipsis", J_BUILTINS, Flags.PRIVATE_DERIVED_WODICT),
+    PEllipsis("ellipsis", Flags.PRIVATE_DERIVED_WODICT),
     PEnumerate("enumerate", J_BUILTINS),
     PMap("map", J_BUILTINS),
     PFloat("float", J_BUILTINS, FLOAT_M_FLAGS),
@@ -211,10 +217,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PLock("LockType", J__THREAD),
     PRLock("RLock", J__THREAD),
     PSemLock("SemLock", "_multiprocessing"),
+    PGraalPySemLock("SemLock", "_multiprocessing_graalpy"),
     PSocket("socket", J__SOCKET),
     PStaticmethod("staticmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PClassmethod("classmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
-    PInstancemethod("instancemethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
+    PInstancemethod("instancemethod", Flags.PUBLIC_BASE_WDICT),
     PScandirIterator("ScandirIterator", J_POSIX, Flags.PRIVATE_DERIVED_WODICT),
     PDirEntry("DirEntry", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     LsprofProfiler("Profiler", "_lsprof"),
@@ -807,6 +814,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PThreadInfo.base = PTuple;
         PUnraisableHookArgs.base = PTuple;
         PDefaultDict.base = PDict;
+        POrderedDict.base = PDict;
+        POrderedDictKeys.base = PDictKeysView;
+        POrderedDictValues.base = PDictValuesView;
+        POrderedDictItems.base = PDictItemsView;
 
         PArrayIterator.type = PythonClass;
         PSocket.type = PythonClass;

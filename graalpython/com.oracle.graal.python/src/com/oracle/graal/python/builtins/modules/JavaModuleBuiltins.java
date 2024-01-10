@@ -59,10 +59,10 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -70,8 +70,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -120,41 +123,34 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
-        private Object get(TruffleString name, TruffleString.ToJavaStringNode toJavaStringNode) {
-            Env env = getContext().getEnv();
+
+        @Specialization(guards = "isPString(name) || isTruffleString(name)")
+        static Object type(Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
             }
+            String javaString = castToStringNode.execute(name);
             Object hostValue;
             try {
-                hostValue = env.lookupHostSymbol(toJavaStringNode.execute(name));
+                hostValue = env.lookupHostSymbol(javaString);
             } catch (RuntimeException e) {
                 hostValue = null;
             }
             if (hostValue == null) {
-                throw raise(PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, name);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, javaString);
             } else {
                 return hostValue;
             }
         }
 
-        @Specialization
-        Object type(TruffleString name,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return get(name, toJavaStringNode);
-        }
-
-        @Specialization
-        Object type(PString name,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return get(castToStringNode.execute(inliningTarget, name), toJavaStringNode);
-        }
-
         @Fallback
-        Object doError(Object object) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
+        static Object doError(Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }
 
@@ -162,12 +158,13 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
-        PNone add(Object[] args,
+        static PNone add(Object[] args,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToString) {
-            Env env = getContext().getEnv();
+                        @Cached CastToTruffleStringNode castToString,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
@@ -176,11 +173,11 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     entry = castToString.execute(inliningTarget, arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
-                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, T_JAR));
+                    env.addToHostClassPath(PythonContext.get(inliningTarget).getPublicTruffleFileRelaxed(entry, T_JAR));
                 } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {
-                    throw raise(TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
                 }
             }
             return PNone.NONE;
@@ -231,28 +228,30 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
-        boolean check(Object object, Object klass,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static boolean check(Object object, Object klass,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
-                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
-            Env env = getContext().getEnv();
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
                 if (hostKlass instanceof Class<?>) {
                     return ((Class<?>) hostKlass).isInstance(object);
                 }
             } catch (ClassCastException cce) {
-                throw raise(ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
             }
             return false;
         }
 
         @Specialization(guards = {"isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
-        boolean checkForeign(Object object, Object klass,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static boolean checkForeign(Object object, Object klass,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
-                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
-            Env env = getContext().getEnv();
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Env env = PythonContext.get(inliningTarget).getEnv();
             try {
                 Object hostObject = env.asHostObject(object);
                 Object hostKlass = env.asHostObject(klass);
@@ -260,14 +259,15 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     return ((Class<?>) hostKlass).isInstance(hostObject);
                 }
             } catch (ClassCastException cce) {
-                throw raise(ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
             }
             return false;
         }
 
         @Fallback
-        boolean fallback(Object object, Object klass) {
-            throw raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
+        static boolean fallback(Object object, Object klass,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
         }
     }
 
@@ -309,14 +309,15 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(object)", limit = "3")
-        Object doBuffer(VirtualFrame frame, Object object,
+        static Object doBuffer(VirtualFrame frame, Object object,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = acquireLib.acquireReadonly(object, frame, this);
+            Object buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);
             try {
                 return new InteropByteArray(bufferLib.getCopiedByteArray(object));
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }

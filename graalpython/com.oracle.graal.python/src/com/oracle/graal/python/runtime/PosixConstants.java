@@ -97,6 +97,7 @@ public final class PosixConstants {
     public static final OptionalIntConstant SEEK_HOLE;
     public static final MandatoryIntConstant SOMAXCONN;
     public static final OptionalIntConstant PIPE_BUF;
+    public static final OptionalIntConstant SEM_VALUE_MAX;
     public static final OptionalIntConstant O_ACCMODE;
     public static final MandatoryIntConstant O_RDONLY;
     public static final MandatoryIntConstant O_WRONLY;
@@ -375,6 +376,7 @@ public final class PosixConstants {
         SEEK_HOLE = reg.createOptionalInt("SEEK_HOLE");
         SOMAXCONN = reg.createMandatoryInt("SOMAXCONN");
         PIPE_BUF = reg.createOptionalInt("PIPE_BUF");
+        SEM_VALUE_MAX = reg.createOptionalInt("SEM_VALUE_MAX");
         O_ACCMODE = reg.createOptionalInt("O_ACCMODE");
         O_RDONLY = reg.createMandatoryInt("O_RDONLY");
         O_WRONLY = reg.createMandatoryInt("O_WRONLY");

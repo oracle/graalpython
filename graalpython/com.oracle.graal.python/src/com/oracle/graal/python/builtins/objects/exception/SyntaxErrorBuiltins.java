@@ -61,6 +61,7 @@ import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -182,11 +183,13 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object init(VirtualFrame frame, PBaseException self, Object[] args,
+        static Object init(VirtualFrame frame, PBaseException self, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             baseExceptionInitNode.execute(self, args);
             Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
             if (args.length >= 1) {
@@ -197,7 +200,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 final SequenceStorage storage = info.getSequenceStorage();
                 if (storage.length() != 4) {
                     // not a very good error message, but it's what Python 2.4 gives
-                    throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
                 }
 
                 attrs[IDX_FILENAME] = getItemNode.execute(storage, 0);

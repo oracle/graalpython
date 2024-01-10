@@ -1,0 +1,105 @@
+diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
+new file mode 100644
+index 0000000..dfb18b7
+--- /dev/null
++++ b/pyarrow_build_backend.py
+@@ -0,0 +1,89 @@
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import tempfile
++import shutil
++import tarfile
++import urllib.request
++from pathlib import Path
++
++VERSION = '11.0.0'
++
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = f'pyarrow-{VERSION}'
++    srcdir = Path(__file__).parent
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|venv|[^-/]+-venv|dist)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    wheel_directory = Path(wheel_directory).absolute()
++    with tempfile.TemporaryDirectory() as tmpdir:
++        tmpdir = Path(tmpdir).absolute()
++        tarname = f'apache-arrow-{VERSION}.tar.gz'
++        tarpath = tmpdir / tarname
++        urllib.request.urlretrieve(f"https://github.com/apache/arrow/archive/refs/tags/{tarname}", tarpath)
++        with tarfile.open(tarpath) as tar:
++            tar.extractall(tmpdir)
++        arrow_dir = tmpdir / f'arrow-apache-arrow-{VERSION}'
++        assert arrow_dir.is_dir()
++        arrow_dist = tmpdir / 'arrow-dist'
++        build_dir = tmpdir / 'arrow-build'
++        subprocess.check_call([
++            'cmake', '-S', str(arrow_dir / 'cpp'), '-B', str(build_dir),
++            '-DCMAKE_INSTALL_LIBDIR=lib',
++            f'-DCMAKE_INSTALL_PREFIX={arrow_dist}',
++            '-DCMAKE_BUILD_TYPE=Release',
++            '-DARROW_RPATH_ORIGIN=ON',
++            '-DARROW_BUILD_TESTS=OFF',
++            '-DARROW_BUILD_SHARED=ON',
++            '-DARROW_BUILD_STATIC=OFF',
++            # Features
++            '-DARROW_COMPUTE=ON',
++            '-DARROW_CSV=ON',
++            '-DARROW_JSON=ON',
++            '-DARROW_FILESYSTEM=ON',
++            '-DARROW_DATASET=ON',
++            '-DARROW_PARQUET=ON',
++            '-DPARQUET_REQUIRE_ENCRYPTION=ON',
++            '-DARROW_GANDIVA=ON',
++        ])
++        subprocess.check_call([
++            'cmake', '--build', str(build_dir), '--parallel',
++        ])
++        subprocess.check_call([
++            'cmake', '--install', str(build_dir),
++        ])
++        env = os.environ.copy()
++        env['ARROW_HOME'] = str(arrow_dist)
++        env['CMAKE_PREFIX_PATH'] = str(arrow_dist)
++        env['PYARROW_WITH_DATASET'] = '1'
++        env['PYARROW_WITH_PARQUET'] = '1'
++        env['PYARROW_WITH_PARQUET_ENCRYPTION'] = '1'
++        env['PYARROW_WITH_GANDIVA'] = '1'
++        env['PYARROW_BUNDLE_ARROW_CPP'] = '1'
++        env['PYARROW_BUNDLE_CYTHON_CPP'] = '1'
++        pyarrow_dir = arrow_dir / 'python'
++        subprocess.run(
++            [sys.executable, 'setup.py', 'bdist_wheel'],
++            env=env,
++            cwd=pyarrow_dir,
++            check=True,
++        )
++        wheels = list((pyarrow_dir / 'dist').glob('*.whl'))
++        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++        wheel = wheels[0]
++        shutil.copyfile(wheel, wheel_directory / wheel.name)
++        return str(wheel.name)
+diff --git a/pyproject.toml b/pyproject.toml
+index edbc4ad..141419f 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -23,3 +23,5 @@ requires = [
+     "setuptools >= 40.1.0",
+     "wheel"
+ ]
++build-backend = "pyarrow_build_backend"
++backend-path = ["."]

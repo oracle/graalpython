@@ -157,7 +157,7 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     boolean isPointer(
-                    @Exclusive @Cached ConditionProfile isNativeProfile) {
+                    @Exclusive @Cached(inline = false) ConditionProfile isNativeProfile) {
         return isNativeProfile.profile(id >= 0 || delegate instanceof Integer || delegate instanceof Double);
     }
 
@@ -184,7 +184,7 @@ public final class GraalHPyHandle implements TruffleObject {
      * in compiled code, this {@code GraalHPyHandle} object will definitively be allocated.
      */
     @ExportMessage
-    void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
+    void toNative(@Exclusive @Cached(inline = false) ConditionProfile isNativeProfile,
                     @Cached GetHPyHandleForSingleton getSingletonNode,
                     @CachedLibrary("this") InteropLibrary lib) {
         getId(PythonContext.get(lib).getHPyContext(), isNativeProfile, getSingletonNode);

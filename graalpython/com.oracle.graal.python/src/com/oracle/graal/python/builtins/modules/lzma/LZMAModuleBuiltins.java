@@ -75,10 +75,10 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import org.tukaani.xz.FilterOptions;
-import org.tukaani.xz.LZMA2Options;
-import org.tukaani.xz.XZ;
-import org.tukaani.xz.XZOutputStream;
+import org.graalvm.shadowed.org.tukaani.xz.FilterOptions;
+import org.graalvm.shadowed.org.tukaani.xz.LZMA2Options;
+import org.graalvm.shadowed.org.tukaani.xz.XZ;
+import org.graalvm.shadowed.org.tukaani.xz.XZOutputStream;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -296,7 +296,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached LZMANodes.IsCheckSupported isCheckSupported) {
-            return isCheckSupported.execute(asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
+            return isCheckSupported.execute(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
         }
     }
 

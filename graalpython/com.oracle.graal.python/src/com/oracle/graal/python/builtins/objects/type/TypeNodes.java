@@ -127,7 +127,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
@@ -170,16 +169,15 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclas
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveDictNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveWeakrefsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveWeakrefsNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -201,7 +199,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -209,6 +207,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -217,14 +216,12 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -375,6 +372,7 @@ public abstract class TypeNodes {
                 case PReferenceType:
                 case PProperty:
                 case PDeque:
+                case POrderedDict:
                 case PSimpleQueue:
                 case PSimpleNamespace:
                 case PMap:
@@ -751,9 +749,19 @@ public abstract class TypeNodes {
             long hash = ObjectBuiltins.HashNode.hash(subclass);
             PDict dict = executeUncached(base);
             HashingStorage storage = dict.getDictStorage();
-            HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
-            storage = setItem.execute(null, null, storage, subclass, hash, subclass);
-            dict.setDictStorage(storage);
+            // Booting order problem: special method slot for object.__eq__ is not initialized yet
+            // In the unlikely event of hash collision __eq__ would fail
+            if (HashingStorageLen.executeUncached(storage) == 0) {
+                // This should not call __eq__
+                HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
+                storage = setItem.execute(null, null, storage, subclass, hash, subclass);
+                dict.setDictStorage(storage);
+            } else {
+                // the storage must be EconomicMap, because keys should not be Strings so there is
+                // no other option left
+                EconomicMapStorage mapStorage = (EconomicMapStorage) storage;
+                mapStorage.putUncachedWithJavaEq(subclass, hash, subclass);
+            }
         }
 
         protected static void unsafeRemoveSubclass(Object base, Object subclass) {
@@ -827,19 +835,16 @@ public abstract class TypeNodes {
             public abstract PythonAbstractClassList execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses);
 
             @Specialization
-            static PythonAbstractClassList doIt(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
-                            @Cached HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageIteratorKeyHash itKeyHash,
-                            @Cached HashingStorageGetItemWithHash getItemNode) {
-                long hash = itKeyHash.execute(inliningTarget, storage, it);
-                Object key = itKey.execute(inliningTarget, storage, it);
-                subclasses.add(PythonAbstractClass.cast(getItemNode.execute(frame, inliningTarget, storage, key, hash)));
+            static PythonAbstractClassList doIt(Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
+                            @Cached HashingStorageIteratorValue itValue) {
+                Object value = itValue.execute(inliningTarget, storage, it);
+                subclasses.add(PythonAbstractClass.cast(value));
                 return subclasses;
             }
         }
 
         @Specialization
-        static PythonAbstractClass[] doTpSubclasses(Node inliningTarget, PythonAbstractClass object,
+        static PythonAbstractClass[] doTpSubclasses(Node inliningTarget, Object object,
                         @Cached GetSubclassesNode getSubclassesNode,
                         @Cached EachSubclassAdd eachNode,
                         @Cached HashingStorageLen dictLen,
@@ -1684,7 +1689,7 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
-                        @Cached InlineIsBuiltinClassProfile profile,
+                        @Cached IsBuiltinClassProfile profile,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) CExtNodes.PCallCapiFunction nativeTypeCheck) {
             Object type = getClassNode.execute(inliningTarget, obj);
@@ -1974,20 +1979,8 @@ public abstract class TypeNodes {
     }
 
     @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
-    protected abstract static class AllocateTypeWithMetaclassNode extends Node implements IndirectCallNode {
-
-        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return dontNeedCallerFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return dontNeedExceptionState;
-        }
+    @GenerateInline(false) // footprint reduction 208 -> 190
+    protected abstract static class AllocateTypeWithMetaclassNode extends Node {
 
         public abstract PythonClass execute(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass);
 
@@ -2003,8 +1996,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
+        static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
@@ -2166,7 +2160,7 @@ public abstract class TypeNodes {
                     }
                 }
                 // Make slots into a tuple
-                Object state = IndirectCallContext.enter(frame, language, context, this);
+                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 try {
                     pythonClass.setAttribute(T___SLOTS__, slotsObject);
 

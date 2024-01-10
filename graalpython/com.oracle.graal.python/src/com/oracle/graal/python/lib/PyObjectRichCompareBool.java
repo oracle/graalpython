@@ -130,7 +130,7 @@ public abstract class PyObjectRichCompareBool {
     @GenerateCached(false)
     @GenerateInline(false)
     @GenerateUncached(false)
-    protected abstract static class ComparisonBaseNode extends PNodeWithContext {
+    public abstract static class ComparisonBaseNode extends PNodeWithContext {
         // Overridden by the implementors to call execute with the right Comparison strategy
         public boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
@@ -252,7 +252,6 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
         @InliningCutoff
         static boolean doGeneric(VirtualFrame frame, Node inliningTarget, Object a, Object b, Comparison cmp,
                         @Cached(inline = false) IsNode isNode,

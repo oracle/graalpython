@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -534,6 +534,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void addOp(OpCodes code, int arg, byte[] followingArgs, SourceRange location) {
+        assert code != YIELD_VALUE || unit.scope.isGenerator() || unit.scope.isCoroutine();
         Block b = unit.currentBlock;
         Instruction insn = new Instruction(code, arg, followingArgs, null, location);
         b.instr.add(insn);
@@ -1211,6 +1212,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 op = CALL_METHOD_VARARGS;
                 String mangled = ScopeEnvironment.mangle(unit.privateName, ((ExprTy.Attribute) func).attr);
                 opArg = addObject(unit.names, mangled);
+                addOp(LOAD_METHOD, opArg);
                 shortCall = args.length <= 3;
             } else {
                 func.accept(this);
@@ -1219,7 +1221,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
             if (hasOnlyPlainArgs(args, keywords) && shortCall) {
                 if (op == CALL_METHOD_VARARGS) {
-                    addOp(LOAD_METHOD, opArg);
                     op = CALL_METHOD;
                 } else {
                     op = CALL_FUNCTION;
@@ -1229,6 +1230,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                 visitSequence(args);
                 return addOp(op, opArg);
             } else {
+                if (op == CALL_METHOD_VARARGS) {
+                    // the receiver is below the method on the stack. swap them so it can be
+                    // collected into the argument array
+                    addOp(OpCodes.ROT_TWO);
+                }
                 return callHelper(op, opArg, 0, args, keywords);
             }
         } finally {
@@ -1242,6 +1248,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             assert op == CALL_FUNCTION_VARARGS;
             collectKeywords(keywords, CALL_FUNCTION_KW);
             return addOp(CALL_FUNCTION_KW);
+        } else if (op == CALL_METHOD_VARARGS) {
+            return addOp(op);
         } else {
             return addOp(op, opArg);
         }
@@ -1571,9 +1579,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             enterScope(name, CompilationScope.Comprehension, node, 1, 0, 0, false, false);
+            boolean isAsyncGenerator = unit.scope.isCoroutine();
             if (type != ComprehensionType.GENEXPR) {
                 // The result accumulator, empty at the beginning
                 addOp(COLLECTION_FROM_STACK, type.typeBits);
+            }
+            // TODO allow top-level await
+            if (isAsyncGenerator && type != ComprehensionType.GENEXPR && unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "asynchronous comprehension outside of an asynchronous function");
             }
             visitComprehensionGenerator(generators, 0, element, value, type);
             if (type != ComprehensionType.GENEXPR) {
@@ -1591,15 +1604,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CALL_COMPREHENSION);
             // a genexpr will create an asyncgen, which we cannot await
             if (type != ComprehensionType.GENEXPR) {
-                for (ComprehensionTy gen : generators) {
-                    // if we have a non-genexpr async comprehension, the call will produce a
-                    // coroutine which we need to await
-                    if (gen.isAsync) {
-                        addOp(GET_AWAITABLE);
-                        addOp(LOAD_NONE);
-                        addYieldFrom();
-                        break;
-                    }
+                // if we have a non-genexpr async comprehension, the call will produce a
+                // coroutine which we need to await
+                if (isAsyncGenerator) {
+                    addOp(GET_AWAITABLE);
+                    addOp(LOAD_NONE);
+                    addYieldFrom();
                 }
             }
             return null;
@@ -3871,9 +3881,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // info is not null guaranteed by parser
     public Void visit(StmtTy.Break node) {
         setLocation(node);
+        SourceRange originLoc = unit.currentLocation;
         BlockInfo.Loop info = unwindBlockStack(UnwindType.BREAK);
         if (info == null) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'break' outside loop");
+            errorCallback.onError(ErrorType.Syntax, originLoc, "'break' outside loop");
         }
         addOp(JUMP_FORWARD, info.after);
         return null;
@@ -3883,9 +3894,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // info is not null guaranteed by parser
     public Void visit(StmtTy.Continue node) {
         setLocation(node);
+        SourceRange originLoc = unit.currentLocation;
         BlockInfo.Loop info = unwindBlockStack(UnwindType.CONTINUE);
         if (info == null) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'continue' not properly in loop");
+            errorCallback.onError(ErrorType.Syntax, originLoc, "'continue' not properly in loop");
         }
         addOp(JUMP_BACKWARD, info.start);
         return null;

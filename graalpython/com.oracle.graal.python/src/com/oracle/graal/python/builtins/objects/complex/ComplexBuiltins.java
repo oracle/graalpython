@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -135,7 +136,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         public abstract double executeDouble(Object arg);
 
         @Specialization
-        double abs(PComplex c) {
+        static double abs(PComplex c,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double x = c.getReal();
             double y = c.getImag();
             if (Double.isInfinite(x) || Double.isInfinite(y)) {
@@ -168,7 +171,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                     // remove scaling
                     double r = scalb(scaledH, middleExp);
                     if (Double.isInfinite(r)) {
-                        throw raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
+                        throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
                     }
                     return r;
                 }
@@ -348,11 +351,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right,
+        static PComplex doComplex(PComplex left, PComplex right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile topConditionProfile,
                         @Cached InlinedConditionProfile zeroDivisionProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
             double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
             double real;
@@ -360,7 +364,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             if (topConditionProfile.profile(inliningTarget, absRightReal >= absRightImag)) {
                 /* divide tops and bottom by right.real */
                 if (zeroDivisionProfile.profile(inliningTarget, absRightReal == 0.0)) {
-                    throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
                 } else {
                     double ratio = right.getImag() / right.getReal();
                     double denom = right.getReal() + right.getImag() * ratio;
@@ -413,16 +417,6 @@ public final class ComplexBuiltins extends PythonBuiltins {
             double imagPart = right.getImag() * left;
             double denom = oprealSq + opimagSq;
             return factory.createComplex(realPart / denom, -imagPart / denom);
-        }
-    }
-
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class RDivNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doComplex(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -525,43 +519,53 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isSmallPositive(right)")
-        PComplex doComplexLongSmallPos(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return checkOverflow(complexToSmallPositiveIntPower(left, right, factory));
+        static PComplex doComplexLongSmallPos(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return checkOverflow(inliningTarget, complexToSmallPositiveIntPower(left, right, factory), raiseNode);
         }
 
         @Specialization(guards = "isSmallNegative(right)")
-        PComplex doComplexLongSmallNeg(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return checkOverflow(DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -right, factory), factory));
+        static PComplex doComplexLongSmallNeg(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return checkOverflow(inliningTarget, DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -right, factory), factory), raiseNode);
         }
 
         @Specialization(guards = "!isSmallPositive(right) || !isSmallNegative(right)")
-        PComplex doComplexLong(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return checkOverflow(complexToComplexPower(left, factory.createComplex(right, 0.0)));
+        static PComplex doComplexLong(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return checkOverflow(inliningTarget, complexToComplexPower(left, factory.createComplex(right, 0.0), inliningTarget), raiseNode);
         }
 
         @Specialization
-        PComplex doComplexComplex(PComplex left, PComplex right, @SuppressWarnings("unused") PNone mod) {
-            return checkOverflow(complexToComplexPower(left, right));
+        static PComplex doComplexComplex(PComplex left, PComplex right, @SuppressWarnings("unused") PNone mod,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return checkOverflow(inliningTarget, complexToComplexPower(left, right, inliningTarget), raiseNode);
         }
 
         @Specialization
-        PComplex doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") PNone mod,
+        static PComplex doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") PNone mod,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceLeft,
-                        @Cached CoerceToComplexNode coerceRight) {
-            return checkOverflow(complexToComplexPower(coerceLeft.execute(frame, left), coerceRight.execute(frame, right)));
+                        @Cached CoerceToComplexNode coerceRight,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return checkOverflow(inliningTarget, complexToComplexPower(coerceLeft.execute(frame, inliningTarget, left), coerceRight.execute(frame, inliningTarget, right), inliningTarget), raiseNode);
         }
 
         @Specialization(guards = "!isPNone(mod)")
         @SuppressWarnings("unused")
-        Object doGeneric(Object left, Object right, Object mod) {
-            throw raise(ValueError, ErrorMessages.COMPLEX_MODULO);
+        static Object doGeneric(Object left, Object right, Object mod,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.COMPLEX_MODULO);
         }
 
-        private static PComplex complexToSmallPositiveIntPower(PComplex x, long n,
-                        @Shared @Cached PythonObjectFactory factory) {
+        private static PComplex complexToSmallPositiveIntPower(PComplex x, long n, PythonObjectFactory factory) {
             long mask = 1;
             PComplex r = factory.createComplex(1.0, 0.0);
             PComplex p = x;
@@ -576,14 +580,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PComplex complexToComplexPower(PComplex a, PComplex b) {
+        private static PComplex complexToComplexPower(PComplex a, PComplex b, Node raisingNode) {
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             if (b.getReal() == 0.0 && b.getImag() == 0.0) {
                 return factory.createComplex(1.0, 0.0);
             }
             if (a.getReal() == 0.0 && a.getImag() == 0.0) {
                 if (b.getImag() != 0.0 || b.getReal() < 0.0) {
-                    throw raise(ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
+                    throw PRaiseNode.raiseUncached(raisingNode, ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
                 }
                 return factory.createComplex(0.0, 0.0);
             }
@@ -598,9 +602,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return factory.createComplex(len * Math.cos(phase), len * Math.sin(phase));
         }
 
-        private PComplex checkOverflow(PComplex result) {
+        private static PComplex checkOverflow(Node inliningTarget, PComplex result, PRaiseNode.Lazy raiseNode) {
             if (Double.isInfinite(result.getReal()) || Double.isInfinite(result.getImag())) {
-                throw raise(OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
             }
             return result;
         }
@@ -619,12 +623,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static boolean doComplexInt(PComplex left, long right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
-            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) == 0;
+            return left.getImag() == 0 && FloatBuiltins.ComparisonHelperNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
         static boolean doComplexInt(PComplex left, PInt right) {
-            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
+            return left.getImag() == 0 && FloatBuiltins.ComparisonHelperNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
@@ -692,12 +696,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static boolean doComplex(PComplex left, long right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
-            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) != 0;
+            return left.getImag() != 0 || FloatBuiltins.ComparisonHelperNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
         static boolean doComplex(PComplex left, PInt right) {
-            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
+            return left.getImag() != 0 || FloatBuiltins.ComparisonHelperNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
         }
 
         @Specialization
@@ -716,13 +720,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString repr(PComplex self) {
-            return repr(self, getRaiseNode());
-        }
-
         @TruffleBoundary
-        private static TruffleString repr(PComplex self, PRaiseNode raiseNode) {
-            ComplexFormatter formatter = new ComplexFormatter(raiseNode, new Spec(-1, Spec.NONE));
+        TruffleString repr(PComplex self) {
+            ComplexFormatter formatter = new ComplexFormatter(new Spec(-1, Spec.NONE), this);
             formatter.format(self);
             return formatter.pad().getResult();
         }
@@ -744,27 +744,29 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString format(PComplex self, TruffleString formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, Spec.NONE, '>');
-            validateSpec(spec);
-            return doFormat(getRaiseNode(), self, spec);
+        static TruffleString format(PComplex self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            InternalFormat.Spec spec = InternalFormat.fromText(formatString, Spec.NONE, '>', inliningTarget);
+            validateSpec(inliningTarget, spec, raiseNode);
+            return doFormat(inliningTarget, self, spec);
         }
 
         @TruffleBoundary
-        private static TruffleString doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
-            ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateForFloat(raiseNode, spec, "complex"));
+        private static TruffleString doFormat(Node raisingNode, PComplex self, Spec spec) {
+            ComplexFormatter formatter = new ComplexFormatter(validateForFloat(spec, "complex", raisingNode), raisingNode);
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
-        private void validateSpec(Spec spec) {
+        private static void validateSpec(Node inliningTarget, Spec spec, PRaiseNode.Lazy raiseNode) {
             if (spec.getFill(' ') == '0') {
-                throw raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
             }
 
             char align = spec.getAlign('>');
             if (align == '=') {
-                throw raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
             }
         }
     }

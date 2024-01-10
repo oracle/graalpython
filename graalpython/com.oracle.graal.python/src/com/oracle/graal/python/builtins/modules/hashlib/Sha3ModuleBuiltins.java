@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -81,18 +82,19 @@ public final class Sha3ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            PythonBuiltinClassType resultType = null;
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonBuiltinClassType resultType;
             if (type instanceof PythonBuiltinClass builtinType) {
                 resultType = builtinType.getType();
             } else if (type instanceof PythonBuiltinClassType enumType) {
                 resultType = enumType;
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
-            return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer, this);
+            return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer);
         }
 
         private static String javaNameFromType(PythonBuiltinClassType type) {

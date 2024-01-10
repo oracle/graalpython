@@ -434,6 +434,7 @@ class TestPyMemoryView(CPyExtTestCase):
             error_buf:
                 if (destNative)
                     PyBuffer_Release(&buffer);
+                Py_XINCREF(ret); /* we need to return a new reference */
                 return ret;
             }
         ''',

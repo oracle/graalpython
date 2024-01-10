@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -78,9 +79,14 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -111,7 +117,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badRawFilter(format, filters)"})
-        PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, long preset, PNone filters,
+        static PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, long preset, PNone filters,
                         @Shared("i") @Cached LZMANodes.LZMACompressInit compressInit) {
             self.setCheck(check == -1 && format == FORMAT_XZ ? CHECK_CRC64 : check);
             compressInit.execute(frame, self, format, preset, filters);
@@ -119,7 +125,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badRawFilter(format, filters)"})
-        PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, @SuppressWarnings("unused") PNone preset, Object filters,
+        static PNone init(VirtualFrame frame, LZMACompressor self, int format, int check, @SuppressWarnings("unused") PNone preset, Object filters,
                         @Shared("i") @Cached LZMANodes.LZMACompressInit compressInit) {
             self.setCheck(check == -1 && format == FORMAT_XZ ? CHECK_CRC64 : check);
             compressInit.execute(frame, self, format, PRESET_DEFAULT, filters);
@@ -128,20 +134,23 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "badIntegrity(format, check)")
         @SuppressWarnings("unused")
-        PNone integrityError(LZMACompressor self, long format, long check, Object preset, Object filters) {
-            throw raise(ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
+        static PNone integrityError(LZMACompressor self, long format, long check, Object preset, Object filters,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "badPresetFilters(preset, filters)"})
         @SuppressWarnings("unused")
-        PNone presetError(LZMACompressor self, long format, long check, Object preset, Object filters) {
-            throw raise(ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
+        static PNone presetError(LZMACompressor self, long format, long check, Object preset, Object filters,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badPresetFilters(preset, filters)", "badRawFilter(format, filters)"})
         @SuppressWarnings("unused")
-        PNone rawError(LZMACompressor self, long format, long check, Object preset, PNone filters) {
-            throw raise(ValueError, MUST_SPECIFY_FILTERS);
+        static PNone rawError(LZMACompressor self, long format, long check, Object preset, PNone filters,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MUST_SPECIFY_FILTERS);
         }
 
         protected static boolean badIntegrity(long format, long check) {
@@ -167,32 +176,46 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doBytes(LZMACompressor self, PBytesLike data,
+        static PBytes doBytes(VirtualFrame frame, LZMACompressor self, Object data,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("c") @Cached LZMANodes.CompressNode compress,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
-            int len = data.getSequenceStorage().length();
-            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
-        }
-
-        @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doObject(VirtualFrame frame, LZMACompressor self, Object data,
-                        @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("c") @Cached LZMANodes.CompressNode compress,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toBytes.execute(frame, data);
-            int len = bytes.length;
-            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+                        @Cached GetArrayAndLengthHelperNode getArrayAndLengthHelperNode,
+                        @Cached LZMANodes.CompressNode compress,
+                        @Cached PythonObjectFactory factory) {
+            ArrayAndLength aal = getArrayAndLengthHelperNode.execute(frame, inliningTarget, data);
+            return factory.createBytes(compress.compress(inliningTarget, self, PythonContext.get(inliningTarget), aal.array, aal.length));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(LZMACompressor self, Object data) {
-            throw raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
+        static PNone error(LZMACompressor self, Object data,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
 
+        @ValueType
+        record ArrayAndLength(byte[] array, int length) {
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class GetArrayAndLengthHelperNode extends Node {
+            abstract ArrayAndLength execute(VirtualFrame frame, Node inliningTarget, Object data);
+
+            @Specialization
+            static ArrayAndLength doBytes(Node inliningTarget, PBytesLike data,
+                            @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes) {
+                SequenceStorage sequenceStorage = data.getSequenceStorage();
+                byte[] bytes = toBytes.execute(inliningTarget, sequenceStorage);
+                return new ArrayAndLength(bytes, sequenceStorage.length());
+            }
+
+            @Fallback
+            static ArrayAndLength doObject(VirtualFrame frame, Object data,
+                            @Cached(inline = false) BytesNodes.ToBytesNode toBytes) {
+                byte[] bytes = toBytes.execute(frame, data);
+                return new ArrayAndLength(bytes, bytes.length);
+            }
+        }
     }
 
     @Builtin(name = "flush", minNumOfPositionalArgs = 1)
@@ -201,21 +224,23 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doit(LZMACompressor self,
+        static PBytes doit(LZMACompressor self,
+                        @Bind("this") Node inliningTarget,
                         @Cached LZMANodes.CompressNode compress,
                         @Cached PythonObjectFactory factory) {
             self.setFlushed();
-            return factory.createBytes(compress.flush(self, PythonContext.get(this)));
+            return factory.createBytes(compress.flush(inliningTarget, self, PythonContext.get(inliningTarget)));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(LZMACompressor self) {
-            throw raise(ValueError, REPEATED_CALL_TO_FLUSH);
+        static PNone error(LZMACompressor self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 
-    public abstract static class ExpectUINT32Node extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectUINT32Node extends ArgumentCastNode {
         private final Object defaultValue;
 
         protected ExpectUINT32Node(Object defaultValue) {

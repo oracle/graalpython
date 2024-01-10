@@ -40,24 +40,28 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.LinkedHashMap;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 @CoreFunctions(defineModule = "pyexpat", os = PythonOS.PLATFORM_WIN32)
 public final class PyExpatModuleBuiltins extends PythonBuiltins {
@@ -141,15 +145,17 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("model", model);
 
         PythonModule errors = core.factory().createPythonModule(toTruffleStringUncached("pyexpat.errors"));
-        LinkedHashMap<String, Object> codes = new LinkedHashMap<>(ErrorConstant.values().length);
-        LinkedHashMap<Object, Object> messages = new LinkedHashMap<>(ErrorConstant.values().length);
+        EconomicMapStorage codes = EconomicMapStorage.create(ErrorConstant.values().length);
+        EconomicMapStorage messages = EconomicMapStorage.create(ErrorConstant.values().length);
         for (ErrorConstant c : ErrorConstant.values()) {
-            errors.setAttribute(toTruffleStringUncached(c.name()), toTruffleStringUncached(c.message));
-            codes.put(c.message, c.ordinal() + 1);
-            messages.put(c.ordinal() + 1, c.message);
+            TruffleString messageTs = toTruffleStringUncached(c.message);
+            errors.setAttribute(toTruffleStringUncached(c.name()), messageTs);
+            int id = c.ordinal() + 1;
+            codes.putUncachedWithJavaEq(messageTs, PyObjectHashNode.hash(messageTs, HashCodeNode.getUncached()), id);
+            messages.putUncachedWithJavaEq(id, PyObjectHashNode.hash(id), c.message);
         }
-        errors.setAttribute(toTruffleStringUncached("messages"), core.factory().createDictFromMapGeneric(messages));
-        errors.setAttribute(toTruffleStringUncached("codes"), core.factory().createDictFromMap(codes));
+        errors.setAttribute(toTruffleStringUncached("messages"), core.factory().createDict(messages));
+        errors.setAttribute(toTruffleStringUncached("codes"), core.factory().createDict(codes));
         addBuiltinConstant("errors", errors);
     }
 
@@ -160,7 +166,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object fail(Object encoding, Object namespace_separator, Object intern) {
-            throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("XML pyexpat parser is not implemented"));
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("XML pyexpat parser is not implemented"));
         }
     }
 }

@@ -102,9 +102,9 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
-        static PThreadState save(@Cached GilNode gil) {
+        static Object save(@Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
-            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            Object threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
             LOGGER.fine("C extension releases GIL");
             gil.release(context, true);
             return threadState;
@@ -116,13 +116,17 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
         @Specialization
-        static PThreadState restore(@SuppressWarnings("unused") Object ptr,
+        static Object restore(@SuppressWarnings("unused") Object ptr,
                         @Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
-            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            /*
+             * The thread state is not really used but fetching it checks if we are shutting down
+             * and will handle that properly.
+             */
+            context.getThreadState(PythonLanguage.get(gil));
             LOGGER.fine("C extension acquires GIL");
             gil.acquire(context);
-            return threadState;
+            return PNone.NO_VALUE;
         }
     }
 
@@ -164,7 +168,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                         @Cached GenericInvokeNode invokeNode) {
             Object[] defaults = readNode.readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
-            PKeyword[] kwdefaults = castKwargsNode.execute(kwdefaultsWrapper);
+            PKeyword[] kwdefaults = castKwargsNode.execute(inliningTarget, kwdefaultsWrapper);
             PCell[] closure = null;
             if (closureObj != PNone.NO_VALUE) {
                 // CPython also just accesses the object as tuple without further checks.

@@ -129,7 +129,7 @@ public class PFloat extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean fitsInDouble() {
+    public boolean fitsInDouble() {
         return true;
     }
 

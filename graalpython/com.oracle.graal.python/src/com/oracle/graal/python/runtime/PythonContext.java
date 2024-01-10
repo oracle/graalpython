@@ -89,6 +89,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -111,11 +112,13 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGet
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -152,6 +155,7 @@ import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
+import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Consumer;
@@ -165,6 +169,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
@@ -197,6 +202,7 @@ import sun.misc.Unsafe;
 
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
+    public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
@@ -433,13 +439,21 @@ public final class PythonContext extends Python3Core {
 
         public void dispose() {
             // This method may be called twice on the same object.
-            ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
-            if (dict != null && dict.getNativeWrapper() != null) {
-                releaseHandleNode.execute(dict.getNativeWrapper());
+
+            /*
+             * Note: we may only free the native wrappers if they have no PythonObjectReference
+             * otherwise it could happen that we free them here and again in
+             * 'CApiTransitions.pollReferenceQueue'.
+             */
+            if (dict != null) {
+                PythonAbstractObjectNativeWrapper dictNativeWrapper = dict.getNativeWrapper();
+                if (dictNativeWrapper != null && dictNativeWrapper.ref == null) {
+                    PyTruffleObjectFree.releaseNativeWrapperUncached(dictNativeWrapper);
+                }
             }
             dict = null;
-            if (nativeWrapper != null) {
-                releaseHandleNode.execute(nativeWrapper);
+            if (nativeWrapper != null && nativeWrapper.ref == null) {
+                PyTruffleObjectFree.releaseNativeWrapperUncached(nativeWrapper);
                 nativeWrapper = null;
             }
         }
@@ -572,14 +586,15 @@ public final class PythonContext extends Python3Core {
 
         @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
         @SuppressWarnings("unused")
-        static PythonThreadState doNoShutdown(PythonContext noContext,
-                        @Bind("getThreadState()") PythonThreadState curThreadState) {
+        static PythonThreadState doNoShutdown(Node inliningTarget, PythonContext noContext,
+                        @Bind("getThreadState(inliningTarget)") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
-        PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext) {
-            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get();
+        @InliningCutoff
+        PythonThreadState doGeneric(@SuppressWarnings("unused") Node inliningTarget, PythonContext noContext) {
+            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get();
             if (curThreadState.isShuttingDown()) {
                 PythonContext.get(this).killThread();
             }
@@ -588,14 +603,15 @@ public final class PythonContext extends Python3Core {
 
         @Specialization(guards = "!curThreadState.isShuttingDown()")
         @SuppressWarnings("unused")
-        static PythonThreadState doNoShutdownWithContext(PythonContext context,
-                        @Bind("getThreadState()") PythonThreadState curThreadState) {
+        static PythonThreadState doNoShutdownWithContext(Node inliningTarget, PythonContext context,
+                        @Bind("getThreadState(inliningTarget)") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(replaces = "doNoShutdownWithContext")
-        PythonThreadState doGenericWithContext(PythonContext context) {
-            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get(context.env.getContext());
+        @InliningCutoff
+        PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
+            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 context.killThread();
             }
@@ -603,8 +619,8 @@ public final class PythonContext extends Python3Core {
         }
 
         @NonIdempotent
-        PythonThreadState getThreadState() {
-            return PythonLanguage.get(this).getThreadStateLocal().get();
+        PythonThreadState getThreadState(Node n) {
+            return PythonLanguage.get(n).getThreadStateLocal().get();
         }
     }
 
@@ -665,6 +681,10 @@ public final class PythonContext extends Python3Core {
     private static final class GlobalInterpreterLock extends ReentrantLock {
         private static final long serialVersionUID = 1L;
 
+        public GlobalInterpreterLock() {
+            super(true);
+        }
+
         @Override
         public Thread getOwner() {
             return super.getOwner();
@@ -680,7 +700,7 @@ public final class PythonContext extends Python3Core {
     private final AtomicBoolean inAsyncHandler = new AtomicBoolean(false);
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
-    @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
+    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs = new PythonAbstractObjectNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
     private final AsyncHandler handler;
@@ -692,6 +712,9 @@ public final class PythonContext extends Python3Core {
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
     private final ThreadLocal<ArrayDeque<TruffleString>> currentImport = new ThreadLocal<>();
+
+    /** State for the locale module, the default locale can be passed as an option */
+    private PythonLocale currentLocale;
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
     private final AllocationReporter allocationReporter;
@@ -1110,7 +1133,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env) {
-        super(language, env.isNativeAccessAllowed());
+        super(language, env.isNativeAccessAllowed(), env.isSocketIOAllowed());
         this.env = env;
         this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
@@ -1188,7 +1211,7 @@ public final class PythonContext extends Python3Core {
     private static class ChildContextThread implements Runnable {
         private static final TruffleLogger MULTIPROCESSING_LOGGER = PythonLanguage.getLogger(ChildContextThread.class);
         private static final Source MULTIPROCESSING_SOURCE = Source.newBuilder(PythonLanguage.ID,
-                        "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
+                        "from multiprocessing.popen_truffleprocess import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
                         "<spawned-child-context>").internal(true).build();
 
         private final int fd;
@@ -1361,18 +1384,6 @@ public final class PythonContext extends Python3Core {
         getThreadState(lang).caughtException = e;
     }
 
-    public PException getCaughtException(PythonLanguage lang) {
-        return getThreadState(lang).caughtException;
-    }
-
-    public void setTopFrameInfo(PythonLanguage lang, PFrame.Reference topframeref) {
-        getThreadState(lang).topframeref = topframeref;
-    }
-
-    public PFrame.Reference popTopFrameInfo(PythonLanguage lang) {
-        return getThreadState(lang).popTopFrameInfo();
-    }
-
     public PFrame.Reference peekTopFrameInfo(PythonLanguage lang) {
         return getThreadState(lang).topframeref;
     }
@@ -1418,6 +1429,18 @@ public final class PythonContext extends Python3Core {
     public byte[] getHashSecret() {
         assert !ImageInfo.inImageBuildtimeCode();
         return hashSecret;
+    }
+
+    public void setCurrentLocale(PythonLocale locale) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (getOption(PythonOptions.RunViaLauncher)) {
+            locale.setAsJavaDefault();
+        }
+        currentLocale = locale;
+    }
+
+    public PythonLocale getCurrentLocale() {
+        return currentLocale;
     }
 
     public boolean isInitialized() {
@@ -1577,10 +1600,15 @@ public final class PythonContext extends Python3Core {
         }
     }
 
+    private void initializeLocale() {
+        setCurrentLocale(PythonLocale.initializeFromTruffleEnv(env));
+    }
+
     private void setupRuntimeInformation(boolean isPatching) {
         if (!ImageInfo.inImageBuildtimeCode()) {
             initializeHashSecret();
         }
+        initializeLocale();
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
         if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             nativeZlib = NFIZlibSupport.createNative(this, "");
@@ -1670,7 +1698,6 @@ public final class PythonContext extends Python3Core {
     }
 
     private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
-    private TruffleFile homeResourcesFile;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -1708,8 +1735,7 @@ public final class PythonContext extends Python3Core {
                         () -> {
                             try {
                                 TruffleFile internalResource = newEnv.getInternalResource("python-home");
-                                homeResourcesFile = internalResource == null ? null : internalResource.getAbsoluteFile();
-                                return homeResourcesFile;
+                                return internalResource == null ? null : internalResource.getAbsoluteFile();
                             } catch (IOException e) {
                                 // fall through
                             }
@@ -2011,12 +2037,17 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     private void cleanupCApiResources() {
-        ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
         for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
-            if (singletonNativeWrapper != null) {
-                releaseHandleNode.execute(singletonNativeWrapper);
+            /*
+             * Note: we may only free the native wrappers if they have no PythonObjectReference
+             * otherwise it could happen that we free them here and again in
+             * 'CApiTransitions.pollReferenceQueue'.
+             */
+            if (singletonNativeWrapper != null && singletonNativeWrapper.ref == null) {
+                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
             }
         }
+        CApiTransitions.deallocateNativeWeakRefs(this);
     }
 
     private void cleanupHPyResources() {
@@ -2182,7 +2213,7 @@ public final class PythonContext extends Python3Core {
         return assumption;
     }
 
-    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonNativeWrapper nativePtr) {
+    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonAbstractObjectNativeWrapper nativePtr) {
         assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
         assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
         // Other threads must see the nativeWrapper fully initialized once it becomes non-null
@@ -2190,7 +2221,7 @@ public final class PythonContext extends Python3Core {
         singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
     }
 
-    public PythonNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
+    public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
         int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
             return singletonNativePtrs[singletonNativePtrIdx];
@@ -2231,13 +2262,26 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
+     * Should not be used outside of {@link AsyncHandler}
+     */
+    boolean gilHasQueuedThreads() {
+        return globalInterpreterLock.hasQueuedThreads();
+    }
+
+    /**
      * Should not be called directly.
      *
      * @see GilNode
      */
     @TruffleBoundary
     boolean tryAcquireGil() {
-        return globalInterpreterLock.tryLock();
+        try {
+            // Using tryLock with empty timeout to ensure fairness
+            return globalInterpreterLock.tryLock(0, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /**
@@ -2278,15 +2322,6 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     public TruffleFile getPublicTruffleFileRelaxed(TruffleString path, TruffleString... allowedSuffixes) {
-        if (homeResourcesFile != null && !env.isFileIOAllowed()) {
-            // XXX: Workaround for Truffle resources not being considered internal truffle files
-            String jlPath = path.toJavaStringUncached();
-            String jlHome = langHome.toJavaStringUncached();
-            if (jlPath.startsWith(jlHome)) {
-                String homeRelativePath = jlPath.substring(jlHome.length() + 1);
-                return homeResourcesFile.resolve(homeRelativePath);
-            }
-        }
         TruffleFile f = env.getInternalTruffleFile(path.toJavaStringUncached());
         // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
         // escape the language home directory.
@@ -2457,7 +2492,7 @@ public final class PythonContext extends Python3Core {
         return hPyContext != null;
     }
 
-    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws Exception {
+    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws ApiInitException {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
         GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
         this.hPyContext = hpyContext;

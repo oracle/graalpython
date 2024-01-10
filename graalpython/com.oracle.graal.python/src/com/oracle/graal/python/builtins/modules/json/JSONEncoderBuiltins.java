@@ -5,9 +5,6 @@
  */
 package com.oracle.graal.python.builtins.modules.json;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTuple;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.PGuards.isDouble;
@@ -48,7 +45,10 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyListCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -131,7 +131,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void appendFloat(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, double obj) {
             if (!Double.isFinite(obj)) {
                 if (!encoder.allowNan) {
-                    throw raise(ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
                 }
                 if (obj > 0) {
                     builder.appendStringUncached(T_POSITIVE_INFINITY);
@@ -145,8 +145,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private static TruffleString formatDouble(double obj) {
-            FloatFormatter f = new FloatFormatter(PRaiseNode.getUncached(), FloatBuiltins.StrNode.spec);
+        private TruffleString formatDouble(double obj) {
+            FloatFormatter f = new FloatFormatter(FloatBuiltins.StrNode.spec, this);
             f.setMinFracDigits(1);
             return FloatBuiltins.StrNode.doFormat(obj, f);
         }
@@ -162,7 +162,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 case None:
                     Object result = CallUnaryMethodNode.getUncached().executeObject(encoder.encoder, obj);
                     if (!isString(result)) {
-                        throw raise(TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
+                        throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
                     }
                     builder.appendStringUncached(CastToTruffleStringNode.executeUncached(result));
                     break;
@@ -227,7 +227,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void startRecursion(PJSONEncoder encoder, Object obj) {
             if (encoder.markers != PNone.NONE) {
                 if (!encoder.tryAddCircular(obj)) {
-                    throw raise(ValueError, ErrorMessages.CIRCULAR_REFERENCE_DETECTED);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.CIRCULAR_REFERENCE_DETECTED);
                 }
             }
         }
@@ -241,7 +241,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, dict);
                 builder.appendCodePointUncached('{');
 
-                if (!encoder.sortKeys && IsBuiltinObjectProfile.profileObjectUncached(dict, PDict)) {
+                if (!encoder.sortKeys && PGuards.isBuiltinDict(dict)) {
                     HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
                     boolean first = true;
                     while (HashingStorageIteratorNext.executeUncached(storage, it)) {
@@ -274,7 +274,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
-                    throw raise(ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
+                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
                 }
                 SequenceStorage sequenceStorage = ((PTuple) item).getSequenceStorage();
                 Object key = sequenceStorage.getItemNormalized(0);
@@ -294,7 +294,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     if (encoder.skipKeys) {
                         return true;
                     }
-                    throw raise(TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
+                    throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
                 }
                 builder.appendCodePointUncached('"');
                 appendSimpleObj(encoder, builder, key);
@@ -314,7 +314,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, list);
                 builder.appendCodePointUncached('[');
 
-                if (IsBuiltinObjectProfile.profileObjectUncached(list, PTuple) || IsBuiltinObjectProfile.profileObjectUncached(list, PList)) {
+                if (PyTupleCheckExactNode.executeUncached(list) || PyListCheckExactNode.executeUncached(list)) {
                     for (int i = 0; i < storage.length(); i++) {
                         if (i > 0) {
                             builder.appendStringUncached(encoder.itemSeparator);

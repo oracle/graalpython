@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -93,31 +94,32 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
         return SimpleCDataBuiltinsFactory.getFactories();
     }
 
-    static void Simple_set_value(VirtualFrame frame, CDataObject self, Object value,
-                    PRaiseNode raiseNode,
+    static void Simple_set_value(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,
+                    PRaiseNode.Lazy raiseNode,
                     PyObjectStgDictNode pyObjectStgDictNode,
                     SetFuncNode setFuncNode,
                     KeepRefNode keepRefNode) {
-        StgDictObject dict = pyObjectStgDictNode.execute(self);
+        StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
         if (value == null) {
-            throw raiseNode.raise(TypeError, CANT_DELETE_ATTRIBUTE);
+            throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
         assert dict != null : "Cannot be NULL for CDataObject instances";
         assert dict.setfunc != FieldSet.nil;
         Object result = setFuncNode.execute(frame, dict.setfunc, self.b_ptr, value, dict.size);
 
-        keepRefNode.execute(frame, self, 0, result);
+        keepRefNode.execute(frame, inliningTarget, self, 0, result);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
-        protected Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
@@ -127,12 +129,14 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
-        Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (args.length > 0) {
-                Simple_set_value(frame, self, args[0], getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
+                Simple_set_value(frame, inliningTarget, self, args[0], raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             }
             return PNone.NONE;
         }
@@ -143,21 +147,24 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class SimpleValueNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+        static Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert dict != null : "Cannot be NULL for CDataObject instances";
             assert dict.getfunc != FieldGet.nil;
             return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size);
         }
 
         @Specialization
-        Object set_value(VirtualFrame frame, CDataObject self, Object value,
+        static Object set_value(VirtualFrame frame, CDataObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            Simple_set_value(frame, self, value, getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Simple_set_value(frame, inliningTarget, self, value, raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;
         }
     }
@@ -167,19 +174,19 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class CtypesFromOutparamNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object Simple_from_outparm(CDataObject self,
+        static Object Simple_from_outparm(CDataObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             if (pyTypeCheck.ctypesSimpleInstance(inliningTarget, getClassNode.execute(inliningTarget, self), getBaseClassNode, isSameTypeNode)) {
                 return self;
             }
             /* call stgdict.getfunc */
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size);
         }
     }
@@ -211,7 +218,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        TruffleString Simple_repr(CDataObject self,
+        static TruffleString Simple_repr(CDataObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
@@ -226,7 +233,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)));
             }
 
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             TruffleString val = fromJavaStringNode.execute(toStringBoundary(getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size)), TS_ENCODING);
             return simpleTruffleStringFormatNode.format("%s(%s)", getNameNode.execute(inliningTarget, clazz), val);
         }

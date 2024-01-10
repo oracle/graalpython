@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -132,6 +133,10 @@ public abstract class PRaiseNode extends Node {
      */
     public final PException raiseNumberTooLarge(PythonBuiltinClassType type, Object result) {
         return execute(this, type, null, PNone.NO_VALUE, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, new Object[]{result});
+    }
+
+    public final PException raiseOverflow() {
+        return raiseNumberTooLarge(OverflowError, 0);
     }
 
     public final PException raiseSystemExit(Object code) {

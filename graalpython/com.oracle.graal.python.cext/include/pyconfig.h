@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,7 +96,6 @@
 #define __SIZEOF_SHORT__ 2
 #define __SIZEOF_LONG__ 4
 #define __SIZEOF_LONG_LONG__ 8
-#define __SIZEOF_INT128__ 16
 #define __SIZEOF_FLOAT__ 4
 #define __SIZEOF_DOUBLE__ 8
 #define __SIZEOF_LONG_DOUBLE__ 8

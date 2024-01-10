@@ -48,6 +48,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextFuncBuiltins {
@@ -55,8 +57,9 @@ public final class PythonCextFuncBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyStaticMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
-        Object staticmethod(Object func) {
-            PDecoratedMethod res = factory().createStaticmethod(PythonBuiltinClassType.PStaticmethod);
+        static Object staticmethod(Object func,
+                        @Cached PythonObjectFactory factory) {
+            PDecoratedMethod res = factory.createStaticmethod(PythonBuiltinClassType.PStaticmethod);
             res.setCallable(func);
             return res;
         }
@@ -65,8 +68,9 @@ public final class PythonCextFuncBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyClassMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
-        Object staticmethod(Object callable) {
-            return factory().createClassmethodFromCallableObj(callable);
+        static Object staticmethod(Object callable,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createClassmethodFromCallableObj(callable);
         }
     }
 }

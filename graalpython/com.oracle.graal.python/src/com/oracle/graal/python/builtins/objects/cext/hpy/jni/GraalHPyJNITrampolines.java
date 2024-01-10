@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public abstract class GraalHPyJNITrampolines {
+abstract class GraalHPyJNITrampolines {
 
     /* manual HPY JNI trampoline declarations */
 

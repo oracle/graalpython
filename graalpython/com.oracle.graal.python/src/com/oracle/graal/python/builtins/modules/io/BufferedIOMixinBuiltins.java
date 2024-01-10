@@ -97,6 +97,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -105,9 +106,11 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -279,16 +282,18 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
-        Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence) {
-            throw raise(ValueError, UNSUPPORTED_WHENCE, whence);
+        static Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, UNSUPPORTED_WHENCE, whence);
         }
 
         @Specialization(guards = "!self.isOK()")
-        Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence) {
+        static Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (self.isDetached()) {
-                throw raise(ValueError, IO_STREAM_DETACHED);
+                throw raiseNode.raise(ValueError, IO_STREAM_DETACHED);
             } else {
-                throw raise(ValueError, IO_UNINIT);
+                throw raiseNode.raise(ValueError, IO_UNINIT);
             }
         }
     }
@@ -339,8 +344,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isWritable()"})
-        Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos) {
-            throw raise(IOUnsupportedOperation, T_TRUNCATE);
+        static Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_TRUNCATE);
         }
     }
 
@@ -399,14 +405,15 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString repr(VirtualFrame frame, PBuffered self,
+        static TruffleString repr(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinObjectProfile isValueError,
                         @Cached PyObjectReprAsTruffleStringNode repr,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             Object nameobj = PNone.NO_VALUE;
             try {
@@ -418,14 +425,14 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             if (nameobj instanceof PNone) {
                 return simpleTruffleStringFormatNode.format("<%s>", typeName);
             } else {
-                if (!getContext().reprEnter(self)) {
-                    throw raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
+                if (!PythonContext.get(inliningTarget).reprEnter(self)) {
+                    throw raiseNode.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
                 } else {
                     try {
                         TruffleString name = repr.execute(frame, inliningTarget, nameobj);
                         return simpleTruffleStringFormatNode.format("<%s name=%s>", typeName, name);
                     } finally {
-                        getContext().reprLeave(self);
+                        PythonContext.get(inliningTarget).reprLeave(self);
                     }
                 }
             }

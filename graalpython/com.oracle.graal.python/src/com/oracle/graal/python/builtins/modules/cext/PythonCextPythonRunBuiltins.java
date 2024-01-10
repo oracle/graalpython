@@ -67,6 +67,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -80,13 +82,14 @@ public final class PythonCextPythonRunBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject, PY_COMPILER_FLAGS}, call = Direct)
     abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
 
-        @Specialization(guards = "checkArgs(source, globals, locals, inliningTarget, isMapping)")
-        Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
+        @Specialization(guards = "checkArgs(source, globals, locals, inliningTarget, isMapping)", limit = "1")
+        static Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyMappingCheckNode isMapping,
                         @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallNode callNode) {
-            PythonModule builtins = getCore().getBuiltins();
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
             Object compileCallable = lookupNode.execute(null, inliningTarget, builtins, T_COMPILE);
             TruffleString stype;
             if (type == Py_single_input) {
@@ -96,7 +99,7 @@ public final class PythonCextPythonRunBuiltins {
             } else if (type == Py_eval_input) {
                 stype = StringLiterals.T_EVAL;
             } else {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseNode.get(inliningTarget).raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
             Object code = callNode.execute(compileCallable, source, stype, stype);
             Object execCallable = lookupNode.execute(null, inliningTarget, builtins, T_EXEC);
@@ -104,30 +107,32 @@ public final class PythonCextPythonRunBuiltins {
         }
 
         @Specialization(guards = "!isString(source) || !isDict(globals)")
-        Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals,
-                        @SuppressWarnings("unused") Object locals, @SuppressWarnings("unused") Object flags) {
-            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        static Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals,
+                        @SuppressWarnings("unused") Object locals, @SuppressWarnings("unused") Object flags,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
 
-        @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(inliningTarget, locals)"})
-        Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals, Object locals,
+        @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(inliningTarget, locals)"}, limit = "1")
+        static Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals, Object locals,
                         @SuppressWarnings("unused") Object flags,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping) {
-            throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
+                        @SuppressWarnings("unused") @Exclusive @Cached PyMappingCheckNode isMapping,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
         }
 
-        protected boolean checkArgs(Object source, Object globals, Object locals, Node inliningTarget, PyMappingCheckNode isMapping) {
+        protected static boolean checkArgs(Object source, Object globals, Object locals, Node inliningTarget, PyMappingCheckNode isMapping) {
             return isString(source) && isDict(globals) && isMapping.execute(inliningTarget, locals);
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
     abstract static class Py_CompileString extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
             return Py_CompileStringExFlags.compile(source, filename, type, null, -1, inliningTarget, raiseNode, lookupNode, callNode);
@@ -135,17 +140,19 @@ public final class PythonCextPythonRunBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source) || !isString(filename)")
-        Object fail(Object source, Object filename, Object type) {
-            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        static Object fail(Object source, Object filename, Object type,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
     abstract static class Py_CompileStringExFlags extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
-                        @SuppressWarnings("unused") Object flags, int optimizationLevel, @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
+                        @SuppressWarnings("unused") Object flags, int optimizationLevel,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
             PythonModule builtins = PythonContext.get(lookupNode).getCore().getBuiltins();
@@ -158,7 +165,7 @@ public final class PythonCextPythonRunBuiltins {
             } else if (type == Py_eval_input) {
                 stype = StringLiterals.T_EVAL;
             } else {
-                throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseNode.get(inliningTarget).raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
             int defaultFlags = 0;
             boolean dontInherit = false;
@@ -167,19 +174,20 @@ public final class PythonCextPythonRunBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source) || !isString(filename)")
-        Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel) {
-            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        static Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
     abstract static class Py_CompileStringObject extends CApi5BuiltinNode {
         @Specialization(guards = "isString(source)")
         static Object compile(Object source, Object filename, int type,
                         @SuppressWarnings("unused") Object flags,
                         int optimizationLevel,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
             return Py_CompileStringExFlags.compile(source, filename, type, null, optimizationLevel, inliningTarget, raiseNode, lookupNode, callNode);
@@ -187,8 +195,9 @@ public final class PythonCextPythonRunBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source)")
-        Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel) {
-            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        static Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 }

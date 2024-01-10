@@ -113,6 +113,11 @@ public final class PythonOptions {
     public static final boolean WITHOUT_JAVA_INET = Boolean.getBoolean("python.WithoutJavaInet");
 
     /**
+     * This property can be used to disable any usage of JNI.
+     */
+    public static final boolean WITHOUT_JNI = Boolean.getBoolean("python.WithoutJNI");
+
+    /**
      * This property can be used to control if async actions are automatically scheduled using
      * daemon threads or via embedder calling a polling API on the main thread.
      */
@@ -234,6 +239,12 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
+
+    @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Sets the language and territory, which will be used for initial locale. Format: 'language[_territory]', e.g., 'en_GB'. Leave empty to use the JVM default locale.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> InitialLocale = new OptionKey<>("");
 
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
                     "- 'default' means the 'check_source' flag in hash-based pycs" +

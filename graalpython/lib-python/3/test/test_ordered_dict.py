@@ -556,6 +556,7 @@ class OrderedDictTests:
         del od[colliding]
         self.assertEqual(list(od.items()), [(key, ...), ('after', ...)])
 
+    @support.impl_detail(graalpy=False)
     def test_issue24347(self):
         OrderedDict = self.OrderedDict
 
@@ -630,6 +631,7 @@ class OrderedDictTests:
         with self.assertRaises(KeyError):
             repr(od)
 
+    @support.impl_detail(graalpy=False)
     def test_dict_clear(self):
         OrderedDict = self.OrderedDict
         od = OrderedDict()

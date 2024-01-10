@@ -60,6 +60,7 @@ SERIAL_TESTS = [
     'test_imp',
     'test_subprocess',
     'test_posix',
+    'test_os',
     'test_io',
     'test_fileio',
     'test_imaplib',
@@ -399,6 +400,8 @@ class TestCase(object):
                     func(*arg_vec)
             else:
                 func()
+        except KeyboardInterrupt:
+            raise
         except BaseException as e:
             if isinstance(e, SkipTest):
                 return _skipped_marker
@@ -717,6 +720,8 @@ class TestRunner(object):
                 for p in pkg[1:]:
                     test_module = getattr(test_module, p)
                 test_module = getattr(test_module, name)
+            except KeyboardInterrupt:
+                raise
             except BaseException as e:
                 _, _, tb = sys.exc_info()
                 try:
@@ -737,6 +742,8 @@ class TestRunner(object):
                 with _io.FileIO(path, "r") as f:
                     test_module.__file__ = path
                     exec(compile(f.readall(), path, "exec"), test_module.__dict__)
+            except KeyboardInterrupt:
+                raise
             except BaseException as e:
                 self.exceptions.append((path, e))
             else:
@@ -837,6 +844,11 @@ class TestSuite:
 
 if __name__ == "__main__":
     sys.modules["unittest"] = sys.modules["__main__"]
+
+    if sys.implementation.name == 'graalpy' and os.environ.get(b"GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != b"true":
+        if not __graalpython__.java_assert():
+            sys.exit("Java assertions are not enabled, refusing to run. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check")
+
     patterns = []
     argv = sys.argv[:]
     idx = 0
@@ -845,12 +857,12 @@ if __name__ == "__main__":
             argv.pop(idx)
             try:
                 import json
-            except:
+            except Exception:
                 print("--report needs working json module")
                 raise
             try:
                 reportfile = [argv.pop(idx),]
-            except:
+            except Exception:
                 print("--report needs argument path to the json output")
                 raise
         elif argv[idx] == "-k":

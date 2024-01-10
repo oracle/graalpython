@@ -49,9 +49,9 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.IndirectCallData;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -103,9 +103,8 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
-    @SuppressWarnings("truffle-static-method")
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
-                    @Cached(inline = false) IndirectCallData indirectCallNode,
+                    @Cached("createFor(this)") IndirectCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Exclusive @Cached PyUnicodeDecode decode,

@@ -46,12 +46,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseHandleNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,6 +58,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -202,7 +203,7 @@ abstract class HPyArrayWrappers {
         void close() {
             for (int i = 0; i < wrappers.length; i++) {
                 if (wrappers[i] != null) {
-                    HPyCloseHandleNodeGen.getUncached().execute(wrappers[i]);
+                    HPyCloseHandleNode.executeUncached(wrappers[i]);
                     wrappers[i] = null;
                 }
             }
@@ -222,13 +223,13 @@ abstract class HPyArrayWrappers {
         @ExplodeLoop
         static void doCachedLen(Node inliningTarget, HPyArrayWrapper wrapper,
                         @Cached("wrapper.delegate.length") int cachedLen,
-                        @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
+                        @Exclusive @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
                         @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             for (int i = 0; i < cachedLen; i++) {
                 Object element = wrapper.delegate[i];
                 if (profiles[i].profile(element instanceof GraalHPyHandle)) {
-                    closeHandleNode.execute(element);
+                    closeHandleNode.execute(inliningTarget, element);
                 }
             }
             if (isPointerProfile.profile(inliningTarget, wrapper.isPointer())) {
@@ -239,14 +240,14 @@ abstract class HPyArrayWrappers {
 
         @Specialization(replaces = "doCachedLen")
         static void doLoop(Node inliningTarget, HPyArrayWrapper wrapper,
-                        @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
+                        @Exclusive @Cached HPyCloseHandleNode closeHandleNode,
                         @Exclusive @Cached InlinedConditionProfile profile,
                         @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             int n = wrapper.delegate.length;
             for (int i = 0; i < n; i++) {
                 Object element = wrapper.delegate[i];
                 if (profile.profile(inliningTarget, element instanceof GraalHPyHandle)) {
-                    closeHandleNode.execute(element);
+                    closeHandleNode.execute(inliningTarget, element);
                 }
             }
             if (isPointerProfile.profile(inliningTarget, wrapper.isPointer())) {
@@ -261,6 +262,80 @@ abstract class HPyArrayWrappers {
                 profiles[i] = ConditionProfile.create();
             }
             return profiles;
+        }
+    }
+
+    /**
+     * Wraps a sequence object (like a list) such that it behaves like a {@code HPy} array (C type
+     * {@code HPy *}).
+     */
+    @ExportLibrary(InteropLibrary.class)
+    static final class IntArrayWrapper implements TruffleObject {
+
+        final int[] delegate;
+
+        public IntArrayWrapper(int[] delegate) {
+            this.delegate = delegate;
+        }
+
+        public int[] getDelegate() {
+            return delegate;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        long getArraySize() {
+            return delegate.length;
+        }
+
+        @ExportMessage(name = "isArrayElementReadable")
+        @ExportMessage(name = "isArrayElementModifiable")
+        boolean isValidIndex(long index) {
+            return 0 <= index && index < delegate.length;
+        }
+
+        @ExportMessage
+        boolean isArrayElementInsertable(@SuppressWarnings("unused") long index) {
+            return false;
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        Object readArrayElement(long index) throws InvalidArrayIndexException {
+            return delegate[checkIndex(index)];
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        void writeArrayElement(long index, Object value,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedTypeException, InvalidArrayIndexException {
+            delegate[checkIndex(index)] = coerceToInt(value, lib);
+        }
+
+        private int coerceToInt(Object value, InteropLibrary lib) throws UnsupportedTypeException {
+            if (value instanceof Integer i) {
+                return i;
+            }
+            if (lib.fitsInInt(value)) {
+                try {
+                    return lib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw UnsupportedTypeException.create(new Object[]{value});
+        }
+
+        private int checkIndex(long index) throws InvalidArrayIndexException {
+            if (index < 0 || index > delegate.length) {
+                throw InvalidArrayIndexException.create(index);
+            }
+            return (int) index;
         }
     }
 }

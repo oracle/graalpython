@@ -1,10 +1,14 @@
 ScopeEnvironment
   Scope null Module
     Symbols:
-      foo: [Use, GlobalImplicit]
-    Scope listcomp Function
-        Flags: [IsCoroutine, IsComprehension]
-        Varnames: .0
+      f: [DefLocal, Local]
+    Scope f Function
+        Flags: [IsCoroutine]
         Symbols:
-            .0: [DefParam, Local]
-            i: [DefLocal, Use, DefCompIter, Local]
+            foo: [Use, GlobalImplicit]
+      Scope listcomp Function
+            Flags: [IsNested, IsCoroutine, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  i: [DefLocal, Use, DefCompIter, Local]

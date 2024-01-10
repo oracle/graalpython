@@ -40,13 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -54,26 +56,33 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonReplacingNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -86,23 +95,22 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
-public class CApiTransitions {
+public abstract class CApiTransitions {
 
     // if != 0: GC every X C API calls
     private static final int GCALot = Integer.getInteger("python.GCALot", 0);
@@ -113,6 +121,9 @@ public class CApiTransitions {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiTransitions.class);
 
+    private CApiTransitions() {
+    }
+
     // transfer: steal or borrow reference
 
     public static final class HandleContext {
@@ -120,9 +131,9 @@ public class CApiTransitions {
 
         public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
+        public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
-        public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>(DEFAULT_CAPACITY);
-        public final HandleStack nativeHandlesFreeStack = new HandleStack(DEFAULT_CAPACITY);
+        public final HashMap<Long, PythonObjectReference> nativeStubLookup = new HashMap<>();
         public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
@@ -137,26 +148,47 @@ public class CApiTransitions {
 
     public abstract static class IdReference<T> extends WeakReference<T> {
 
-        public IdReference(T referent) {
-            super(referent, getContext().referenceQueue);
+        public IdReference(HandleContext handleContext, T referent) {
+            super(referent, handleContext.referenceQueue);
         }
     }
 
+    /**
+     * A weak and unique reference to a native wrapper of a reference counted managed object.
+     */
     public static final class PythonObjectReference extends IdReference<PythonNativeWrapper> {
 
         /**
-         * This reference forces the object to remain alive, and can be set to null when the
-         * refcount falls to {@link PythonNativeWrapper#MANAGED_REFCNT}.
+         * This reference forces the wrapper to remain alive, and can be set to null when the
+         * refcount falls to {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT}.
          */
-        PythonNativeWrapper strongReference;
+        private PythonNativeWrapper strongReference;
         private final long pointer;
 
-        public PythonObjectReference(PythonNativeWrapper referent, long pointer) {
-            super(referent);
+        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer) {
+            super(handleContext, referent);
             this.pointer = pointer;
-            this.strongReference = referent.getRefCount() > PythonNativeWrapper.MANAGED_REFCNT ? referent : null;
-            LOGGER.finer(() -> PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strongReference == null ? "weak" : "strong"), Long.toHexString(pointer), referent));
+            this.strongReference = strong ? referent : null;
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strong ? "strong" : "weak"), Long.toHexString(pointer), referent));
+            }
             referent.ref = this;
+        }
+
+        public static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer) {
+            return new PythonObjectReference(handleContext, referent, strong, pointer);
+        }
+
+        public static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer) {
+            return new PythonObjectReference(handleContext, referent, true, pointer);
+        }
+
+        public boolean isStrongReference() {
+            return strongReference != null;
+        }
+
+        public void setStrongReference(PythonNativeWrapper wrapper) {
+            strongReference = wrapper;
         }
 
         @Override
@@ -165,18 +197,24 @@ public class CApiTransitions {
         }
     }
 
+    /**
+     * A weak and unique reference to a native object (not directly the pointer but the
+     * {@link PythonAbstractNativeObject} wrapper).
+     */
     public static final class NativeObjectReference extends IdReference<PythonAbstractNativeObject> {
 
         final Object object;
         final long pointer;
 
-        public NativeObjectReference(PythonAbstractNativeObject referent, long pointer) {
-            super(referent);
+        public NativeObjectReference(HandleContext handleContext, PythonAbstractNativeObject referent, long pointer) {
+            super(handleContext, referent);
             this.object = referent.object;
             this.pointer = pointer;
             referent.ref = this;
             assert (pointer & 7) == 0;
-            LOGGER.finer(() -> PythonUtils.formatJString("new NativeObjectReference<%s> to %s", Long.toHexString(pointer), referent));
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("new NativeObjectReference<%s> to %s", Long.toHexString(pointer), referent));
+            }
         }
 
         @Override
@@ -190,12 +228,14 @@ public class CApiTransitions {
         private Object ptr;
         private int size;
 
-        public NativeStorageReference(NativeSequenceStorage storage) {
-            super(storage);
+        public NativeStorageReference(HandleContext handleContext, NativeSequenceStorage storage) {
+            super(handleContext, storage);
             type = storage.getElementType();
             ptr = storage.getPtr();
             size = storage.length();
-            LOGGER.finer(() -> PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
+            }
         }
 
         public Object getPtr() {
@@ -218,9 +258,10 @@ public class CApiTransitions {
     @TruffleBoundary
     public static void registerNativeSequenceStorage(NativeSequenceStorage storage) {
         assert PythonContext.get(null).ownsGil();
-        NativeStorageReference ref = new NativeStorageReference(storage);
+        HandleContext handleContext = getContext();
+        NativeStorageReference ref = new NativeStorageReference(handleContext, storage);
         storage.setReference(ref);
-        getContext().nativeStorageReferences.add(ref);
+        handleContext.nativeStorageReferences.add(ref);
     }
 
     @TruffleBoundary
@@ -261,12 +302,20 @@ public class CApiTransitions {
                     count++;
                     if (entry instanceof PythonObjectReference reference) {
                         LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
-
                         if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
-                            int index = HandlePointerConverter.pointerToHandleIndex(reference.pointer);
-                            assert context.nativeHandles.get(index) != null;
-                            context.nativeHandles.set(index, null);
-                            context.nativeHandlesFreeStack.push(index);
+                            assert nativeStubLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
+                            nativeStubLookupRemove(context, reference.pointer);
+                            /*
+                             * We may only free native object stubs if their reference count is
+                             * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because we
+                             * don't know if they are still used from native code. Those must be
+                             * free'd at context finalization.
+                             */
+                            long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
+                            if (subNativeRefCount(stubPointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+                                LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(stubPointer)));
+                                FreeNode.executeUncached(stubPointer);
+                            }
                         } else {
                             assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
                             nativeLookupRemove(context, reference.pointer);
@@ -274,7 +323,7 @@ public class CApiTransitions {
                     } else if (entry instanceof NativeObjectReference reference) {
                         LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
                         nativeLookupRemove(context, reference.pointer);
-                        if (subNativeRefCount(reference.pointer, PythonNativeWrapper.MANAGED_REFCNT) == 0) {
+                        if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
                             referencesToBeFreed.add(reference.pointer);
                         }
                     } else if (entry instanceof NativeStorageReference reference) {
@@ -287,6 +336,64 @@ public class CApiTransitions {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * We need to call __dealloc__ for native weakref objects before exit, as some objects might
+     * need to use capi functions.
+     */
+    @TruffleBoundary
+    public static void addNativeWeakRef(PythonContext pythonContext, PythonAbstractNativeObject object) {
+        pythonContext.nativeContext.nativeWeakRef.put(getNativePointer(object), 0L);
+    }
+
+    /**
+     * In case a weakref object is being collected. We must remove it from the list to avoid double
+     * deallocation at exit.
+     */
+    @TruffleBoundary
+    public static void removeNativeWeakRef(PythonContext pythonContext, long pointer) {
+        pythonContext.nativeContext.nativeWeakRef.remove(pointer);
+    }
+
+    public static long getNativePointer(Object obj) {
+        if (obj instanceof PythonAbstractNativeObject object) {
+            return object.ref.pointer;
+        } else {
+            return 0;
+        }
+    }
+
+    @TruffleBoundary
+    public static void deallocateNativeWeakRefs(PythonContext pythonContext) {
+        if (!pythonContext.isFinalizing()) {
+            // We should avoid deallocation until exit.
+            return;
+        }
+        HandleContext context = pythonContext.nativeContext;
+        int idx = -1;
+        Object[] list = context.nativeWeakRef.values().toArray();
+        context.nativeWeakRef.clear();
+        long[] ptrArray = new long[list.length];
+        for (Object ptr : list) {
+            if (context.nativeLookup.containsKey(ptr)) {
+                ptrArray[++idx] = (Long) ptr;
+            }
+        }
+        if (idx != -1) {
+            int len = idx + 1;
+            Object array = CStructAccessFactory.AllocateNodeGen.getUncached().alloc((long) len * Long.BYTES);
+            try {
+                CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, ptrArray, len, 0, 0);
+                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
+            } finally {
+                CStructAccessFactory.FreeNodeGen.getUncached().free(array);
+                context.nativeWeakRef.clear();
+            }
+        }
+        if (context.nativeWeakRef.size() > 0) {
+            LOGGER.warning("Weak references have been added during shutdown!");
         }
     }
 
@@ -314,7 +421,7 @@ public class CApiTransitions {
         log(pointer);
         IdReference<?> reference = nativeLookupGet(getContext(), pointer);
         if (reference != null) {
-            return logResult(reference.get());
+            return logResultBoundary(reference.get());
         }
         return logResult(null);
     }
@@ -334,127 +441,19 @@ public class CApiTransitions {
         return context.nativeLookup.remove(pointer);
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class HandleReleaser implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args,
-                        @CachedLibrary(limit = "5") InteropLibrary lib) {
-            assert args.length == 1;
-            Object arg = args[0];
-            if (arg instanceof PythonNativeWrapper || arg instanceof PythonAbstractObject) {
-                return 0;
-            }
-            long pointer;
-            if (arg instanceof Long) {
-                pointer = (long) arg;
-            } else {
-                if (!lib.isPointer(arg)) {
-                    return 0;
-                }
-                try {
-                    pointer = lib.asPointer(arg);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
-            release(pointer);
-            return 0;
-        }
-
-        public static void release(long pointer) {
-            LOGGER.finer(() -> PythonUtils.formatJString("releasing handle %016x\n", pointer));
-            // TODO: release handle
-        }
+    @TruffleBoundary
+    public static PythonObjectReference nativeStubLookupGet(HandleContext context, long pointer) {
+        return context.nativeStubLookup.get(pointer);
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class HandleTester implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args,
-                        @CachedLibrary(limit = "5") InteropLibrary lib) {
-            assert args.length == 1;
-            Object arg = args[0];
-            assert !(arg instanceof PythonAbstractObject);
-            if (arg instanceof PythonNativeWrapper) {
-                return 1;
-            }
-            long pointer;
-            if (arg instanceof Long) {
-                pointer = (long) arg;
-            } else {
-                if (!lib.isPointer(arg)) {
-                    return 0;
-                }
-                try {
-                    pointer = lib.asPointer(arg);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            return HandlePointerConverter.pointsToPyHandleSpace(pointer) ? 1 : 0;
-        }
+    @TruffleBoundary
+    public static PythonObjectReference nativeStubLookupPut(HandleContext context, long pointer, PythonObjectReference value) {
+        return context.nativeStubLookup.put(pointer, value);
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class HandleResolver implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args) {
-            assert args.length == 1;
-            long pointer = (long) args[0];
-            return resolve(pointer);
-        }
-
-        public static PythonNativeWrapper resolve(long pointer) {
-            PythonNativeWrapper wrapper = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer)).get();
-            assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
-            incRef(wrapper, 1);
-            return wrapper;
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class HandleResolverStealing implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args) {
-            assert args.length == 1;
-            long pointer = (long) args[0];
-            return resolve(pointer);
-        }
-
-        public static PythonNativeWrapper resolve(long pointer) {
-            PythonNativeWrapper wrapper = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer)).get();
-            assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
-            return wrapper;
-        }
+    @TruffleBoundary
+    public static PythonObjectReference nativeStubLookupRemove(HandleContext context, long pointer) {
+        return context.nativeStubLookup.remove(pointer);
     }
 
     public static final class HandlePointerConverter {
@@ -462,16 +461,20 @@ public class CApiTransitions {
         private static final long HANDLE_BASE = 0x8000_0000_0000_0000L;
 
         /**
-         * We need to shift the pointers because some libraries, notably cffi, do pointer tagging.
+         * Some libraries (notably cffi) do pointer tagging and therefore assume aligned pointers
+         * (aligned to 8 bytes). This means, the three LSBs need to be 0.
          */
-        private static final int HANDLE_SHIFT = 3;
+        private static final int POINTER_ALIGNMENT_SHIFT = 3;
+        private static final long POINTER_ALIGNMENT_MASK = (1L << POINTER_ALIGNMENT_SHIFT) - 1L;
 
-        public static long handleIndexToPointer(int idx) {
-            return ((long) idx << HANDLE_SHIFT) | HANDLE_BASE;
+        public static long stubToPointer(long stubPointer) {
+            assert (stubPointer & POINTER_ALIGNMENT_MASK) == 0;
+            return stubPointer | HANDLE_BASE;
         }
 
-        public static int pointerToHandleIndex(long pointer) {
-            return (int) ((pointer & ~HANDLE_BASE) >>> HANDLE_SHIFT);
+        public static long pointerToStub(long pointer) {
+            assert (pointer & ~HANDLE_BASE & POINTER_ALIGNMENT_MASK) == 0;
+            return pointer & ~HANDLE_BASE;
         }
 
         public static boolean pointsToPyHandleSpace(long pointer) {
@@ -479,84 +482,69 @@ public class CApiTransitions {
         }
     }
 
-    public static final class HandleFactory {
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class FirstToNativeNode extends Node {
 
-        public static long create(PythonNativeWrapper wrapper) {
-            CompilerAsserts.neverPartOfCompilation();
-            assert !(wrapper instanceof TruffleObjectNativeWrapper);
-            assert PythonContext.get(null).ownsGil();
-            pollReferenceQueue();
-            HandleContext handleContext = getContext();
-            // don't reuse handles in GCALot mode to make debugging easier
-            int idx = GCALot != 0 ? -1 : handleContext.nativeHandlesFreeStack.pop();
-            long pointer;
-            if (idx == -1) {
-                pointer = HandlePointerConverter.handleIndexToPointer(handleContext.nativeHandles.size());
-                handleContext.nativeHandles.add(new PythonObjectReference(wrapper, pointer));
-            } else {
-                assert idx >= 0;
-                pointer = HandlePointerConverter.handleIndexToPointer(idx);
-                handleContext.nativeHandles.set(idx, new PythonObjectReference(wrapper, pointer));
+        public static long executeUncached(PythonAbstractObjectNativeWrapper wrapper, boolean immortal) {
+            return FirstToNativeNodeGen.getUncached().execute(null, wrapper, immortal);
+        }
+
+        public final long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper) {
+            return execute(inliningTarget, wrapper, false);
+        }
+
+        public abstract long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal);
+
+        @Specialization
+        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal,
+                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
+                        @Cached InlinedExactClassProfile wrapperProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode) {
+
+            boolean acquired = gil.acquire();
+            try {
+                log(wrapper);
+                assert !(wrapper instanceof TruffleObjectNativeWrapper);
+                pollReferenceQueue();
+
+                long initialRefCount = immortal ? IMMORTAL_REFCNT : PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+
+                Object type = getClassNode.execute(inliningTarget, NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper));
+
+                // allocate a native stub object (C type: PyObject)
+                Object nativeObjectStub = allocateNode.alloc(CStructs.PyObject);
+                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
+                writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
+                HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+                long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
+                long stubPointer = HandlePointerConverter.stubToPointer(pointer);
+                PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, stubPointer);
+                nativeStubLookupPut(handleContext, stubPointer, ref);
+                return logResult(stubPointer);
+            } finally {
+                gil.release(acquired);
             }
-            return pointer;
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class PointerContainer implements TruffleObject {
-
-        private final long pointer;
-
-        public PointerContainer(long pointer) {
-            this.pointer = pointer;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isPointer() {
-            return true;
-        }
-
-        @ExportMessage
-        public long asPointer() {
-            return pointer;
-        }
-
-        @ExportMessage
-        public void toNative() {
-            // nothing to do
-        }
-
-        @ExportMessage
-        public boolean isNull() {
-            return pointer == 0;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("<0x%016x>", pointer);
-        }
-    }
-
+    /**
+     * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given
+     * native {@code pointer} such that the {@code pointer} can be resolved to the {@code delegate}.
+     * <p>
+     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
+     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
+     * We still need to be able to resolve those managed pointers to our objects.
+     * </p>
+     */
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static void firstToNative(PythonNativeWrapper obj) {
-        /*
-         * This method is called from 'toNative' messages. Therefore, we don't know the exact time
-         * when this will be executed and it may happen after the GIL was released by a C extension.
-         * So, we need to acquire the GIL here to be safe.
-         */
-        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-            assert !obj.isNative();
-            log(obj);
-            obj.setNativePointer(logResult(HandleFactory.create(obj)));
-        }
-    }
-
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    public static void firstToNative(PythonNativeWrapper obj, long ptr) {
+    public static void createReference(PythonNativeWrapper obj, long ptr) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
              * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
@@ -566,18 +554,36 @@ public class CApiTransitions {
                 logVoid(obj, ptr);
                 obj.setNativePointer(ptr);
                 pollReferenceQueue();
-                nativeLookupPut(getContext(), ptr, new PythonObjectReference(obj, ptr));
+                HandleContext context = getContext();
+                nativeLookupPut(context, ptr, PythonObjectReference.create(context, obj, ptr));
             }
         }
     }
 
-    public static void firstToNativeManaged(Object delegate, Object pointer) {
+    /**
+     * Creates a weak reference to {@code delegate} and connects that to the given {@code pointer}
+     * object such that the {@code pointer} can be resolved to the {@code delegate}.
+     * <p>
+     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
+     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
+     * We still need to be able to resolve those managed pointers to our objects.
+     * </p>
+     */
+    public static void createManagedReference(Object delegate, Object pointer) {
+        assert PythonContext.get(null).ownsGil();
         getContext().managedNativeLookup.put(pointer, new WeakReference<>(delegate));
     }
 
     // logging
 
     private static void log(Object... args) {
+        if (LOGGER.isLoggable(Level.FINER)) {
+            logBoundary(args);
+        }
+    }
+
+    @TruffleBoundary
+    private static void logBoundary(Object... args) {
         if (LOGGER.isLoggable(Level.FINER)) {
             CompilerAsserts.neverPartOfCompilation();
             StackTraceElement element = new RuntimeException().getStackTrace()[1];
@@ -610,7 +616,8 @@ public class CApiTransitions {
         }
     }
 
-    private static <T> T logResult(T value) {
+    @TruffleBoundary
+    private static <T> T logResultBoundary(T value) {
         if (LOGGER.isLoggable(Level.FINEST)) {
             CompilerAsserts.neverPartOfCompilation();
             StackTraceElement element = new RuntimeException().getStackTrace()[1];
@@ -621,43 +628,42 @@ public class CApiTransitions {
         return value;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public static long incRef(PythonNativeWrapper nativeWrapper, long value) {
-        assert value > 0;
-        long refCount = nativeWrapper.getRefCount();
-        nativeWrapper.setRefCount(refCount + value);
-        // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
-        assert refCount >= (PythonNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(nativeWrapper.getNativePointer());
-        if (refCount == PythonNativeWrapper.MANAGED_REFCNT && nativeWrapper.ref != null) {
-            nativeWrapper.ref.strongReference = nativeWrapper;
+    private static <T> T logResult(T value) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            logResultBoundary(value);
         }
-        return refCount;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static long decRef(PythonNativeWrapper nativeWrapper, long value) {
-        assert value > 0;
-        long refCount = nativeWrapper.getRefCount() - value;
-        nativeWrapper.setRefCount(refCount);
-        // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
-        assert refCount >= (PythonNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during decRef in " + Long.toHexString(nativeWrapper.getNativePointer());
-        if (refCount == PythonNativeWrapper.MANAGED_REFCNT && nativeWrapper.ref != null) {
-            nativeWrapper.ref.strongReference = null;
-        }
-        return refCount;
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static void setRefCount(PythonNativeWrapper nativeWrapper, long value) {
-        long refCnt = nativeWrapper.getRefCount();
-        if (value < refCnt) {
-            decRef(nativeWrapper, refCnt - value);
-        } else if (value > refCnt) {
-            incRef(nativeWrapper, value - refCnt);
-        }
+        return value;
     }
 
     private static final InteropLibrary LIB = InteropLibrary.getUncached();
+
+    /**
+     * Resolves a native handle to the corresponding {@link PythonNativeWrapper}. This node assumes
+     * that {@code pointer} points to handle space (i.e.
+     * {@link HandlePointerConverter#pointsToPyHandleSpace(long)} is {@code true}) and essential
+     * just looks up the handle in the table. It will additionally increment the reference count if
+     * the wrapper is a subclass of {@link PythonAbstractObjectNativeWrapper}.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ResolveHandleNode extends Node {
+
+        public abstract PythonNativeWrapper execute(Node inliningTarget, long pointer);
+
+        @Specialization
+        static PythonNativeWrapper doGeneric(Node inliningTarget, long pointer,
+                        @Cached InlinedExactClassProfile profile) {
+            HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
+            PythonObjectReference pythonObjectReference = nativeStubLookupGet(nativeContext, pointer);
+            PythonNativeWrapper wrapper = profile.profile(inliningTarget, pythonObjectReference.get());
+            assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
+            if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                objectNativeWrapper.incRef();
+            }
+            return wrapper;
+        }
+    }
 
     @GenerateUncached
     @GenerateInline(false)
@@ -665,71 +671,50 @@ public class CApiTransitions {
 
         @Specialization
         static Object doForeign(Object value,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                        @Cached InlinedConditionProfile isNullProfile) {
+                        @Cached InlinedExactClassProfile classProfile,
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached ResolveHandleNode resolveHandleNode) {
+            Object profiledValue = classProfile.profile(inliningTarget, value);
             // this branch is not a shortcut; it actually returns a different object
-            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(value))) {
+            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(profiledValue))) {
                 return PNone.NO_VALUE;
             }
-            return nativeCharToJava(value);
-        }
-
-        @TruffleBoundary
-        public static Object nativeCharToJava(Object value) {
-            log(value);
-            assert !(value instanceof Long);
-            if (value instanceof String) {
-                return logResult(PythonUtils.toTruffleStringUncached((String) value));
-            } else if (value instanceof TruffleString) {
-                return logResult(value);
+            log(profiledValue);
+            assert !(profiledValue instanceof Long);
+            if (profiledValue instanceof String) {
+                return logResult(PythonUtils.toTruffleStringUncached((String) profiledValue));
+            } else if (profiledValue instanceof TruffleString) {
+                return logResult(profiledValue);
             }
-            if (LIB.isPointer(value)) {
+            if (interopLibrary.isPointer(profiledValue)) {
                 long pointer;
                 try {
-                    pointer = LIB.asPointer(value);
+                    pointer = interopLibrary.asPointer(profiledValue);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                    PythonNativeWrapper obj = HandleResolver.resolve(pointer);
+                    PythonNativeWrapper obj = resolveHandleNode.execute(inliningTarget, pointer);
                     if (obj != null) {
                         return logResult(obj.getDelegate());
                     }
-                } else {
-                    IdReference<?> lookup = nativeLookupGet(CApiTransitions.getContext(), pointer);
-                    if (lookup != null) {
-                        Object obj = lookup.get();
-                        if (obj instanceof PythonAbstractNativeObject) {
-                            return logResult(obj);
-                        } else {
-                            return logResult(((PythonNativeWrapper) value).getDelegate());
-                        }
-                    }
                 }
             }
-            FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
-            return logResult(fromCharPointerNode.execute(value));
+            return logResult(fromCharPointerNode.execute(profiledValue));
         }
     }
 
     @GenerateUncached
     @GenerateInline(false)
-    @ImportStatic(CApiGuards.class)
+    @ImportStatic({CApiGuards.class, PGuards.class})
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
-
-        public final long executeLong(Object obj) {
-            return PythonUtils.coerceToLong(execute(obj), LIB);
-        }
 
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
             return PythonToNativeNodeGen.getUncached().execute(obj);
-        }
-
-        @TruffleBoundary
-        public static long executeLongUncached(Object obj) {
-            return PythonToNativeNodeGen.getUncached().executeLong(obj);
         }
 
         protected boolean needsTransfer() {
@@ -755,8 +740,13 @@ public class CApiTransitions {
             return getContext().getNativeNull().getPtr();
         }
 
+        @Specialization(guards = "isNoValue(obj)")
+        Object doNoValue(@SuppressWarnings("unused") PNone obj) {
+            return getContext().getNativeNull().getPtr();
+        }
+
         static boolean isOther(Object obj) {
-            return !(obj instanceof PythonAbstractNativeObject || obj instanceof PythonNativePointer || obj instanceof DescriptorDeleteMarker);
+            return !(obj instanceof PythonAbstractNativeObject || obj instanceof PythonNativePointer || obj instanceof DescriptorDeleteMarker || obj == PNone.NO_VALUE);
         }
 
         @Specialization(guards = "isOther(obj)")
@@ -764,27 +754,39 @@ public class CApiTransitions {
                         @Bind("needsTransfer()") boolean needsTransfer,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
-                        @Cached InlinedConditionProfile isReplacementProfile,
-                        @Cached InlinedConditionProfile needsReplacementProfile,
+                        @Cached GetReplacementNode getReplacementNode,
+                        @Cached InlinedConditionProfile isStrongProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
+            CompilerAsserts.partialEvaluationConstant(needsTransfer);
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
-            if (needsTransfer) {
-                // native part needs to decRef to release
-                incRef(wrapper, 1);
-            }
-            if (isReplacementProfile.profile(inliningTarget, wrapper instanceof PythonReplacingNativeWrapper)) {
-                Object replacement = ((PythonReplacingNativeWrapper) wrapper).getReplacement();
-                if (needsReplacementProfile.profile(inliningTarget, replacement == null)) {
-                    lib.toNative(wrapper);
-                    replacement = ((PythonReplacingNativeWrapper) wrapper).getReplacement();
-                }
-                assert replacement != null;
+
+            Object replacement = getReplacementNode.execute(inliningTarget, wrapper);
+            if (replacement != null) {
                 return replacement;
             }
+
+            assert PythonContext.get(inliningTarget).getEnv().isNativeAccessAllowed();
+            assert obj != PNone.NO_VALUE;
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
             }
+            if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                // native part needs to decRef to release
+                objectNativeWrapper.incRef();
+                /*
+                 * This creates a new reference to the object and the ownership is transferred to
+                 * the C extension. Therefore, we need to make the reference strong such that we do
+                 * not deallocate the object if it's no longer referenced in the interpreter. The
+                 * interpreter will be notified by an upcall as soon as the object's refcount goes
+                 * down to MANAGED_RECOUNT again.
+                 */
+                assert wrapper.ref != null;
+                if (isStrongProfile.profile(inliningTarget, !objectNativeWrapper.ref.isStrongReference())) {
+                    objectNativeWrapper.ref.setStrongReference(objectNativeWrapper);
+                }
+            }
+            assert wrapper != null;
             return wrapper;
         }
     }
@@ -856,14 +858,14 @@ public class CApiTransitions {
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
                         @Bind("$node") Node inliningTarget,
-                        @Exclusive @Cached InlinedConditionProfile isPrimitiveProfile) {
-            return handleWrapper(inliningTarget, isPrimitiveProfile, false, value);
+                        @Exclusive @Cached InlinedExactClassProfile wrapperProfile) {
+            return handleWrapper(inliningTarget, wrapperProfile, false, value);
         }
 
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(Object value,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached InlinedConditionProfile isNullProfile,
                         @Cached InlinedConditionProfile isZeroProfile,
@@ -871,7 +873,7 @@ public class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
-                        @Exclusive @Cached InlinedConditionProfile isPrimitiveProfile) {
+                        @Exclusive @Cached InlinedExactClassProfile wrapperProfile) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
@@ -899,7 +901,7 @@ public class CApiTransitions {
             }
             assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
-                PythonObjectReference reference = nativeContext.nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
+                PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer);
                 if (reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
@@ -914,8 +916,10 @@ public class CApiTransitions {
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
-                        LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(value, needsTransfer(), pointer);
+                        if (LOGGER.isLoggable(Level.FINE)) {
+                            LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
+                        }
+                        return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
                     }
                     if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
@@ -927,19 +931,38 @@ public class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(value, needsTransfer(), pointer);
+                    return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
                 }
             }
-            return handleWrapper(inliningTarget, isPrimitiveProfile, needsTransfer(), wrapper);
+            return handleWrapper(inliningTarget, wrapperProfile, needsTransfer(), wrapper);
         }
 
-        private static Object handleWrapper(Node node, InlinedConditionProfile isPrimitiveProfile, boolean transfer, PythonNativeWrapper wrapper) {
-            if (transfer) {
-                assert wrapper.getRefCount() >= PythonNativeWrapper.MANAGED_REFCNT;
-                decRef(wrapper, 1);
+        /**
+         * Resolves a wrapper to its delegate and does appropriate reference count manipulation.
+         *
+         * @param node The inlining target for profiles.
+         * @param wrapperProfile The wrapper class profile.
+         * @param transfer Indicates if ownership of the reference is transferred to managed space.
+         * @param wrapper The native wrapper to unwrap.
+         * @return The Python value contained in the native wrapper.
+         */
+        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, boolean transfer, PythonNativeWrapper wrapper) {
+            PythonNativeWrapper profiledWrapper = wrapperProfile.profile(node, wrapper);
+            if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                /*
+                 * If 'transfer' is true, this means the ownership is transferred (in this case to
+                 * the "interpreter"). We don't do reference counting in the interpreter, therefore
+                 * we set the managed refcount once and never touch it again. Since the receiving
+                 * object is a managed object, the refcount has already been initialized to
+                 * MANAGED_REFCNT at the time the object was handed out to the C extension. If now
+                 * the ownership is again transferred to the interpreter, then the native code
+                 * *MUST* have done an incref and so the refcount must be greater than
+                 * MANAGED_REFCNT.
+                 */
+                assert objectNativeWrapper.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                objectNativeWrapper.decRef();
             }
-            if (isPrimitiveProfile.profile(node, wrapper instanceof PrimitiveNativeWrapper)) {
-                PrimitiveNativeWrapper primitive = (PrimitiveNativeWrapper) wrapper;
+            if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
                 if (primitive.isBool()) {
                     return primitive.getBool();
                 } else if (primitive.isInt()) {
@@ -1012,8 +1035,9 @@ public class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
-                        @Cached InlinedConditionProfile isPrimitiveProfile) {
+                        @Cached InlinedExactClassProfile wrapperProfile) {
 
+            CompilerAsserts.partialEvaluationConstant(stealing);
             PythonNativeWrapper wrapper;
 
             PythonContext pythonContext = PythonContext.get(inliningTarget);
@@ -1024,7 +1048,7 @@ public class CApiTransitions {
             }
             assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
-                PythonObjectReference reference = nativeContext.nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
+                PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer);
                 if (reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
@@ -1040,7 +1064,7 @@ public class CApiTransitions {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(pointer, stealing, pointer);
+                        return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
                     }
                     if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
@@ -1052,33 +1076,10 @@ public class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(pointer, stealing, pointer);
+                    return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
                 }
             }
-            return handleWrapper(inliningTarget, isPrimitiveProfile, stealing, wrapper);
-        }
-
-        private static Object handleWrapper(Node node, InlinedConditionProfile isPrimitiveProfile, boolean transfer, PythonNativeWrapper wrapper) {
-            if (transfer) {
-                assert wrapper.getRefCount() >= PythonNativeWrapper.MANAGED_REFCNT;
-                decRef(wrapper, 1);
-            }
-            if (isPrimitiveProfile.profile(node, wrapper instanceof PrimitiveNativeWrapper)) {
-                PrimitiveNativeWrapper primitive = (PrimitiveNativeWrapper) wrapper;
-                if (primitive.isBool()) {
-                    return primitive.getBool();
-                } else if (primitive.isInt()) {
-                    return primitive.getInt();
-                } else if (primitive.isLong()) {
-                    return primitive.getLong();
-                } else if (primitive.isDouble()) {
-                    return primitive.getDouble();
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            } else {
-                return wrapper.getDelegate();
-            }
+            return NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, stealing, wrapper);
         }
     }
 
@@ -1098,8 +1099,8 @@ public class CApiTransitions {
 
     private static long subNativeRefCount(long pointer, long refCntDelta) {
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
-        assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
-        assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
+        assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
+        assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
 
         LOGGER.finest(() -> PythonUtils.formatJString("subNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
 
@@ -1107,68 +1108,115 @@ public class CApiTransitions {
         return refCount - refCntDelta;
     }
 
-    private static Object createAbstractNativeObject(Object obj, boolean transfer, long pointer) {
+    public static long readNativeRefCount(long pointer) {
+        long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        assert refCount == IMMORTAL_REFCNT || (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value for %016x (%d %016x)\n", pointer, refCount, refCount);
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.finest(PythonUtils.formatJString("readNativeRefCount(%x) = %d (%x)", pointer, refCount, refCount));
+        }
+        return refCount;
+    }
+
+    public static void writeNativeRefCount(long pointer, long newValue) {
+        assert newValue > 0 : PythonUtils.formatJString("refcnt value to write below zero for %016x (%d %016x)\n", pointer, newValue, newValue);
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.finest(PythonUtils.formatJString("writeNativeRefCount(%x, %d (%x))", pointer, newValue, newValue));
+        }
+        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, newValue);
+    }
+
+    private static Object createAbstractNativeObject(HandleContext handleContext, Object obj, boolean transfer, long pointer) {
         assert isBackendPointerObject(obj) : obj.getClass();
 
         pollReferenceQueue();
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(obj);
-        NativeObjectReference ref = new NativeObjectReference(result, pointer);
+        NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
         nativeLookupPut(getContext(), pointer, ref);
 
-        long refCntDelta = PythonNativeWrapper.MANAGED_REFCNT - (transfer ? 1 : 0);
+        long refCntDelta = PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - (transfer ? 1 : 0);
         addNativeRefCount(pointer, refCntDelta);
         return result;
     }
 
     @TruffleBoundary
     public static boolean isBackendPointerObject(Object obj) {
-        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("PointerContainer"));
+        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("NativePointer"));
     }
 
-    @TruffleBoundary
-    public static PythonNativeWrapper nativeToPythonWrapper(Object obj) {
-        if (obj instanceof PythonNativeWrapper) {
-            return (PythonNativeWrapper) obj;
-        } else if (obj instanceof PythonAbstractNativeObject) {
-            throw CompilerDirectives.shouldNotReachHere();
-        } else {
+    @GenerateUncached
+    @GenerateInline(false)
+    @ImportStatic(CApiGuards.class)
+    public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
+
+        @Override
+        public final Object execute(Object object) {
+            return executeWrapper(object, true);
+        }
+
+        public abstract PythonNativeWrapper executeWrapper(Object obj, boolean strict);
+
+        @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
+        static PythonNativeWrapper doNonWrapper(Object obj, boolean strict,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("obj") InteropLibrary interopLibrary,
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached InlinedConditionProfile isLongProfile,
+                        @Cached InlinedConditionProfile isNativeProfile,
+                        @Cached InlinedExactClassProfile nativeWrapperProfile,
+                        @Cached InlinedConditionProfile isHandleSpaceProfile) {
             long pointer;
-            if (obj instanceof Long) {
+            if (isLongProfile.profile(inliningTarget, obj instanceof Long)) {
                 pointer = (long) obj;
             } else {
-                if (!LIB.isPointer(obj)) {
+                if (!interopLibrary.isPointer(obj)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("not a pointer: " + obj);
                 }
                 try {
-                    pointer = LIB.asPointer(obj);
+                    pointer = interopLibrary.asPointer(obj);
                 } catch (final UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            if (pointer == 0) {
+            if (isNullProfile.profile(inliningTarget, pointer == 0)) {
                 return null;
             }
-            assert PythonContext.get(null).ownsGil();
-            PythonNativeWrapper wrapper;
-            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                PythonObjectReference reference = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
-                if (reference == null || (wrapper = reference.get()) == null) {
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext nativeContext = pythonContext.nativeContext;
+            assert pythonContext.ownsGil();
+            if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
+                PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer);
+                PythonNativeWrapper wrapper;
+                if (reference == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
+                }
+                wrapper = reference.get();
+                if (strict && wrapper == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
                 return wrapper;
             } else {
-                IdReference<?> lookup = nativeLookupGet(getContext(), pointer);
-                if (lookup != null) {
+                IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
+                if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
                     if (ref == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                     }
-                    if (ref instanceof PythonNativeWrapper) {
-                        return (PythonNativeWrapper) ref;
+                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
+                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
+                        return nativeWrapper;
                     }
                 }
+                return null;
             }
-            return null;
+        }
+
+        @Specialization
+        static PythonNativeWrapper doWrapper(PythonNativeWrapper wrapper, @SuppressWarnings("unused") boolean strict) {
+            return wrapper;
         }
     }
 }

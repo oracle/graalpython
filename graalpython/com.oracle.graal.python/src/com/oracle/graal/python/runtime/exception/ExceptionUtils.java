@@ -113,6 +113,12 @@ public final class ExceptionUtils {
         return lineno;
     }
 
+    @TruffleBoundary
+    public static void printToStdErr(String message, Object... args) {
+        PrintWriter printWriter = new PrintWriter(System.err, true);
+        printWriter.printf(message, args);
+    }
+
     /**
      * this method is similar to 'PyErr_WriteUnraisable' and may be used when the context is not
      * available.
@@ -130,7 +136,8 @@ public final class ExceptionUtils {
         printPythonLikeStackTrace(new PrintWriter(context.getEnv().err(), true), e);
     }
 
-    private static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {
+    @TruffleBoundary
+    public static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {
         List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
         if (stackTrace != null) {
             ArrayList<String> stack = new ArrayList<>();
@@ -150,7 +157,8 @@ public final class ExceptionUtils {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         } else {
-            p.println(e.getMessage());
+            String message = e.getMessage();
+            p.println(message == null ? e.getClass().getSimpleName() : message);
         }
     }
 

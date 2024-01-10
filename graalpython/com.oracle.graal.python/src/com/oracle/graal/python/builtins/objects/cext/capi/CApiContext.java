@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -67,29 +68,28 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -108,7 +108,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -117,13 +116,14 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
+
+import sun.misc.Unsafe;
 
 public final class CApiContext extends CExtContext {
 
@@ -154,8 +154,6 @@ public final class CApiContext extends CExtContext {
      */
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
-    private final WeakIdentityHashMap<TruffleString, PString> promotedTruffleStringCache;
-
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
 
@@ -179,6 +177,7 @@ public final class CApiContext extends CExtContext {
     private final AtomicLong nextTssKey = new AtomicLong();
 
     public Object timezoneType;
+    private PyCapsule pyDateTimeCAPICapsule;
 
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
@@ -215,11 +214,10 @@ public final class CApiContext extends CExtContext {
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
-            PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
-            CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
-            primitiveNativeWrapperCache[i] = nativeWrapper;
+            int value = i - 5;
+            assert CApiGuards.isSmallInteger(value);
+            primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
-        promotedTruffleStringCache = new WeakIdentityHashMap<>();
     }
 
     public long getAndIncMaxModuleNumber() {
@@ -343,16 +341,6 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object getOrInsertPromotedTruffleString(TruffleString obj) {
-        PString pString = promotedTruffleStringCache.get(obj);
-        if (pString == null) {
-            pString = PromoteBorrowedValue.doString(obj, getContext().factory());
-            promotedTruffleStringCache.put(obj, pString);
-        }
-        return pString;
-    }
-
-    @TruffleBoundary
     public AllocInfo traceFree(Object ptr, @SuppressWarnings("unused") PFrame.Reference curFrame, @SuppressWarnings("unused") TruffleString clazzName) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
@@ -418,7 +406,7 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, Node inliningTarget, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
+    public void increaseMemoryPressure(VirtualFrame frame, Node inliningTarget, GetThreadStateNode getThreadStateNode, IndirectCallData indirectCallData, long size) {
         PythonContext context = getContext();
         if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
@@ -426,22 +414,22 @@ public final class CApiContext extends CExtContext {
         }
 
         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
-        Object savedState = IndirectCallContext.enter(frame, threadState, caller);
+        Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
         try {
-            triggerGC(context, size, caller);
+            triggerGC(context, size, inliningTarget);
         } finally {
             IndirectCallContext.exit(frame, threadState, savedState);
         }
     }
 
     @TruffleBoundary
-    public void triggerGC(PythonContext context, long size, NodeInterface caller) {
+    public void triggerGC(PythonContext context, long size, Node caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
             CApiTransitions.pollReferenceQueue();
-            PythonContext.triggerAsyncActions((Node) caller);
+            PythonContext.triggerAsyncActions(caller);
             if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;
@@ -531,6 +519,18 @@ public final class CApiContext extends CExtContext {
     private static AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
     private static AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
+    private Runnable nativeFinalizerRunnable;
+    private Thread nativeFinalizerShutdownHook;
+
+    @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded() {
+        try {
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+        } catch (Exception e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
@@ -573,16 +573,37 @@ public final class CApiContext extends CExtContext {
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
                 if (!U.isExecutable(initFunction)) {
-                    Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
+                    Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
                     U.execute(initFunction, new GetBuiltin());
                 } else {
-                    U.execute(initFunction, new PointerContainer(0), new GetBuiltin());
+                    U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
-                PyDateTimeCAPIWrapper.initWrapper(cApiContext);
+                cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
+
+                if (useNative) {
+                    /*
+                     * C++ libraries sometimes declare global objects that have destructors that
+                     * call Py_DECREF. Those destructors are then called during native shutdown,
+                     * which is after the JVM/SVM shut down and the upcall would segfault. This
+                     * finalizer code rebinds reference operations to native no-ops that don't
+                     * upcall. In normal scenarios we call it during context exit, but when the VM
+                     * is terminated by a signal, the context exit is skipped. For that case we set
+                     * up the shutdown hook.
+                     */
+                    Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer_array");
+                    Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+                    Object resetFunctionPointerArray = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
+                    try {
+                        cApiContext.addNativeFinalizer(env, resetFunctionPointerArray);
+                    } catch (RuntimeException e) {
+                        // This can happen when other languages restrict multithreading
+                        LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
+                    }
+                }
 
                 return cApiContext;
             } catch (PException e) {
@@ -597,21 +618,59 @@ public final class CApiContext extends CExtContext {
                 if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
-                throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                throw new ApiInitException(e);
             }
         }
         return context.getCApiContext();
     }
 
+    /**
+     * Registers a VM shutdown hook, that resets certain C API function to NOP functions to avoid
+     * segfaults due to improper Python context shutdown. In particular, the shutdown hook reads
+     * pairs of {@code variable address} and {@code reset value} provided in a native array and
+     * writes the {@code reset value} to the {@code variable address}. Currently, this is used to
+     * change the incref and decref upcall functions which would crash if they are called after the
+     * Python context was closed. The format of the array is:
+     * 
+     * <pre>
+     *     [ var_addr, reset_val, var_addr1, reset_val1, ..., NULL ]
+     * </pre>
+     */
+    private void addNativeFinalizer(Env env, Object resetFunctionPointerArray) {
+        final Unsafe unsafe = getContext().getUnsafe();
+        InteropLibrary lib = InteropLibrary.getUncached(resetFunctionPointerArray);
+        if (!lib.isNull(resetFunctionPointerArray) && lib.isPointer(resetFunctionPointerArray)) {
+            try {
+                long lresetFunctionPointerArray = lib.asPointer(resetFunctionPointerArray);
+                nativeFinalizerRunnable = () -> {
+                    long resetFunctionPointerLocation;
+                    long curElemAddr = lresetFunctionPointerArray;
+                    while ((resetFunctionPointerLocation = unsafe.getLong(curElemAddr)) != 0) {
+                        curElemAddr += Long.BYTES;
+                        long replacingFunctionPointer = unsafe.getLong(curElemAddr);
+                        unsafe.putAddress(resetFunctionPointerLocation, replacingFunctionPointer);
+                        curElemAddr += Long.BYTES;
+                    }
+                };
+                nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
+                Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
+            } catch (UnsupportedMessageException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @TruffleBoundary
     public void finalizeCapi() {
-        if (useNativeBackend && getLLVMLibrary() != null) {
+        if (pyDateTimeCAPICapsule != null) {
+            PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
+        }
+        if (nativeFinalizerShutdownHook != null) {
             try {
-                Object finalizeFunction = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "finalizeCAPI");
-                Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
-                SignatureLibrary.getUncached().call(signature, finalizeFunction);
-            } catch (InteropException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                Runtime.getRuntime().removeShutdownHook(nativeFinalizerShutdownHook);
+                nativeFinalizerRunnable.run();
+            } catch (IllegalStateException e) {
+                // Shutdown already in progress, let it do the finalization then
             }
         }
     }
@@ -631,7 +690,7 @@ public final class CApiContext extends CExtContext {
         try {
             nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
         } catch (UnsupportedMessageException e) {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+            Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
             Object bound = SignatureLibrary.getUncached().bind(signature, pyinitFunc);
             nativeResult = InteropLibrary.getUncached().execute(bound);
         } catch (ArityException e) {
@@ -703,8 +762,9 @@ public final class CApiContext extends CExtContext {
             int id = (int) arguments[0];
             try {
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                if (PythonContext.get(null).getCApiContext() != null) {
-                    Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+                if (cApiContext != null) {
+                    Object llvmLibrary = cApiContext.getLLVMLibrary();
                     assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin, llvmLibrary) : "name clash in builtin vs. CAPI library: " + builtin.name();
                 }
                 LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
@@ -754,8 +814,9 @@ public final class CApiContext extends CExtContext {
 
     public long registerClosure(String nfiSignature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
-        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
+        PythonContext context = getContext();
+        boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
+        Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);

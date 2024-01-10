@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -88,12 +89,12 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__THREAD)
@@ -190,29 +191,22 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "stack_size", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GetThreadStackSizeNode extends PythonUnaryBuiltinNode {
-        private final ConditionProfile invalidSizeProfile = ConditionProfile.create();
 
         @Specialization
         long getStackSize(@SuppressWarnings("unused") PNone stackSize) {
             return getContext().getPythonThreadStackSize();
         }
 
-        private long setAndGetStackSizeInternal(long stackSize) {
-            if (invalidSizeProfile.profile(stackSize < 0)) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
+        @Specialization
+        static long getStackSize(long stackSize,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (stackSize < 0) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
             }
-            return getContext().getAndSetPythonsThreadStackSize(stackSize);
-        }
-
-        @Specialization
-        long getStackSize(int stackSize) {
-            return setAndGetStackSizeInternal(stackSize);
-        }
-
-        @Specialization
-        long getStackSize(long stackSize) {
-            return setAndGetStackSizeInternal(stackSize);
+            return PythonContext.get(inliningTarget).getAndSetPythonsThreadStackSize(stackSize);
         }
     }
 

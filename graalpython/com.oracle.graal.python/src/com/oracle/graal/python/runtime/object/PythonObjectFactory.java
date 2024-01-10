@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -73,6 +73,13 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder;
 import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
+import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
+import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
+import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
+import com.oracle.graal.python.builtins.modules.pickle.PPickler;
+import com.oracle.graal.python.builtins.modules.pickle.PPicklerMemoProxy;
+import com.oracle.graal.python.builtins.modules.pickle.PUnpickler;
+import com.oracle.graal.python.builtins.modules.pickle.PUnpicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -168,6 +175,8 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict;
+import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDictIterator;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -193,7 +202,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
-import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -801,6 +809,30 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, getShape(cls)));
     }
 
+    public final POrderedDict createOrderedDict(Object cls) {
+        return trace(new POrderedDict(cls, getShape(cls)));
+    }
+
+    public final PDictKeysView createOrderedDictKeys(POrderedDict dict) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictKeys;
+        return trace(new PDictKeysView(cls, cls.getInstanceShape(getLanguage()), dict));
+    }
+
+    public final PDictValuesView createOrderedDictValues(POrderedDict dict) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictValues;
+        return trace(new PDictValuesView(cls, cls.getInstanceShape(getLanguage()), dict));
+    }
+
+    public final PDictItemsView createOrderedDictItems(POrderedDict dict) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictItems;
+        return trace(new PDictItemsView(cls, cls.getInstanceShape(getLanguage()), dict));
+    }
+
+    public POrderedDictIterator createOrderedDictIterator(POrderedDict dict, POrderedDictIterator.IteratorType type, boolean reversed) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictIterator;
+        return trace(new POrderedDictIterator(cls, cls.getInstanceShape(getLanguage()), dict, type, reversed));
+    }
+
     @SuppressWarnings("unchecked")
     public final PDict createDictFromMap(LinkedHashMap<String, Object> map) {
         return createDict(EconomicMapStorage.create(map));
@@ -1195,8 +1227,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PThread(cls, getShape(cls), thread));
     }
 
-    public final PSemLock createSemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
+    public final PSemLock createSemLock(Object cls, long handle, int kind, int maxValue, TruffleString name) {
+        return trace(new PSemLock(cls, getShape(cls), handle, kind, maxValue, name));
+    }
+
+    public final PGraalPySemLock createGraalPySemLock(Object cls, TruffleString name, int kind, Semaphore sharedSemaphore) {
+        return trace(new PGraalPySemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
     public final PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {
@@ -1561,6 +1597,48 @@ public abstract class PythonObjectFactory extends Node {
 
     public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {
         return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
+    }
+
+    // pickle
+
+    public PPickleBuffer createPickleBuffer(Object view) {
+        return createPickleBuffer(view, PythonBuiltinClassType.PickleBuffer);
+    }
+
+    public PPickleBuffer createPickleBuffer(Object view, Object cls) {
+        return trace(new PPickleBuffer(cls, getShape(cls), view));
+    }
+
+    public PPickler createPickler() {
+        return createPickler(PythonBuiltinClassType.Pickler);
+    }
+
+    public PPickler createPickler(Object cls) {
+        return trace(new PPickler(cls, getShape(cls)));
+    }
+
+    public PUnpickler createUnpickler() {
+        return createUnpickler(PythonBuiltinClassType.Unpickler);
+    }
+
+    public PUnpickler createUnpickler(Object cls) {
+        return trace(new PUnpickler(cls, getShape(cls)));
+    }
+
+    public PPicklerMemoProxy createPicklerMemoProxy(PPickler pickler) {
+        return createPicklerMemoProxy(pickler, PythonBuiltinClassType.PicklerMemoProxy);
+    }
+
+    public PPicklerMemoProxy createPicklerMemoProxy(PPickler pickler, Object cls) {
+        return trace(new PPicklerMemoProxy(cls, getShape(cls), pickler));
+    }
+
+    public PUnpicklerMemoProxy createUnpicklerMemoProxy(PUnpickler unpickler) {
+        return createUnpicklerMemoProxy(unpickler, PythonBuiltinClassType.UnpicklerMemoProxy);
+    }
+
+    public PUnpicklerMemoProxy createUnpicklerMemoProxy(PUnpickler unpickler, Object cls) {
+        return trace(new PUnpicklerMemoProxy(cls, getShape(cls), unpickler));
     }
 
     @GenerateInline

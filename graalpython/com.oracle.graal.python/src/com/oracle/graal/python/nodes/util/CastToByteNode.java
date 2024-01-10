@@ -51,7 +51,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -68,11 +68,11 @@ public abstract class CastToByteNode extends Node {
 
     @Child private PRaiseNode raiseNode;
 
-    private final Function<Object, Byte> rangeErrorHandler;
-    private final Function<Object, Byte> typeErrorHandler;
+    private final BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler;
+    private final BiFunction<Object, PRaiseNode, Byte> typeErrorHandler;
     protected final boolean coerce;
 
-    protected CastToByteNode(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler, boolean coerce) {
+    protected CastToByteNode(BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler, BiFunction<Object, PRaiseNode, Byte> typeErrorHandler, boolean coerce) {
         this.rangeErrorHandler = rangeErrorHandler;
         this.typeErrorHandler = typeErrorHandler;
         this.coerce = coerce;
@@ -171,25 +171,25 @@ public abstract class CastToByteNode extends Node {
     }
 
     private byte doError(@SuppressWarnings("unused") Object val) {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
         if (typeErrorHandler != null) {
-            return typeErrorHandler.apply(val);
+            return typeErrorHandler.apply(val, raiseNode);
         } else {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
             throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, val);
         }
     }
 
     private byte handleRangeError(Object val) {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
         if (rangeErrorHandler != null) {
-            return rangeErrorHandler.apply(val);
+            return rangeErrorHandler.apply(val, raiseNode);
         } else {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
             throw raiseNode.raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
@@ -209,12 +209,12 @@ public abstract class CastToByteNode extends Node {
     }
 
     @NeverDefault
-    public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
+    public static CastToByteNode create(BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler, BiFunction<Object, PRaiseNode, Byte> typeErrorHandler) {
         return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, false);
     }
 
     @NeverDefault
-    public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler, boolean coerce) {
+    public static CastToByteNode create(BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler, BiFunction<Object, PRaiseNode, Byte> typeErrorHandler, boolean coerce) {
         return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, coerce);
     }
 }

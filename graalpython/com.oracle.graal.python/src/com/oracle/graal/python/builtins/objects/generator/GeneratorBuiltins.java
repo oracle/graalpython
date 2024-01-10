@@ -70,12 +70,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public final class GeneratorBuiltins extends PythonBuiltins {
 
-    private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode.Lazy raiseNode) {
         if (self.isFinished()) {
-            throw node.raiseStopIteration();
+            throw raiseNode.get(inliningTarget).raiseStopIteration();
         }
         if (self.isRunning()) {
-            throw node.raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
         }
     }
 
@@ -142,10 +142,11 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PGenerator self,
+        static Object next(VirtualFrame frame, PGenerator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode) {
-            checkResumable(this, self);
+                        @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            checkResumable(inliningTarget, self, raiseNode);
             return resumeGeneratorNode.execute(frame, inliningTarget, self, null);
         }
     }

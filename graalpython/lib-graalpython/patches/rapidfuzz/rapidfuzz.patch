@@ -1,0 +1,23 @@
+diff --git a/setup.py b/setup.py
+index dcfa932..260376d 100644
+--- a/setup.py
++++ b/setup.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ 
+ import os
++import sys
+ 
+ 
+ def show_message(*lines):
+@@ -69,7 +70,9 @@ packaging = "1" in {
+     os.environ.get("PIWHEELS_BUILD", "0"),
+     os.environ.get("RAPIDFUZZ_BUILD_EXTENSION", "0"),
+ }
+-if packaging:
++if sys.implementation.name == 'graalpy':
++    run_setup(False)
++elif packaging:
+     run_setup(True)
+ else:
+     try:

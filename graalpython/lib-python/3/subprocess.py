@@ -1833,7 +1833,7 @@ class Popen:
                     if '"' in args[idx]:
                         args[idx] = args[idx].replace('"', '""')
                         modified = True
-                    if '\\' in args[idx]:
+                    if '\\' in args[idx] and (shell or modified):
                         args[idx] = args[idx].replace('\\', '\\\\')
                         modified = True
                     if modified:

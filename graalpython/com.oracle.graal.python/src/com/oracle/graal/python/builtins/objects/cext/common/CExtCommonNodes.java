@@ -63,8 +63,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -96,10 +96,13 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -112,9 +115,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CExtCommonNodes {
@@ -149,45 +151,47 @@ public abstract class CExtCommonNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
+        public abstract Object execute(Node inliningTarget, CExtContext nativeContext, NativeCExtSymbol symbol);
 
         @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
-        static Object doSymbolCached(@SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
+        static Object doSymbolCached(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
                         @Cached("symbol") @SuppressWarnings("unused") NativeCExtSymbol cachedSymbol,
-                        @Cached("importCAPISymbolUncached(nativeContext, symbol)") Object llvmSymbol) {
+                        @Cached("importCAPISymbolUncached(inliningTarget, nativeContext, symbol)") Object llvmSymbol) {
             return llvmSymbol;
         }
 
         // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
         @Specialization(guards = {"isSingleContext()", "nativeContext == cachedNativeContext"}, limit = "1", //
                         replaces = "doSymbolCached")
-        Object doWithSymbolCacheSingleContext(@SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
+        static Object doWithSymbolCacheSingleContext(Node inliningTarget, @SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
                         @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib) {
-            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
+            return doWithSymbolCache(inliningTarget, cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
         }
 
         @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
-        Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
+        static Object doWithSymbolCache(Node inliningTarget, CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
                         @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib) {
             Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                nativeSymbol = importCAPISymbolUncached(nativeContext, symbol, symbolCache, dynamicObjectLib);
+                nativeSymbol = importCAPISymbolUncached(inliningTarget, nativeContext, symbol, symbolCache, dynamicObjectLib);
             }
             return nativeSymbol;
         }
 
-        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol) {
+        protected static Object importCAPISymbolUncached(Node location, CExtContext nativeContext, NativeCExtSymbol symbol) {
             CompilerAsserts.neverPartOfCompilation();
-            return importCAPISymbolUncached(nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
+            return importCAPISymbolUncached(location, nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
         }
 
         @TruffleBoundary
-        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
+        protected static Object importCAPISymbolUncached(Node location, CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
             Object llvmLibrary = nativeContext.getLLVMLibrary();
             String name = symbol.getName();
             try {
@@ -196,57 +200,54 @@ public abstract class CExtCommonNodes {
                 dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
                 return nativeSymbol;
             } catch (UnknownIdentifierException e) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
             } catch (UnsupportedMessageException e) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class EnsureTruffleStringNode extends Node {
-        public abstract Object execute(Object obj);
+        public abstract Object execute(Node inliningTarget, Object obj);
 
         @Specialization
-        protected TruffleString doString(String s,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        static TruffleString doString(String s,
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(s, TS_ENCODING);
         }
 
         @Fallback
-        protected Object doObj(Object o) {
+        static Object doObj(Object o) {
             return o;
         }
     }
 
+    @GenerateInline(false) // footprint reduction 40 -> 22
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
 
         public abstract byte[] execute(Charset charset, Object unicodeObject, TruffleString errors);
 
         @Specialization
-        static byte[] doString(Charset charset, TruffleString unicodeObject, TruffleString errors,
-                        @Cached TruffleString.EqualNode eqNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode, eqNode);
-                return BytesBuiltins.doEncode(charset, unicodeObject, action);
-            } catch (CharacterCodingException e) {
-                throw raiseNode.raise(UnicodeEncodeError, ErrorMessages.M, e);
-            }
-        }
-
-        @Specialization
         static byte[] doGeneric(Charset charset, Object unicodeObject, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString str;
             try {
-                TruffleString s = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
-                return doString(charset, s, errors, eqNode, raiseNode);
+                str = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "a string", unicodeObject);
+            }
+            try {
+                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);
+                return BytesBuiltins.doEncode(charset, str, action);
+            } catch (CharacterCodingException e) {
+                throw raiseNode.get(inliningTarget).raise(UnicodeEncodeError, ErrorMessages.M, e);
             }
         }
     }
@@ -294,17 +295,22 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class ReadUnicodeArrayNode extends PNodeWithContext {
 
-        public abstract int[] execute(Object array, int length, int elementSize);
+        public abstract int[] execute(Node inliningTarget, Object array, int length, int elementSize);
+
+        public static int[] executeUncached(Object array, int length, int elementSize) {
+            return ReadUnicodeArrayNodeGen.getUncached().execute(null, array, length, elementSize);
+        }
 
         @Specialization(guards = "elementSize == 1")
-        static int[] read1(Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Bind("$node") Node inliningTarget,
+        static int[] read1(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
                         @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached CStructAccess.ReadByteNode read) {
+                        @Cached(inline = false) CStructAccess.ReadByteNode read) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
@@ -319,10 +325,9 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "elementSize == 2")
-        static int[] read2(Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Bind("$node") Node inliningTarget,
+        static int[] read2(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
                         @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached CStructAccess.ReadI16Node read) {
+                        @Cached(inline = false) CStructAccess.ReadI16Node read) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
@@ -337,10 +342,9 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "elementSize == 4")
-        static int[] read4(Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Bind("$node") Node inliningTarget,
+        static int[] read4(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
                         @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached CStructAccess.ReadI32Node read) {
+                        @Cached(inline = false) CStructAccess.ReadI32Node read) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
@@ -355,30 +359,32 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Object o, int signed, int targetTypeSize, boolean exact);
+        public abstract Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize, boolean exact);
 
-        public final Object execute(Object o, int signed, int targetTypeSize) {
-            return execute(o, signed, targetTypeSize, true);
+        public final Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize) {
+            return execute(inliningTarget, o, signed, targetTypeSize, true);
         }
 
-        public final long executeLong(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(o, signed, targetTypeSize, exact));
+        public final long executeLongCached(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(this, o, signed, targetTypeSize, exact));
         }
 
-        public final int executeInt(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(o, signed, targetTypeSize, exact));
+        public final int executeIntCached(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, exact));
         }
 
-        public final long executeLong(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(o, signed, targetTypeSize, true));
+        public final long executeLongCached(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(this, o, signed, targetTypeSize, true));
         }
 
-        public final int executeInt(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(o, signed, targetTypeSize, true));
+        public final int executeIntCached(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, true));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
@@ -408,25 +414,25 @@ public abstract class CExtCommonNodes {
         @Specialization
         @SuppressWarnings("unused")
         static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, exact);
         }
 
         @Specialization
         static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization
         static Object doLong(long value, int signed, int targetTypeSize, boolean exact,
-                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
         static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
         }
 
@@ -455,6 +461,7 @@ public abstract class CExtCommonNodes {
      * want to use this node if the argument can be an object of type {@link PrimitiveNativeWrapper}
      * .
      */
+    @GenerateInline(false) // footprint reduction 28 -> 10, inherits non-inlineable execute()
     @GenerateUncached
     @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
     public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
@@ -481,18 +488,17 @@ public abstract class CExtCommonNodes {
     }
 
     public abstract static class CheckFunctionResultNode extends PNodeWithContext {
-        public static void checkFunctionResult(Node node, TruffleString name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context,
-                        ConditionProfile errOccurredProfile,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+        public static void checkFunctionResult(Node inliningTarget, TruffleString name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context,
+                        InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
             PythonThreadState threadState = context.getThreadState(language);
-            checkFunctionResult(node, threadState, name, indicatesError, strict, errOccurredProfile, nullButNoErrorMessage, resultWithErrorMessage);
+            checkFunctionResult(inliningTarget, threadState, name, indicatesError, strict, errOccurredProfile, nullButNoErrorMessage, resultWithErrorMessage);
         }
 
         /**
          * Check the result of a C extension function.
          *
-         * @param node The processing node (needed for the source location if a {@code SystemError}
-         *            is raised).
+         * @param inliningTarget The processing node (also needed for the source location if a
+         *            {@code SystemError} is raised).
          * @param threadState The Python thread state.
          * @param name The name of the function (used for the error message).
          * @param indicatesError {@code true} if the function results indicates an error (e.g.
@@ -509,10 +515,18 @@ public abstract class CExtCommonNodes {
          * @param resultWithErrorMessage Error message used if an error was set but the value does
          *            not indicate and error.
          */
-        public static void checkFunctionResult(Node node, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict, ConditionProfile errOccurredProfile,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+        public static void checkFunctionResult(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
+                        InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
             PException currentException = threadState.getCurrentException();
-            boolean errOccurred = errOccurredProfile.profile(currentException != null);
+            boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
+            if (indicatesError || errOccurred) {
+                checkFunctionResultSlowpath(inliningTarget, threadState, name, indicatesError, strict, nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException);
+            }
+        }
+
+        @InliningCutoff
+        private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, PException currentException) {
             if (indicatesError) {
                 // consume exception
                 threadState.setCurrentException(null);
@@ -520,13 +534,13 @@ public abstract class CExtCommonNodes {
                     assert currentException != null;
                     throw currentException.getExceptionForReraise(false);
                 } else if (strict) {
-                    throw raiseNullButNoError(node, name, nullButNoErrorMessage);
+                    throw raiseNullButNoError(inliningTarget, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 assert currentException != null;
                 // consume exception
                 threadState.setCurrentException(null);
-                throw raiseResultWithError(node, name, currentException, resultWithErrorMessage);
+                throw raiseResultWithError(inliningTarget, name, currentException, resultWithErrorMessage);
             }
         }
 
@@ -542,13 +556,20 @@ public abstract class CExtCommonNodes {
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
         }
 
-        public abstract Object execute(PythonContext context, TruffleString name, Object result);
+        public final Object execute(PythonContext context, TruffleString name, Object result) {
+            PythonLanguage language = PythonLanguage.get(this);
+            return execute(context.getThreadState(language), name, result);
+        }
+
+        public abstract Object execute(PythonThreadState threadState, TruffleString name, Object result);
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class GetByteArrayNode extends Node {
 
-        public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
+        public abstract byte[] execute(Node inliningTarget, Object obj, long n) throws InteropException, OverflowException;
 
         @Specialization
         static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n) {
@@ -557,7 +578,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte[] doForeign(Object obj, long n,
-                        @Cached CStructAccess.ReadByteNode readNode) {
+                        @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
             return readNode.readByteArray(obj, (int) n);
         }
 
@@ -581,6 +602,7 @@ public abstract class CExtCommonNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, SpecialMethodSlot.class})
+    @GenerateInline(false) // footprint reduction 32 -> 15, triggers GR-44020
     public abstract static class AsNativePrimitiveNode extends Node {
 
         public final int toInt32(Object value, boolean exact) {
@@ -889,6 +911,7 @@ public abstract class CExtCommonNodes {
      * {@link com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef#HPY_MEMBER_STRING} or
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
      */
+    @GenerateInline(false) // footprint reduction 32 -> 13, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
 
@@ -921,8 +944,14 @@ public abstract class CExtCommonNodes {
     /**
      * This node converts a C Boolean value to Python Boolean.
      */
+    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+
+        @Specialization
+        static Boolean doBoolean(Boolean b) {
+            return b;
+        }
 
         @Specialization
         static Object doByte(byte b) {
@@ -937,11 +966,11 @@ public abstract class CExtCommonNodes {
         @Specialization
         static Object doLong(long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // sematics as we should just read a single byte.
+            // semantics as we should just read a single byte.
             return l != 0;
         }
 
-        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        @Specialization(replaces = {"doBoolean", "doByte", "doShort", "doLong"}, limit = "1")
         static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInLong(n)) {
@@ -959,6 +988,7 @@ public abstract class CExtCommonNodes {
      * This node converts a native primitive value to an appropriate Python char value (a
      * single-char Python string).
      */
+    @GenerateInline(false) // footprint reduction 36 -> 17
     @GenerateUncached
     public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
 
@@ -1005,6 +1035,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(false) // footprint reduction 20 -> 1, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class NativeUnsignedByteNode extends CExtToJavaNode {
 
@@ -1014,6 +1045,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateInline(false) // footprint reduction 20 -> 1, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class NativeUnsignedShortNode extends CExtToJavaNode {
 
@@ -1028,6 +1060,8 @@ public abstract class CExtCommonNodes {
      * native value as unsigned. For example, a negative {@code int} value will be converted to a
      * positive {@code long} value.
      */
+    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
+
     @GenerateUncached
     public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
 
@@ -1082,6 +1116,7 @@ public abstract class CExtCommonNodes {
      * According to CPython, we need to encode the whole Python string before we access the first
      * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
      */
+    @GenerateInline(false) // footprint reduction 28 -> 9, inherits non-inlineable execute()
     @GenerateUncached
     public abstract static class AsNativeCharNode extends CExtToNativeNode {
 
@@ -1089,33 +1124,14 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte doGeneric(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
             if (encoded.length != 1) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             return encoded[0];
-        }
-    }
-
-    /**
-     * Converts a Python Boolean into a C Boolean {@code char} (see also:
-     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
-     */
-    @GenerateUncached
-    public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
-
-        @Specialization
-        static byte doGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return (byte) PInt.intValue(castToJavaBooleanNode.execute(inliningTarget, value));
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
-            }
         }
     }
 
@@ -1146,6 +1162,7 @@ public abstract class CExtCommonNodes {
     /**
      * Implements semantics of function {@code typeobject.c: getindex}.
      */
+    @GenerateInline(false) // footprint reduction 60 -> 44
     public abstract static class GetIndexNode extends Node {
         public abstract int execute(Object self, Object indexObj);
 
@@ -1166,6 +1183,41 @@ public abstract class CExtCommonNodes {
 
         public static GetIndexNode create() {
             return GetIndexNodeGen.create();
+        }
+    }
+
+    /**
+     * Use this node to coerce an object (that is expected to be one of the pointer representations
+     * we use) into a {@code long} value. This node is semantically the same as method
+     * {@link PythonUtils#coerceToLong(Object, InteropLibrary)} but does profiling of the pointer
+     * object and additionally avoids the {@code InteropLibrary} for our known type
+     * {@link NativePointer}.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CoerceNativePointerToLongNode extends Node {
+
+        public abstract long execute(Node inliningTarget, Object pointerObject);
+
+        @Specialization
+        static long doLong(Long l) {
+            return l;
+        }
+
+        @Specialization
+        static long doNativePointer(NativePointer nativePointer) {
+            return nativePointer.asPointer();
+        }
+
+        @Specialization(guards = "!isNativePointer(pointerObject)", limit = "3")
+        static long doOther(Object pointerObject,
+                        @CachedLibrary("pointerObject") InteropLibrary lib) {
+            return PythonUtils.coerceToLong(pointerObject, lib);
+        }
+
+        static boolean isNativePointer(Object pointerObject) {
+            return pointerObject instanceof NativePointer;
         }
     }
 }

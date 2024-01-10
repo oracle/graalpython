@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -642,3 +642,34 @@ class ExceptionTests(unittest.TestCase):
         exec("try:1/0\nexcept Exception as e: pass", g)
         assert 'e' not in g
 
+    def test_del(self):
+        try:
+            del notexisting
+        except NameError:
+            pass
+
+    def expected_exception_in_builtins_allows_subclasses(self):
+        class StopIter1(StopIteration):
+            pass
+
+        class IndexError1(IndexError):
+            pass
+
+        class AttributeError1(AttributeError):
+            pass
+
+        class Iter1:
+            def __iter__(self): return self
+
+            def __next__(self): raise StopIter1
+
+        class Iter2:
+            def __getitem__(self, i): raise IndexError1
+
+        class Obj1:
+            def __getattr__(self, i): raise AttributeError1
+
+        assert list(Iter1()) == []
+        assert list(Iter2()) == []
+        sentinel = object()
+        assert getattr(Obj1(), 'does_not_exist', sentinel) is sentinel

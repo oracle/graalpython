@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -198,8 +199,9 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object setDefaults(Object self, Object defaults) {
-            throw raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple");
+        static Object setDefaults(Object self, Object defaults,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple");
         }
     }
 
@@ -231,7 +233,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
                 if (key instanceof PString) {
                     key = ((PString) key).getValueUncached();
                 } else if (!(key instanceof TruffleString)) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
                 }
                 keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
             }
@@ -267,8 +269,9 @@ public final class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(Object object) {
-            throw raise(TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
+        static Object doGeneric(Object object,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
         }
     }
 
@@ -284,11 +287,13 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object setCode(PFunction self, PCode code) {
+        static Object setCode(PFunction self, PCode code,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int closureLength = self.getClosure() == null ? 0 : self.getClosure().length;
             int freeVarsLength = code.getFreeVars().length;
             if (closureLength != freeVarsLength) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.REQUIRES_CODE_OBJ, self.getName(), closureLength, freeVarsLength);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.REQUIRES_CODE_OBJ, self.getName(), closureLength, freeVarsLength);
             }
             self.setCode(code);
             return PNone.NONE;

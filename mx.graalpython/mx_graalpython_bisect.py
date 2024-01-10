@@ -239,6 +239,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args.build_command = sec['build_command']
         args.benchmark_command = sec['benchmark_command']
         args.benchmark_metric = sec.get('benchmark_metric', default_metric)
+        args.benchmark_name = sec.get('benchmark_name', None)
         args.enterprise = sec.getboolean('enterprise', False)
         args.no_clean = sec.getboolean('no_clean', False)
         args.rerun_with_commands = sec.get('rerun_with_commands')
@@ -249,6 +250,9 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         parser.add_argument('build_command', help="Command to run in order to build the configuration")
         parser.add_argument('benchmark_command',
                             help="Command to run in order to run the benchmark. Output needs to be in mx's format")
+        parser.add_argument('benchmark_name',
+                            help="Filters the results to choose only benchmarks of given name. "
+                                 "Useful if the benchmark command runs multiple benchmarks.")
         parser.add_argument('--rerun-with-commands',
                             help="Re-run the bad and good commits with this benchmark command(s) "
                                  "(multiple commands separated by ';')")
@@ -333,11 +337,17 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         with open('bench-results.json') as f:
             data = json.load(f)
         docs = [x for x in data['queries'] if x['metric.name'] == args.benchmark_metric]
+        if args.benchmark_name:
+            docs = [x for x in docs if x['benchmark'] == args.benchmark_name]
         if not docs:
             raise RuntimeError(f"Couldn't find specified metric {args.benchmark_metric!r} in the results")
         if len(docs) > 1:
-            print("WARNING: found multiple results for the metric, picking first")
-        doc = docs[0]
+            print("WARNING: found multiple results for the metric, picking the last")
+        names = set([x['benchmark'] for x in docs])
+        if len(names) != 1:
+            print(f"WARNING: found multiple results with different benchmark name attributes: {names}. "
+                  "Use benchmark_name option to filter specific benchmark name.")
+        doc = docs[-1]
         result_class = HigherIsBetterResult if doc.get('metric.better', 'lower') == 'higher' else LowerIsBetterResult
         return result_class(doc['metric.value'], doc['metric.unit'])
 

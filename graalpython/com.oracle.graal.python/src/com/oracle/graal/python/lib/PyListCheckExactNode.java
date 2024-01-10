@@ -41,7 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -51,6 +51,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 public abstract class PyListCheckExactNode extends Node {
     public static boolean executeUncached(Object object) {
-        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PList);
+        return IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PList);
     }
 }

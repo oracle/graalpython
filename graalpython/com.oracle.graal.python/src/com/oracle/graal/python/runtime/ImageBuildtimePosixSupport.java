@@ -283,6 +283,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.fcntlLock(nativePosixSupport, fd, blocking, lockType, whence, start, length);
+    }
+
+    @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
@@ -660,6 +667,12 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getegid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.getegid(nativePosixSupport);
+    }
+
+    @ExportMessage
     final long getppid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
         return nativeLib.getppid(nativePosixSupport);
@@ -995,6 +1008,62 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.crypt(nativePosixSupport, word, salt);
+    }
+
+    @ExportMessage
+    final long semOpen(Object name, int openFlags, int mode, int value,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        return lib.semOpen(nativePosixSupport, name, openFlags, mode, value);
+    }
+
+    @ExportMessage
+    final void semClose(long handle,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        lib.semClose(nativePosixSupport, handle);
+    }
+
+    @ExportMessage
+    final void semUnlink(Object name,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        lib.semUnlink(nativePosixSupport, name);
+    }
+
+    @ExportMessage
+    final int semGetValue(long handle,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        return lib.semGetValue(nativePosixSupport, handle);
+    }
+
+    @ExportMessage
+    final void semPost(long handle,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        lib.semPost(nativePosixSupport, handle);
+    }
+
+    @ExportMessage
+    final void semWait(long handle,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        lib.semWait(nativePosixSupport, handle);
+    }
+
+    @ExportMessage
+    final boolean semTryWait(long handle,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        return lib.semTryWait(nativePosixSupport, handle);
+    }
+
+    @ExportMessage
+    final boolean semTimedWait(long handle, long deadlineNs,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInImageBuildtime();
+        return lib.semTimedWait(nativePosixSupport, handle, deadlineNs);
     }
 
     @ExportMessage

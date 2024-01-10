@@ -87,7 +87,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -148,7 +147,8 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached InlinedBranchProfile startLe0Profile,
                         @Cached InlinedBranchProfile endLe0Profile,
-                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, self);
             int start = startIn;
             if (start < 0) {
@@ -170,13 +170,13 @@ public final class TupleBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
     }
 
     @Builtin(name = "count", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class CountNode extends PythonBuiltinNode {
+    public abstract static class CountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         long count(VirtualFrame frame, Object self, Object value,
@@ -409,7 +409,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBuiltinNode {
+    abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
         static PTuple doTuple(Object left, Object right,
@@ -429,8 +429,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
+        static Object doGeneric(@SuppressWarnings("unused") Object left, Object right,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
 

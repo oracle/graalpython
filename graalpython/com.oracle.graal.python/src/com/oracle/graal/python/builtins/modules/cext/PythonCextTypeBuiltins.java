@@ -64,14 +64,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CreateFunctionNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyObjectSetAttrNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -109,7 +108,9 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -118,7 +119,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -153,9 +154,9 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doIt(PythonNativeClass self, TruffleString className) {
+        static Object doIt(PythonNativeClass self, TruffleString className) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(self);
-            return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
+            return PythonObjectFactory.getUncached().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
     }
 
@@ -189,12 +190,13 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         @Specialization
         int doIt(PythonNativeClass clazz, TruffleString name, PTuple mroTuple,
-                        @Cached("createClassProfile()") ValueProfile profile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile profile) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") called");
             }
-            SequenceStorage sequenceStorage = profile.profile(mroTuple.getSequenceStorage());
+            SequenceStorage sequenceStorage = profile.profile(inliningTarget, mroTuple.getSequenceStorage());
             if (sequenceStorage instanceof MroSequenceStorage) {
                 ((MroSequenceStorage) sequenceStorage).lookupChanged();
             } else {
@@ -234,17 +236,19 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(CExtContext.class)
     abstract static class NewClassMethodNode extends Node {
 
-        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object type, Object doc);
+        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object type, Object doc);
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
-        static Object classOrStatic(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+        static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+                        @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Shared("cf") @Cached CreateFunctionNode createFunctionNode) {
-            Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
+                        @Exclusive @Cached CreateFunctionNode createFunctionNode) {
+            Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
                 function = factory.createClassmethodFromCallableObj(func);
@@ -258,14 +262,13 @@ public final class PythonCextTypeBuiltins {
         }
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
-        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Cached PyObjectSetAttrNode setattr,
-                        @Cached WriteAttributeToObjectNode write,
-                        @Shared("cf") @Cached CreateFunctionNode createFunctionNode) {
-            Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
-            setattr.execute(func, T___NAME__, name);
-            setattr.execute(func, T___DOC__, doc);
+                        @Cached(inline = false) WriteAttributeToObjectNode write,
+                        @Exclusive @Cached CreateFunctionNode createFunctionNode) {
+            Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+            setattr.execute(inliningTarget, func, T___NAME__, name);
+            setattr.execute(inliningTarget, func, T___DOC__, doc);
             write.execute(func, PythonCextMethodBuiltins.METHOD_DEF_PTR, methodDefPtr);
             return func;
         }
@@ -279,7 +282,7 @@ public final class PythonCextTypeBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached PyDictSetDefault setDefault) {
-            Object func = newClassMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, type, doc);
+            Object func = newClassMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, type, doc);
             setDefault.execute(null, inliningTarget, dict, name, func);
             return 0;
         }
@@ -295,7 +298,7 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
             // create wrapper descriptor
-            Object wrapperDescriptor = CreateFunctionNodeGen.getUncached().execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
+            Object wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
             WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add wrapper descriptor to tp_dict
@@ -329,21 +332,23 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class CreateGetSetNode extends Node {
 
-        abstract GetSetDescriptor execute(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure);
+        abstract GetSetDescriptor execute(Node inliningTarget, TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure);
 
         @Specialization
         @TruffleBoundary
-        GetSetDescriptor createGetSet(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached PythonObjectFactory factory,
+        static GetSetDescriptor createGetSet(Node inliningTarget, TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
+                        @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
             assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
-                RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(this));
+                RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(inliningTarget));
                 getter = NativeCExtSymbol.ensureExecutable(getter, PExternalFunctionWrapper.GETTER);
                 get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
@@ -351,7 +356,7 @@ public final class PythonCextTypeBuiltins {
             PBuiltinFunction set = null;
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
-                RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(this));
+                RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(inliningTarget));
                 setter = NativeCExtSymbol.ensureExecutable(setter, PExternalFunctionWrapper.SETTER);
                 set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
@@ -379,11 +384,11 @@ public final class PythonCextTypeBuiltins {
     abstract static class PyTruffleType_AddGetSet extends CApi7BuiltinNode {
 
         @Specialization
-        int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
+        static int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
                         @Bind("this") Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode,
                         @Cached PyDictSetDefault setDefault) {
-            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure);
+            GetSetDescriptor descr = createGetSetNode.execute(inliningTarget, name, cls, getter, setter, doc, closure);
             setDefault.execute(null, inliningTarget, dict, name, descr);
             return 0;
         }

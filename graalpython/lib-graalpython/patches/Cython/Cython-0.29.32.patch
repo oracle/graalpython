@@ -52,13 +52,16 @@ index e0d203a..22bd406 100644
  #    ("file",    "PyFile_Type",     []),  # not in Py3
  
 diff --git a/Cython/Compiler/ExprNodes.py b/Cython/Compiler/ExprNodes.py
-index 2c5d709..be4b61c 100644
+index 2c5d709..f6d5cc3 100644
 --- a/Cython/Compiler/ExprNodes.py
 +++ b/Cython/Compiler/ExprNodes.py
-@@ -7208,6 +7208,13 @@ class AttributeNode(ExprNode):
+@@ -7208,6 +7208,16 @@ class AttributeNode(ExprNode):
              if obj.type.is_builtin_type and self.entry and self.entry.is_variable:
                  # accessing a field of a builtin type, need to cast better than result_as() does
                  obj_code = obj.type.cast_code(obj.result(), to_object_struct = True)
++            # GraalPy change: add getter functions for builtins
++            if obj.type.is_builtin_type and self.entry and self.entry.getter:
++                return "%s(%s)" % (self.entry.getter, obj_code)
 +            # GraalPy change: add a getter for array.data
 +            if (
 +                self.entry.name == 'data' and

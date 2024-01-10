@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,12 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
@@ -54,18 +55,19 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
-import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -75,7 +77,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -102,12 +103,13 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
-        Object nextStopped(PAbstractCombinations self) {
-            throw raiseStopIteration();
+        static Object nextStopped(PAbstractCombinations self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
-        Object nextNoResult(PAbstractCombinations self,
+        static Object nextNoResult(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared PythonObjectFactory factory,
                         @Cached @Exclusive InlinedLoopConditionProfile loopConditionProfile) {
@@ -123,25 +125,27 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
-        Object next(PCombinations self,
+        static Object next(PCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared PythonObjectFactory factory,
-                        @Cached @Shared InlinedLoopConditionProfile indexLoopProfile,
-                        @Cached @Shared InlinedLoopConditionProfile resultLoopProfile) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
+                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
-        Object next(PCombinationsWithReplacement self,
+        static Object next(PCombinationsWithReplacement self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared PythonObjectFactory factory,
-                        @Cached @Shared InlinedLoopConditionProfile indexLoopProfile,
-                        @Cached @Shared InlinedLoopConditionProfile resultLoopProfile) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
+                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
-        private Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
-                        InlinedLoopConditionProfile resultLoopProfile) throws PException {
+        private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
+                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode.Lazy raiseNode) throws PException {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
 
@@ -158,7 +162,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
 
             // Increment the current index which we know is not at its maximum.
@@ -191,24 +195,23 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object reduce(PAbstractCombinations self,
+        static Object reduce(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasNoLastResultProfile,
+                        @Cached InlinedConditionProfile stoppedProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple1 = factory.createTuple(new Object[]{factory.createList(self.getPool()), self.getR()});
             if (hasNoLastResultProfile.profile(inliningTarget, self.getLastResult() == null)) {
-                return factory.createTuple(new Object[]{type, tuple1});
+                PTuple args = factory.createTuple(new Object[]{factory.createTuple(self.getPool()), self.getR()});
+                return factory.createTuple(new Object[]{type, args});
+            } else if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
+                PTuple args = factory.createTuple(new Object[]{factory.createEmptyTuple(), self.getR()});
+                return factory.createTuple(new Object[]{type, args});
             }
-            Object lastResult = self.getLastResult() == null ? PNone.NONE : factory.createList(self.getLastResult());
-            Object[] obj = new Object[self.getIndices().length];
-            for (int i = 0; i < obj.length; i++) {
-                obj[i] = self.getIndices()[i];
-            }
-            PList indices = factory.createList(obj);
-            PTuple tuple2 = factory.createTuple(new Object[]{indices, lastResult, self.isStopped()});
-            return factory.createTuple(new Object[]{type, tuple1, tuple2});
+            PTuple indices = factory.createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getR()));
+            PTuple args = factory.createTuple(new Object[]{factory.createTuple(self.getPool()), self.getR()});
+            return factory.createTuple(new Object[]{type, args, indices});
         }
     }
 
@@ -217,42 +220,38 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object setState(VirtualFrame frame, PAbstractCombinations self, Object state,
+        static Object setState(PAbstractCombinations self, Object stateObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached TupleBuiltins.LenNode lenNode,
-                        @Cached GetItemNode getItemNode,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached CastToJavaIntLossyNode catsToIntNode,
-                        @Cached InlinedConditionProfile noResultProfile,
-                        @Cached InlinedLoopConditionProfile indicesProfile) {
-            if (!(state instanceof PTuple)) {
-                throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
-            }
-            int len = (int) lenNode.execute(frame, state);
-            if (len != 3) {
-                throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
-            }
-
-            PList indices = (PList) getItemNode.execute(frame, state, 0);
-            Object[] obj = toArrayNode.execute(inliningTarget, indices.getSequenceStorage());
-            int[] intIndices = new int[obj.length];
-            indicesProfile.profileCounted(inliningTarget, obj.length);
-            for (int i = 0; indicesProfile.inject(inliningTarget, i < obj.length); i++) {
-                intIndices[i] = catsToIntNode.execute(inliningTarget, obj[i]);
-            }
-            self.setIndices(intIndices);
-
-            Object lastResult = getItemNode.execute(frame, state, 1);
-            if (noResultProfile.profile(inliningTarget, lastResult instanceof PNone)) {
-                self.setLastResult(null);
+                        @Cached CastToJavaIntExactNode cast,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            int n = self.getPool().length;
+            if (stateObj instanceof PTuple state && state.getSequenceStorage().length() == self.getR()) {
+                SequenceStorage storage = state.getSequenceStorage();
+                try {
+                    for (int i = 0; i < self.getR(); i++) {
+                        int index = cast.execute(inliningTarget, getItemNode.execute(inliningTarget, storage, i));
+                        int max = i + n - self.getR();
+                        if (index > max) {
+                            index = max;
+                        }
+                        if (index < 0) {
+                            index = 0;
+                        }
+                        self.getIndices()[i] = index;
+                    }
+                } catch (CannotCastException e) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                }
+                Object[] result = new Object[self.getR()];
+                for (int i = 0; i < self.getR(); i++) {
+                    result[i] = self.getPool()[self.getIndices()[i]];
+                }
+                self.setLastResult(result);
+                return PNone.NONE;
             } else {
-                obj = toArrayNode.execute(inliningTarget, ((PList) lastResult).getSequenceStorage());
-                self.setLastResult(obj);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
             }
-            Object stopped = getItemNode.execute(frame, state, 2);
-            self.setStopped((boolean) stopped);
-
-            return PNone.NONE;
         }
     }
 

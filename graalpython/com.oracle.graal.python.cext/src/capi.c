@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 #include "capi.h"
 #include <stdio.h>
 #include <time.h>
-#include <truffle.h>
 #include <trufflenfi.h>
 
 #define ASSERTIONS
@@ -132,7 +131,7 @@ typedef struct {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
 PyTypeObject GLOBAL_NAME = {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
-    #__TYPE_NAME__,                              /* tp_name */\
+    __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
     (__ITEMSIZE__),                             /* tp_itemsize */\
     (__DEALLOC__),                              /* tp_dealloc */\
@@ -200,22 +199,20 @@ CAPI_BUILTINS
 
 uint32_t Py_Truffle_Options;
 
-void initialize_type_structure(PyTypeObject* structure, const char* name) {
-    // Store the Sulong struct type id to be used for instances of this class
-
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINEST, "initialize_type_structure: %s", structure->tp_name);
-	GraalPyTruffle_SetTypeStore(name, structure);
-}
-
 #undef bool
 static void initialize_builtin_types_and_structs() {
 	clock_t t = clock();
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) initialize_type_structure(&GLOBAL_NAME, #__TYPE_NAME__);
+	static int64_t builtin_types[] = {
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
+        NULL, NULL
+	};
+
+	GraalPyTruffle_InitBuiltinTypesAndStructs(builtin_types);
 
 	// fix up for circular dependency:
 	PyType_Type.tp_base = &PyBaseObject_Type;
@@ -250,8 +247,6 @@ PyObject* _PyTruffle_Zero;
 PyObject* _PyTruffle_One;
 
 static void initialize_globals() {
-    GraalPyTruffle_Register_NULL(NULL);
-
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
@@ -450,6 +445,26 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) 
 	for (int i = 0; i < len; i++) {
     	PyObject *obj = (PyObject*) ptrArray[i];
         _Py_Dealloc(obj);
+    }
+    return 0;
+}
+
+/** to be used from Java code only and only at exit; calls _Py_Dealloc */
+PyAPI_FUNC(Py_ssize_t) PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
+    /* some objects depends on others which might get deallocated in the process
+        of an earlier deallocation of the other object. To avoid double deallocations,
+        we, temporarly, make all objects immortal artificially */
+	for (int i = 0; i < len; i++) {
+    	PyObject *obj = (PyObject*) ptrArray[i];
+        obj->ob_refcnt = 999999999; // object.h:_Py_IMMORTAL_REFCNT
+    }
+	for (int i = 0; i < len; i++) {
+    	PyObject *obj = (PyObject*) ptrArray[i];
+        if (Py_TYPE(obj)->tp_dealloc != object_dealloc) {
+            /* we don't need to care about objects with default deallocation process */
+            obj->ob_refcnt = 0;
+            _Py_Dealloc(obj);
+        }
     }
     return 0;
 }
@@ -841,10 +856,12 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
 	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
 
+    // this will set PythonContext.nativeNull and is required to be first
+    GraalPyTruffle_Register_NULL(NULL);
 
+    initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
-	initialize_builtin_types_and_structs();
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
@@ -861,14 +878,55 @@ _Py_DECREF. The destructors get called by libc during exit during which we canno
 So we rebind them to no-ops when exiting.
 */
 Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
- return 100; // large dummy refcount
+    return IMMORTAL_REFCNT; // large dummy refcount
 }
+
 void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
- // do nothing
+    // do nothing
 }
-PyAPI_FUNC(void) finalizeCAPI() {
- GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
- GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
+
+void nop_GraalPyTruffle_NotifyRefCount(PyObject* obj, Py_ssize_t refcnt) {
+    // do nothing
+}
+
+void nop_GraalPyTruffle_BulkNotifyRefCount(void *, int) {
+    // do nothing
+}
+
+/*
+ * This array contains pairs of variable address and "reset value".
+ * The variable location is usually the address of a function pointer variable
+ * and the reset value is a new value to set at VM shutdown.
+ * For further explanation why this is required, see Java method
+ * 'CApiContext.ensureCapiWasLoaded'.
+ *
+ * Array format: [ var_addr, reset_val, var_addr1, reset_val1, ..., NULL ]
+ *
+ * ATTENTION: If the structure of the array's content is changed, method
+ *            'CApiContext.addNativeFinalizer' *MUST BE* adopted.
+ *
+ * ATTENTION: the array is expected to be NULL-terminated !
+ *
+ */
+static int64_t reset_func_ptrs[] = {
+        &GraalPy_get_PyObject_ob_refcnt,
+        nop_GraalPy_get_PyObject_ob_refcnt,
+        &GraalPy_set_PyObject_ob_refcnt,
+        nop_GraalPy_set_PyObject_ob_refcnt,
+        &GraalPyTruffle_NotifyRefCount,
+        nop_GraalPyTruffle_NotifyRefCount,
+        &GraalPyTruffle_BulkNotifyRefCount,
+        nop_GraalPyTruffle_NotifyRefCount,
+        /* sentinel (required) */
+        NULL
+};
+
+/*
+ * This function is called from Java during C API initialization to get the
+ * pointer to array 'reset_func_pts'.
+ */
+PyAPI_FUNC(int64_t *) GraalPy_get_finalize_capi_pointer_array() {
+    return reset_func_ptrs;
 }
 
 static void unimplemented(const char* name) {
@@ -908,10 +966,6 @@ PyAPI_FUNC(void*) PyBuffer_GetPointer(const Py_buffer* a, const Py_ssize_t* b) {
 }
 #undef PyBuffer_SizeFromFormat
 PyAPI_FUNC(Py_ssize_t) PyBuffer_SizeFromFormat(const char* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyBuffer_ToContiguous
-PyAPI_FUNC(int) PyBuffer_ToContiguous(void* a, const Py_buffer* b, Py_ssize_t c, char d) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyByteArray_Concat
@@ -1480,7 +1534,7 @@ PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
 }
 #undef PyException_GetTraceback
 PyAPI_FUNC(PyObject*) PyException_GetTraceback(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
+    return GraalPyException_GetTraceback(a);
 }
 #undef PyException_SetCause
 PyAPI_FUNC(void) PyException_SetCause(PyObject* a, PyObject* b) {
@@ -2145,14 +2199,6 @@ PyAPI_FUNC(int) PyObject_GC_IsFinalized(PyObject* a) {
 #undef PyObject_GC_IsTracked
 PyAPI_FUNC(int) PyObject_GC_IsTracked(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
-}
-#undef PyObject_GC_Track
-PyAPI_FUNC(void) PyObject_GC_Track(void* a) {
-    GraalPyObject_GC_Track(a);
-}
-#undef PyObject_GC_UnTrack
-PyAPI_FUNC(void) PyObject_GC_UnTrack(void* a) {
-    GraalPyObject_GC_UnTrack(a);
 }
 #undef PyObject_GET_WEAKREFS_LISTPTR
 PyAPI_FUNC(PyObject**) PyObject_GET_WEAKREFS_LISTPTR(PyObject* a) {
@@ -4365,6 +4411,10 @@ PyAPI_FUNC(void) _Py_FreeCharPArray(char*const a[]) {
 #undef _Py_GetConfig
 PyAPI_FUNC(const PyConfig*) _Py_GetConfig() {
     FUNC_NOT_IMPLEMENTED
+}
+#undef _Py_GetErrorHandler
+PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
+    return Graal_Py_GetErrorHandler(a);
 }
 #undef _Py_HashBytes
 PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void* a, Py_ssize_t b) {

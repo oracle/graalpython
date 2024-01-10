@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -89,17 +90,17 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PTakewhile self,
+        static Object next(VirtualFrame frame, PTakewhile self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue,
-                        @Cached PythonObjectFactory factory) {
-
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
             if (!isTrue.execute(frame, inliningTarget, callNode.execute(self.getPredicate(), value))) {
                 self.setIterable(factory.createSequenceIterator(factory.createList(PythonUtils.EMPTY_OBJECT_ARRAY)));
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return value;
         }

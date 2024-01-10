@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -298,52 +299,52 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @ExportMessage
-    short readShort(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getShort(values, byteOffset);
+    short readShortByteOrder(int byteOffset, ByteOrder byteOrder) {
+        return PythonUtils.byteArraySupport(byteOrder).getShort(values, byteOffset);
     }
 
     @ExportMessage
-    void writeShort(int byteOffset, short value) {
-        PythonUtils.ARRAY_ACCESSOR.putShort(values, byteOffset, value);
+    void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder) {
+        PythonUtils.byteArraySupport(byteOrder).putShort(values, byteOffset, value);
     }
 
     @ExportMessage
-    int readInt(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getInt(values, byteOffset);
+    int readIntByteOrder(int byteOffset, ByteOrder byteOrder) {
+        return PythonUtils.byteArraySupport(byteOrder).getInt(values, byteOffset);
     }
 
     @ExportMessage
-    void writeInt(int byteOffset, int value) {
-        PythonUtils.ARRAY_ACCESSOR.putInt(values, byteOffset, value);
+    void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder) {
+        PythonUtils.byteArraySupport(byteOrder).putInt(values, byteOffset, value);
     }
 
     @ExportMessage
-    long readLong(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getLong(values, byteOffset);
+    long readLongByteOrder(int byteOffset, ByteOrder byteOrder) {
+        return PythonUtils.byteArraySupport(byteOrder).getLong(values, byteOffset);
     }
 
     @ExportMessage
-    void writeLong(int byteOffset, long value) {
-        PythonUtils.ARRAY_ACCESSOR.putLong(values, byteOffset, value);
+    void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder) {
+        PythonUtils.byteArraySupport(byteOrder).putLong(values, byteOffset, value);
     }
 
     @ExportMessage
-    float readFloat(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getFloat(values, byteOffset);
+    float readFloatByteOrder(int byteOffset, ByteOrder byteOrder) {
+        return PythonUtils.byteArraySupport(byteOrder).getFloat(values, byteOffset);
     }
 
     @ExportMessage
-    void writeFloat(int byteOffset, float value) {
-        PythonUtils.ARRAY_ACCESSOR.putFloat(values, byteOffset, value);
+    void writeFloatByteOrder(int byteOffset, float value, ByteOrder byteOrder) {
+        PythonUtils.byteArraySupport(byteOrder).putFloat(values, byteOffset, value);
     }
 
     @ExportMessage
-    double readDouble(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getDouble(values, byteOffset);
+    double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder) {
+        return PythonUtils.byteArraySupport(byteOrder).getDouble(values, byteOffset);
     }
 
     @ExportMessage
-    void writeDouble(int byteOffset, double value) {
-        PythonUtils.ARRAY_ACCESSOR.putDouble(values, byteOffset, value);
+    void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder) {
+        PythonUtils.byteArraySupport(byteOrder).putDouble(values, byteOffset, value);
     }
 }

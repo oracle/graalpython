@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -110,6 +111,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -118,6 +120,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -152,18 +155,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doit(VirtualFrame frame, Object value, Object file, int version,
+        static Object doit(VirtualFrame frame, Object value, Object file, int version,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached("createCallWriteNode()") LookupAndCallBinaryNode callNode,
-                        @Cached PythonObjectFactory factory) {
-            Object savedState = IndirectCallContext.enter(frame, this);
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object savedState = IndirectCallContext.enter(frame, indirectCallData);
             try {
-                return callNode.executeObject(frame, file, factory.createBytes(Marshal.dump(value, version, getContext())));
+                return callNode.executeObject(frame, file, factory.createBytes(Marshal.dump(value, version, PythonContext.get(inliningTarget))));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             } finally {
-                IndirectCallContext.exit(frame, this, savedState);
+                IndirectCallContext.exit(frame, indirectCallData, savedState);
             }
         }
     }
@@ -178,17 +184,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doit(VirtualFrame frame, Object value, int version,
-                        @Cached PythonObjectFactory factory) {
-            Object savedState = IndirectCallContext.enter(frame, this);
+        static Object doit(VirtualFrame frame, Object value, int version,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object savedState = IndirectCallContext.enter(frame, indirectCallData);
             try {
-                return factory.createBytes(Marshal.dump(value, version, getContext()));
+                return factory.createBytes(Marshal.dump(value, version, PythonContext.get(inliningTarget)));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             } finally {
-                IndirectCallContext.exit(frame, this, savedState);
+                IndirectCallContext.exit(frame, indirectCallData, savedState);
             }
         }
     }
@@ -202,19 +211,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doit(VirtualFrame frame, Object file,
+        static Object doit(VirtualFrame frame, Object file,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.hasBuffer(buffer)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
             }
             try {
                 return Marshal.loadFile(file);
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             }
         }
     }
@@ -225,16 +236,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
 
         @Specialization
-        Object doit(VirtualFrame frame, Object buffer,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        static Object doit(VirtualFrame frame, Object buffer,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
-                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raise(me.type, me.message, me.arguments);
+                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,19 +37,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# This script parses gcc output on the sibling "incl.c" and generates a list of
+# C API functions that can be stored in CAPIFunctions.txt to automatically
+# check the consistency of the C API implementation in GraalPy.
+#
+# Pip dependencies: pycparser pycparser-fake-libc
+# Just run it in this folder e.g python csignature.py > ../graalpython/com.oracle.graal.python.cext/CAPIFunctions.txt
+#
+# Make sure to use the exact same CPython version as we are targeting
 
 import re
-import sys
-import argparse
+import sysconfig
 import tempfile
-import subprocess
 
 import pycparser_fake_libc
 from pycparser import c_ast, parse_file, c_generator
 
-parser = argparse.ArgumentParser()
-parser.add_argument('include_path')
-args = parser.parse_args()
+include_path = sysconfig.get_config_var("INCLUDEPY")
 
 source = """\
 #define __attribute__(x)
@@ -65,8 +69,9 @@ source = """\
 with tempfile.NamedTemporaryFile('w') as f:
     f.write(source)
     f.flush()
-    cpp_args = ['-I', pycparser_fake_libc.directory, '-I', args.include_path]
+    cpp_args = ['-I', pycparser_fake_libc.directory, '-I', include_path]
     ast = parse_file(f.name, use_cpp=True, cpp_args=cpp_args)
+
 
 def cleanup(str):
     for i in range(4):
@@ -87,7 +92,7 @@ class FuncDeclVisitor(c_ast.NodeVisitor):
                 # erase parameter names
                 if not isinstance(p, c_ast.EllipsisParam):
                     t = p.type
-                    while isinstance(t, c_ast.PtrDecl) or isinstance(t, c_ast.FuncDecl) or isinstance(t, c_ast.ArrayDecl):
+                    while isinstance(t, (c_ast.PtrDecl, c_ast.FuncDecl, c_ast.ArrayDecl)):
                         t = t.type
                     t.declname = None
             args = [cleanup(self.gen.visit(p)) for p in node.type.args.params]

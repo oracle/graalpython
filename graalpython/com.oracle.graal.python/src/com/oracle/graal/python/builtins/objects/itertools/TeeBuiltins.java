@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -144,19 +145,23 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
-        Object next(VirtualFrame frame, PTee self,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode) {
-            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, this);
+        static Object next(VirtualFrame frame, PTee self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
             return value;
         }
 
         @Specialization(guards = "self.getIndex() >= LINKCELLS")
-        Object nextNext(VirtualFrame frame, PTee self,
+        static Object nextNext(VirtualFrame frame, PTee self,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             self.setDataObj(self.getDataobj().jumplink(factory));
-            Object value = self.getDataobj().getItem(frame, 0, nextNode, this);
+            Object value = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
             self.setIndex(1);
             return value;
         }
@@ -186,18 +191,19 @@ public final class TeeBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
 
         @Specialization
-        Object setState(VirtualFrame frame, PTee self, Object state,
+        static Object setState(VirtualFrame frame, PTee self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached CastToJavaIntLossyNode castToIntNode) {
+                        @Cached CastToJavaIntLossyNode castToIntNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
-                throw raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object dataObject = getItemNode.execute(frame, state, 0);
             if (!(dataObject instanceof PTeeDataObject)) {
-                throw raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
             }
             self.setDataObj((PTeeDataObject) dataObject);
             Object secondElement = getItemNode.execute(frame, state, 1);
@@ -205,10 +211,10 @@ public final class TeeBuiltins extends PythonBuiltins {
             try {
                 index = castToIntNode.execute(inliningTarget, secondElement);
             } catch (CannotCastException e) {
-                throw raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
+                throw raiseNode.get(inliningTarget).raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
             if (index < 0 || index > LINKCELLS) {
-                throw raise(ValueError, INDEX_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INDEX_OUT_OF_RANGE);
             }
             self.setIndex(index);
             return PNone.NONE;

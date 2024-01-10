@@ -72,7 +72,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -85,6 +84,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -549,7 +549,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class RECheckInputTypeNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    abstract static class RECheckInputTypeNode extends Node {
 
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
@@ -558,23 +559,24 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         public abstract void execute(VirtualFrame frame, Object input, boolean expectBytes);
 
         @Specialization
-        protected void check(VirtualFrame frame, Object input, boolean expectBytes,
+        static void check(VirtualFrame frame, Object input, boolean expectBytes,
                         @Bind("this") Node inliningTarget,
                         @Cached("getSupportedBinaryInputTypes()") PTuple supportedBinaryInputTypes,
                         @Cached BuiltinFunctions.IsInstanceNode isStringNode,
                         @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
                         @Cached InlinedConditionProfile unsupportedInputTypeProfile,
-                        @Cached InlinedConditionProfile unexpectedInputTypeProfile) {
+                        @Cached InlinedConditionProfile unexpectedInputTypeProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean isString = (boolean) isStringNode.execute(frame, input, PythonBuiltinClassType.PString);
             boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, supportedBinaryInputTypes);
             if (unsupportedInputTypeProfile.profile(inliningTarget, !isString && !isBytes)) {
-                throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
             if (unexpectedInputTypeProfile.profile(inliningTarget, expectBytes != isBytes)) {
                 if (expectBytes) {
-                    throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, T_UNEXPECTED_STR);
                 } else {
-                    throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, T_UNEXPECTED_BYTES);
                 }
             }
         }
@@ -791,8 +793,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         // must_advance=True version in re builtins like sub, split, findall
         @Specialization(guards = "callable == cachedCallable", limit = "2")
         @SuppressWarnings("truffle-static-method")
-        Object doCached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
+        Object doCached(VirtualFrame frame, @SuppressWarnings("unused") Object callable, Object inputStringOrBytes, Number fromIndex,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached(value = "callable", weak = true) Object cachedCallable,
                         @Cached @Shared CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
@@ -808,7 +811,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 } catch (CannotCastException e1) {
                     binaryProfile.enter(inliningTarget);
                     // It's bytes or other buffer object
-                    buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, this);
+                    buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, indirectCallData);
                     input = getBufferToTruffleStringNode().execute(buffer, 0);
                 }
                 try {
@@ -818,7 +821,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 }
             } finally {
                 if (buffer != null) {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
         }
@@ -827,12 +830,13 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @ReportPolymorphism.Megamorphic
         Object doUncached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached @Shared CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("callable") InteropLibrary interop,
                         @Cached @Shared InlinedBranchProfile binaryProfile) {
-            return doCached(frame, callable, inputStringOrBytes, fromIndex, inliningTarget, callable, cast, bufferAcquireLib, bufferLib, interop, binaryProfile);
+            return doCached(frame, callable, inputStringOrBytes, fromIndex, inliningTarget, indirectCallData, callable, cast, bufferAcquireLib, bufferLib, interop, binaryProfile);
         }
 
         private BufferToTruffleStringNode getBufferToTruffleStringNode() {

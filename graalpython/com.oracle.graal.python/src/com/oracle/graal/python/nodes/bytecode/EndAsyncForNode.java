@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -70,30 +69,21 @@ public abstract class EndAsyncForNode extends PNodeWithContext {
     }
 
     @Specialization
-    public void doPException(PException exception, boolean rootNodeVisible,
+    @SuppressWarnings("unused")
+    void doNone(PNone none, boolean rootNodeVisible) {
+    }
+
+    @Specialization
+    void doPException(PException exception, boolean rootNodeVisible,
                     @Bind("this") Node inliningTarget,
-                    @Cached @Cached.Shared("IsStopAsyncIteration") IsBuiltinObjectProfile isStopAsyncIteration) {
+                    @Cached IsBuiltinObjectProfile isStopAsyncIteration) {
         if (!isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration)) {
             throw exception.getExceptionForReraise(rootNodeVisible);
         }
     }
 
-    @Specialization(replaces = "doPException")
-    public void doGeneric(Object exception, boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
-                    @Cached @Cached.Shared("IsStopAsyncIteration") IsBuiltinObjectProfile isStopAsyncIteration) {
-        if (exception == PNone.NONE) {
-            return;
-        }
-        if (!isStopAsyncIteration.profileObject(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration)) {
-            if (exception instanceof PException) {
-                throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
-            } else if (exception instanceof AbstractTruffleException) {
-                throw (AbstractTruffleException) exception;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("Exception not on stack");
-            }
-
-        }
+    @Specialization(guards = "!isPException(exception)")
+    void doInteropException(AbstractTruffleException exception, @SuppressWarnings("unused") boolean rootNodeVisible) {
+        throw exception;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FinishArgNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrappedPointerToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
@@ -53,12 +52,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.ToPythonWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -68,9 +67,8 @@ enum ArgBehavior {
     PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, PythonToNativeNewRefNodeGen::create, NativeToPythonStealingNodeGen::create, null),
     PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, null, null, null),
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
-    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::new, null, null, null),
+    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
-    ReplacedPointer("POINTER", "J", "jlong", "long", ToNativeReplacedNodeGen::create, null, null),
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNode::new, null),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
@@ -122,6 +120,7 @@ public enum ArgDescriptor {
     PyObjectWrapper(ArgBehavior.PyObjectWrapper, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
     PyTypeObject(ArgBehavior.PyObject, "PyTypeObject*"),
+    PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),
     PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true),
     PyListObject(ArgBehavior.PyObject, "PyListObject*"),
     PyTupleObject(ArgBehavior.PyObject, "PyTupleObject*"),
@@ -231,7 +230,7 @@ public enum ArgDescriptor {
     PySliceObject(ArgBehavior.PyObject, "PySliceObject*"),
     PY_SSIZE_T_PTR(ArgBehavior.Pointer, "Py_ssize_t*"),
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
-    PyThreadState(ArgBehavior.ReplacedPointer, "PyThreadState*"),
+    PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
     PyTryBlock("PyTryBlock*"),
@@ -431,6 +430,14 @@ public enum ArgDescriptor {
 
     public boolean isPyObject() {
         return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed;
+    }
+
+    public boolean isValidReturnType() {
+        /*
+         * We don't want to allow "bare" PyObject and force ourselves to decide between
+         * PyObjectTransfer and PyObjectBorrow
+         */
+        return behavior != ArgBehavior.PyObject || transfer;
     }
 
     public boolean isCharPtr() {

@@ -43,29 +43,34 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
  * correct shape of the corresponding native type {@code struct _object}.
  */
 @ExportLibrary(InteropLibrary.class)
-public final class PythonObjectNativeWrapper extends PythonNativeWrapper {
+public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeWrapper {
 
     public PythonObjectNativeWrapper(PythonAbstractObject object) {
         super(object);
     }
 
-    public static PythonNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
+    public static PythonAbstractObjectNativeWrapper wrap(PythonAbstractObject obj, Node inliningTarget, InlinedConditionProfile noWrapperProfile) {
         // important: native wrappers are cached
-        PythonNativeWrapper nativeWrapper = obj.getNativeWrapper();
-        if (noWrapperProfile.profile(nativeWrapper == null)) {
+        PythonAbstractObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (noWrapperProfile.profile(inliningTarget, nativeWrapper == null)) {
             nativeWrapper = new PythonObjectNativeWrapper(obj);
             obj.setNativeWrapper(nativeWrapper);
         }
@@ -79,26 +84,32 @@ public final class PythonObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isNull() {
+    boolean isNull() {
         return getDelegate() == PNone.NO_VALUE;
     }
 
     @ExportMessage
-    protected boolean isPointer() {
+    boolean isPointer() {
         return getDelegate() == PNone.NO_VALUE || isNative();
     }
 
     @ExportMessage
-    protected long asPointer() {
+    long asPointer() {
         return getDelegate() == PNone.NO_VALUE ? 0L : getNativePointer();
     }
 
     @ExportMessage
-    protected void toNative() {
-        if (getDelegate() != PNone.NO_VALUE) {
-            if (!isNative()) {
-                CApiTransitions.firstToNative(this);
-            }
+    void toNative(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
+        if (getDelegate() != PNone.NO_VALUE && !isNative()) {
+            /*
+             * If the wrapped object is a special singleton (e.g. None, True, False, ...) then it
+             * should be immortal.
+             */
+            boolean immortal = CApiGuards.isSpecialSingleton(getDelegate());
+            assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getSingletonNativeWrapper(po) == this);
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }
 }

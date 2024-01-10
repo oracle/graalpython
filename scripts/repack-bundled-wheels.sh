@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,7 @@ patch_wheel() {
     unzip ../tmp.whl
     rm ../tmp.whl
     patch -p1 < "../$patch"
-    echo 'Marker file for GraalPy' > "$name/.graalpy_bundled"
+    touch "$(echo $name-*.dist-info)/GRAALPY_MARKER"
     rm "../$wheel"
     zip -r "../$wheel" .
     rm -rf "$tmpdir"

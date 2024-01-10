@@ -1,0 +1,3 @@
+[[rules]]
+# transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
+version = '== 4.33.3'

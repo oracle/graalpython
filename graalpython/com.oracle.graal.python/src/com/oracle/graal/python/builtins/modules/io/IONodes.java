@@ -62,7 +62,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -80,7 +81,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -345,7 +345,7 @@ public class IONodes {
         }
     }
 
-    public abstract static class CreateIOModeNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class CreateIOModeNode extends ArgumentCastNode {
 
         protected final boolean warnUniversal;
 
@@ -376,21 +376,22 @@ public class IONodes {
                         @Cached InlinedBranchProfile errProfile1,
                         @Cached InlinedBranchProfile errProfile2,
                         @Cached InlinedBranchProfile errProfile3,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString mode;
             try {
                 mode = toString.execute(inliningTarget, modeObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             IOMode m = new IOMode(mode, createCodePointIteratorNode, nextNode);
             if (m.hasNil) {
                 errProfile1.enter(inliningTarget);
-                throw raise(ValueError, EMBEDDED_NULL_CHARACTER);
+                throw raiseNode.get(inliningTarget).raise(ValueError, EMBEDDED_NULL_CHARACTER);
             }
             if (m.isInvalid) {
                 errProfile2.enter(inliningTarget);
-                throw raise(ValueError, INVALID_MODE_S, mode);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_MODE_S, mode);
             }
             if (warnUniversal && m.universal) {
                 errProfile3.enter(inliningTarget);
@@ -407,7 +408,7 @@ public class IONodes {
     }
 
     @ImportStatic(PGuards.class)
-    public abstract static class CastOpenNameNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class CastOpenNameNode extends ArgumentCastNode {
 
         public static final int MAX = Integer.MAX_VALUE;
 
@@ -425,17 +426,16 @@ public class IONodes {
         }
 
         @Specialization(guards = "!isInteger(nameobj)")
-        @SuppressWarnings("truffle-static-method") // raise
-        Object generic(VirtualFrame frame, Object nameobj,
+        static Object generic(VirtualFrame frame, Object nameobj,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
-                        @Cached InlinedConditionProfile errorProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (indexCheckNode.execute(inliningTarget, nameobj)) {
                 int fd = asSizeNode.executeExact(frame, inliningTarget, nameobj);
-                if (errorProfile.profile(inliningTarget, fd < 0)) {
-                    err(fd);
+                if (fd < 0) {
+                    err(fd, raiseNode.get(inliningTarget));
                 }
                 return fd;
             } else {
@@ -444,13 +444,15 @@ public class IONodes {
         }
 
         @Specialization(guards = "fd < 0")
-        int err(int fd) {
-            throw raise(ValueError, OPENER_RETURNED_D, fd);
+        static int err(int fd,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, OPENER_RETURNED_D, fd);
         }
 
         @Specialization(guards = "fd < 0")
-        int err(long fd) {
-            throw raise(ValueError, OPENER_RETURNED_D, fd);
+        static int err(long fd,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, OPENER_RETURNED_D, fd);
         }
 
         @ClinicConverterFactory
@@ -502,8 +504,10 @@ public class IONodes {
         }
     }
 
-    public abstract static class ToTruffleStringNode extends PNodeWithRaise {
-        public abstract TruffleString execute(Object str);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ToTruffleStringNode extends Node {
+        public abstract TruffleString execute(Node inliningTarget, Object str);
 
         public static boolean isString(Object s) {
             return s instanceof TruffleString;
@@ -515,13 +519,13 @@ public class IONodes {
         }
 
         @Specialization(guards = "!isString(s)")
-        TruffleString str(Object s,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode str) {
+        static TruffleString str(Node inliningTarget, Object s,
+                        @Cached CastToTruffleStringNode str,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return str.execute(inliningTarget, s);
             } catch (CannotCastException e) {
-                throw raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
+                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
             }
         }
     }

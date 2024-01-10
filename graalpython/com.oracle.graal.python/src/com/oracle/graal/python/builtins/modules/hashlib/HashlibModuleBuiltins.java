@@ -49,7 +49,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -152,11 +152,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        LinkedHashMap<String, Object> algos = new LinkedHashMap<>();
+        EconomicMapStorage algos = EconomicMapStorage.create(DIGEST_ALGORITHMS.length);
         for (var digest : DIGEST_ALGORITHMS) {
-            algos.put(digest, PNone.NONE);
+            algos.putUncachedWithJavaEq(digest, PNone.NONE);
         }
-        addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(EconomicMapStorage.create(algos)));
+        addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(algos));
 
         EconomicMapStorage storage = EconomicMapStorage.create();
         addBuiltinConstant(CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
@@ -201,18 +201,19 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(a)", "isString(b)"})
-        Object cmpStrings(Object a, Object b,
+        static Object cmpStrings(Object a, Object b,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CopyToByteArrayNode getByteArrayNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached CastToTruffleStringNode castA,
-                        @Cached CastToTruffleStringNode castB) {
+                        @Cached CastToTruffleStringNode castB,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString tsA = castA.execute(inliningTarget, a);
             TruffleString tsB = castB.execute(inliningTarget, b);
             CodeRange crA = getCodeRangeNode.execute(tsA, TS_ENCODING);
             CodeRange crB = getCodeRangeNode.execute(tsB, TS_ENCODING);
             if (!(crA.isSubsetOf(CodeRange.ASCII) && crB.isSubsetOf(CodeRange.ASCII))) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
             }
             byte[] bytesA = getByteArrayNode.execute(tsA, TS_ENCODING);
             byte[] bytesB = getByteArrayNode.execute(castB.execute(inliningTarget, b), TS_ENCODING);
@@ -220,30 +221,33 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(a) || !isString(b)"})
-        boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
+        static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (acquireLib.hasBuffer(a) && acquireLib.hasBuffer(b)) {
-                Object bufferA = acquireLib.acquireReadonly(a, frame, this);
+                Object bufferA = acquireLib.acquireReadonly(a, frame, indirectCallData);
                 try {
-                    Object bufferB = acquireLib.acquireReadonly(b, frame, this);
+                    Object bufferB = acquireLib.acquireReadonly(b, frame, indirectCallData);
                     try {
                         byte[] bytesA = accessLib.getInternalOrCopiedByteArray(bufferA);
                         byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
                         return cmp(bytesA, bytesB);
                     } finally {
-                        accessLib.release(bufferB);
+                        accessLib.release(bufferB, frame, indirectCallData);
                     }
                 } finally {
-                    accessLib.release(bufferA);
+                    accessLib.release(bufferA, frame, indirectCallData);
                 }
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
             }
         }
 
         @TruffleBoundary
-        boolean cmp(byte[] a, byte[] b) {
+        static boolean cmp(byte[] a, byte[] b) {
             return MessageDigest.isEqual(a, b);
         }
     }
@@ -252,12 +256,14 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HmacDigestNode extends PythonQuaternaryBuiltinNode {
         @Specialization
-        Object hmacDigest(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digest,
+        static Object hmacDigest(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digest,
+                        @Bind("this") Node inliningTarget,
                         @Cached HmacNewNode newNode,
-                        @Cached DigestObjectBuiltins.DigestNode digestNode) {
+                        @Cached DigestObjectBuiltins.DigestNode digestNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (msg instanceof PNone) {
                 // hmac_digest is a bit more strict
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, msg);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, msg);
             }
             Object hmacObject = newNode.execute(frame, self, key, msg, digest);
             return digestNode.execute(frame, hmacObject);
@@ -271,13 +277,13 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object hmacNewError(PythonModule self, Object key, Object msg, PNone digest) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "hmac_new", "digestmod", 3);
+        static Object hmacNewError(PythonModule self, Object key, Object msg, PNone digest,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "hmac_new", "digestmod", 3);
         }
 
         @Specialization(guards = "!isString(digestmod)")
-        @SuppressWarnings("truffle-static-method")
-        Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
+        static Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
@@ -286,32 +292,33 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // cast guaranteed in our initialize
             EconomicMapStorage constructors = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib, factory);
+                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib, factory, raiseNode);
             } else {
-                throw raise(PythonBuiltinClassType.UnsupportedDigestmodError);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnsupportedDigestmodError);
             }
         }
 
         @Specialization(guards = "isString(digestmodObj)")
-        @SuppressWarnings("truffle-static-method")
-        Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
+        static Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
             if (!acquireLib.hasBuffer(keyObj)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, keyObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, keyObj);
             } else {
                 key = acquireLib.acquireReadonly(keyObj);
             }
@@ -322,7 +329,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 } else if (acquireLib.hasBuffer(msgObj)) {
                     msg = acquireLib.acquireReadonly(msgObj);
                 } else {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, msgObj);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, msgObj);
                 }
                 try {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
@@ -330,7 +337,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), bufferLib.getBufferLength(key), msgBytes, msgLen);
                     return factory.createDigestObject(PythonBuiltinClassType.HashlibHmac, castJStr.execute(concatStr.execute(HMAC_PREFIX, digestmod, TS_ENCODING, true)), mac);
                 } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-                    throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 } finally {
                     if (msg != null) {
                         bufferLib.release(msg);
@@ -359,10 +366,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     @GenerateInline
     abstract static class CreateDigestNode extends Node {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer, PythonBuiltinBaseNode indirectCallNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer);
 
         @Specialization
-        static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value, PythonBuiltinBaseNode indirectCallNode,
+        static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
@@ -371,7 +379,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             if (value instanceof PNone) {
                 buffer = null;
             } else if (acquireLib.hasBuffer(value)) {
-                buffer = acquireLib.acquireReadonly(value, frame, indirectCallNode);
+                buffer = acquireLib.acquireReadonly(value, frame, indirectCallData);
             } else {
                 throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, value);
             }
@@ -387,7 +395,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 return factory.createDigestObject(type, pythonName, digest);
             } finally {
                 if (buffer != null) {
-                    bufferLib.release(buffer, frame, indirectCallNode);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
         }
@@ -413,14 +421,14 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
+        static Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
             String pythonDigestName = getPythonName(castStr.execute(name));
             String javaDigestName = getJavaName(pythonDigestName);
             PythonBuiltinClassType digestType = getTypeFor(javaDigestName);
-            return createNode.execute(frame, inliningTarget, digestType, pythonDigestName, javaDigestName, buffer, this);
+            return createNode.execute(frame, inliningTarget, digestType, pythonDigestName, javaDigestName, buffer);
         }
 
         private static PythonBuiltinClassType getTypeFor(String digestName) {
@@ -448,7 +456,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetFipsNode extends PythonBuiltinNode {
         @Specialization
-        int getFips() {
+        static int getFips() {
             return 0;
         }
     }
@@ -458,8 +466,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
+        static Object hash(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
         }
     }
 
@@ -468,8 +477,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HashXofNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASHXOF");
+        static Object hash(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASHXOF");
         }
     }
 
@@ -478,8 +488,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HmacNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HMAC");
+        static Object hash(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HMAC");
         }
     }
 }

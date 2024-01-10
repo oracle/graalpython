@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -115,20 +117,21 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, Object spec, boolean debug, int mode,
+        static Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, Object spec, boolean debug, int mode,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 HPyMode hmode = debug ? HPyMode.MODE_DEBUG : HPyMode.MODE_UNIVERSAL;
                 // 'mode' just overwrites 'debug'
                 if (mode > 0) {
                     hmode = HPyMode.fromValue(mode);
                 }
-                return GraalHPyContext.loadHPyModule(this, context, name, path, spec, hmode);
+                return GraalHPyContext.loadHPyModule(inliningTarget, context, name, path, spec, hmode);
             } catch (ApiInitException ie) {
                 throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (ImportException ie) {
@@ -154,22 +157,24 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString extName, Object pkg, TruffleString file, Object loader, Object spec, Object env,
+        static Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString extName, Object pkg, TruffleString file, Object loader, Object spec, Object env,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object module;
 
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 HPyMode hmode = getHPyModeFromEnviron(name, env);
-                module = GraalHPyContext.loadHPyModule(this, context, name, file, spec, hmode);
+                module = GraalHPyContext.loadHPyModule(inliningTarget, context, name, file, spec, hmode);
             } catch (CannotCastException e) {
                 // thrown by getHPyModeFromEnviron if value is not a string
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
             } catch (ApiInitException ie) {
                 throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (ImportException ie) {

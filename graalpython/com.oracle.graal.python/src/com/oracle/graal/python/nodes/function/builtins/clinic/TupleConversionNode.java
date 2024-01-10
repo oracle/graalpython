@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
+public abstract class TupleConversionNode extends ArgumentCastNode {
     @Specialization
     static Object[] doNone(@SuppressWarnings("unused") PNone none) {
         return PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -70,8 +70,9 @@ public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
     }
 
     @Fallback
-    Object doOthers(Object value) {
-        throw raise(PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "tuple", value);
+    static Object doOthers(Object value,
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "a tuple", value);
     }
 
     @ClinicConverterFactory

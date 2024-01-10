@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -73,10 +74,10 @@ public final class PythonCextPyThreadBuiltins {
     abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public long allocate() {
+        long allocate() {
             CApiContext context = getCApiContext();
             long id = context.lockId.incrementAndGet() ^ LOCK_MASK;
-            PLock lock = factory().createLock(PythonBuiltinClassType.PLock);
+            PLock lock = PythonObjectFactory.getUncached().createLock(PythonBuiltinClassType.PLock);
             context.locks.put(id, lock);
             return id;
         }

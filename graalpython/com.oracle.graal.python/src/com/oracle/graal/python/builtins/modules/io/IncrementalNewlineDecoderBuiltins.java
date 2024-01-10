@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -291,21 +292,21 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasDecoder()")
-        @SuppressWarnings("truffle-static-method")
-        Object withDecoder(VirtualFrame frame, PNLDecoder self,
+        static Object withDecoder(VirtualFrame frame, PNLDecoder self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
-                throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             flag <<= 1;
@@ -321,15 +322,15 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!self.hasDecoder()")
-        @SuppressWarnings("truffle-static-method")
-        Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+        static Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
-                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
@@ -337,17 +338,17 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasDecoder()")
-        @SuppressWarnings("truffle-static-method")
-        Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+        static Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
@@ -357,8 +358,9 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object err(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object state) {
-            throw raise(TypeError, STATE_ARGUMENT_MUST_BE_A_TUPLE);
+        static Object err(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object state,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, STATE_ARGUMENT_MUST_BE_A_TUPLE);
         }
     }
 

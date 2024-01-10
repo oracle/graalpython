@@ -79,6 +79,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -120,6 +121,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -171,6 +174,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 if (lib.fitsInLong(receiver)) {
                     return lib.asLong(receiver) != 0;
                 }
+                if (lib.fitsInBigInteger(receiver)) {
+                    return !isBigIntegerZero(lib.asBigInteger(receiver));
+                }
                 if (lib.fitsInDouble(receiver)) {
                     return lib.asDouble(receiver) != 0.0;
                 }
@@ -189,6 +195,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
+        }
+
+        @TruffleBoundary
+        static boolean isBigIntegerZero(BigInteger number) {
+            return number.compareTo(BigInteger.ZERO) == 0;
         }
     }
 
@@ -217,9 +228,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public long len(Object self,
+        static long len(Object self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 if (lib.hasArrayElements(self)) {
@@ -234,7 +247,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
         }
     }
 
@@ -291,7 +304,32 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInBigInteger(left)"})
+        Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil,
+                        @Cached.Exclusive @Cached PythonObjectFactory factory) {
+            assert !lib.isBoolean(left);
+            BigInteger leftBigInteger;
+            PInt leftInt;
+            gil.release(true);
+            try {
+                leftBigInteger = lib.asBigInteger(left);
+                leftInt = factory.createInt(leftBigInteger);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            if (!reverse) {
+                return op.executeObject(frame, leftInt, right);
+            } else {
+                return op.executeObject(frame, right, leftInt);
+            }
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInBigInteger(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached GilNode gil) {
@@ -313,7 +351,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInBigInteger(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -568,6 +606,26 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             return comparisonNode.executeObject(frame, leftLong, right);
         }
 
+        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInBigInteger(left)"})
+        Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil,
+                        @Cached PythonObjectFactory factory) {
+            BigInteger leftBigInteger;
+            PInt leftInt;
+            gil.release(true);
+            try {
+                leftBigInteger = lib.asBigInteger(left);
+                leftInt = factory.createInt(leftBigInteger);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            return comparisonNode.executeObject(frame, leftInt, right);
+        }
+
         @Specialization(guards = {"lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -589,6 +647,24 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         Object doComparison(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
             return comparisonNode.executeObject(frame, PNone.NONE, right);
+        }
+
+        @Specialization(guards = "lib.isString(left)")
+        Object doComparisonString(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            TruffleString leftString;
+            gil.release(true);
+            try {
+                leftString = switchEncodingNode.execute(lib.asTruffleString(left), TS_ENCODING);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("object does not unpack to string for comparison as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            return comparisonNode.executeObject(frame, leftString, right);
         }
 
         @SuppressWarnings("unused")
@@ -664,14 +740,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object contains(VirtualFrame frame, Object self, Object arg,
+        static Object contains(VirtualFrame frame, Object self, Object arg,
                         // accesses both self and iterator
                         @CachedLibrary(limit = "3") InteropLibrary library,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached StringBuiltins.ContainsNode containsNode,
-                        @Cached PForeignToPTypeNode convertNode) {
+                        @Cached PForeignToPTypeNode convertNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (library.isString(self)) {
                     TruffleString selfStr = switchEncodingNode.execute(library.asTruffleString(self), TS_ENCODING);
@@ -709,7 +786,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     return false;
                 }
-                throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -792,19 +869,19 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.a
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 Object res = lib.instantiate(callee, arguments);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             } finally {
                 gil.acquire();
             }
@@ -812,8 +889,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object doGeneric(Object callee, Object arguments, Object keywords) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+        static Object doGeneric(Object callee, Object arguments, Object keywords,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
     }
 
@@ -831,16 +909,18 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil) {
-            PythonLanguage language = getLanguage();
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext context = PythonContext.get(inliningTarget);
             try {
-                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
+                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 gil.release(true);
                 try {
                     if (lib.isExecutable(callee)) {
@@ -850,17 +930,18 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     gil.acquire();
-                    IndirectCallContext.exit(frame, language, getContext(), state);
+                    IndirectCallContext.exit(frame, language, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object doGeneric(Object callee, Object arguments, Object keywords) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+        static Object doGeneric(Object callee, Object arguments, Object keywords,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
 
         @NeverDefault
@@ -883,13 +964,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetattrNode extends PythonBinaryBuiltinNode {
-        @Child private PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
 
         @Specialization
-        protected Object doIt(Object object, Object memberObj,
+        static Object doIt(Object object, Object memberObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read,
                         @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PForeignToPTypeNode toPythonNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 String member = castToString.execute(memberObj);
@@ -897,12 +980,12 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     return toPythonNode.executeConvert(read.readMember(object, member));
                 }
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
             } finally {
                 gil.acquire();
             }
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
     }
 
@@ -911,17 +994,19 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key, Object value,
+        static PNone doIt(Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 lib.writeMember(object, castToString.execute(key), value);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
                 gil.acquire();
             }
@@ -945,17 +1030,19 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, Object key,
+        static PNone doIt(Object object, Object key,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 lib.removeMember(object, castToString.execute(key));
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
                 gil.acquire();
             }
@@ -1004,10 +1091,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        protected static long doIt(Object object,
+        protected static Object doIt(Object object,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PythonObjectFactory factory) {
             gil.release(true);
             try {
                 if (lib.isBoolean(object)) {
@@ -1032,6 +1120,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
+                    }
+                }
+                if (lib.fitsInBigInteger(object)) {
+                    try {
+                        var big = lib.asBigInteger(object);
+                        return factory.createInt(big);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("foreign value claims to be a big integer but isn't");
                     }
                 }
                 throw raiseNode.raiseIntegerInterpretationError(object);
@@ -1197,13 +1294,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class BasesNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        Object getBases(Object self,
+        static Object getBases(Object self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary lib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (lib.isMetaObject(self)) {
                 return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             } else {
-                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
             }
         }
     }
@@ -1213,9 +1312,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        Object check(Object self, Object instance,
+        static Object check(Object self, Object instance,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (lib.isMetaObject(self)) {
                 gil.release(true);
                 try {
@@ -1226,7 +1327,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___INSTANCECHECK__);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___INSTANCECHECK__);
             }
         }
     }

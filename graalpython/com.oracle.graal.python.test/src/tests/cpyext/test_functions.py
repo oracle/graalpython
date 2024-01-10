@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
 import array
 import sys
 import _io
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, IS_MANAGED_LAUNCHER
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -303,17 +303,20 @@ class TestPyObject(CPyExtTestCase):
         argspec="OO",
         resultspec="i",
     )
-    __PyObject_AsFileDescriptor_FD0 = open(1, buffering=0, mode="wb")
-    __PyObject_AsFileDescriptor_FD1 = open("%s/As_FileDescriptor_Testfile" % __dir__, buffering=0, mode="wb")
-    test_PyObject_AsFileDescriptor = CPyExtFunction(
-        lambda arg: arg if isinstance(arg, int) else arg.fileno(),
-        lambda: (
-            1,
-            TestPyObject.__PyObject_AsFileDescriptor_FD0,
-            TestPyObject.__PyObject_AsFileDescriptor_FD1,
-        ),
-        resultspec="i",
-    )
+
+    if not IS_MANAGED_LAUNCHER:
+        __PyObject_AsFileDescriptor_FD0 = open(1, buffering=0, mode="wb")
+        __PyObject_AsFileDescriptor_FD1 = open("%s/As_FileDescriptor_Testfile" % __dir__, buffering=0, mode="wb")
+        test_PyObject_AsFileDescriptor = CPyExtFunction(
+            lambda arg: arg if isinstance(arg, int) else arg.fileno(),
+            lambda: (
+                1,
+                TestPyObject.__PyObject_AsFileDescriptor_FD0,
+                TestPyObject.__PyObject_AsFileDescriptor_FD1,
+            ),
+            resultspec="i",
+        )
+
     test_PyObject_Print = CPyExtFunction(
         lambda args: 0,
         lambda: ([], 1, "a"),

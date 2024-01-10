@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -258,13 +260,13 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static PFileIO createFileIO(VirtualFrame frame, Object file, IONodes.IOMode mode, boolean closefd, Object opener,
+    private static PFileIO createFileIO(VirtualFrame frame, Node inliningTarget, Object file, IONodes.IOMode mode, boolean closefd, Object opener,
                     PythonObjectFactory factory,
                     FileIOBuiltins.FileIOInit initFileIO) {
         /* Create the Raw file stream */
         mode.text = mode.universal = false; // FileIO doesn't recognize those.
         PFileIO fileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
-        initFileIO.execute(frame, fileIO, file, mode, closefd, opener);
+        initFileIO.execute(frame, inliningTarget, fileIO, file, mode, closefd, opener);
         return fileIO;
     }
 
@@ -281,9 +283,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFileIO openCode(VirtualFrame frame, TruffleString path,
+                        @Bind("this") Node inliningTarget,
                         @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Cached PythonObjectFactory factory) {
-            return createFileIO(frame, path, IOMode.RB, true, PNone.NONE, factory, initFileIO);
+            return createFileIO(frame, inliningTarget, path, IOMode.RB, true, PNone.NONE, factory, initFileIO);
         }
     }
 
@@ -302,18 +305,22 @@ public final class IOModuleBuiltins extends PythonBuiltins {
             return IOModuleBuiltinsClinicProviders.IOOpenNodeClinicProviderGen.INSTANCE;
         }
 
+        // NOTE: specializations in this class must have at least protected visibility, otherwise
+        // the DSL processor does not see them in BuiltinFunctions.OpenNode and silently does not
+        // generate the node factory, leading to "NameError: name 'open' is not defined" at runtime
+
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
-        @SuppressWarnings("truffle-static-method")
-        protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+        protected static Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
-                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory, initFileIO);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, factory, initFileIO);
             Object result = fileIO;
             try {
                 /* buffering */
@@ -321,7 +328,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 int buffering = bufferingValue;
                 if (buffering < 0) {
                     // copied from PFileIOBuiltins.IsAttyNode
-                    isatty = posixLib.isatty(getPosixSupport(), fileIO.getFD());
+                    isatty = posixLib.isatty(PosixSupport.get(inliningTarget), fileIO.getFD());
                     /*-
                         // CPython way is slow in our case.
                         Object res = libFileIO.lookupAndCallRegularMethod(fileIO, frame, ISATTY);
@@ -341,12 +348,12 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                     buffering = fileIO.getBlksize();
                 }
                 if (buffering < 0) {
-                    throw raise(ValueError, INVALID_BUFFERING_SIZE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_BUFFERING_SIZE);
                 }
 
                 /* if not buffering, returns the raw file object */
                 if (buffering == 0) {
-                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener);
+                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode.get(inliningTarget));
                 }
 
                 /* wraps into a buffered file */
@@ -371,56 +378,56 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 0"})
-        @SuppressWarnings("truffle-static-method")
-        protected PFileIO openBinaryNoBuf(VirtualFrame frame, Object file, IONodes.IOMode mode, @SuppressWarnings("unused") int bufferingValue,
+        protected static PFileIO openBinaryNoBuf(VirtualFrame frame, Object file, IONodes.IOMode mode, @SuppressWarnings("unused") int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared @Cached PythonObjectFactory factory) {
-            return createFileIO(frame, file, mode, closefd, opener, factory, initFileIO);
+            return createFileIO(frame, inliningTarget, file, mode, closefd, opener, factory, initFileIO);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
-        @SuppressWarnings("truffle-static-method")
-        protected Object openBinaryB1(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
+        protected static Object openBinaryB1(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, factory);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, factory, raiseNode);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
-        @SuppressWarnings("truffle-static-method")
-        protected Object openBinary(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
+        protected static Object openBinary(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
-                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory, initFileIO);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, factory, initFileIO);
             try {
                 /* buffering */
                 boolean isatty = false;
                 int buffering = bufferingValue;
                 if (buffering < 0) {
                     // copied from PFileIOBuiltins.IsAttyNode
-                    isatty = posixLib.isatty(getPosixSupport(), fileIO.getFD());
+                    isatty = posixLib.isatty(PosixSupport.get(inliningTarget), fileIO.getFD());
                     /*-
                         // CPython way is slow in our case.
                         Object res = libFileIO.lookupAndCallRegularMethod(fileIO, frame, ISATTY);
@@ -436,7 +443,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                     buffering = fileIO.getBlksize();
                 }
                 if (buffering < 0) {
-                    throw raise(ValueError, INVALID_BUFFERING_SIZE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_BUFFERING_SIZE);
                 }
 
                 /* if not buffering, returns the raw file object */
@@ -456,31 +463,36 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isUnknown(mode)")
-        protected Object unknownMode(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
-            throw raise(ValueError, UNKNOWN_MODE_S, mode.mode);
+        protected static Object unknownMode(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, UNKNOWN_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isTB(mode)")
-        protected Object invalidTB(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
-            throw raise(ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
+        protected static Object invalidTB(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isValidUniveral(mode)")
-        protected Object invalidUniversal(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
-            throw raise(ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
+        protected static Object invalidUniversal(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isXRWA(mode)")
-        protected Object invalidxrwa(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
-            throw raise(ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
+        protected static Object invalidxrwa(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isBinary(mode)", "isAnyNotNone(encoding, errors, newline)"})
-        protected Object invalidBinary(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+        protected static Object invalidBinary(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared @Cached PRaiseNode raiseNode) {
             String s;
             if (encoding != PNone.NONE) {
                 s = "encoding";
@@ -489,13 +501,14 @@ public final class IOModuleBuiltins extends PythonBuiltins {
             } else {
                 s = "newline";
             }
-            throw raise(ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
+            throw raiseNode.raise(ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isBinary(mode)", "bufferingValue == 0"})
-        protected Object invalidunbuf(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
-            throw raise(ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
+        protected static Object invalidunbuf(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
         }
 
         public static boolean isAnyNotNone(Object encoding, Object errors, Object newline) {

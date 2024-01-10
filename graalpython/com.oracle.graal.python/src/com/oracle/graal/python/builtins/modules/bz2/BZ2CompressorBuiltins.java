@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -80,7 +81,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = BZ2Compressor)
 public final class BZ2CompressorBuiltins extends PythonBuiltins {
@@ -104,15 +104,15 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
-                        @Cached InlinedConditionProfile errProfile,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
                 Object bzst = bz2Support.createStream(createStream);
                 int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
-                if (errProfile.profile(inliningTarget, err != BZ_OK)) {
-                    errorHandling(err, getRaiseNode());
+                if (err != BZ_OK) {
+                    errorHandling(err, raiseNode.get(inliningTarget));
                 }
                 self.init(bzst, bz2Support);
                 return PNone.NONE;
@@ -123,8 +123,9 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object err(Object self, Object compresslevel) {
-            throw raise(ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
+        static Object err(Object self, Object compresslevel,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
         }
     }
 
@@ -155,8 +156,9 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(BZ2Object.BZ2Compressor self, Object data) {
-            throw raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
+        static PNone error(BZ2Object.BZ2Compressor self, Object data,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
     }
 
@@ -174,8 +176,9 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
-        PNone error(BZ2Object.BZ2Compressor self) {
-            throw raise(ValueError, REPEATED_CALL_TO_FLUSH);
+        static PNone error(BZ2Object.BZ2Compressor self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 }

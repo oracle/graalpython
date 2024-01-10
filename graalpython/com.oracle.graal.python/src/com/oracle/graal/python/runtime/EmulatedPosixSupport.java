@@ -64,6 +64,9 @@ import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
 import static com.oracle.graal.python.runtime.PosixConstants.EAI_SERVICE;
 import static com.oracle.graal.python.runtime.PosixConstants.EAI_SOCKTYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_RDLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_UNLCK;
+import static com.oracle.graal.python.runtime.PosixConstants.F_WRLCK;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
@@ -341,12 +344,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
+    private final boolean withoutIOSocket;
     // Lazily parsed content of /etc/services.
     private Map<String, List<Service>> etcServices;
 
     public EmulatedPosixSupport(PythonContext context) {
         super(context);
         setEnv(context.getEnv());
+        withoutIOSocket = !context.getContext().getEnv().isSocketIOAllowed();
     }
 
     @Override
@@ -573,7 +578,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("select was excluded");
         }
         SelectableChannel[] readChannels = getSelectableChannels(readfds);
@@ -803,67 +808,90 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    final void flock(int fd, int operation,
+    void flock(int fd, int operation,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
         Channel channel = getFileChannel(fd);
         if (channel == null) {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
-        // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
-        if (channel instanceof FileChannel) {
-            FileChannel fc = (FileChannel) channel;
-            FileLock lock = getFileLock(fd);
-            try {
-                lock = doLockOperation(operation, fc, lock);
-            } catch (IOException e) {
-                throw posixException(OSErrorEnum.fromException(e, eqNode));
-            }
-            setFileLock(fd, lock);
+        boolean unlock = operation == LOCK_UN.value;
+        boolean shared = (operation & LOCK_SH.value) != 0;
+        boolean exclusive = (operation & LOCK_EX.value) != 0;
+        boolean blocking = (operation & LOCK_NB.value) == 0;
+        if (!unlock && !shared && !exclusive) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EINVAL);
         }
+        doLockOperation(fd, channel, unlock, shared, blocking, 0, 0, Long.MAX_VALUE);
+    }
+
+    @ExportMessage
+    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) throws PosixException {
+        Channel channel = getFileChannel(fd);
+        if (channel == null) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EBADFD);
+        }
+        boolean unlock = lockType == F_UNLCK.getValueIfDefined();
+        boolean shared = lockType == F_RDLCK.getValueIfDefined();
+        boolean exclusive = lockType == F_WRLCK.getValueIfDefined();
+        if (!unlock && !shared && !exclusive) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        doLockOperation(fd, channel, unlock, shared, blocking, whence, start, length);
     }
 
     @TruffleBoundary
-    private static FileLock doLockOperation(int operation, FileChannel fc, FileLock oldLock) throws IOException {
-        FileLock lock = oldLock;
-        if (lock == null) {
-            if ((operation & LOCK_SH.value) != 0) {
-                if ((operation & LOCK_NB.value) != 0) {
-                    lock = fc.tryLock(0, Long.MAX_VALUE, true);
-                } else {
-                    lock = fc.lock(0, Long.MAX_VALUE, true);
+    private void doLockOperation(int fd, Channel channel, boolean unlock, boolean shared, boolean blocking, int whence, long start, long length) throws PosixException {
+        // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
+        if (channel instanceof FileChannel fc) {
+            FileLock lock = getFileLock(fd);
+            try {
+                long position = start;
+                if (whence == SEEK_CUR.value) {
+                    position += fc.position();
+                } else if (whence == SEEK_END.value) {
+                    position += fc.size();
                 }
-            } else if ((operation & LOCK_EX.value) != 0) {
-                if ((operation & LOCK_NB.value) != 0) {
-                    lock = fc.tryLock();
+                if (lock == null) {
+                    if (unlock) {
+                        // not locked, that's ok
+                    } else {
+                        if (!blocking) {
+                            lock = fc.tryLock(position, length, shared);
+                        } else {
+                            lock = fc.lock(position, length, shared);
+                        }
+                    }
                 } else {
-                    lock = fc.lock();
-                }
-            } else {
-                // not locked, that's ok
-            }
-        } else {
-            if ((operation & LOCK_UN.value) != 0) {
-                lock.release();
-                lock = null;
-            } else if ((operation & LOCK_EX.value) != 0) {
-                if (lock.isShared()) {
-                    if ((operation & LOCK_NB.value) != 0) {
-                        FileLock newLock = fc.tryLock();
-                        if (newLock != null) {
-                            lock = newLock;
+                    if (unlock) {
+                        lock.release();
+                        lock = null;
+                    } else if (!shared) {
+                        if (lock.isShared()) {
+                            if (!blocking) {
+                                FileLock newLock = fc.tryLock(position, length, false);
+                                if (newLock != null) {
+                                    lock = newLock;
+                                }
+                            } else {
+                                lock = fc.lock();
+                            }
                         }
                     } else {
-                        lock = fc.lock();
+                        // we already have a suitable lock
                     }
                 }
-            } else {
-                // we already have a suitable lock
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached()));
             }
+            setFileLock(fd, lock);
         }
-        return lock;
     }
 
     @ExportMessage
@@ -903,7 +931,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"static-method", "unused"})
     public void setBlocking(int fd, boolean blocking,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("setBlocking was excluded");
         }
         try {
@@ -1244,7 +1272,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public Object[] uname(
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return new Object[]{getPythonOS().getName(), fromJavaStringNode.execute(getHostName(), TS_ENCODING),
+        return new Object[]{getPythonOS().getName(), fromJavaStringNode.execute(getHostName(withoutIOSocket), TS_ENCODING),
                         fromJavaStringNode.execute(getOsVersion(), TS_ENCODING), T_EMPTY_STRING, PythonUtils.getPythonArch()};
     }
 
@@ -1254,8 +1282,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @TruffleBoundary
-    private static String getHostName() {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+    private static String getHostName(boolean withoutSocket) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutSocket) {
             return "";
         }
         try {
@@ -2021,6 +2049,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public long getegid() {
+        throw new UnsupportedPosixFeatureException("Emulated getegid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public long getppid() {
         throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
     }
@@ -2705,6 +2740,54 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("unused")
+    long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    void semClose(long handle) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    void semUnlink(Object name) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    int semGetValue(long handle) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    void semPost(long handle) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    void semWait(long handle) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    boolean semTryWait(long handle) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    boolean semTimedWait(long handle, long deadlineNs) throws PosixException {
+        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+    }
+
+    @ExportMessage
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
@@ -2766,7 +2849,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public int socket(int domain, int type, int protocol,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("socket was excluded");
         }
         if (domain != AF_INET.value && domain != AF_INET6.value) {
@@ -2791,7 +2874,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public AcceptResult accept(int sockfd) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("accept was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2818,7 +2901,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("bind was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2836,7 +2919,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("connect was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2854,7 +2937,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void listen(int sockfd, int backlog) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("listen was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2868,7 +2951,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public UniversalSockAddr getpeername(int sockfd) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("getpeername was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2905,7 +2988,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("send was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2920,7 +3003,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("sendto was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2939,7 +3022,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("recv was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2954,7 +3037,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("recvfrom was excluded");
         }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
@@ -2981,7 +3064,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("getsockopt was excluded");
         }
         assert optval.length >= optlen;
@@ -3032,7 +3115,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("setsockopt was excluded");
         }
         EmulatedSocket s = getEmulatedSocket(sockfd);
@@ -3193,14 +3276,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object gethostname() throws PosixException {
-        return getHostName();
+        return getHostName(withoutIOSocket);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws GetAddrInfoException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("getnameinfo was excluded");
         }
         InetSocketAddress sa = ((EmulatedUniversalSockAddrImpl) addr).socketAddress;
@@ -3251,7 +3334,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
-        if (PythonOptions.WITHOUT_JAVA_INET) {
+        if (PythonOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("getaddrinfo was excluded");
         }
         if (node == null && service == null) {

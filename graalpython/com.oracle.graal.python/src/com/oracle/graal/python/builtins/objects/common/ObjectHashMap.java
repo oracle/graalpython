@@ -44,9 +44,14 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool.EqNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -60,6 +65,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Generic dictionary/set backing storage implementation.
@@ -347,6 +353,9 @@ public final class ObjectHashMap {
                         @Cached InlinedCountingConditionProfile collisionFoundNoValue,
                         @Cached InlinedCountingConditionProfile collisionFoundEqKey,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            // Must not call generic __eq__ before builtins are initialized
+            // If this assert fires: we'll need something like putUncachedWithJavaEq also for get
+            assert map.size == 0 || SpecialMethodSlot.areBuiltinSlotsInitialized();
             while (true) {
                 try {
                     return doGet(frame, map, key, keyHash, inliningTarget, foundNullKey, foundSameHashKey,
@@ -449,6 +458,14 @@ public final class ObjectHashMap {
 
         abstract void execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value);
 
+        static void putUncachedWithJavaEq(ObjectHashMap map, Object key, long keyHash, Object value) {
+            assert isJavaEqualsAllowed(key) : key;
+            doPutWithRestart(null, null, map, key, keyHash, value,
+                            InlinedBranchProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(),
+                            InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
+                            null);
+        }
+
         // "public" for testing...
         @Specialization
         public static void doPutWithRestart(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value,
@@ -460,6 +477,9 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            // Must not call generic __eq__ before builtins are initialized
+            // If this assert fires: make sure to use putUncachedWithJavaEq during initialization
+            assert map.size == 0 || (SpecialMethodSlot.areBuiltinSlotsInitialized() || eqNode == null);
             while (true) {
                 try {
                     doPut(frame, map, key, keyHash, value, inliningTarget, foundNullKey, foundEqKey,
@@ -728,6 +748,10 @@ public final class ObjectHashMap {
         if (originalKey == key) {
             return true;
         }
+        if (CompilerDirectives.inInterpreter() && eqNode == null) {
+            // this is hack, see putUncachedWithJavaEq
+            return javaEquals(originalKey, key);
+        }
         boolean result = eqNode.compare(frame, inliningTarget, originalKey, key);
         if (getKey(index) != originalKey || indices != originalIndices) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
@@ -744,6 +768,18 @@ public final class ObjectHashMap {
             throw RestartLookupException.INSTANCE;
         }
         return result;
+    }
+
+    private static boolean javaEquals(Object a, Object b) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert isJavaEqualsAllowed(a) : a;
+        assert isJavaEqualsAllowed(b) : b;
+        return a.equals(b);
+    }
+
+    private static boolean isJavaEqualsAllowed(Object o) {
+        return o instanceof PythonManagedClass || o instanceof PythonBuiltinClassType || //
+                        o instanceof PythonNativeClass || o instanceof Number || o instanceof TruffleString;
     }
 
     /**

@@ -42,19 +42,23 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PrimitiveNativeWrapper extends PythonNativeWrapper {
+public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrapper {
 
     public static final byte PRIMITIVE_STATE_BOOL = 1;
     public static final byte PRIMITIVE_STATE_INT = 1 << 2;
@@ -227,9 +231,10 @@ public final class PrimitiveNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
         static long doBoolNotNative(PrimitiveNativeWrapper obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached MaterializeDelegateNode materializeNode) {
             // special case for True and False singletons
-            PInt boxed = (PInt) materializeNode.execute(obj);
+            PInt boxed = (PInt) materializeNode.execute(inliningTarget, obj);
             assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
             return obj.getNativePointer();
         }
@@ -241,14 +246,21 @@ public final class PrimitiveNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isPointer() {
+    boolean isPointer() {
         return isNative();
     }
 
     @ExportMessage
-    protected void toNative() {
+    void toNative(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
-            CApiTransitions.firstToNative(this);
+            // small int values are cached and will be immortal
+            boolean immortal = isIntLike() && CApiGuards.isSmallLong(value);
+            // if this wrapper wraps a small int value, this wrapper is one of the cached primitive
+            // native wrappers
+            assert !immortal || (PythonContext.get(inliningTarget).getCApiContext().getCachedPrimitiveNativeWrapper(value) == this);
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }
 }

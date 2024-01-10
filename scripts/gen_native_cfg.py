@@ -83,6 +83,7 @@ includes = '''
 # include <sys/utsname.h>
 # include <sys/wait.h>
 # include <sysexits.h>
+# include <semaphore.h>
 #else
 # include <winsock2.h>
 # include <ws2tcpip.h>
@@ -146,6 +147,8 @@ constant_defs = '''
   i SOMAXCONN
 
 * i PIPE_BUF
+
+* i SEM_VALUE_MAX
 
 [openFlags]
 * x O_ACCMODE

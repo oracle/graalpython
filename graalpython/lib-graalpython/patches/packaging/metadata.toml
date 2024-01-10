@@ -1,3 +1,5 @@
 [[rules]]
-# msimacek: backport of unmerged https://github.com/pypa/packaging/pull/711
+# Merged upstream
+version = '< 23.2'
+install-priority = 0
 patch = 'packaging.patch'

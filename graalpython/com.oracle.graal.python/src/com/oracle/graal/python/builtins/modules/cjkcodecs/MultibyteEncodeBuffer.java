@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MultibyteEncodeBuffer {
@@ -121,12 +122,12 @@ public class MultibyteEncodeBuffer {
     }
 
     @TruffleBoundary
-    protected void expandOutputBuffer(int esize, PRaiseNode raiseNode) {
+    protected void expandOutputBuffer(int esize, Node raisingNode) {
         if (esize < 0 || esize > remaining()) {
             int orgsize = outputBuffer.capacity();
             int incsize = esize < (orgsize >> 1) ? (orgsize >> 1) | 1 : esize;
             if (orgsize > MAXSIZE - incsize) {
-                throw raiseNode.raise(MemoryError);
+                throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
             }
             ByteBuffer newBuffer = ByteBuffer.allocate(incsize);
             outputBuffer.flip();

@@ -88,6 +88,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -300,8 +301,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object check(PGenericAlias self, Object other) {
-            throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
+        static Object check(PGenericAlias self, Object other,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
         }
     }
 
@@ -310,8 +312,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object check(PGenericAlias self, Object other) {
-            throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
+        static Object check(PGenericAlias self, Object other,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
         }
     }
 

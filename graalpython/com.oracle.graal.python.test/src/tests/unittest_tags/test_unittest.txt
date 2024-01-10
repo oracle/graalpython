@@ -365,6 +365,8 @@
 *unittest.test.test_result.Test_TestResult.test_addError_locals
 *unittest.test.test_result.Test_TestResult.test_addFailure
 *unittest.test.test_result.Test_TestResult.test_addFailure_filter_traceback_frames
+*unittest.test.test_result.Test_TestResult.test_addFailure_filter_traceback_frames_chained_exception_cycle
+*unittest.test.test_result.Test_TestResult.test_addFailure_filter_traceback_frames_chained_exception_self_loop
 *unittest.test.test_result.Test_TestResult.test_addFailure_filter_traceback_frames_context
 *unittest.test.test_result.Test_TestResult.test_addSubTest
 *unittest.test.test_result.Test_TestResult.test_addSuccess
@@ -474,6 +476,7 @@
 *unittest.test.testmock.testasync.AsyncContextManagerTest.test_set_return_value_of_aenter
 *unittest.test.testmock.testasync.AsyncIteratorTest.test_aiter_set_return_value
 *unittest.test.testmock.testasync.AsyncIteratorTest.test_mock_aiter_and_anext_asyncmock
+*unittest.test.testmock.testasync.AsyncIteratorTest.test_mock_async_for
 *unittest.test.testmock.testasync.AsyncMagicMethods.test_async_magic_methods_return_async_mocks
 *unittest.test.testmock.testasync.AsyncMagicMethods.test_asyncmock_has_sync_magic_methods
 *unittest.test.testmock.testasync.AsyncMagicMethods.test_magic_methods_are_async_functions
@@ -501,6 +504,8 @@
 *unittest.test.testmock.testasync.AsyncPatchCMTest.test_is_AsyncMock_cm
 *unittest.test.testmock.testasync.AsyncPatchCMTest.test_is_async_cm
 *unittest.test.testmock.testasync.AsyncPatchCMTest.test_is_async_function_cm
+*unittest.test.testmock.testasync.AsyncPatchCMTest.test_patch_dict_async_def
+*unittest.test.testmock.testasync.AsyncPatchCMTest.test_patch_dict_async_def_context
 *unittest.test.testmock.testasync.AsyncPatchDecoratorTest.test_async_def_patch
 *unittest.test.testmock.testasync.AsyncPatchDecoratorTest.test_is_AsyncMock_patch
 *unittest.test.testmock.testasync.AsyncPatchDecoratorTest.test_is_AsyncMock_patch_classmethod
@@ -517,6 +522,7 @@
 *unittest.test.testmock.testasync.AsyncSpecTest.test_spec_async_mock
 *unittest.test.testmock.testasync.AsyncSpecTest.test_spec_normal_methods_on_class
 *unittest.test.testmock.testasync.AsyncSpecTest.test_spec_normal_methods_on_class_with_mock
+*unittest.test.testmock.testasync.AsyncSpecTest.test_spec_normal_methods_on_class_with_mock_seal
 *unittest.test.testmock.testasync.AsyncSpecTest.test_spec_parent_not_async_attribute_is
 *unittest.test.testmock.testasync.AsyncSpecTest.test_target_async_spec_not
 *unittest.test.testmock.testasync.AsyncSpecTest.test_target_not_async_spec_is
@@ -733,6 +739,7 @@
 *unittest.test.testmock.testmock.MockTest.test_mock_open_write
 *unittest.test.testmock.testmock.MockTest.test_mock_parents
 *unittest.test.testmock.testmock.MockTest.test_mock_raises_when_deleting_nonexistent_attribute
+*unittest.test.testmock.testmock.MockTest.test_mock_safe_with_spec
 *unittest.test.testmock.testmock.MockTest.test_mock_unsafe
 *unittest.test.testmock.testmock.MockTest.test_name_attribute_of_call
 *unittest.test.testmock.testmock.MockTest.test_only_allowed_methods_exist

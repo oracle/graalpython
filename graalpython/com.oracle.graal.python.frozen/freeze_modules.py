@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,7 +16,7 @@ import textwrap
 import shutil
 
 from _sha256 import sha256
-
+from datetime import datetime
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
@@ -74,6 +74,10 @@ FROZEN = [
             "os",
             "site",
             "stat",
+            "datetime",
+            "contextlib",
+            "warnings",
+            "inspect",
         ],
     ),
     (
@@ -96,6 +100,7 @@ BOOTSTRAP = {
     "zipimport",
 }
 
+
 # add graalpython modules and core files
 def add_graalpython_core():
     lib_graalpython = os.path.join(os.path.dirname(__file__), "..", "lib-graalpython")
@@ -108,6 +113,7 @@ def add_graalpython_core():
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
+        "_interop_behavior",
         "_sre",
         "_struct",
         "_sysconfig",
@@ -482,8 +488,8 @@ def lower_camel_case(str):
 #############################################
 # write frozen files
 
-FROZEN_MODULES_HEADER = """/*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+FROZEN_MODULES_HEADER = f"""/*
+ * Copyright (c) 2021, {datetime.now().year}, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -526,7 +532,7 @@ package com.oracle.graal.python.builtins.objects.module;
 
 import com.oracle.graal.python.builtins.PythonOS;
 
-public final class FrozenModules {"""
+public final class FrozenModules {{"""
 
 
 def freeze_module(src):

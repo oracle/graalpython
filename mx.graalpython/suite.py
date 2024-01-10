@@ -9,10 +9,10 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "24.0.0",
+    "version": "24.1.0",
     "graalpython:pythonVersion": "3.11.5",
     "release": False,
-    "groupId": "org.graalvm.graalpython",
+    "groupId": "org.graalvm.python",
     "url": "http://www.graalvm.org/",
 
     "developer": {
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "b3808dea06f6c83606324fe7a4860f0f84a92f2e",
+                "version": "a31e2a5341b09b5cfd3a943772e3b44efbfe986b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "b3808dea06f6c83606324fe7a4860f0f84a92f2e",
+                "version": "a31e2a5341b09b5cfd3a943772e3b44efbfe986b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "b3808dea06f6c83606324fe7a4860f0f84a92f2e",
+                "version": "a31e2a5341b09b5cfd3a943772e3b44efbfe986b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "b3808dea06f6c83606324fe7a4860f0f84a92f2e",
+                "version": "a31e2a5341b09b5cfd3a943772e3b44efbfe986b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -107,15 +107,6 @@ suite = {
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/setuptools-40.6.3.zip",
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
-        },
-        "XZ-1.9": {
-            "digest": "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
-            "maven": {
-                "groupId": "org.tukaani",
-                "artifactId": "xz",
-                "version": "1.9",
-            },
-            "moduleName": "org.tukaani.xz",
         },
         "XZ-5.2.6": {
             "urls": [
@@ -308,13 +299,37 @@ suite = {
                 "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
+                "sdk:MAVEN_DOWNLOADER",
             ],
             "requires": [
                 "java.management",
+                "java.xml",
             ],
             "jacoco": "include",
             "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
+        },
+
+        "org.graalvm.python.embedding": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "jacoco": "include",
+            "javaCompliance": "17+",
+            "checkstyle": "com.oracle.graal.python",
+        },
+
+        "org.graalvm.python.embedding.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "testProject": True,
+            "javaCompliance": "17+",
+            "dependencies": [
+                "org.graalvm.python.embedding",
+                "mx:JUNIT",
+            ],
         },
 
         "com.oracle.graal.python.annotations": {
@@ -398,7 +413,7 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "sdk:POLYGLOT",
                 "sulong:SULONG_API",
-                "XZ-1.9",
+                "truffle:TRUFFLE_XZ",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
@@ -525,7 +540,6 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
-            "testProject": True,
         },
 
         "python-venvlauncher": {
@@ -618,6 +632,19 @@ suite = {
             ],
         },
 
+        "graalpy-versions": {
+            "subDir": "graalpython",
+            "class": "CMakeNinjaProject",
+            "max_jobs": "1",
+            "ninja_targets": ["all"],
+            "cmakeConfig": {
+                "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><dev_tag:none>",
+            },
+            "results": [
+                "graalpy_versions"
+            ],
+        },
+
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
@@ -663,6 +690,7 @@ suite = {
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
                             "bin/modules/_testcapi<graalpy_ext:native>",
+                            "bin/modules/_testbuffer<graalpy_ext:native>",
                             "bin/modules/_testmultiphase<graalpy_ext:native>",
                             "bin/modules/_ctypes_test<graalpy_ext:native>",
                             "bin/modules/pyexpat<graalpy_ext:native>",
@@ -869,11 +897,39 @@ suite = {
         # the language jar.
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
-            "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
+            "layout": {
+                "./": "dependency:graalpy-versions/graalpy_versions",
+            },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
-            "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
+            "layout": {
+                "./": "dependency:graalpy-versions/graalpy_versions",
+            },
+        },
+
+        "GRAALPYTHON_EMBEDDING" : {
+            "moduleInfo": {
+                "name": "org.graalvm.python.embedding",
+                "exports": [
+                    "org.graalvm.python.embedding.utils",
+                    "org.graalvm.python.embedding.jbang",
+                ]
+            },
+            "useModulePath": True,
+            "dependencies": [
+                "org.graalvm.python.embedding",
+            ],
+            "distDependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "description": "GraalPy Embedding",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-embedding",
+                "tag": ["default", "public"],
+            },
+
         },
 
         "GRAALPYTHON-LAUNCHER": {
@@ -892,6 +948,7 @@ suite = {
                 "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
+                "sdk:MAVEN_DOWNLOADER",
             ],
             "description": "GraalPython launcher",
             "maven": {
@@ -965,6 +1022,7 @@ suite = {
             "requires": [
                 "java.base",
             ],
+            "compress": True,
             "description": "GraalPython runtime resources",
             "maven": {
                 "artifactId": "python-resources",
@@ -1003,6 +1061,7 @@ suite = {
                 "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
                 "truffle:TRUFFLE_ICU4J",
+                "truffle:TRUFFLE_XZ",
             ],
             "requires": [
                 "java.base",
@@ -1016,7 +1075,6 @@ suite = {
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
-                "XZ-1.9",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
@@ -1113,18 +1171,24 @@ suite = {
         },
 
         "GRAALPYTHON_TCK": {
-            "description": "unit tests",
             "dependencies": [
                 "com.oracle.graal.python.tck",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
+                "GRAALPYTHON",
                 # We run the TCK with Python home served from resources
                 "GRAALPYTHON_RESOURCES",
             ],
-            "testDistribution": True,
-            "maven": False,
+            "description" : "Truffle TCK provider for Python language.",
+            "license": "UPL",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-truffle-tck",
+                "tag": ["default", "public"],
+            },
+            "noMavenJavadoc": True,
         },
 
         # Now come the different resource projects. These all end up bundled
@@ -1344,6 +1408,25 @@ suite = {
                 "THIRD_PARTY_LICENSE_GRAALPY.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
+        },
+
+        "graalpy-archetype-polyglot-app": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
+
+        "graalpy-maven-plugin": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "dependencies": ["GRAALPYTHON_EMBEDDING"],
+            "maven": {
+                "tag": ["default", "public"],
+            },
         },
     },
 }

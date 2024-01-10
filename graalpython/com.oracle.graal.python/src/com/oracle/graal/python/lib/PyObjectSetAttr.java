@@ -75,6 +75,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateCached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectSetAttr extends PNodeWithContext {
+    public static void executeUncached(Object receiver, Object name, Object value) {
+        PyObjectSetAttr.getUncached().execute(null, null, receiver, name, value);
+    }
+
     public final void executeCached(Frame frame, Object receiver, Object name, Object value) {
         execute(frame, this, receiver, name, value);
     }

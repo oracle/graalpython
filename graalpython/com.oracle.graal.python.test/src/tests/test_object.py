@@ -179,6 +179,8 @@ def test_descr_call_with_none():
     descr = object.__dict__['__class__']
     assert None.__class__ is type(None)
     assert descr.__get__(None, type(None)) is descr
+    assert None.__repr__() == 'None'
+    assert None.__bool__() is False
     assert_raises(TypeError, descr.__get__, None, None)
 
 def test_custom_getattribute():

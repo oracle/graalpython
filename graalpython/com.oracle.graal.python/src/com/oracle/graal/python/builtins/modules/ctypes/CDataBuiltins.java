@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,7 +80,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -143,8 +146,9 @@ public final class CDataBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
-        public long hash(@SuppressWarnings("unused") CDataObject self) {
-            throw raise(TypeError, UNHASHABLE_TYPE);
+        static long hash(@SuppressWarnings("unused") CDataObject self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, UNHASHABLE_TYPE);
         }
     }
 
@@ -153,27 +157,29 @@ public final class CDataBuiltins extends PythonBuiltins {
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object reduce(VirtualFrame frame, CDataObject self,
+        static Object reduce(VirtualFrame frame, CDataObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
-            StgDictObject stgDict = pyObjectStgDictNode.execute(self);
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject stgDict = pyObjectStgDictNode.execute(inliningTarget, self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
-                throw raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
+                throw raiseNode.get(inliningTarget).raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
             t1[1] = factory.createBytes(readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object[] t2 = new Object[]{clazz, factory.createTuple(t1)};
-            PythonModule ctypes = getContext().lookupBuiltinModule(T__CTYPES);
+            PythonModule ctypes = PythonContext.get(inliningTarget).lookupBuiltinModule(T__CTYPES);
             Object unpickle = dylib.getOrDefault(ctypes.getStorage(), T_UNPICKLE, null);
             if (unpickle == null) {
-                throw raise(NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
             }
             Object[] t3 = new Object[]{unpickle, factory.createTuple(t2)};
             return factory.createTuple(t3); // "O(O(NN))"
@@ -186,17 +192,18 @@ public final class CDataBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
+        static Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] array = getArray.execute(inliningTarget, args.getSequenceStorage());
             if (array.length < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
-                throw raise(TypeError);
+                throw raiseNode.get(inliningTarget).raise(TypeError);
             }
             PDict dict = (PDict) array[0];
             Object data = array[1];
@@ -206,10 +213,10 @@ public final class CDataBuiltins extends PythonBuiltins {
             if (len > self.b_size) {
                 len = self.b_size;
             }
-            memmove(self.b_ptr, data, len);
+            memmove(inliningTarget, self.b_ptr, data, len);
             Object mydict = getAttributeNode.executeObject(frame, self);
             if (!PGuards.isDict(mydict)) {
-                throw raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)),
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, mydict)));
             }
@@ -219,8 +226,9 @@ public final class CDataBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        private void memmove(Object dest, Object src, int len) {
-            throw raise(NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
+        private static void memmove(Node raisingNode, Object dest, Object src, int len) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseUncached(raisingNode, NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
         }
     }
 }

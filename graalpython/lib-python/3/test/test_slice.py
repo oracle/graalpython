@@ -9,6 +9,7 @@ import copy
 
 from pickle import loads, dumps
 from test import support
+from test.support import impl_detail
 
 
 def evaluate_slice_index(arg):
@@ -280,6 +281,7 @@ class SliceTest(unittest.TestCase):
         self.assertIsNot(s.stop, c.stop)
         self.assertIsNot(s.step, c.step)
 
+    @impl_detail("finalization", graalpy=False)
     def test_cycle(self):
         class myobj(): pass
         o = myobj()

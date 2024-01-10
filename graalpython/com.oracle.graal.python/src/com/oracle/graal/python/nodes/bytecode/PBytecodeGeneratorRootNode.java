@@ -57,7 +57,7 @@ import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSRNode {
+public final class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSRNode {
     private final PBytecodeRootNode rootNode;
     private final int resumeBci;
     private final int resumeStackTop;

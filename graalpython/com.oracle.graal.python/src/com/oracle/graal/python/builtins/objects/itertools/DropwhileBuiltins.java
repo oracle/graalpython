@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -135,13 +136,14 @@ public final class DropwhileBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object setState(PDropwhile self, Object state,
+        static Object setState(PDropwhile self, Object state,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaBooleanNode castToBoolean) {
+                        @Cached CastToJavaBooleanNode castToBoolean,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 self.setDoneDropping(castToBoolean.execute(inliningTarget, state));
             } catch (CannotCastException e) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

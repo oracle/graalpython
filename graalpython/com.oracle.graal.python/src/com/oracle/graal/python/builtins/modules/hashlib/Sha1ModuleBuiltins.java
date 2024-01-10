@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -68,10 +69,10 @@ public final class Sha1ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Sha1FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA1Type, "sha1", "sha1", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA1Type, "sha1", "sha1", buffer);
         }
     }
 
@@ -80,8 +81,9 @@ public final class Sha1ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha1Node extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object sha1(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha1.sha1");
+        static Object sha1(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha1.sha1");
         }
     }
 }

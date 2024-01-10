@@ -73,6 +73,8 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
@@ -89,6 +91,7 @@ import java.util.logging.Level;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -118,6 +121,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -127,6 +131,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -180,6 +185,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_ftruncate("(sint32, sint64):sint32"),
         call_fsync("(sint32):sint32"),
         call_flock("(sint32, sint32):sint32"),
+        call_fcntl_lock("(sint32, sint32, sint32, sint32, sint64, sint64):sint32"),
         call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
         call_fstat("(sint32, [sint64]):sint32"),
         call_statvfs("([sint8], [sint64]):sint32"),
@@ -230,6 +236,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getuid("():sint64"),
         call_geteuid("():sint64"),
         call_getgid("():sint64"),
+        call_getegid("():sint64"),
         call_getppid("():sint64"),
         call_getpgid("(sint64):sint64"),
         call_setpgid("(sint64,sint64):sint32"),
@@ -280,6 +287,15 @@ public final class NFIPosixSupport extends PosixSupport {
         call_freeaddrinfo("(sint64):void"),
         call_gai_strerror("(sint32, [sint8], sint32):void"),
         get_addrinfo_members("(sint64, [sint32], [sint64], [sint8]):sint32"),
+
+        call_sem_open("([sint8], sint32, sint32, sint32):pointer"),
+        call_sem_close("(pointer):sint32"),
+        call_sem_unlink("([sint8]):sint32"),
+        call_sem_getvalue("(pointer, [sint32]):sint32"),
+        call_sem_post("(pointer):sint32"),
+        call_sem_wait("(pointer):sint32"),
+        call_sem_trywait("(pointer):sint32"),
+        call_sem_timedwait("(pointer, sint64):sint32"),
 
         call_crypt("([sint8], [sint8], [sint32]):sint64");
 
@@ -661,9 +677,18 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void flock(int fd, int operation,
+    void flock(int fd, int operation,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int res = invokeNode.callInt(this, PosixNativeFunction.call_flock, fd, operation);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_fcntl_lock, fd, blocking, lockType, whence, start, length);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -923,14 +948,14 @@ public final class NFIPosixSupport extends PosixSupport {
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + 1 + nameLen];
             PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            buf[pathLen] = PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+            buf[pathLen] = POSIX_FILENAME_SEPARATOR;
             PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + 1, nameLen);
             return Buffer.wrap(buf);
         }
 
         protected static boolean endsWithSlash(Object path) {
             Buffer b = (Buffer) path;
-            return b.data[b.data.length - 1] == PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+            return b.data[b.data.length - 1] == POSIX_FILENAME_SEPARATOR;
         }
     }
 
@@ -1170,6 +1195,11 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public long getgid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callLong(this, PosixNativeFunction.call_getgid);
+    }
+
+    @ExportMessage
+    public long getegid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callLong(this, PosixNativeFunction.call_getegid);
     }
 
     @ExportMessage
@@ -2170,6 +2200,122 @@ public final class NFIPosixSupport extends PosixSupport {
             this.len[0] = len;
         }
 
+    }
+
+    @ExportMessage
+    long semOpen(Object name, int openFlags, int mode, int value,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Object ptr = invokeNode.call(this, PosixNativeFunction.call_sem_open, pathToCString(name), openFlags, mode, value);
+        if (invokeNode.getResultInterop().isNull(ptr)) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        try {
+            return invokeNode.getResultInterop().asPointer(ptr);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    @ExportMessage
+    void semClose(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_close, handle);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    void semUnlink(Object name,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_unlink, pathToCString(name));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    private static final UnsupportedPosixFeatureException NO_SEM_GETVALUE_EXCEPTION = new UnsupportedPosixFeatureException("sem_getvalue is not available on the current platform");
+
+    @ExportMessage
+    int semGetValue(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        /*
+         * msimacek: It works on Linux, and it doesn't work on Darwin. It might work on some other
+         * Unix-likes, but it's hard to check, so let's assume it only works on Linux for now
+         */
+        if (PythonOS.getPythonOS() != PythonOS.PLATFORM_LINUX) {
+            throw NO_SEM_GETVALUE_EXCEPTION;
+        }
+        int[] value = new int[1];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_getvalue, handle, wrap(value));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return value[0];
+    }
+
+    @ExportMessage
+    void semPost(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_post, handle);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    void semWait(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_wait, handle);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    boolean semTryWait(long handle,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_trywait, handle);
+        if (res < 0) {
+            int errno = getErrno(invokeNode);
+            if (errno == OSErrorEnum.EAGAIN.getNumber()) {
+                return false;
+            }
+            throw newPosixException(invokeNode, errno);
+        }
+        return true;
+    }
+
+    @ExportMessage
+    boolean semTimedWait(long handle, long deadlineNs,
+                    @Bind("$node") Node node,
+                    @CachedLibrary("this") PosixSupportLibrary thisLib,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_LINUX) {
+            int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_timedwait, handle, deadlineNs);
+            if (res < 0) {
+                int errno = getErrno(invokeNode);
+                if (errno == OSErrorEnum.ETIMEDOUT.getNumber()) {
+                    return false;
+                }
+                throw newPosixException(invokeNode, errno);
+            }
+            return true;
+        } else {
+            long deadlineMs = deadlineNs / 1_000_000;
+            while (true) {
+                if (thisLib.semTryWait(this, handle)) {
+                    return true;
+                }
+                long currentMs = System.currentTimeMillis();
+                if (currentMs > deadlineMs) {
+                    return false;
+                }
+                long delayMs = Math.min(deadlineMs - currentMs, 20);
+                TruffleSafepoint.setBlockedThreadInterruptible(node, Thread::sleep, delayMs);
+                TruffleSafepoint.poll(node);
+            }
+        }
     }
 
     @ExportMessage

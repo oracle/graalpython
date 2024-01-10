@@ -48,11 +48,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class NumericSupport {
     private static final long NEG_ZERO_RAWBITS = Double.doubleToRawLongBits(-0.0);
@@ -99,7 +100,7 @@ public final class NumericSupport {
     }
 
     @TruffleBoundary
-    static short floatToShortBits(PNodeWithRaise nodeWithRaise, double value) {
+    static short floatToShortBits(double value, Node raisingNode) {
         int sign;
         int e;
         double f;
@@ -126,7 +127,7 @@ public final class NumericSupport {
             e = (int) fraction[1];
 
             if (f < 0.5 || f >= 1.0) {
-                throw nodeWithRaise.raise(SystemError, RES_O_O_RANGE, "frexp()");
+                throw PRaiseNode.raiseUncached(raisingNode, SystemError, RES_O_O_RANGE, "frexp()");
             }
 
             // Normalize f to be in the range [1.0, 2.0)
@@ -134,7 +135,7 @@ public final class NumericSupport {
             e--;
 
             if (e >= 16) {
-                throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "e");
+                throw PRaiseNode.raiseUncached(raisingNode, OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "e");
             } else if (e < -25) {
                 // |x| < 2**-25. Underflow to zero.
                 f = 0.0;
@@ -161,7 +162,7 @@ public final class NumericSupport {
                     bits = 0;
                     ++e;
                     if (e == 31) {
-                        throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "e");
+                        throw PRaiseNode.raiseUncached(raisingNode, OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "e");
                     }
                 }
             }
@@ -354,8 +355,8 @@ public final class NumericSupport {
         return shortBitsToFloat(bits);
     }
 
-    public void putHalfFloat(PNodeWithRaise node, byte[] buffer, int index, double value) throws IndexOutOfBoundsException {
-        final short bits = floatToShortBits(node, value);
+    public void putHalfFloat(byte[] buffer, int index, double value, Node raisingNode) throws IndexOutOfBoundsException {
+        final short bits = floatToShortBits(value, raisingNode);
         support.putShort(buffer, index, bits);
     }
 
@@ -380,15 +381,15 @@ public final class NumericSupport {
         }
     }
 
-    public void putDouble(PNodeWithRaise node, byte[] buffer, int index, double value, int numBytes) throws IndexOutOfBoundsException {
+    public void putDouble(Node inliningTarget, byte[] buffer, int index, double value, int numBytes, PRaiseNode.Lazy raiseNode) throws IndexOutOfBoundsException {
         switch (numBytes) {
             case 2:
-                putHalfFloat(node, buffer, index, value);
+                putHalfFloat(buffer, index, value, inliningTarget);
                 break;
             case 4:
                 final float fValue = (float) value;
                 if (Float.isInfinite(fValue)) {
-                    throw node.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "f");
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "f");
                 }
                 putFloat(buffer, index, fValue);
                 break;

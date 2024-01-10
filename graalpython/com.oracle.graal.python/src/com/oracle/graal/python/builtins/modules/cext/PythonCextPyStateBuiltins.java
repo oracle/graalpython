@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -100,7 +101,7 @@ public final class PythonCextPyStateBuiltins {
     abstract static class PyThreadState_Get extends CApiNullaryBuiltinNode {
 
         @Specialization
-        PThreadState get() {
+        Object get() {
             return PThreadState.getThreadState(getLanguage(), getContext());
         }
     }
@@ -112,11 +113,11 @@ public final class PythonCextPyStateBuiltins {
         @TruffleBoundary
         PDict get(@Cached PythonObjectFactory factory) {
 
-            PThreadState state = PThreadState.getThreadState(getLanguage(), getContext());
-            PDict threadStateDict = state.getThreadState().getDict();
+            PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            PDict threadStateDict = threadState.getDict();
             if (threadStateDict == null) {
                 threadStateDict = factory.createDict();
-                state.getThreadState().setDict(threadStateDict);
+                threadState.setDict(threadStateDict);
             }
             return threadStateDict;
         }

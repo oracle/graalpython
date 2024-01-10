@@ -65,10 +65,12 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -97,8 +99,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/bufferedio.h:_io__BufferedIOBase_detach
          */
         @Specialization
-        Object detach(@SuppressWarnings("unused") Object self) {
-            throw raise(IOUnsupportedOperation, T_DETACH);
+        static Object detach(@SuppressWarnings("unused") Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_DETACH);
         }
     }
 
@@ -111,8 +114,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization
-        Object read(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, T_READ);
+        static Object read(Object self, Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_READ);
         }
     }
 
@@ -125,8 +129,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization
-        Object read1(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, T_READ1);
+        static Object read1(Object self, Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_READ1);
         }
     }
 
@@ -143,26 +148,28 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @Specialization
         Object readinto(VirtualFrame frame, Object self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached InlinedConditionProfile isBytes,
-                        @Cached InlinedConditionProfile oversize) {
+                        @Cached InlinedConditionProfile oversize,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 Object data = callMethod.execute(frame, inliningTarget, self, getMethodName(), len);
                 if (isBytes.profile(inliningTarget, !(data instanceof PBytes))) {
-                    throw raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
+                    throw raiseNode.get(inliningTarget).raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
                 }
                 // Directly using data as buffer because CPython also accesses the underlying memory
                 // of the bytes object
                 int dataLen = bufferLib.getBufferLength(data);
                 if (oversize.profile(inliningTarget, dataLen > len)) {
-                    throw raise(ValueError, S_RETURNED_TOO_MUCH_DATA, "read()", len, dataLen);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, S_RETURNED_TOO_MUCH_DATA, "read()", len, dataLen);
                 }
                 bufferLib.readIntoBuffer(data, 0, buffer, 0, dataLen, bufferLib);
                 return dataLen;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -211,8 +218,9 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization
-        Object write(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, T_WRITE);
+        static Object write(Object self, Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, T_WRITE);
         }
     }
 }

@@ -5,10 +5,9 @@ import signal
 from .context import reduction, set_spawning_popen
 from . import spawn
 from . import util
+from . import process
 
-# Begin Truffle change
-from _multiprocessing import _waittid, _terminate_spawned_thread, _spawn_context, _pipe, _write, _close
-# End Truffle change
+from _multiprocessing_graalpy import _waittid, _terminate_spawned_thread, _spawn_context, _pipe, _read, _write, _close
 
 __all__ = ['Popen']
 
@@ -29,7 +28,7 @@ class _DupFd(object):
 #
 
 class Popen(object):
-    method = 'spawn'
+    method = 'graalpy'
 
     DupFd = _DupFd
 
@@ -133,3 +132,16 @@ class Popen(object):
     def close(self):
         if self.finalizer is not None:
             self.finalizer()
+
+
+# Entry point to the child context thread
+def spawn_truffleprocess(fd, parent_sentinel):
+    process.current_process()._inheriting = True
+    try:
+        bytesIO = io.BytesIO(_read(fd, 1024))
+        preparation_data = reduction.pickle.load(bytesIO)
+        spawn.prepare(preparation_data)
+        self = reduction.pickle.load(bytesIO)
+    finally:
+        del process.current_process()._inheriting
+    return self._bootstrap(parent_sentinel)

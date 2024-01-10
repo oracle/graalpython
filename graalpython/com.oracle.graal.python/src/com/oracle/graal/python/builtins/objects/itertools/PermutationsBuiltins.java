@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -56,14 +57,18 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -98,21 +103,22 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isStopped()")
-        Object next(PPermutations self) {
+        static Object next(PPermutations self,
+                        @Cached PRaiseNode raiseNode) {
             self.setRaisedStopIteration(true);
-            throw raiseStopIteration();
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "!self.isStopped()")
-        @SuppressWarnings("truffle-static-method")
-        Object next(PPermutations self,
+        static Object next(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile isStartedProfile,
                         @Cached InlinedBranchProfile jProfile,
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
                         @Cached InlinedLoopConditionProfile shiftIndicesProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
@@ -149,7 +155,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             } else {
                 self.setStarted(true);
             }
@@ -193,49 +199,55 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
 
         @Specialization
-        Object setState(VirtualFrame frame, PPermutations self, Object state,
+        static Object setState(VirtualFrame frame, PPermutations self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedLoopConditionProfile indicesProfile,
-                        @Cached InlinedLoopConditionProfile cyclesProfile) {
-            if (sizeNode.execute(frame, inliningTarget, state) != 3) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
-            }
-            Object indices = getItemNode.execute(frame, state, 0);
-            Object cycles = getItemNode.execute(frame, state, 1);
-            int poolLen = self.getPool().length;
-            if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
-            }
-
-            self.setStarted((boolean) getItemNode.execute(frame, state, 2));
-            indicesProfile.profileCounted(inliningTarget, poolLen);
-            for (int i = 0; indicesProfile.inject(inliningTarget, i < poolLen); i++) {
-                int index = (int) getItemNode.execute(frame, indices, i);
-                if (index < 0) {
-                    index = 0;
-                } else if (index > poolLen - 1) {
-                    index = poolLen - 1;
+                        @Cached InlinedLoopConditionProfile cyclesProfile,
+                        @Cached CastToJavaBooleanNode castBoolean,
+                        @Cached CastToJavaIntExactNode castInt,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            try {
+                if (sizeNode.execute(frame, inliningTarget, state) != 3) {
+                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
-                self.getIndices()[i] = index;
-            }
-
-            cyclesProfile.profileCounted(inliningTarget, self.getR());
-            for (int i = 0; cyclesProfile.inject(inliningTarget, i < self.getR()); i++) {
-                int index = (int) getItemNode.execute(frame, cycles, i);
-                if (index < 1) {
-                    index = 1;
-                } else if (index > poolLen - i) {
-                    index = poolLen - 1;
+                Object indices = getItemNode.execute(frame, state, 0);
+                Object cycles = getItemNode.execute(frame, state, 1);
+                int poolLen = self.getPool().length;
+                if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
+                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
-                self.getCycles()[i] = index;
-            }
 
-            return PNone.NONE;
+                self.setStarted(castBoolean.execute(inliningTarget, getItemNode.execute(frame, state, 2)));
+                indicesProfile.profileCounted(inliningTarget, poolLen);
+                for (int i = 0; indicesProfile.inject(inliningTarget, i < poolLen); i++) {
+                    int index = castInt.execute(inliningTarget, getItemNode.execute(frame, indices, i));
+                    if (index < 0) {
+                        index = 0;
+                    } else if (index > poolLen - 1) {
+                        index = poolLen - 1;
+                    }
+                    self.getIndices()[i] = index;
+                }
+
+                cyclesProfile.profileCounted(inliningTarget, self.getR());
+                for (int i = 0; cyclesProfile.inject(inliningTarget, i < self.getR()); i++) {
+                    int index = castInt.execute(inliningTarget, getItemNode.execute(frame, cycles, i));
+                    if (index < 1) {
+                        index = 1;
+                    } else if (index > poolLen - i) {
+                        index = poolLen - 1;
+                    }
+                    self.getCycles()[i] = index;
+                }
+
+                return PNone.NONE;
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+            }
         }
     }
 

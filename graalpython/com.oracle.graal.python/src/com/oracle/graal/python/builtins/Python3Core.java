@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
@@ -116,6 +115,7 @@ import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WinapiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
@@ -198,6 +198,16 @@ import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingGraalPyModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PickleBufferBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PickleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -305,6 +315,11 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictItemsBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictKeysBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
@@ -326,7 +341,6 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.SemLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
@@ -437,7 +451,7 @@ public abstract class Python3Core {
         builtins.removeAll(toRemove);
     }
 
-    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
+    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed, boolean socketIOAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
                         new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
@@ -505,6 +519,7 @@ public abstract class Python3Core {
                         new PosixModuleBuiltins(),
                         new NtModuleBuiltins(),
                         new WinregModuleBuiltins(),
+                        new WinapiModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
@@ -591,6 +606,11 @@ public abstract class Python3Core {
                         new CodecsTruffleModuleBuiltins(),
                         new DequeBuiltins(),
                         new DequeIterBuiltins(),
+                        new OrderedDictBuiltins(),
+                        new OrderedDictKeysBuiltins(),
+                        new OrderedDictValuesBuiltins(),
+                        new OrderedDictItemsBuiltins(),
+                        new OrderedDictIteratorBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new DefaultDictBuiltins(),
                         new TupleGetterBuiltins(),
@@ -600,9 +620,9 @@ public abstract class Python3Core {
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SelectModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SocketModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SocketBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SelectModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketBuiltins(),
                         PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
@@ -681,13 +701,25 @@ public abstract class Python3Core {
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
 
+                        // pickle
+                        new PickleModuleBuiltins(),
+                        new PicklerBuiltins(),
+                        new UnpicklerBuiltins(),
+                        new PickleBufferBuiltins(),
+                        new PicklerMemoProxyBuiltins(),
+                        new UnpicklerMemoProxyBuiltins(),
+
                         // lzma
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMAModuleBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
-                        new MultiprocessingModuleBuiltins(),
-                        new SemLockBuiltins(),
+                        // _multiprocessing
+                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new MultiprocessingModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new SemLockBuiltins(),
+                        new MultiprocessingGraalPyModuleBuiltins(),
+                        new GraalPySemLockBuiltins(),
+
                         new WarningsModuleBuiltins(),
                         new GraalPythonModuleBuiltins(),
 
@@ -778,9 +810,9 @@ public abstract class Python3Core {
     private final PythonLanguage language;
     @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed, boolean socketIOAllowed) {
         this.language = language;
-        this.builtins = initializeBuiltins(isNativeSupportAllowed);
+        this.builtins = initializeBuiltins(isNativeSupportAllowed, socketIOAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
@@ -992,6 +1024,9 @@ public abstract class Python3Core {
                                     "Cannot expose `PollPythonAsyncActions'. If this is not called regularly, Python will leak memory.");
                 }
             }
+
+            // import special interop predefined behavior
+            loadFile(toTruffleStringUncached("_interop_behavior"), getContext().getCoreHomeOrFail());
 
             initialized = true;
         }

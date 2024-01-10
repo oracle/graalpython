@@ -60,6 +60,7 @@
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_preexec_gc_module_failure
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_remapping_std_fds
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_select_unbuffered
+*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_send_signal
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_send_signal_dead
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_send_signal_race
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_send_signal_race2

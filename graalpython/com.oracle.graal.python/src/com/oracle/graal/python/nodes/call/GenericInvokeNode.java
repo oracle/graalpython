@@ -48,7 +48,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -77,16 +76,6 @@ public abstract class GenericInvokeNode extends InvokeNode {
     }
 
     protected GenericInvokeNode() {
-    }
-
-    @Override
-    public Assumption needNotPassExceptionAssumption() {
-        return Assumption.NEVER_VALID;
-    }
-
-    @Override
-    public Assumption needNotPassFrameAssumption() {
-        return Assumption.NEVER_VALID;
     }
 
     /**

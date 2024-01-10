@@ -3,6 +3,28 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 24.1.0
+* We now provide intrinsified `_pickle` module also in the community version.
+
+## Version 24.0.0
+* We now provide a collection of recipes in the form of GitHub Actions to build popular native extensions on GraalPy. These provide a reproducible way for the community to build native extensions for GraalPy with the correct dependencies. See scripts/wheelbuilder/README.md for details.
+* Foreign big integers are now supported and work with all `Numeric` operators.
+* Interop `null` values are now treated as *identical*, not only *equal* to Python's `None`. This means that something like `java.type("java.lang.Object[]")(1)[0] is None` will now return `True`.
+* Update to Python 3.10.13. This inlines the security and bugfixes from 3.10.8 to 3.10.13.
+* Include the GraalPy C API revision in the ABI tag for wheels. This avoids accidentally using incompatible binaries when using snapshots.
+* Honor the `allowHostSocketAccess` configuration in embeddings. This means sockets can now be disabled independently of other IO.
+* Avoid eager initialization of the Sulong LLVM runtime. This reduces footprint in the default configuration where C extensions are run natively.
+* Expand support for the following modules: llvmlite, pydantic-core, catboost, ray, tensorflow, tensorflow-io, readme-renderer, safetensors, keras, pybind11, protbuf, grpcio, PyO3, cryptography, bcrypt, cramjam, libcst, orjson, rpds_py.
+* Support installing some packages with native extensions on Windows. Simple packages like `ujson` or `kiwisolver` will now work when installed from a venv inside a Visual Studio command prompt.
+* Raise `KeyboardInterrupt` exception when the process is interrupted. Enabled only when using the launcher.
+* Add option `python.InitialLocale` to change the default locale. If not set, then Java Locale#getDefault is used.
+* `multiprocessing` module now uses the `spawn` method (creates new processes) by default. The formerly default method that uses threads and multiple Truffle contexts can be selected using `multiprocessing.set_start_method('graalpy')`.
+* `polyglot` module: add API to redefine Truffle interop messages for external / user defined types. For more details see [The Truffle Interoperability Extension API](docs/user/Interoperability.md).
+*Adding integration with jBang (https://www.jbang.dev/)
+** running example via `jbang hello@oracle/graalpython` or `jbang hello@oracle/graalpython "print(1*4)"`
+** creating new script via: `jbang init --template=graalpy@oracle/graalpython myscript.java`
+** creating new script with local maven repo for testing: `jbang init --template=graalpy_local_repo@oracle/graalpython -Dpath_to_local_repo=/absolute/path/to/local/maven/repository myscript.java'
+
 ## Version 23.1.0
 * Oracle GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
 * Add support for the sqlite3 module. This allows many packages like `coverage` or `Flask-SQLAlchemy` to work on top of this embedded database.

@@ -74,6 +74,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     // Duplicate of SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD
     public static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
 
+    /**
+     * The first method called with the arguments by the thin launcher is
+     * {@link #preprocessArguments}.
+     */
     public static void main(String[] args) {
         new GraalPythonMain().launch(args);
     }
@@ -96,7 +100,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
-    private final boolean stdinIsInteractive = System.console() != null;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private boolean snaptshotStartup = false;
@@ -121,8 +124,43 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
+    private void polyglotGet(String exe, List<String> originalArgs) {
+        List<String> args = new ArrayList<>();
+        if (originalArgs.size() == 1 && !originalArgs.get(0).startsWith("-")) {
+            args.add("-a");
+        }
+        args.addAll(originalArgs);
+        if (!originalArgs.contains("-o")) {
+            var binPath = Paths.get(exe).getParent();
+            if (binPath != null) {
+                args.add("-o");
+                args.add(binPath.resolveSibling("modules").toString());
+            }
+        }
+        if (!originalArgs.contains("-v")) {
+            try (var tmpEngine = Engine.newBuilder().useSystemProperties(false).//
+                            out(OutputStream.nullOutputStream()).//
+                            err(OutputStream.nullOutputStream()).//
+                            option("engine.WarnInterpreterOnly", "false").//
+                            build()) {
+                args.add("-v");
+                args.add(tmpEngine.getVersion());
+            }
+        }
+        try {
+            org.graalvm.maven.downloader.Main.main(args.toArray(new String[0]));
+        } catch (Exception e) {
+            throw abort(e);
+        }
+        System.exit(0);
+    }
+
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
+        String launcherName = getLauncherExecName();
+        if (launcherName != null && (launcherName.endsWith("graalpy-polyglot-get") || launcherName.endsWith("graalpy-polyglot-get.exe"))) {
+            polyglotGet(launcherName, givenArgs);
+        }
         ArrayList<String> unrecognized = new ArrayList<>();
         List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
         ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
@@ -133,6 +171,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         programArgs = new ArrayList<>();
         origArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
+        boolean installSignalHandlersSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
             origArgs.add(arg);
@@ -214,6 +253,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             }
                             if (matchesPythonOption(arg, "PosixModuleBackend")) {
                                 posixBackendSpecified = true;
+                            }
+                            if (matchesPythonOption(arg, "InstallSignalHandlers")) {
+                                installSignalHandlersSpecified = true;
                             }
                             // possibly a polyglot argument
                             unrecognized.add(arg);
@@ -360,6 +402,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!posixBackendSpecified) {
             polyglotOptions.put("python.PosixModuleBackend", "native");
+        }
+        if (!installSignalHandlersSpecified) {
+            polyglotOptions.put("python.InstallSignalHandlers", "true");
         }
         // Never emit warnings that mess up the output
         unrecognized.add("--engine.WarnInterpreterOnly=false");
@@ -666,7 +711,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[programArgs.size()]));
         contextBuilder.in(consoleHandler.createInputStream());
-        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
+        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(isTTY()));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 
@@ -698,7 +743,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
             }
 
-            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && stdinIsInteractive))) {
+            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && isTTY()))) {
                 print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
@@ -706,7 +751,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             consoleHandler.setContext(context);
 
-            if (commandString != null || inputFile != null || !stdinIsInteractive) {
+            if (commandString != null || inputFile != null || !isTTY()) {
                 try {
                     evalNonInteractive(context, consoleHandler);
                     rc = 0;
@@ -1002,8 +1047,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         options.add("--show-version");
     }
 
-    private ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
-        if (!stdinIsInteractive) {
+    private static ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
+        if (!isTTY()) {
             return new DefaultConsoleHandler(inStream);
         } else {
             return new JLineConsoleHandler(inStream, outStream, false);

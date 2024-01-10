@@ -41,10 +41,11 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -70,9 +71,13 @@ public abstract class PyTupleCheckNode extends Node {
     }
 
     @Specialization
-    static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PTuple);
+    static boolean doNative(PythonAbstractNativeObject object,
+                    @Cached(inline = false) IsBuiltinObjectProfile check) {
+        return check.profileObjectCached(object, PythonBuiltinClassType.PTuple);
+    }
+
+    @Fallback
+    static boolean other(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

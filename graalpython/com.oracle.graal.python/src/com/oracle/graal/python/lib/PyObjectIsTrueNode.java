@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -137,7 +138,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
 
     @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
     static boolean doDict(Node inliningTarget, PDict object,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+                    @Exclusive @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
 
@@ -145,7 +146,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     @InliningCutoff
     static boolean doSet(Node inliningTarget, PSet object,
                     @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+                    @Exclusive @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
 

@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -136,15 +137,14 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ParseAndBindNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PNone setCompleter(PythonModule self, TruffleString tspec,
-                        @Cached ReadAttributeFromObjectNode readNode) {
+        PNone setCompleter(PythonModule self, TruffleString tspec) {
             String spec = tspec.toJavaStringUncached();
             if (spec.startsWith("tab:")) {
-                LocalData data = (LocalData) readNode.execute(self, DATA);
+                LocalData data = (LocalData) ReadAttributeFromObjectNode.getUncached().execute(self, DATA);
                 data.bindings.put("tab", spec.split(":")[1].trim());
                 return PNone.NONE;
             } else {
-                throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("any other binding than 'tab'"));
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("any other binding than 'tab'"));
             }
         }
     }
@@ -153,8 +153,9 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadInitNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone setCompleter(@SuppressWarnings("unused") PythonModule self) {
-            throw raise(PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
+        static PNone setCompleter(@SuppressWarnings("unused") PythonModule self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
         }
     }
 
@@ -175,13 +176,12 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class SetHistoryLengthNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        TruffleString setCompleter(PythonModule self, int index,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            LocalData data = (LocalData) readNode.execute(self, DATA);
+        TruffleString setCompleter(PythonModule self, int index) {
+            LocalData data = (LocalData) ReadAttributeFromObjectNode.getUncached().execute(self, DATA);
             try {
                 return data.history.get(index);
             } catch (IndexOutOfBoundsException e) {
-                throw raise(PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -205,7 +205,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.set(index, string);
             } catch (IndexOutOfBoundsException e) {
-                throw raise(PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -215,13 +215,12 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class DeleteItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        TruffleString setCompleter(PythonModule self, int index,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            LocalData data = (LocalData) readNode.execute(self, DATA);
+        TruffleString setCompleter(PythonModule self, int index) {
+            LocalData data = (LocalData) ReadAttributeFromObjectNode.getUncached().execute(self, DATA);
             try {
                 return data.history.remove(index);
             } catch (IndexOutOfBoundsException e) {
-                throw raise(PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -272,7 +271,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 reader.close();
             } catch (IOException e) {
-                throw raise(PythonErrorType.IOError, e);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }
@@ -302,7 +301,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 writer.close();
             } catch (IOException e) {
-                throw raise(PythonErrorType.IOError, e);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }

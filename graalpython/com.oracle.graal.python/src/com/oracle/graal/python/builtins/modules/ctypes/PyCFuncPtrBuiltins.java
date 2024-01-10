@@ -112,7 +112,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -129,6 +129,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -174,68 +175,71 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object simple(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object simple(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Exclusive @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
 
         @Specialization(guards = {"args.length <= 1", "isTuple(args)"})
-        Object fromNativeLibrary(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        static Object fromNativeLibrary(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached PyCFuncPtrFromDllNode pyCFuncPtrFromDllNode) {
             return pyCFuncPtrFromDllNode.execute(frame, type, args);
         }
 
-        @Specialization(guards = {"args.length == 1", "isLong(this, args, longCheckNode)"})
-        Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        @Specialization(guards = {"args.length == 1", "isLong(this, args, longCheckNode)"}, limit = "1")
+        static Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Exclusive @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             CDataObject cdata = pyCDataNewNode.execute(inliningTarget, type, dict);
             Pointer value = pointerFromLongNode.execute(inliningTarget, args[0]);
             writePointerNode.execute(inliningTarget, cdata.b_ptr, value);
             return cdata;
         }
 
-        @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(this, args, longCheckNode)"})
-        Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(this, args, longCheckNode)"}, limit = "1")
+        static Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
+                        @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyCallableCheckNode callableCheck,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
+                        @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Exclusive @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object callable = args[0];
             if (!callableCheck.execute(inliningTarget, callable)) {
-                throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
             }
 
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             if (dict == null || dict.argtypes == null) {
-                throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
-            CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags,
-                            pyTypeStgDictNode);
+            CThunkObject thunk = _ctypes_alloc_callback(inliningTarget, callable, dict.argtypes, dict.restype, dict.flags);
             PyCFuncPtrObject self = (PyCFuncPtrObject) pyCDataNewNode.execute(inliningTarget, type, dict);
             self.callable = callable;
             self.thunk = thunk;
             writePointerNode.execute(inliningTarget, self.b_ptr, Pointer.nativeMemory(thunk.pcl_exec));
-            keepRefNode.execute(frame, self, 0, thunk);
+            keepRefNode.execute(frame, inliningTarget, self, 0, thunk);
             return self;
         }
 
-        @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"})
-        Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"}, limit = "1")
+        static Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode) {
-            throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
 
         static CThunkObject CThunkObjectNew(int nArgs) {
@@ -257,12 +261,11 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return p;
         }
 
-        FFIType _ctypes_get_ffi_type(Object obj,
-                        PyTypeStgDictNode pyTypeStgDictNode) {
+        static FFIType _ctypes_get_ffi_type(Object obj) {
             if (obj == null) {
                 return ffi_type_sint;
             }
-            StgDictObject dict = pyTypeStgDictNode.execute(obj);
+            StgDictObject dict = PyTypeStgDictNode.executeUncached(obj);
             if (dict == null) {
                 return ffi_type_sint;
             }
@@ -270,8 +273,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags,
-                        PyTypeStgDictNode pyTypeStgDictNode) {
+        static CThunkObject _ctypes_alloc_callback(Node raisingNode, Object callable, Object[] converters, Object restype, int flags) {
             int nArgs = converters.length;
             CThunkObject thunk = CThunkObjectNew(nArgs);
 
@@ -279,7 +281,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             int i;
             for (i = 0; i < nArgs; ++i) {
                 Object cnv = converters[i];
-                thunk.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
+                thunk.atypes[i] = _ctypes_get_ffi_type(cnv);
             }
 
             thunk.restype = restype;
@@ -287,16 +289,16 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 thunk.setfunc = FieldSet.nil;
                 thunk.ffi_restype = new FFIType();
             } else {
-                StgDictObject dict = pyTypeStgDictNode.execute(restype);
+                StgDictObject dict = PyTypeStgDictNode.executeUncached(restype);
                 if (dict == null || dict.setfunc == FieldSet.nil) {
-                    throw raise(TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
+                    throw PRaiseNode.raiseUncached(raisingNode, TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
                 }
                 thunk.setfunc = dict.setfunc;
                 thunk.ffi_restype = dict.ffi_type_pointer;
             }
             TruffleString signatureStr = FFIType.buildNFISignature(thunk.atypes, thunk.ffi_restype, true);
             Source source = Source.newBuilder(J_NFI_LANGUAGE, signatureStr.toJavaStringUncached(), "<ctypes callback>").build();
-            Object nfiSignature = PythonContext.get(this).getEnv().parseInternal(source).call();
+            Object nfiSignature = PythonContext.get(raisingNode).getEnv().parseInternal(source).call();
             thunk.pcl_exec = SignatureLibrary.getUncached().createClosure(nfiSignature, new CThunkObject.CtypeCallback(thunk));
             thunk.pcl_write = thunk.pcl_exec;
             thunk.converters = converters;
@@ -330,11 +332,12 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
+        static Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyCallableCheckNode callableCheck) {
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (value != PNone.NONE && !callableCheck.execute(inliningTarget, value)) {
-                throw raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
             }
             self.errcheck = value;
             return PNone.NONE;
@@ -348,11 +351,12 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object PyCFuncPtr_get_restype(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (self.restype != null) {
                 return self.restype;
             }
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             if (dict.restype != null) {
                 return dict.restype;
@@ -362,18 +366,19 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
+        static Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyCallableCheckNode callableCheck) {
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (value == PNone.NONE) {
                 self.checker = null;
                 self.restype = null;
                 return PNone.NONE;
             }
-            if (pyTypeStgDictNode.execute(value) == null && !callableCheck.execute(inliningTarget, value)) {
-                throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
+            if (pyTypeStgDictNode.execute(inliningTarget, value) == null && !callableCheck.execute(inliningTarget, value)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
             if (!PGuards.isPFunction(value)) {
                 Object checker = lookupAttr.execute(frame, inliningTarget, value, T__CHECK_RETVAL_);
@@ -396,9 +401,10 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes == null"})
         static Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             if (dict.argtypes != null) {
                 return factory.createTuple(dict.argtypes);
@@ -415,30 +421,33 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
+        static Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
-                        @Shared @Cached GetInternalObjectArrayNode getArray) {
+                        @Shared @Cached GetInternalObjectArrayNode getArray,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, inliningTarget, ob, getRaiseNode(), lookupAttr);
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, raiseNode, lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
+        static Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
-                        @Shared @Cached GetInternalObjectArrayNode getArray) {
+                        @Shared @Cached GetInternalObjectArrayNode getArray,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, inliningTarget, ob, getRaiseNode(), lookupAttr);
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, raiseNode, lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
+        static Object error(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
         }
 
     }
@@ -479,7 +488,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached CtypesNodes.HandleFromPointerNode handleFromPointerNode) {
-            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
             Object[] converters = self.converters != null ? self.converters : dict.converters;
@@ -656,7 +665,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                             break;
                         }
                         ob = argtypes[i];
-                        StgDictObject dict = pyTypeStgDictNode.execute(ob);
+                        StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, ob);
                         if (dict == null) {
                             /*
                              * Cannot happen: _validate_paramflags() would not accept such an object
@@ -666,7 +675,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         if (PGuards.isString(dict.proto)) { // TODO Py_TPFLAGS_UNICODE_SUBCLASS
                             throw raise(TypeError, S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE, getNameNode.execute(inliningTarget, ob));
                         }
-                        if (pyTypeCheck.isPyCArrayTypeObject(ob)) {
+                        if (pyTypeCheck.isPyCArrayTypeObject(inliningTarget, ob)) {
                             ob = callNode.execute(frame, ob);
                         } else {
                             /* Create an instance of the pointed-to type */
@@ -758,14 +767,15 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
     }
 
-    protected abstract static class PyCFuncPtrFromDllNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 96 -> 79
+    protected abstract static class PyCFuncPtrFromDllNode extends Node {
 
         private static final char[] PzZ = "PzZ".toCharArray();
 
         abstract Object execute(VirtualFrame frame, Object type, Object[] args);
 
         @Specialization
-        Object PyCFuncPtr_FromDll(VirtualFrame frame, Object type, Object[] args,
+        static Object PyCFuncPtr_FromDll(VirtualFrame frame, Object type, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CtypesDlSymNode dlSymNode,
@@ -779,7 +789,8 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached AuditNode auditNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // PyArg_ParseTuple(args, "O|O", &tuple, &paramflags);
             PTuple tuple = (PTuple) args[0];
             Object[] paramflags = null;
@@ -795,36 +806,37 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
             Object obj = getAttributeNode.executeObject(frame, dll, T__HANDLE);
             if (!longCheckNode.execute(inliningTarget, obj)) { // PyLong_Check
-                throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
+                throw raiseNode.get(inliningTarget).raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             Pointer handlePtr;
             try {
                 handlePtr = pointerFromLongNode.execute(inliningTarget, obj);
             } catch (PException e) {
-                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
             }
             Object address = dlSymNode.execute(frame, handlePtr, name, AttributeError);
-            _validate_paramflags(inliningTarget, type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode);
+            _validate_paramflags(inliningTarget, type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode, raiseNode);
 
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             PyCFuncPtrObject self = (PyCFuncPtrObject) pyCDataNewNode.execute(inliningTarget, type, dict);
             self.paramflags = paramflags;
 
             Object addressObj = address instanceof PythonNativeVoidPtr ptr ? ptr.getPointerObject() : address;
             writePointerNode.execute(inliningTarget, self.b_ptr, Pointer.nativeMemory(addressObj));
-            keepRefNode.execute(frame, self, 0, dll);
+            keepRefNode.execute(frame, inliningTarget, self, 0, dll);
 
             self.callable = self;
             return self;
         }
 
         /* Returns 1 on success, 0 on error */
-        void _validate_paramflags(Node inliningTarget, Object type, Object[] paramflags,
+        static void _validate_paramflags(Node inliningTarget, Object type, Object[] paramflags,
                         PyTypeCheck pyTypeCheck,
                         GetInternalObjectArrayNode getArray,
                         PyTypeStgDictNode pyTypeStgDictNode,
-                        TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             Object[] argtypes = dict.argtypes;
 
             if (paramflags == null || dict.argtypes == null) {
@@ -832,12 +844,12 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             }
 
             if (!PGuards.isPTuple(paramflags)) {
-                throw raise(TypeError, PARAMFLAGS_MUST_BE_A_TUPLE_OR_NONE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, PARAMFLAGS_MUST_BE_A_TUPLE_OR_NONE);
             }
 
             int len = paramflags.length;
             if (len != dict.argtypes.length) {
-                throw raise(ValueError, PARAMFLAGS_MUST_HAVE_THE_SAME_LENGTH_AS_ARGTYPES);
+                throw raiseNode.get(inliningTarget).raise(ValueError, PARAMFLAGS_MUST_HAVE_THE_SAME_LENGTH_AS_ARGTYPES);
             }
 
             for (int i = 0; i < len; ++i) {
@@ -847,7 +859,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 int flag = (int) array[0];
                 if (array.length > 1) {
                     if (!PGuards.isString(array[1])) {
-                        throw raise(TypeError, PARAMFLAGS_MUST_BE_A_SEQUENCE_OF_INT_STRING_VALUE_TUPLES);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, PARAMFLAGS_MUST_BE_A_SEQUENCE_OF_INT_STRING_VALUE_TUPLES);
                     }
                 }
                 Object typ = argtypes[i];
@@ -858,28 +870,29 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                     case PARAMFLAG_FIN | PARAMFLAG_FOUT:
                         break;
                     case PARAMFLAG_FOUT:
-                        _check_outarg_type(typ, i + 1, pyTypeCheck, pyTypeStgDictNode, codePointAtIndexNode);
+                        _check_outarg_type(inliningTarget, typ, i + 1, pyTypeCheck, pyTypeStgDictNode, codePointAtIndexNode, raiseNode);
                         break;
                     default:
-                        throw raise(TypeError, PARAMFLAG_VALUE_D_NOT_SUPPORTED, flag);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, PARAMFLAG_VALUE_D_NOT_SUPPORTED, flag);
                 }
             }
         }
 
         /* Return 1 if usable, 0 else and exception set. */
-        void _check_outarg_type(Object arg, int index,
+        static void _check_outarg_type(Node inliningTarget, Object arg, int index,
                         PyTypeCheck pyTypeCheck,
                         PyTypeStgDictNode pyTypeStgDictNode,
-                        TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            if (pyTypeCheck.isPyCPointerTypeObject(arg)) {
+                        TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        PRaiseNode.Lazy raiseNode) {
+            if (pyTypeCheck.isPyCPointerTypeObject(inliningTarget, arg)) {
                 return;
             }
 
-            if (pyTypeCheck.isPyCArrayTypeObject(arg)) {
+            if (pyTypeCheck.isPyCArrayTypeObject(inliningTarget, arg)) {
                 return;
             }
 
-            StgDictObject dict = pyTypeStgDictNode.execute(arg);
+            StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, arg);
             if (dict != null /* simple pointer types, c_void_p, c_wchar_p, BSTR, ... */
                             && PGuards.isTruffleString(dict.proto)
                             /*
@@ -890,7 +903,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 return;
             }
 
-            throw raise(TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.executeUncached(arg));
+            throw raiseNode.get(inliningTarget).raise(TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.executeUncached(arg));
         }
 
         protected static boolean strchr(char[] chars, int code) {

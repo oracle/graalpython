@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -154,13 +155,14 @@ public final class RandomBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
         @Specialization
-        PNone setstate(PRandom random, PTuple tuple,
+        static PNone setstate(PRandom random, PTuple tuple,
                         @Bind("this") Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Cached CastToJavaUnsignedLongNode castNode) {
+                        @Cached CastToJavaUnsignedLongNode castNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] arr = getObjectArrayNode.execute(inliningTarget, tuple);
             if (arr.length != PRandom.N + 1) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             int[] state = new int[PRandom.N];
             for (int i = 0; i < PRandom.N; ++i) {
@@ -169,7 +171,7 @@ public final class RandomBuiltins extends PythonBuiltins {
             }
             long index = castNode.execute(inliningTarget, arr[PRandom.N]);
             if (index < 0 || index > PRandom.N) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             random.restore(state, (int) index);
             return PNone.NONE;
@@ -177,8 +179,9 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object setstate(Object random, Object state) {
-            throw raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
+        static Object setstate(Object random, Object state,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
         }
     }
 
@@ -231,31 +234,32 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "k < 0")
         @SuppressWarnings("unused")
-        int negative(PRandom random, int k) {
-            throw raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
+        static int negative(PRandom random, int k,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
         }
 
         @Specialization(guards = "k == 0")
         @SuppressWarnings("unused")
-        int zero(PRandom random, int k) {
+        static int zero(PRandom random, int k) {
             return 0;
         }
 
         @Specialization(guards = {"k >= 1", "k <= 31"})
         @TruffleBoundary
-        int genInt(PRandom random, int k) {
+        static int genInt(PRandom random, int k) {
             return random.nextInt() >>> (32 - k);
         }
 
         @Specialization(guards = "k == 32")
         @TruffleBoundary
-        long gen32Bits(PRandom random, @SuppressWarnings("unused") int k) {
+        static long gen32Bits(PRandom random, @SuppressWarnings("unused") int k) {
             return random.nextInt() & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = {"k >= 33", "k <= 63"})
         @TruffleBoundary
-        long genLong(PRandom random, int k) {
+        static long genLong(PRandom random, int k) {
             long x = random.nextInt() & 0xFFFFFFFFL;
             long y = random.nextInt() >>> (64 - k);
             return (y << 32) | x;

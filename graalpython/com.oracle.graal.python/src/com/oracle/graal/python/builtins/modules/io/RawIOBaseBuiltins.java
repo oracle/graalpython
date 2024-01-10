@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -149,14 +150,15 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:_io__RawIOBase_readall_impl
          */
         @Specialization
-        Object readall(VirtualFrame frame, Object self,
+        static Object readall(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached InlinedConditionProfile dataNoneProfile,
                         @Cached InlinedConditionProfile chunksSize0Profile,
                         @Cached InlinedCountingConditionProfile bytesLen0Profile,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
                 Object data = callMethodRead.execute(frame, inliningTarget, self, T_READ, DEFAULT_BUFFER_SIZE);
@@ -168,7 +170,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (!(data instanceof PBytes)) {
-                    throw raise(TypeError, S_SHOULD_RETURN_BYTES, "read()");
+                    throw raiseNode.get(inliningTarget).raise(TypeError, S_SHOULD_RETURN_BYTES, "read()");
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(data);
                 int bytesLen = bufferLib.getBufferLength(data);
@@ -190,8 +192,9 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:rawiobase_readinto
          */
         @Specialization
-        Object readinto(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(NotImplementedError);
+        static Object readinto(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 
@@ -203,8 +206,9 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:rawiobase_write
          */
         @Specialization
-        Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(NotImplementedError);
+        static Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError);
         }
     }
 }

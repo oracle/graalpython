@@ -97,19 +97,20 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         public abstract Object execute(PBaseException self, Object[] args);
 
         @Specialization
-        Object initNoArgs(PBaseException self, Object[] args,
+        static Object initNoArgs(PBaseException self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UUnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
-                            getArgAsString(inliningTarget, args, 0, this, toStringNode),
-                            getArgAsString(inliningTarget, args, 1, this, toStringNode),
-                            getArgAsInt(inliningTarget, args, 2, this, toJavaIntExactNode),
-                            getArgAsInt(inliningTarget, args, 3, this, toJavaIntExactNode),
-                            getArgAsString(inliningTarget, args, 4, this, toStringNode)
+                            getArgAsString(inliningTarget, args, 0, raiseNode, toStringNode),
+                            getArgAsString(inliningTarget, args, 1, raiseNode, toStringNode),
+                            getArgAsInt(inliningTarget, args, 2, raiseNode, toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 3, raiseNode, toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 4, raiseNode, toStringNode)
             });
             return PNone.NONE;
         }

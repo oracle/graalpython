@@ -306,6 +306,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fcntlLock", "%d %s %d %d %d %d", fd, blocking, lockType, whence, start, length);
+        try {
+            lib.fcntlLock(delegate, fd, blocking, lockType, whence, start, length);
+        } catch (PosixException e) {
+            throw logException("fcntlLock", e);
+        }
+    }
+
+    @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("getBlocking", "%d", fd);
@@ -846,6 +857,13 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getegid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getegid", "");
+        return logExit("getegid", "%d", lib.getegid(delegate));
+    }
+
+    @ExportMessage
     final long getppid(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("getppid", "");
@@ -1321,6 +1339,94 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("crypt", "%s", lib.crypt(delegate, word, salt));
         } catch (PosixException e) {
             throw logException("crypt", e);
+        }
+    }
+
+    @ExportMessage
+    final long semOpen(Object name, int openFlags, int mode, int value,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semOpen", "%s %d %d %d", name, openFlags, mode, value);
+        try {
+            return logExit("semOpen", "0x%x", lib.semOpen(delegate, name, openFlags, mode, value));
+        } catch (PosixException e) {
+            throw logException("semOpen", e);
+        }
+    }
+
+    @ExportMessage
+    final void semClose(long handle,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semClose", "0x%x", handle);
+        try {
+            lib.semClose(delegate, handle);
+        } catch (PosixException e) {
+            throw logException("semClose", e);
+        }
+    }
+
+    @ExportMessage
+    final void semUnlink(Object name,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semUnlink", "%s", name);
+        try {
+            lib.semUnlink(delegate, name);
+        } catch (PosixException e) {
+            throw logException("semUnlink", e);
+        }
+    }
+
+    @ExportMessage
+    final int semGetValue(long handle,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semGetValue", "0x%x", handle);
+        try {
+            return logExit("semGetValue", "%d", lib.semGetValue(delegate, handle));
+        } catch (PosixException e) {
+            throw logException("semGetValue", e);
+        }
+    }
+
+    @ExportMessage
+    final void semPost(long handle,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semPost", "0x%x", handle);
+        try {
+            lib.semPost(delegate, handle);
+        } catch (PosixException e) {
+            throw logException("semPost", e);
+        }
+    }
+
+    @ExportMessage
+    final void semWait(long handle,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semWait", "0x%x", handle);
+        try {
+            lib.semWait(delegate, handle);
+        } catch (PosixException e) {
+            throw logException("semWait", e);
+        }
+    }
+
+    @ExportMessage
+    final boolean semTryWait(long handle,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semTryWait", "0x%x", handle);
+        try {
+            return logExit("semTryWait", "%b", lib.semTryWait(delegate, handle));
+        } catch (PosixException e) {
+            throw logException("semTryWait", e);
+        }
+    }
+
+    @ExportMessage
+    final boolean semTimedWait(long handle, long deadlineNs,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("semTimedWait", "0x%x %d", handle, deadlineNs);
+        try {
+            return logExit("semTimedWait", "%b", lib.semTimedWait(delegate, handle, deadlineNs));
+        } catch (PosixException e) {
+            throw logException("semTimedWait", e);
         }
     }
 

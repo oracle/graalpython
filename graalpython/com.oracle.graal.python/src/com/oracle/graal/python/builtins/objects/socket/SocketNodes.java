@@ -75,12 +75,12 @@ import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -101,6 +101,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -117,11 +118,12 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:getsockaddrarg}.
      */
-    public abstract static class GetSockAddrArgNode extends PNodeWithRaiseAndIndirectCall {
+    @GenerateInline(false)          // footprint reduction 72 -> 54
+    public abstract static class GetSockAddrArgNode extends Node {
         public abstract UniversalSockAddr execute(VirtualFrame frame, PSocket socket, Object address, String caller);
 
         @Specialization(guards = "isInet(socket)")
-        UniversalSockAddr doInet(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+        static UniversalSockAddr doInet(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
@@ -129,24 +131,25 @@ public abstract class SocketNodes {
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached @Shared("errorProfile") IsBuiltinObjectProfile errorProfile,
-                        @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode) {
-            PythonContext context = PythonContext.get(this);
+                        @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode,
+                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
             if (!(address instanceof PTuple)) {
-                throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
             }
             Object[] hostAndPort = getObjectArrayNode.execute(inliningTarget, address);
             if (hostAndPort.length != 2) {
-                throw raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
             }
             byte[] host = idnaConverter.execute(frame, hostAndPort[0]);
-            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
+            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1], raiseNode);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
             Object posixSupport = context.getPosixSupport();
             return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
         }
 
         @Specialization(guards = "isInet6(socket)")
-        UniversalSockAddr doInet6(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+        static UniversalSockAddr doInet6(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
@@ -154,22 +157,23 @@ public abstract class SocketNodes {
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached @Shared("errorProfile") IsBuiltinObjectProfile errorProfile,
-                        @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode) {
-            PythonContext context = PythonContext.get(this);
+                        @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode,
+                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
             if (!(address instanceof PTuple)) {
-                throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
             }
             Object[] hostAndPort = getObjectArrayNode.execute(inliningTarget, address);
             if (hostAndPort.length < 2 || hostAndPort.length > 4) {
-                throw raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
             }
             byte[] host = idnaConverter.execute(frame, hostAndPort[0]);
-            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
+            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1], raiseNode);
             int flowinfo = 0;
             if (hostAndPort.length > 2) {
                 flowinfo = asIntNode.execute(frame, inliningTarget, hostAndPort[2]);
                 if (flowinfo < 0 || flowinfo > 0xfffff) {
-                    throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
                 }
             }
             int scopeid = 0;
@@ -182,48 +186,50 @@ public abstract class SocketNodes {
         }
 
         @Specialization(guards = "isUnix(socket)")
-        @SuppressWarnings("truffle-static-method")
-        UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+        static UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib) {
+                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             byte[] path;
             if (unicodeCheckNode.execute(inliningTarget, address)) {
                 // PyUnicode_EncodeFSDefault
                 TruffleString utf8 = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, address), Encoding.UTF_8);
                 path = copyToByteArrayNode.execute(utf8, Encoding.UTF_8);
             } else {
-                Object buffer = bufferAcquireLib.acquireReadonly(address, frame, this);
+                Object buffer = bufferAcquireLib.acquireReadonly(address, frame, indirectCallData);
                 try {
                     path = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer, frame, this);
+                    bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
             if (!PosixConstants.IS_LINUX || (path.length > 0 && path[0] != 0)) {
                 // not a linux "abstract" address -> needs a terminating zero
                 path = arrayCopyOf(path, path.length + 1);
             }
-            PythonContext context = PythonContext.get(this);
+            PythonContext context = PythonContext.get(inliningTarget);
             Object posixSupport = context.getPosixSupport();
             try {
                 return posixLib.createUniversalSockAddrUnix(posixSupport, new UnixSockAddr(path));
             } catch (UnsupportedPosixFeatureException e) {
-                throw raise(OSError, ErrorMessages.AF_UNIX_NOT_SUPPORTED, caller);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.AF_UNIX_NOT_SUPPORTED, caller);
             } catch (InvalidUnixSocketPathException e) {
-                throw raise(OSError, ErrorMessages.AF_UNIX_PATH_TOO_LONG, caller);
+                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.AF_UNIX_PATH_TOO_LONG, caller);
             }
         }
 
         @Specialization(guards = {"!isInet(socket)", "!isInet6(socket)", "!isUnix(socket)"})
         @SuppressWarnings("unused")
-        UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller) {
-            throw raise(OSError, ErrorMessages.BAD_FAMILY, caller);
+        static UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OSError, ErrorMessages.BAD_FAMILY, caller);
         }
 
         static boolean isInet(PSocket socket) {
@@ -238,7 +244,8 @@ public abstract class SocketNodes {
             return socket.getFamily() == AF_UNIX.value;
         }
 
-        private int parsePort(VirtualFrame frame, String caller, PyLongAsIntNode asIntNode, Node inliningTarget, IsBuiltinObjectProfile errorProfile, Object portObj) {
+        private static int parsePort(VirtualFrame frame, String caller, PyLongAsIntNode asIntNode, Node inliningTarget, IsBuiltinObjectProfile errorProfile, Object portObj,
+                        PRaiseNode.Lazy raiseNode) {
             int port;
             try {
                 port = asIntNode.execute(frame, inliningTarget, portObj);
@@ -247,7 +254,7 @@ public abstract class SocketNodes {
                 port = -1;
             }
             if (port < 0 || port > 0xffff) {
-                throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
             }
             return port;
         }
@@ -256,7 +263,8 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:setipaddr}.
      */
-    public abstract static class SetIpAddrNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    public abstract static class SetIpAddrNode extends Node {
 
         private static final byte[] BROADCAST_IP = "255.255.255.255".getBytes();
         private static final byte[] BROADCAST = "<broadcast>".getBytes();
@@ -264,14 +272,15 @@ public abstract class SocketNodes {
         public abstract UniversalSockAddr execute(VirtualFrame frame, byte[] name, int family);
 
         @Specialization
-        UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
+        static UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
                         @Cached InetPtoNCachedPNode inetPtoNCachedPNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached GilNode gil) {
-            PythonContext context = PythonContext.get(this);
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
             Object posixSupport = context.getPosixSupport();
             try {
                 if (name.length == 0) {
@@ -282,7 +291,7 @@ public abstract class SocketNodes {
                                         family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
                         try {
                             if (addrInfoLib.next(cursor)) {
-                                throw raise(OSError, ErrorMessages.WILD_CARD_RESOLVED_TO_MULTIPLE_ADDRESS);
+                                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.WILD_CARD_RESOLVED_TO_MULTIPLE_ADDRESS);
                             }
                             return addrInfoLib.getSockAddr(cursor);
                         } finally {
@@ -295,7 +304,7 @@ public abstract class SocketNodes {
                 /* special-case broadcast - inet_addr() below can return INADDR_NONE for this */
                 if (Arrays.equals(name, BROADCAST_IP) || Arrays.equals(name, BROADCAST)) {
                     if (family != AF_INET.value && family != AF_UNSPEC.value) {
-                        throw raise(OSError, ErrorMessages.ADDRESS_FAMILY_MISMATCHED);
+                        throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ADDRESS_FAMILY_MISMATCHED);
                     }
                     return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(0, INADDR_BROADCAST.value));
                 }
@@ -376,22 +385,23 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code makesockaddr}
      */
-    public abstract static class MakeSockAddrNode extends PNodeWithRaise {
-        public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class MakeSockAddrNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object makeSockAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @Bind("this") Node inliningTarget,
+        static Object makeSockAddr(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
-                        @Cached PythonObjectFactory factory,
+                        @Cached(inline = false) PythonObjectFactory factory,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PythonContext context = PythonContext.get(this);
+                PythonContext context = PythonContext.get(inliningTarget);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
@@ -415,7 +425,7 @@ public abstract class SocketNodes {
                     // Can be returned from recvfrom when used on a connected socket
                     return PNone.NONE;
                 } else {
-                    throw raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
+                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
@@ -436,19 +446,20 @@ public abstract class SocketNodes {
     /**
      * Converts address to string, like CPython's {@code make_ipv4_addr} and {@code make_ipv6_addr}.
      */
-    public abstract static class MakeIpAddrNode extends PNodeWithRaise {
-        public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class MakeIpAddrNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object makeAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @Bind("this") Node inliningTarget,
+        static Object makeAddr(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PythonContext context = PythonContext.get(this);
+                PythonContext context = PythonContext.get(inliningTarget);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
@@ -459,7 +470,7 @@ public abstract class SocketNodes {
                     Object posixSupport = context.getPosixSupport();
                     return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                 } else {
-                    throw raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
+                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
@@ -528,8 +539,11 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socket_parse_timeout}
      */
-    public abstract static class ParseTimeoutNode extends PNodeWithRaise {
-        public abstract long execute(VirtualFrame frame, Object value);
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    public abstract static class ParseTimeoutNode extends Node {
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, Object value);
 
         @Specialization(guards = "isNone(none)")
         static long parse(@SuppressWarnings("unused") PNone none) {
@@ -537,12 +551,12 @@ public abstract class SocketNodes {
         }
 
         @Specialization(guards = "!isNone(seconds)")
-        long parse(VirtualFrame frame, Object seconds,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
+        static long parse(VirtualFrame frame, Node inliningTarget, Object seconds,
+                        @Cached PyTimeFromObjectNode timeFromObjectNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             long timeout = timeFromObjectNode.execute(frame, inliningTarget, seconds, RoundType.TIMEOUT, TimeUtils.SEC_TO_NS);
             if (timeout < 0) {
-                throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }
             return timeout;
         }

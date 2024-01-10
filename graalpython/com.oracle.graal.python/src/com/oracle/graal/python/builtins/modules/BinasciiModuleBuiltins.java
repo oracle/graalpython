@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.PGuards.isAscii;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.crc32;
+import static com.oracle.graal.python.util.PythonUtils.crcHqx;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -70,9 +71,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -102,11 +104,12 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         return BinasciiModuleBuiltinsFactory.getFactories();
     }
 
-    abstract static class AsciiBufferConverter extends ArgumentCastNodeWithRaiseAndIndirectCall {
+    abstract static class AsciiBufferConverter extends ArgumentCastNode {
         @Specialization(guards = "acquireLib.hasBuffer(value)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object doObject(VirtualFrame frame, Object value,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-            return acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
+            return acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), indirectCallData);
         }
 
         @ExportLibrary(PythonBufferAccessLibrary.class)
@@ -140,35 +143,37 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isAscii(value, getCodeRangeNode)")
-        Object asciiString(TruffleString value,
+        static Object asciiString(TruffleString value,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             return new AsciiStringBuffer(value);
         }
 
         @Specialization(guards = "!isAscii(value, getCodeRangeNode)")
-        Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
-                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            throw raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
+        static Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object string(PString value,
+        static Object string(PString value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached InlinedConditionProfile asciiProfile) {
+                        @Cached InlinedConditionProfile asciiProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString ts = cast.execute(inliningTarget, value);
             if (asciiProfile.profile(inliningTarget, isAscii(ts, getCodeRangeNode))) {
                 return asciiString(ts, getCodeRangeNode);
             } else {
-                return nonAsciiString(ts, getCodeRangeNode);
+                return nonAsciiString(ts, getCodeRangeNode, raiseNode.get(inliningTarget));
             }
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
+        static Object error(@SuppressWarnings("unused") Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
         }
 
         @ClinicConverterFactory
@@ -184,13 +189,14 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bBase64Node extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
         PBytes doConvert(VirtualFrame frame, Object buffer,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
             try {
                 ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
                 return factory.createBytes(storage);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -259,13 +265,14 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bHexNode extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
         PBytes a2b(VirtualFrame frame, Object buffer,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
             try {
                 byte[] bytes = a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
                 return factory.createBytes(bytes);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -310,7 +317,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             try {
                 encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
             } catch (IllegalArgumentException e) {
-                throw raise(BinasciiError, e);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
             }
             if (newline != 0) {
                 byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);
@@ -322,12 +329,13 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         PBytes b2aBuffer(VirtualFrame frame, Object buffer, int newline,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
             try {
                 return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline, factory);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -346,17 +354,20 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         @CompilationFinal(dimensions = 1) private static final byte[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
         @Specialization(limit = "3")
-        PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
+        static PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
                 // TODO implement sep and bytes_per_sep
-                throw raise(NotImplementedError);
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError);
             }
             try {
                 return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), factory);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -384,18 +395,42 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class Crc32Node extends PythonBinaryClinicBuiltinNode {
 
         @Specialization(limit = "3")
-        long b2a(VirtualFrame frame, Object buffer, long crc,
+        static long b2a(VirtualFrame frame, Object buffer, long crc,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return crc32((int) crc, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BinasciiModuleBuiltinsClinicProviders.Crc32NodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "crc_hqx", minNumOfPositionalArgs = 2, parameterNames = {"data", "crc"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "crc", conversion = ArgumentClinic.ClinicConversion.Long)
+    @GenerateNodeFactory
+    abstract static class CrcHqxNode extends PythonBinaryClinicBuiltinNode {
+
+        @Specialization(limit = "3")
+        static long b2a(VirtualFrame frame, Object buffer, long crc,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
+                return crcHqx((int) crc, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.CrcHqxNodeClinicProviderGen.INSTANCE;
         }
     }
 

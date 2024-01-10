@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -109,12 +110,13 @@ public final class CycleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PCycle self,
+        static Object next(VirtualFrame frame, PCycle self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile iterableProfile,
-                        @Cached InlinedBranchProfile firstPassProfile) {
+                        @Cached InlinedBranchProfile firstPassProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getIterable() != null) {
                 iterableProfile.enter(inliningTarget);
                 try {
@@ -130,7 +132,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 }
             }
             if (isEmpty(self.getSaved())) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             Object item = get(self.getSaved(), self.getIndex());
             self.setIndex(self.getIndex() + 1);
@@ -141,26 +143,22 @@ public final class CycleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private boolean isEmpty(List<Object> l) {
+        private static boolean isEmpty(List<Object> l) {
             return l.isEmpty();
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private Object add(List<Object> l, Object item) {
+        private static Object add(List<Object> l, Object item) {
             return l.add(item);
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private Object get(List<Object> l, int idx) {
+        private static Object get(List<Object> l, int idx) {
             return l.get(idx);
         }
 
         @TruffleBoundary
-        @SuppressWarnings("static-method")
-        private int size(List<Object> l) {
+        private static int size(List<Object> l) {
             return l.size();
         }
     }
@@ -221,19 +219,20 @@ public final class CycleBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
 
         @Specialization
-        Object setState(VirtualFrame frame, PCycle self, Object state,
+        static Object setState(VirtualFrame frame, PCycle self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
-                throw raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object obj = getItemNode.execute(frame, state, 0);
             if (!(obj instanceof PList)) {
-                throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
+                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
             }
             PList saved = (PList) obj;
 
@@ -242,7 +241,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 firstPass = asSizeNode.executeLossy(frame, inliningTarget, getItemNode.execute(frame, state, 1)) != 0;
             } catch (PException e) {
                 e.expectTypeError(inliningTarget, isTypeErrorProfile);
-                throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
+                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 
             Object[] savedArray = toArrayNode.execute(inliningTarget, saved.getSequenceStorage());

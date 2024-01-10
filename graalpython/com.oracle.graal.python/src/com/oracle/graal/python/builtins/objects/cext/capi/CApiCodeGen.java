@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,9 @@ public final class CApiCodeGen {
 
     private static final String START_CAPI_BUILTINS = "{{start CAPI_BUILTINS}}";
     private static final String END_CAPI_BUILTINS = "{{end CAPI_BUILTINS}}";
+
+    private static final String START_CAPI_CONSTANTS = "{{start CAPI_CONSTANTS}}";
+    private static final String END_CAPI_CONSTANTS = "{{end CAPI_CONSTANTS}}";
 
     public static final class CApiBuiltinDesc {
         public final String name;
@@ -492,7 +495,7 @@ public final class CApiCodeGen {
                     "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer",
                     "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_KIND", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
                     "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize", "_PyArray_Data",
-                    "_PyErr_Occurred", "_PyNamespace_New"};
+                    "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler"};
 
     /**
      * Check the list of implemented and unimplemented builtins against the list of CPython exported

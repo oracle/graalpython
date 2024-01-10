@@ -29,7 +29,7 @@ import warnings
 import test.support
 import test.support.script_helper
 from test import support
-from test.support import hashlib_helper
+from test.support import hashlib_helper, gc_collect
 from test.support import import_helper
 from test.support import os_helper
 from test.support import script_helper
@@ -102,7 +102,8 @@ def close_queue(queue):
 def join_process(process):
     # Since multiprocessing.Process has the same API than threading.Thread
     # (join() and is_alive(), the support function can be reused
-    threading_helper.join_thread(process)
+    # GraalPy change: increase timeout
+    threading_helper.join_thread(process, timeout=(60.0 * 5))
 
 
 if os.name == "posix":
@@ -231,6 +232,10 @@ class TestInternalDecorators(unittest.TestCase):
             multiprocessing.set_start_method(orig_start_method, force=True)
 
 
+# GraalPy change
+def get_id():
+    return multiprocessing.context._default_context._get_id()
+
 #
 # Creates a wrapper for a function which records the time it takes to finish
 #
@@ -318,7 +323,7 @@ class _TestProcess(BaseTestCase):
         self.assertTrue(len(authkey) > 0)
         # Begin Truffle change
         # self.assertEqual(current.ident, os.getpid())
-        self.assertEqual(current.ident, _multiprocessing._gettid())
+        self.assertEqual(current.ident, get_id())
         # End Truffle change
         self.assertEqual(current.exitcode, None)
 
@@ -397,7 +402,7 @@ class _TestProcess(BaseTestCase):
         self.assertEqual(parent_pid, self.current_process().pid)
         # Begin Truffle change
         # self.assertEqual(parent_pid, os.getpid())
-        self.assertEqual(parent_pid, _multiprocessing._gettid())
+        self.assertEqual(parent_pid, get_id())
         # End Truffle change
         self.assertEqual(parent_name, self.current_process().name)
 
@@ -484,6 +489,7 @@ class _TestProcess(BaseTestCase):
         self.assertNotIn(p, self.active_children())
         close_queue(q)
 
+    @support.impl_detail("Java threads IDs start from 0 for every process", graalpy=False)
     @unittest.skipUnless(threading._HAVE_THREAD_NATIVE_ID, "needs native_id")
     def test_process_mainthread_native_id(self):
         if self.TYPE == 'threads':
@@ -575,7 +581,9 @@ class _TestProcess(BaseTestCase):
     def test_terminate(self):
         exitcode = self._kill_process(multiprocessing.Process.terminate)
         if os.name != 'nt':
-            self.assertEqual(exitcode, -signal.SIGTERM)
+            # GraalPy change: JVM exits with 143 on SIGTERM
+            exitcodes = [-signal.SIGTERM, 128 + signal.SIGTERM]
+            self.assertIn(exitcode, exitcodes)
 
     def test_kill(self):
         exitcode = self._kill_process(multiprocessing.Process.kill)
@@ -721,6 +729,8 @@ class _TestProcess(BaseTestCase):
             join_process(p)
         if os.name != 'nt':
             exitcodes = [-signal.SIGTERM]
+            # GraalPy change: JVM exits with 143 on SIGTERM
+            exitcodes.append(128 + signal.SIGTERM)
             if sys.platform == 'darwin':
                 # bpo-31510: On macOS, killing a freshly started process with
                 # SIGTERM sometimes kills the process with SIGKILL.
@@ -1716,7 +1726,7 @@ class _TestCondition(BaseTestCase):
         if pid is not None:
             os.kill(pid, signal.SIGINT)
 
-    @support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalpy=False)
+    @support.impl_detail("Interrupt tends to kill the whole process on GraalPy", graalpy=False)
     def test_wait_result(self):
         if isinstance(self, ProcessesMixin) and sys.platform != 'win32':
             pid = os.getpid()
@@ -3147,7 +3157,6 @@ class _TestRemoteManager(BaseTestCase):
         # Make queue finalizer run before the server is stopped
         del queue
 
-@support.impl_detail("multiprocessing manager not supported", graalpy=False)
 @hashlib_helper.requires_hashdigest('md5')
 class _TestManagerRestart(BaseTestCase):
 
@@ -3493,7 +3502,6 @@ class _TestListener(BaseTestCase):
         if self.TYPE == 'processes':
             self.assertRaises(OSError, l.accept)
 
-    @unittest.skipIf(IS_LINUX, "module 'socket' has no attribute 'AF_UNIX'")
     @unittest.skipUnless(util.abstract_sockets_supported,
                          "test needs abstract socket support")
     def test_abstract_socket(self):
@@ -3787,7 +3795,6 @@ class _TestHeap(BaseTestCase):
         multiprocessing.heap.BufferWrapper._heap = self.old_heap
         super().tearDown()
 
-    @support.impl_detail("heap/shared memory not supported", graalpy=False)
     def test_heap(self):
         iterations = 5000
         maxblocks = 50
@@ -4699,7 +4706,6 @@ class _TestLogging(BaseTestCase):
 # Check that Process.join() retries if os.waitpid() fails with EINTR
 #
 
-@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalpy=False)
 class _TestPollEintr(BaseTestCase):
 
     ALLOWED_TYPES = ('processes',)
@@ -4748,11 +4754,11 @@ class TestInvalidHandle(unittest.TestCase):
             # Hack private attribute _handle to avoid printing an error
             # in conn.__del__
             conn._handle = None
-        # Begin Truffle change
-        # graalpython multiporcessing uses fake negative fd numbers
-        #self.assertRaises((ValueError, OSError),
-        #                  multiprocessing.connection.Connection, -1)
-        # End Truffle change
+            # GraalPy change
+            if hasattr(conn, '_finalizer'):
+                conn._finalizer.fd = None
+        self.assertRaises((ValueError, OSError),
+                          multiprocessing.connection.Connection, -1)
 
 
 
@@ -4898,7 +4904,7 @@ class TestWait(unittest.TestCase):
                 time.sleep(random.random()*0.1)
             # Begin Truffle change
             #w.send((i, os.getpid()))
-            w.send((i, _multiprocessing._gettid()))
+            w.send((i, get_id()))
             # End Truffle change
         w.close()
 
@@ -5104,7 +5110,6 @@ class TestFlags(unittest.TestCase):
         flags = (tuple(sys.flags), grandchild_flags)
         print(json.dumps(flags))
 
-    @support.impl_detail("Can't pickle <class 'sys.flags'>: it's not the same object as sys.flags", graalpy=False)
     def test_flags(self):
         import json
         # start child process using unusual flags
@@ -5267,7 +5272,6 @@ class TestCloseFds(unittest.TestCase):
 # Issue #17097: EINTR should be ignored by recv(), send(), accept() etc
 #
 
-@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalpy=False)
 class TestIgnoreEINTR(unittest.TestCase):
 
     # Sending CONN_MAX_SIZE bytes into a multiprocessing pipe must block
@@ -5350,11 +5354,12 @@ class TestStartMethod(unittest.TestCase):
         p.join()
         self.assertEqual(child_method, ctx.get_start_method())
 
+    @support.impl_detail("It's not possible to switch between graalpy and spawn context without changing the global default", graalpy=False)
     def test_context(self):
         # Begin Truffle change
         # 'fork' and 'forkserver' not supported
         # for method in ('fork', 'spawn', 'forkserver'):
-        for method in ('spawn',):
+        for method in multiprocessing.get_all_start_methods():
         # End Truffle change
             try:
                 ctx = multiprocessing.get_context(method)
@@ -5374,6 +5379,7 @@ class TestStartMethod(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'module_names must be a list of strings'):
             ctx.set_forkserver_preload([1, 2, 3])
 
+    @support.impl_detail("It's not possible to switch between graalpy and spawn context without changing the global default", graalpy=False)
     def test_set_get(self):
         multiprocessing.set_forkserver_preload(PRELOAD)
         count = 0
@@ -5381,7 +5387,7 @@ class TestStartMethod(unittest.TestCase):
         try:
             # Begin Truffle change
             # 'fork' and 'forkserver' not supported
-            for method in ('spawn',):
+            for method in multiprocessing.get_all_start_methods():
             # End Truffle change
                 try:
                     multiprocessing.set_start_method(method, force=True)
@@ -5402,12 +5408,11 @@ class TestStartMethod(unittest.TestCase):
     def test_get_all(self):
         methods = multiprocessing.get_all_start_methods()
         if sys.platform == 'win32':
-            self.assertEqual(methods, ['spawn'])
+            # GraalVM change
+            self.assertEqual(methods, ['graalpy'])
         else:
-            self.assertTrue(methods == ['fork', 'spawn'] or
-                            methods == ['spawn', 'fork'] or
-                            methods == ['fork', 'spawn', 'forkserver'] or
-                            methods == ['spawn', 'fork', 'forkserver'])
+            # GraalVM change
+            self.assertEqual(methods, ['spawn', 'graalpy'])
 
     def test_preload_resources(self):
         if multiprocessing.get_start_method() != 'forkserver':
@@ -5444,10 +5449,12 @@ class TestStartMethod(unittest.TestCase):
                 p.join()
 
 
-@support.impl_detail("resource tracker not supported", graalpy=False)
 @unittest.skipIf(sys.platform == "win32",
                  "test semantics don't make sense on Windows")
 class TestResourceTracker(unittest.TestCase):
+    # GraalPy change: try trigger all the cleanup, or the leftover finalizers interfere with subsequent tests
+    def tearDown(self):
+        gc_collect()
 
     def test_resource_tracker(self):
         #
@@ -5549,7 +5556,7 @@ class TestResourceTracker(unittest.TestCase):
             # ensure `sem` gets collected, which triggers communication with
             # the semaphore tracker
             del sem
-            gc.collect()
+            gc_collect()
             self.assertIsNone(wr())
             if should_die:
                 self.assertEqual(len(all_warn), 1)
@@ -5700,7 +5707,7 @@ class TestPoolNotLeakOnFailure(unittest.TestCase):
         self.assertFalse(
             any(process.is_alive() for process in forked_processes))
 
-@support.impl_detail("multiprocessing manager not supported", graalpy=False)
+
 @hashlib_helper.requires_hashdigest('md5')
 class TestSyncManagerTypes(unittest.TestCase):
     """Test all the types which can be shared between a parent and a
@@ -6086,7 +6093,7 @@ class ManagerMixin(BaseMixin):
                                       f"active children after {dt} seconds")
                 break
 
-        gc.collect()                       # do garbage collection
+        gc_collect()                       # do garbage collection
         if cls.manager._number_of_objects() != 0:
             # This is not really an error since some tests do not
             # ensure that all processes which hold a reference to a

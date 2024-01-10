@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -99,12 +100,13 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
-        Object mbstreamwriterNew(VirtualFrame frame, Object type, Object stream, Object err,
+        static Object mbstreamwriterNew(VirtualFrame frame, Object type, Object stream, Object err,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory) { // "O|s:StreamWriter"
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamWriter"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
@@ -114,7 +116,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -182,8 +184,9 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // assuming !pySequenceCheck.execute(lines)
         @Fallback
-        Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines) {
-            throw raise(TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
+        static Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
         }
     }
 
@@ -206,7 +209,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
             PBytes pwrt = encodeEmptyInput(datalen, MBENC_FLUSH | MBENC_RESET, factory);
             if (pwrt == null) {
                 MultibyteEncodeBuffer buf = new MultibyteEncodeBuffer(self.pending);
-                pwrt = encodeNode.execute(frame, self.codec, self.state, buf,
+                pwrt = encodeNode.execute(frame, inliningTarget, self.codec, self.state, buf,
                                 self.errors, MBENC_FLUSH | MBENC_RESET,
                                 factory);
             }

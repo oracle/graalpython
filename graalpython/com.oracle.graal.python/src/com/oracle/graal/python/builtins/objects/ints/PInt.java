@@ -301,6 +301,16 @@ public final class PInt extends PythonBuiltinObject {
         }
     }
 
+    @ExportMessage
+    public boolean fitsInBigInteger() {
+        return true;
+    }
+
+    @ExportMessage
+    public BigInteger asBigInteger() {
+        return value;
+    }
+
     @Override
     public int hashCode() {
         return value.hashCode();
@@ -372,28 +382,15 @@ public final class PInt extends PythonBuiltinObject {
         return value.doubleValue();
     }
 
-    public double doubleValueWithOverflow(PRaiseNode raise) {
-        return doubleValueWithOverflow(value, raise);
-    }
-
-    public double doubleValueWithOverflow(Node inliningTarget, PRaiseNode.Lazy raise) {
-        return doubleValueWithOverflow(inliningTarget, value, raise);
+    public double doubleValueWithOverflow(Node raisingNode) {
+        return doubleValueWithOverflow(raisingNode, value);
     }
 
     @TruffleBoundary
-    public static double doubleValueWithOverflow(BigInteger value, PRaiseNode raise) {
+    public static double doubleValueWithOverflow(Node raisingNode, BigInteger value) {
         double d = value.doubleValue();
         if (Double.isInfinite(d)) {
-            throw raise.raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
-        }
-        return d;
-    }
-
-    @TruffleBoundary
-    public static double doubleValueWithOverflow(Node inliningTarget, BigInteger value, PRaiseNode.Lazy raise) {
-        double d = value.doubleValue();
-        if (Double.isInfinite(d)) {
-            throw raise.get(inliningTarget).raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
+            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
         }
         return d;
     }
@@ -545,6 +542,37 @@ public final class PInt extends PythonBuiltinObject {
     @TruffleBoundary(transferToInterpreterOnException = false)
     private static byte byteValueExact(BigInteger value) {
         return value.byteValueExact();
+    }
+
+    public static boolean isShortRange(int val) {
+        return val >= Short.MIN_VALUE && val < Short.MAX_VALUE;
+    }
+
+    public static boolean isShortRange(long val) {
+        return val >= Short.MIN_VALUE && val < Short.MAX_VALUE;
+    }
+
+    public static short shortValueExact(int val) throws OverflowException {
+        if (!isShortRange(val)) {
+            throw OverflowException.INSTANCE;
+        }
+        return (short) val;
+    }
+
+    public static short shortValueExact(long val) throws OverflowException {
+        if (!isShortRange(val)) {
+            throw OverflowException.INSTANCE;
+        }
+        return (short) val;
+    }
+
+    public short shortValueExact() {
+        return shortValueExact(value);
+    }
+
+    @TruffleBoundary(transferToInterpreterOnException = false)
+    private static short shortValueExact(BigInteger value) {
+        return value.shortValueExact();
     }
 
     public byte[] toByteArray() {

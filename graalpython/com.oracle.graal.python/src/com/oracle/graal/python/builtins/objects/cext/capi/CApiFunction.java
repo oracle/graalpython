@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -250,6 +250,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_FillInfo", ret = Int, args = {PY_BUFFER_PTR, PyObject, Pointer, Py_ssize_t, Int, Int}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_IsContiguous", ret = Int, args = {CONST_PY_BUFFER, CHAR}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_Release", ret = Void, args = {PY_BUFFER_PTR}, call = CImpl)
+    @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, CONST_PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_AS_STRING", ret = CHAR_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_FromStringAndSize", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
@@ -432,6 +433,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_CheckBuffer", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Free", ret = Void, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GC_Del", ret = Void, args = {Pointer}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_GC_Track", ret = Void, args = {Pointer}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_GC_UnTrack", ret = Void, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GenericGetAttr", ret = PyObjectTransfer, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GenericGetDict", ret = PyObject, args = {PyObject, Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GenericSetAttr", ret = Int, args = {PyObject, PyObject, PyObject}, call = CImpl)
@@ -696,7 +699,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_FromContiguous", ret = Int, args = {CONST_PY_BUFFER_PTR, CONST_VOID_PTR, Py_ssize_t, CHAR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_GetPointer", ret = Pointer, args = {CONST_PY_BUFFER_PTR, CONST_PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_SizeFromFormat", ret = Py_ssize_t, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, CONST_PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t,
@@ -778,7 +780,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_SetProfile", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetTrace", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyExceptionClass_Name", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyException_GetTraceback", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_FromFd", ret = PyObject, args = {Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString,
                     ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_GetLine", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
@@ -1405,6 +1406,10 @@ public final class CApiFunction {
                         String name = clazz.getSimpleName();
                         if (!annotation.name().isEmpty()) {
                             name = annotation.name();
+                        }
+                        if (!annotation.ret().isValidReturnType()) {
+                            throw new IllegalArgumentException(
+                                            String.format("Invalid @CApiBuiltin %s: %s is not an allowed return type, use PyObjectTransfer or PyObjectBorrow variants", name, annotation.ret()));
                         }
                         Class<?> gen;
                         try {

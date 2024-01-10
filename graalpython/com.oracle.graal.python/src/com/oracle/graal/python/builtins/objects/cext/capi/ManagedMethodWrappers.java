@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.c
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -72,10 +73,10 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class ManagedMethodWrappers {
 
     @ExportLibrary(InteropLibrary.class)
-    public abstract static class MethodWrapper extends PythonNativeWrapper {
+    public abstract static class MethodWrapper extends PythonStructNativeWrapper {
 
         public MethodWrapper(Object method) {
-            super(method);
+            super(method, false);
         }
 
         @ExportMessage
@@ -150,7 +151,7 @@ public abstract class ManagedMethodWrappers {
                     throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(callNode).getNativeNull().getPtr();
             } finally {
                 gil.release(mustRelease);
@@ -178,6 +179,7 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached NativeToPythonNode toJavaNode,
                         @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
@@ -197,7 +199,7 @@ public abstract class ManagedMethodWrappers {
                     throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(toJavaNode).getNativeNull().getPtr();
             } finally {
                 gil.release(mustRelease);

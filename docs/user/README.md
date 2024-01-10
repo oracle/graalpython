@@ -27,16 +27,16 @@ To distinguish between them, GraalPy Community has the suffix `-community` in th
 
 ```bash
 # Oracle GraalPy
-graalpy-VERSION-PLATFORM.tar.gz
+graalpy-<version>-<os>-<arch>.tar.gz
 # GraalPy Community
-graalpy-community-VERSION-PLATFORM.tar.gz
+graalpy-community-<version>-<os>-<arch>.tar.gz
 ```
 
 Two language runtime options are available for both Oracle and Community GraalPy: Native and JVM.
 In the Native configuration, GraalPy is ahead-of-time compiled to a standalone native executable. 
 This means that you do not need a JVM installed on your system to use it and it is size-compact.
 In the JVM configuration, you can use Java interoperability easily, and peak performance may be higher than the native configuration.
-A JVM standalone that comes with a JVM has the `-jvm` suffix in a name: `graalpy-jvm-<version>-<os>-<arch>.tar.gz`.
+A JVM standalone that comes with a JVM has the `-jvm` suffix in the name: `graalpy-jvm-<version>-<os>-<arch>.tar.gz`.
 
 | Configuration:     | Native (default) | JVM           |
 | ------------------ | ---------------: | ------------: |
@@ -47,7 +47,9 @@ A JVM standalone that comes with a JVM has the `-jvm` suffix in a name: `graalpy
 
 ## Installing GraalPy
 
-You can install GraalPy either using a Python manager or downloading a compressed GraalPy tarball appropriate for your platform.
+You can install GraalPy by downloading a compressed GraalPy tarball appropriate for your platform. 
+
+Linux and macOS users can use [Pyenv](https://github.com/pyenv/pyenv) to install GraalPy. Also, for the **Linux x64** architecture it is possible to install via [Conda-Forge](https://conda-forge.org/) (Conda-Forge provides GraalPy Community only).
 
 ### Downloading
 
@@ -58,6 +60,7 @@ You can install GraalPy either using a Python manager or downloading a compresse
     ```shell
     sudo xattr -r -d com.apple.quarantine <archive>.tar.gz
     ```
+
     Now extract:
     ```shell
     tar -xzf <archive>.tar.gz
@@ -68,27 +71,25 @@ You can install GraalPy either using a Python manager or downloading a compresse
     ./path/to/bin/graalpy --version
     ```
 
-### Using `pyenv`
-#### Linux and macOS
+### Using `pyenv` 
 
-The other way to install GraalPy on Linux and macOS platforms is to use [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
-For example, to install version 23.1.1, run the following command:
+Linux and macOS users can install GraalPy using [Pyenv](https://github.com/pyenv/pyenv).
+To install version 23.1.0, run the following command:
 
 ```bash
-# To install Oracle GraalPy  
-pyenv install graalpy-23.1.1
-# To install GraalPy Community
-pyenv install graalpy-community-23.1.1
+pyenv install graalpy-23.1.0
 ```
 
-Another option is to use [Conda-Forge](https://conda-forge.org/).
-To get an environment with the latest version of GraalPy, use the following command:
+### Using Conda Forge (GraalPy Community only)
+
+Another option is to use [Conda-Forge](https://conda-forge.org/) to install GraalPy on the **Linux x64** architecture (GraalPy Community only). 
+To get an environment with the latest version, use the following command:
 
 ```bash
 conda create -c conda-forge -n graalpy graalpy
 ```
 
-#### Windows
+## GraalPy for Windows
 
 There is a GraalPy preview build for Windows that you can [download](https://github.com/oracle/graalpython/releases/).
 It supports installation of pure Python packages via `pip`. Native extensions are a work in progress.

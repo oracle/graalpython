@@ -1,21 +1,734 @@
+From 9edd0115fec81c1add7e1301eaccb0a3eef49d2e Mon Sep 17 00:00:00 2001
+From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
+Date: Tue, 5 Dec 2023 14:47:39 +0300
+Subject: [PATCH] patch 0.5.1
+
+---
+ LICENSE.rst                   |   1 +
+ README.rst                    |  51 +++++
+ asv/benchmark.py              |  38 +++-
+ asv/commands/common_args.py   |  19 ++
+ asv/commands/publish.py       |  11 ++
+ asv/commands/run.py           |   2 +-
+ asv/config.py                 |   2 +
+ asv/plugins/comparisonlist.py | 236 ++++++++++++++++++++++
+ asv/runner.py                 |  94 ++++++---
+ asv/util.py                   |   2 +-
+ asv/www/asv.js                |   2 +
+ asv/www/comparisonlist.css    |  92 +++++++++
+ asv/www/comparisonlist.js     | 362 ++++++++++++++++++++++++++++++++++
+ asv/www/index.html            |   9 +
+ docs/source/benchmarks.rst    |   3 +
+ 15 files changed, 898 insertions(+), 26 deletions(-)
+ create mode 100644 asv/plugins/comparisonlist.py
+ create mode 100644 asv/www/comparisonlist.css
+ create mode 100644 asv/www/comparisonlist.js
+
+diff --git a/LICENSE.rst b/LICENSE.rst
+index 4117f5e..44d86f8 100644
+--- a/LICENSE.rst
++++ b/LICENSE.rst
+@@ -1,4 +1,5 @@
+ Copyright (c) 2011-2018, Michael Droettboom, Space Telescope Science Institute, Pauli Virtanen
++Copyright (c) 2022, Oracle and/or its affiliates.
+ 
+ All rights reserved.
+ 
+diff --git a/README.rst b/README.rst
+index e916d68..62fca24 100644
+--- a/README.rst
++++ b/README.rst
+@@ -27,6 +27,57 @@ By using the following markdown::
+ 
+   [![asv](http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat)](http://your-url-here/)
+ 
++
++
++**HPy project contributions**:
++
++* Add support for reporing max-rss to asv::
++
++    --maxrss ATTRIBUTE    
++        
++        Calculate maxrss of a timed benchmarks. 
++        This will only collect maxrss instead of time. 
++        Using 'once' will run the benchmark once.
++        Using 'full' Calculate maxrss of a timed 
++        benchmarks with all the configured options, e.g. repeat, warmup, etc
++
++e.g.::
++
++    asv run --python=python3 -v -e --set-commit-hash 42xxxfoo_project_commit_hashxxx42 -b 'foo_benchmark*' --maxrss once
++
++* add warmup count option to Airspeed Velocity framework::
++
++    --attribute warmup_count=, -a warmup_count=
++        will run the benchmark this number of time(s), 
++        e.g. ``warmup_count=10``, before starting to 
++        run the actual benchmark.
++
++e.g.::
++
++    asv run --python=python3 -v -e --set-commit-hash 42xxxfoo_project_commit_hashxxx42 -b 'foo_benchmark*' -a warmup_count=1
++
++
++* Add machines comparison list to Airspeed Velocity framework::
++
++    
++    --baseline-machine BASELINE_MACHINE
++        Optional baseline comparisons between machines. 
++        Provide machine name
++
++e.g.::
++
++    # adjust foo project to use configuration1
++    asv run --python=python3 -v -e --set-commit-hash 42xxxfoo_project_commit_hashxxx42 -b 'foo_benchmark*' -m configuration1
++    # adjust foo project to use configuration2
++    asv run --python=python3 -v -e --set-commit-hash 42xxxfoo_project_commit_hashxxx42 -b 'foo_benchmark*' -m configuration2
++    # adjust foo project to use configuration3
++    asv run --python=python3 -v -e --set-commit-hash 42xxxfoo_project_commit_hashxxx42 -b 'foo_benchmark*' -m configuration3
++    asv publish --baseline-machine configuration1 --generate-markdown
++    asv preview
++
++
++
++
+ License: `BSD three-clause license
+ <http://opensource.org/licenses/BSD-3-Clause>`__.
+ 
 diff --git a/asv/benchmark.py b/asv/benchmark.py
-index 6411894..05f0678 100644
+index 3f5a9e7..55c93ff 100644
 --- a/asv/benchmark.py
 +++ b/asv/benchmark.py
-@@ -535,6 +535,8 @@ def run(self, *param):
+@@ -462,6 +462,8 @@ class Benchmark(object):
+         self._params = _get_first_attr(attr_sources, "params", [])
+         self.param_names = _get_first_attr(attr_sources, "param_names", [])
+         self._current_params = ()
++        self.warmup_count = 0
++        self.warmup_func = None
+ 
+         # Enforce params format
+         try:
+@@ -548,12 +550,22 @@ class Benchmark(object):
+         try:
+             for setup in self._setups:
+                 setup(*self._current_params)
++            self.warmup_process()
+         except NotImplementedError as e:
+             # allow skipping test
+             print("asv: skipped: {!r} ".format(e))
+             return True
+         return False
+ 
++    def warmup_process(self):
++        if self.warmup_count > 0 and self.warmup_func:
++            # Count based warmup
++            warmup_count = self.warmup_count
++            while warmup_count > 0:
++                self.warmup_func()
++                warmup_count -= 1
++            self.warmup_func = None
++
+     def redo_setup(self):
+         if not self._redo_setup_next:
+             self._redo_setup_next = True
+@@ -615,6 +627,8 @@ class TimeBenchmark(Benchmark):
+         self.sample_time = _get_first_attr(self._attr_sources, 'sample_time', 0.01)
+         self.warmup_time = _get_first_attr(self._attr_sources, 'warmup_time', -1)
+         self.timer = _get_first_attr(self._attr_sources, 'timer', wall_timer)
++        self.warmup_count = _get_first_attr(self._attr_sources, 'warmup_count', 0) # CHANGE 3 TO ZERO
++        self.do_maxrss = _get_first_attr(self._attr_sources, 'do_maxrss', 0)
+ 
+     def do_setup(self):
+         result = Benchmark.do_setup(self)
+@@ -628,6 +642,8 @@ class TimeBenchmark(Benchmark):
+         else:
+             func = self.func
+ 
++        self.warmup_func = func
++
+         timer = timeit.Timer(
+             stmt=func,
+             setup=self.redo_setup,
+@@ -636,10 +652,19 @@ class TimeBenchmark(Benchmark):
+         return timer
+ 
+     def run(self, *param):
++        maxrss = None
++        if self.do_maxrss == 1:
++            self.func(*param)
++            maxrss = get_maxrss()
++
+         warmup_time = self.warmup_time
          if warmup_time < 0:
              if '__pypy__' in sys.modules:
                  warmup_time = 1.0
 +            elif '__graalpython__' in sys.modules:
++                if self.warmup_count == 0:
++                    self.warmup_count = 3
 +                warmup_time = 5.0
              else:
                  # Transient effects exist also on CPython, e.g. from
                  # OS scheduling
+@@ -672,13 +697,24 @@ class TimeBenchmark(Benchmark):
+                                                 number=self.number,
+                                                 min_run_count=self.min_run_count)
+ 
++        if self.do_maxrss == 2:
++            maxrss = get_maxrss()
++
+         samples = [s/number for s in samples]
+-        return {'samples': samples, 'number': number}
++        return {'samples': samples, 'number': number, 'maxrss' : maxrss}
+ 
+     def benchmark_timing(self, timer, min_repeat, max_repeat, max_time, warmup_time,
+                          number, min_run_count):
+ 
+         sample_time = self.sample_time
++        if self.warmup_count > 0:
++            # Warmup before deciding how many
++            # iterations needed for each run
++            warmup_count = self.warmup_count
++            while warmup_count > 0:
++                self._redo_setup_next = False
++                timer.timeit(number)
++                warmup_count -= 1
+         start_time = wall_timer()
+         run_count = 0
+ 
+diff --git a/asv/commands/common_args.py b/asv/commands/common_args.py
+index 76cc729..9625a85 100644
+--- a/asv/commands/common_args.py
++++ b/asv/commands/common_args.py
+@@ -159,10 +159,19 @@ def add_bench(parser):
+ 
+         return affinity_list
+ 
++    def parse_maxrss(value):
++        if value == 'once' or value == '1':
++            return 1
++        if value == 'full' or value == '2':
++            return 2
++        return 0
++
+     converters = {
+         'timeout': float,
+         'version': str,
++        'do_maxrss': parse_maxrss,
+         'warmup_time': float,
++        'warmup_count': int,
+         'repeat': parse_repeat,
+         'number': int,
+         'rounds': int,
+@@ -183,6 +192,16 @@ def add_bench(parser):
+         help=("Set CPU affinity for running the benchmark, in format: "
+               "0 or 0,1,2 or 0-3. Default: not set"))
+ 
++    parser.add_argument(
++        "--maxrss", action=DictionaryArgAction, dest="attribute",
++        dict_dest="do_maxrss",
++        choices=tuple(converters.keys()), converters=converters,
++        help=("""Calculate maxrss of a timed benchmarks. 
++                 This will only collect maxrss instead of time.
++                 Using 'once' will run the benchmark once.
++                 Using 'full' Calculate maxrss of a timed benchmarks
++                 with all the configured options, e.g. repeat, warmup, etc"""))
++
+ 
+ def add_machine(parser):
+     parser.add_argument(
+diff --git a/asv/commands/publish.py b/asv/commands/publish.py
+index 43204e9..176e558 100644
+--- a/asv/commands/publish.py
++++ b/asv/commands/publish.py
+@@ -68,6 +68,14 @@ class Publish(Command):
+             '--html-dir', '-o', default=None, help=(
+                 "Optional output directory. Default is 'html_dir' "
+                 "from asv config"))
++        parser.add_argument(
++            '--baseline-machine', default=None, help=(
++                "Optional baseline comparisons between machines. Provide "
++                "machine name"))
++        parser.add_argument(
++            '--generate-markdown', action='store_true', dest='generate_markdown',
++                help=("Optional output a generated markdown file comparisons "
++                "between machines in the 'html_dir'."))
+ 
+         parser.set_defaults(func=cls.run_from_args)
+ 
+@@ -77,6 +85,9 @@ class Publish(Command):
+     def run_from_conf_args(cls, conf, args):
+         if args.html_dir is not None:
+             conf.html_dir = args.html_dir
++        if args.baseline_machine is not None:
++            conf.baseline_machine = args.baseline_machine
++        conf.generate_markdown = args.generate_markdown
+         return cls.run(conf=conf, range_spec=args.range, pull=not args.no_pull)
+ 
+     @staticmethod
+diff --git a/asv/commands/run.py b/asv/commands/run.py
+index 9e19b6c..ed38412 100644
+--- a/asv/commands/run.py
++++ b/asv/commands/run.py
+@@ -514,7 +514,7 @@ class Run(Command):
+                                 record_samples=(record_samples or force_record_samples),
+                                 append_samples=(append_samples or force_append_samples),
+                                 run_rounds=run_rounds,
+-                                launch_method=launch_method)
++                                launch_method=launch_method, benchmarks_obj=benchmarks)
+                         else:
+                             skip_benchmarks(benchmark_set, env, results=result)
+ 
+diff --git a/asv/config.py b/asv/config.py
+index c6d15d7..b52c846 100644
+--- a/asv/config.py
++++ b/asv/config.py
+@@ -46,6 +46,8 @@ class Config(object):
+         self.build_command = None
+         self.install_command = None
+         self.uninstall_command = None
++        self.baseline_machine = None
++        self.generate_markdown = False
+ 
+     @classmethod
+     def load(cls, path=None):
+diff --git a/asv/plugins/comparisonlist.py b/asv/plugins/comparisonlist.py
+new file mode 100644
+index 0000000..dfe078f
+--- /dev/null
++++ b/asv/plugins/comparisonlist.py
+@@ -0,0 +1,236 @@
++# Licensed under a 3-clause BSD style license - see LICENSE.rst
++# -*- coding: utf-8 -*-
++
++from __future__ import absolute_import, division, unicode_literals, print_function
++
++import os
++import itertools
++import six
++
++from ..console import log
++from ..publishing import OutputPublisher
++from ..graph import Graph
++
++from .. import util
++
++
++def benchmark_param_iter(benchmark):
++    """
++    Iterate over all combinations of parameterized benchmark parameters.
++
++    Yields
++    ------
++    idx : int
++        Combination flat index. `None` if benchmark not parameterized.
++    params : tuple
++        Tuple of parameter values.
++
++    """
++    if not benchmark['params']:
++        yield None, ()
++    else:
++        for item in enumerate(itertools.product(*benchmark['params'])):
++            yield item
++
++time_units = [
++    ['`ps`', 'picoseconds', 0.000000000001],
++    ['`ns`', 'nanoseconds', 0.000000001],
++    ['`μs`', 'microseconds', 0.000001],
++    ['`ms`', 'milliseconds', 0.001],
++    ['`s`', 'seconds', 1],
++    ['`m`', 'minutes', 60],
++    ['`h`', 'hours', 60 * 60],
++    ['`d`', 'days', 60 * 60 * 24],
++    ['`w`', 'weeks', 60 * 60 * 24 * 7],
++    ['`y`', 'years', 60 * 60 * 24 * 7 * 52],
++    ['`C`', 'centuries', 60 * 60 * 24 * 7 * 52 * 100]
++]
++
++mem_units = [
++    ['', 'bytes', 1],
++    ['k', 'kilobytes', 1000],
++    ['M', 'megabytes', 1000000],
++    ['G', 'gigabytes', 1000000000],
++    ['T', 'terabytes', 1000000000000]
++]
++
++def pretty_time_unit(x, unit):
++    if unit == 'seconds':
++        for i in range(len(time_units) - 1):
++            if abs(x) < time_units[i+1][2]:
++                return '%.3f' % (x / time_units[i][2]) + time_units[i][0]
++        return 'inf'
++    elif unit == 'bytes':
++        for i in range(len(mem_units) - 1):
++            if abs(x) < mem_units[i+1][2]:
++                return '%.3f' % (x / mem_units[i][2]) + mem_units[i][0]
++        return '%d' % x + mem_units[i][0]
++    else:
++        return '%.3f' % x + unit
++
++class ComparisonList(OutputPublisher):
++    name = "comparisonlist"
++    button_label = "List view"
++    description = "Display as a list"
++    order = 1
++
++    @classmethod
++    def publish(cls, conf, repo, benchmarks, graphs, revisions):
++        machines = list(graphs.get_params()["machine"])
++        num_machines = len(machines)
++        baseline_machine_idx = -1
++        if conf.baseline_machine:
++            baseline_machine_idx = machines.index(conf.baseline_machine)
++
++        result_types = ['time', 'peakmemory']
++        all_results = {}
++        for bench_type in result_types:
++            all_results[bench_type] = {
++                "machines" : machines,
++                "benchmarks" : [],
++            }
++
++        # Investigate all benchmarks
++        for benchmark_name, benchmark in sorted(six.iteritems(benchmarks)):
++            log.dot()
++
++            benchmark_graphs = graphs.get_graph_group(benchmark_name)
++
++            # For parameterized benchmarks, consider each combination separately
++            for idx, benchmark_param in benchmark_param_iter(benchmark):
++                bench_type = benchmark['type'] # time or peakmem
++                pretty_name = benchmark_name
++
++                if benchmark.get('pretty_name'):
++                    pretty_name = benchmark['pretty_name']
++
++                if idx is not None:
++                    pretty_name = '{0}({1})'.format(pretty_name,
++                                                    ", ".join(benchmark_param))
++
++                # Each environment parameter combination is reported
++                # separately on the comparisonlist page
++                benchmark_graphs = graphs.get_graph_group(benchmark_name)
++                benchmark_data = None
++                best_val = None
++                worst_val = None
++                for graph in benchmark_graphs:
++                    machine_idx = machines.index(graph.params["machine"])
++                    if not benchmark_data:
++                        benchmark_data = {
++                            "name" : benchmark_name,
++                            "pretty_name" : pretty_name,
++                            "idx" : idx,
++                            "best" : -1,
++                            "worst" : -1,
++                            "last_rev" : [None] * num_machines,
++                            "last_value" : [None] * num_machines,
++                            "last_err" : [None] * num_machines,
++                            "cmp_percent" : [0.] * num_machines,
++                        }
++                        
++                    # Produce interesting information, based on
++                    # stepwise fit on the benchmark data (reduces noise)
++                    steps = graph.get_steps()
++                    if idx is not None and steps:
++                        steps = graph.get_steps()[idx]
++
++                    last_value = None
++                    last_err = None
++                    last_rev = None
++
++                    if not steps:
++                        # No data
++                        pass
++                    else:
++                        last_piece = steps[-1]
++                        last_value = last_piece[2]
++                        if best_val is None or last_value < best_val:
++                            benchmark_data["best"] = machine_idx
++                            best_val = last_value
++                        if worst_val is None or last_value > worst_val:
++                            benchmark_data["worst"] = machine_idx
++                            worst_val = last_value
++                        last_err = last_piece[4]
++                        last_rev = last_piece[1] - 1
++                        if benchmark_data["last_value"][machine_idx]:
++                            raise ValueError("There are to machines that has the same name '%s'" % machines[machine_idx])
++                        benchmark_data["last_value"][machine_idx] = last_value
++                        benchmark_data["last_err"][machine_idx] = last_err
++                        benchmark_data["last_rev"][machine_idx] = last_rev
++                if benchmark_data and best_val:
++                    all_results[bench_type]["benchmarks"].append(benchmark_data)
++
++        if baseline_machine_idx != -1:
++            for bench_type in result_types:
++                benchmarks_result = all_results[bench_type]["benchmarks"]
++                num_benchmarks = len(benchmarks_result)
++                cmp_list = [0.] * num_machines
++                for bench_idx in range(num_benchmarks):
++                    values = benchmarks_result[bench_idx]["last_value"]
++                    b = values[baseline_machine_idx]
++                    if b:
++                        for machine_idx in range(num_machines):
++                            v = values[machine_idx]
++                            if v:
++                                p = (v - b) / b * 100
++                                cmp_list[machine_idx] += p
++                                benchmarks_result[bench_idx]["cmp_percent"][machine_idx] = p
++
++                benchmarks_average_cmp = [None] * num_machines
++                for machine_idx in range(num_machines):
++                    benchmarks_average_cmp[machine_idx] = cmp_list[machine_idx]/num_benchmarks
++                all_results[bench_type]["average"] = benchmarks_average_cmp
++                all_results[bench_type]["baseline"] = baseline_machine_idx
++                
++
++        def machine_idx_sort(row):
++            idx = row['best']
++            if idx == -1:
++                return 9999
++            if baseline_machine_idx != -1:
++                if idx == baseline_machine_idx:
++                    v = max(row["cmp_percent"])/100
++                    return idx - v
++                else:
++                    v = row["cmp_percent"][idx]/100
++                    return idx + v
++
++            return idx
++        for bench_type in result_types:
++            all_results[bench_type]["benchmarks"] = sorted(all_results[bench_type]["benchmarks"], key=machine_idx_sort)
++        # Write results to file
++        util.write_json(os.path.join(conf.html_dir, "comparison.json"), all_results, compact=True)
++
++        if conf.generate_markdown:
++            # Generate a markdown page
++            with open(os.path.join(conf.html_dir, "comparison.md"), "w") as fp:
++                fp.write('# Benchmark Machine\n')
++                fp.write('* CPU: %s\n' % list(graphs.get_params()["cpu"])[0])
++                fp.write('* CPU Cores: %s\n' % list(graphs.get_params()["num_cpu"])[0])
++                fp.write('* OS: %s\n' % list(graphs.get_params()["os"])[0])
++                fp.write('* RAM: %dGB\n' % (int(list(graphs.get_params()["ram"])[0])//1000000))
++                fp.write('\n\n')
++                for bench_type in result_types:
++                    machines = all_results[bench_type]["machines"]
++                    num_machines = len(machines)
++                    fp.write('# %s results:\n' % bench_type)
++                    fp.write('| No. |' + '|'.join(machines + ["Benchmarks"]) + '|\n')
++                    fp.write('| :-- |' + '|'.join([":--"] * (num_machines + 1)) + '|\n')
++                    if baseline_machine_idx != -1:
++                        avg = ['%.2f%%' % v for v in all_results[bench_type]["average"]]
++                        fp.write('| - |' + '|'.join(avg + ["Average"]) + '|\n')
++                    count = 1
++                    for benchmark in all_results[bench_type]["benchmarks"]:
++                        if None in benchmark["last_value"]:
++                            continue
++                        unit = benchmarks[benchmark["name"]]["unit"]
++                        row = '| %d ' % count
++                        count += 1
++                        for machine_idx in range(num_machines):
++                            row += '|' + pretty_time_unit(benchmark["last_value"][machine_idx], unit)
++                            if baseline_machine_idx != -1 and baseline_machine_idx != machine_idx:
++                                row += ' `%.2f%%`' % benchmark["cmp_percent"][machine_idx]
++                        row += '|' + benchmark["pretty_name"] + '|\n'
++                        fp.write(row)
++                    fp.write('\n\n\n')
+diff --git a/asv/runner.py b/asv/runner.py
+index 2c19e15..9321f33 100644
+--- a/asv/runner.py
++++ b/asv/runner.py
+@@ -111,7 +111,8 @@ def run_benchmarks(benchmarks, env, results=None,
+                    extra_params=None,
+                    record_samples=False, append_samples=False,
+                    run_rounds=None,
+-                   launch_method=None):
++                   launch_method=None,
++                   benchmarks_obj=None):
+     """
+     Run all of the benchmarks in the given `Environment`.
+ 
+@@ -164,6 +165,8 @@ def run_benchmarks(benchmarks, env, results=None,
+         extra_params['repeat'] = 1
+         extra_params['warmup_time'] = 0
+         extra_params['rounds'] = 1
++        extra_params['warmup_count'] = 0
++        extra_params['do_maxrss'] = 0
+ 
+     if results is None:
+         results = Results.unnamed()
+@@ -359,16 +362,29 @@ def run_benchmarks(benchmarks, env, results=None,
+                 benchmark_durations[name] = (ended_at - started_at).total_seconds()
+ 
+             # Save result
+-            results.add_result(benchmark, res,
++            results.add_result(benchmark, res[0],
+                                selected_idx=selected_idx,
+                                started_at=started_at,
+                                duration=benchmark_durations[name],
+                                record_samples=(not is_final or record_samples),
+                                append_samples=(name in previous_result_keys))
++            if res[1]: # maxrss
++                benchmark_maxrss = benchmark.copy()
++                benchmark_maxrss['name'] += '_maxrss'
++                benchmark_maxrss['type'] = 'peakmemory'
++                benchmark_maxrss['unit'] = 'bytes'
++                benchmarks_obj._all_benchmarks[benchmark_maxrss['name']] = benchmark_maxrss
++                benchmarks_obj.save()
++                results.add_result(benchmark_maxrss, res[1],
++                                selected_idx=selected_idx,
++                                started_at=started_at,
++                                duration=benchmark_durations[name],
++                                record_samples=(not is_final or record_samples),
++                                append_samples=(name in previous_result_keys))
+ 
+             previous_result_keys.add(name)
+ 
+-            if all(r is None for r in res.result):
++            if all(r is None for r in res[0].result):
+                 failed_benchmarks.add(name)
+ 
+             # Log result
+@@ -508,8 +524,11 @@ def run_benchmark(benchmark, spawner, profile,
+     samples = []
+     number = []
+     profiles = []
++    result_maxrss = []
++    ignored_maxrss = []
+     stderr = ''
+     errcode = 0
++    has_maxrss = False
+ 
+     if benchmark['params']:
+         param_iter = enumerate(itertools.product(*benchmark['params']))
+@@ -522,6 +541,8 @@ def run_benchmark(benchmark, spawner, profile,
+             samples.append(None)
+             number.append(None)
+             profiles.append(None)
++            result_maxrss.append(util.nan)
++            ignored_maxrss.append(None)
+             continue
+ 
+         if isinstance(extra_params, list):
+@@ -533,28 +554,44 @@ def run_benchmark(benchmark, spawner, profile,
+             benchmark, spawner, param_idx,
+             extra_params=cur_extra_params, profile=profile,
+             cwd=cwd)
++        
++        r, r_maxrss = res
++        result += r.result
++        samples += r.samples
++        number += r.number
+ 
+-        result += res.result
+-        samples += res.samples
+-        number += res.number
++        profiles.append(r.profile)
+ 
+-        profiles.append(res.profile)
++        if r_maxrss:
++            result_maxrss += r_maxrss.result
++            has_maxrss = True
++        else:
++            result_maxrss.append(util.nan)
++        ignored_maxrss.append(None)
+ 
+-        if res.stderr:
++        if r.stderr:
+             stderr += "\n\n"
+-            stderr += res.stderr
++            stderr += r.stderr
+ 
+-        if res.errcode != 0:
+-            errcode = res.errcode
++        if r.errcode != 0:
++            errcode = r.errcode
+ 
+-    return BenchmarkResult(
++    return (BenchmarkResult(
+         result=result,
+         samples=samples,
+         number=number,
+         errcode=errcode,
+         stderr=stderr.strip(),
+-        profile=_combine_profile_data(profiles)
+-    )
++        profile=_combine_profile_data(profiles)),
++
++        # maxrss
++        None if not has_maxrss else BenchmarkResult(
++                result=result_maxrss,
++                samples=ignored_maxrss,
++                number=ignored_maxrss,
++                errcode=errcode,
++                stderr=stderr.strip(),
++                profile=None))
+ 
+ 
+ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+@@ -619,6 +656,7 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+             result = None
+             samples = None
+             number = None
++            maxrss = None
+         else:
+             with open(result_file.name, 'r') as stream:
+                 data = stream.read()
+@@ -631,14 +669,16 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+                 out += "\n\nasv: failed to parse benchmark result: {0}\n".format(exc)
+ 
+             # Special parsing for timing benchmark results
+-            if isinstance(data, dict) and 'samples' in data and 'number' in data:
++            if isinstance(data, dict) and 'samples' in data and 'number' in data and 'maxrss' in data:
+                 result = True
+                 samples = data['samples']
+                 number = data['number']
++                maxrss = data['maxrss']
+             else:
+                 result = data
+                 samples = None
+                 number = None
++                maxrss = None
+ 
+         if benchmark['params'] and out:
+             params, = itertools.islice(itertools.product(*benchmark['params']),
+@@ -652,14 +692,22 @@ def _run_benchmark_single_param(benchmark, spawner, param_idx,
+         else:
+             profile_data = None
+ 
+-        return BenchmarkResult(
+-            result=[result],
+-            samples=[samples],
+-            number=[number],
+-            errcode=errcode,
+-            stderr=out.strip(),
+-            profile=profile_data)
+-
++        return (BenchmarkResult(
++                    result=[result],
++                    samples=[samples],
++                    number=[number],
++                    errcode=errcode,
++                    stderr=out.strip(),
++                    profile=profile_data),
++
++                # maxrss
++                None if maxrss is None else BenchmarkResult(
++                    result=[maxrss],
++                    samples=[None],
++                    number=[None],
++                    errcode=errcode,
++                    stderr=out.strip(),
++                    profile=profile_data))
+     except KeyboardInterrupt:
+         spawner.interrupt()
+         raise util.UserError("Interrupted.")
 diff --git a/asv/util.py b/asv/util.py
-index 52eb96e..98daf61 100644
+index 52eb96e..1165020 100644
 --- a/asv/util.py
 +++ b/asv/util.py
-@@ -544,7 +544,7 @@ def check_output(args, valid_return_codes=(0,), timeout=600, dots=True,
+@@ -543,7 +543,7 @@ def check_output(args, valid_return_codes=(0,), timeout=600, dots=True,
+         kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
      else:
          kwargs['close_fds'] = True
 -        posix = getattr(os, 'setpgid', None)
@@ -23,4 +736,548 @@ index 52eb96e..98daf61 100644
          if posix:
              # Run the subprocess in a separate process group, so that we
              # can kill it and all child processes it spawns e.g. on
-             # timeouts. Note that subprocess.Popen will wait until exec()
+diff --git a/asv/www/asv.js b/asv/www/asv.js
+index c3c54ac..7c22460 100644
+--- a/asv/www/asv.js
++++ b/asv/www/asv.js
+@@ -382,6 +382,7 @@ $(document).ready(function() {
+             $("#graph-display").hide();
+             $("#summarygrid-display").hide();
+             $("#summarylist-display").hide();
++            $("#comparisonlist-display").hide();
+             $('#regressions-display').hide();
+             $('.tooltip').remove();
+             loaded_pages[name](params);
+@@ -461,6 +462,7 @@ $(document).ready(function() {
+             $('#regressions-display').hide();
+             $('#summarygrid-display').hide();
+             $('#summarylist-display').hide();
++            $('#comparisonlist-display').hide();
+ 
+             hashchange();
+         }).fail(function () {
+diff --git a/asv/www/comparisonlist.css b/asv/www/comparisonlist.css
+new file mode 100644
+index 0000000..b378396
+--- /dev/null
++++ b/asv/www/comparisonlist.css
+@@ -0,0 +1,92 @@
++#comparisonlist-body {
++    padding-left: 2em;
++    padding-right: 2em;
++    padding-top: 1em;
++    padding-bottom: 2em;
++}
++
++#comparisonlist-body table thead th {
++    background: white;
++    cursor: pointer;
++    white-space: nowrap;
++    position: sticky;
++    top: 0; /* Don't forget this, required for the stickiness */
++}
++
++#comparisonlist-body table thead th.desc:after {
++    content: ' \2191';
++}
++
++#comparisonlist-body table thead th.asc:after {
++    content: ' \2193';
++}
++
++#comparisonlist-body table.ignored {
++    padding-top: 1em;
++    color: #ccc;
++    background-color: #eee;
++}
++
++#comparisonlist-body table.ignored a {
++    color: #82abda;
++}
++
++#comparisonlist-body table tbody td.positive-change {
++    background-color: #fdd;
++}
++
++#comparisonlist-body table tbody td.negative-change {
++    background-color: #dfd;
++}
++
++#comparisonlist-body table tbody td.stats {
++    white-space: nowrap;
++    font-weight: bold;
++}
++
++#comparisonlist-body table tbody td.value {
++    white-space: nowrap;
++}
++
++#comparisonlist-body table tbody td.value-best {
++    white-space: nowrap;
++    color: green;
++}
++
++#comparisonlist-body table tbody td.value-worst {
++    white-space: nowrap;
++    color: red;
++}
++
++#comparisonlist-body table tbody td.change a {
++    color: black;
++    white-space: nowrap;
++}
++
++#comparisonlist-body table tbody td.change-date {
++    white-space: nowrap;
++}
++
++#comparisonlist-body .collapsible {
++    background-color: #eee;
++    color: #444;
++    cursor: pointer;
++    padding: 18px;
++    width: 100%;
++    border: none;
++    text-align: left;
++    outline: none;
++    font-size: 15px;
++  }
++  
++#comparisonlist-body .active, .collapsible:hover {
++    background-color: #ccc;
++}
++  
++#comparisonlist-body .content {
++    padding: 0 18px;
++    display: none;
++    overflow: hidden;
++    background-color: #f1f1f1;
++}
++  
+\ No newline at end of file
+diff --git a/asv/www/comparisonlist.js b/asv/www/comparisonlist.js
+new file mode 100644
+index 0000000..3064adc
+--- /dev/null
++++ b/asv/www/comparisonlist.js
+@@ -0,0 +1,362 @@
++'use strict';
++
++$(document).ready(function() {
++    /* The state of the parameters in the sidebar.  Dictionary mapping
++       strings to values determining the "enabled" configurations. */
++    var state = null;
++    /* Cache of constructed tables, {data_path: table_dom_id} */
++    var table_cache = {};
++    var table_cache_counter = 0;
++
++    function setup_display(state_selection) {
++        var new_state = setup_state(state_selection);
++        var same_state = (state !== null);
++
++        /* Avoid needless UI updates, e.g., on table sort */
++
++        if (same_state) {
++            $.each(state, function (key, value) {
++                if (value != new_state[key]) {
++                    same_state = false;
++                }
++            });
++        }
++
++        if (!same_state) {
++            state = new_state;
++
++            $("#comparisonlist-body table").hide();
++            $("#comparisonlist-body .message").remove();
++
++            if (table_cache['comparisonlist'] !== undefined) {
++                $(table_cache['comparisonlist']).show();
++            }
++            else {
++                $("#comparisonlist-body").append($("<p class='message'>Loading...</p>"));
++                $.ajax({
++                    url: "comparison.json",
++                    dataType: "json",
++                    cache: true
++                }).done(function (data) {
++                    var table = construct_machines_comparison_benchmark_table(data);
++                    var table_name = 'comparisonlist-table-' + table_cache_counter;
++                    ++table_cache_counter;
++    
++                    table.attr('id', table_name);
++                    table_cache['comparisonlist'] = '#' + table_name;
++                    $("#comparisonlist-body .message").remove();
++                    $("#comparisonlist-body").append(table);
++                    table.show();
++                    var coll = document.getElementsByClassName("collapsible");
++                    var i;
++
++                    for (i = 0; i < coll.length; i++) {
++                        coll[i].addEventListener("click", function() {
++                            this.classList.toggle("active");
++                            var content = this.nextElementSibling;
++                            if (content.style.display === "block") {
++                                content.style.display = "none";
++                            } else {
++                                content.style.display = "block";
++                            }
++                        });
++                    }
++                });
++            }
++        }
++    }
++
++    function update_state_url(key, value) {
++        var info = $.asv.parse_hash_string(window.location.hash);
++        var new_state = get_valid_state(state, key, value);
++
++        $.each($.asv.master_json.params, function(param, values) {
++            if (values.length > 1) {
++                info.params[param] = [new_state[param]];
++            }
++            else if (info.params[param]) {
++                delete info.params[param];
++            }
++        });
++
++        window.location.hash = $.asv.format_hash_string(info);
++    }
++
++    function obj_copy(obj) {
++        var newobj = {};
++        $.each(obj, function(key, val) {
++            newobj[key] = val;
++        });
++        return newobj;
++    }
++
++    function obj_diff(obj1, obj2) {
++        var count = 0;
++        $.each(obj1, function(key, val) {
++            if (obj2[key] != val) {
++                ++count
++            }
++        });
++        return count;
++    }
++
++    function get_valid_state(tmp_state, wanted_key, wanted_value) {
++        /*
++          Get an available state with wanted_key having wanted_value,
++          preferably as a minor modification of tmp_state.
++         */
++        var best_params = null;
++        var best_diff = 1e99;
++        var best_hit = false;
++
++        tmp_state = obj_copy(tmp_state);
++        if (wanted_key !== undefined) {
++            tmp_state[wanted_key] = wanted_value;
++        }
++
++        $.each($.asv.master_json.graph_param_list, function(idx, params) {
++            var diff = obj_diff(tmp_state, params);
++            var hit = (wanted_key === undefined || params[wanted_key] == wanted_value);
++
++            if ((!best_hit && hit) || (hit == best_hit && diff < best_diff)) {
++                best_params = params;
++                best_diff = diff;
++                best_hit = hit;
++            }
++        });
++
++        if (best_params === null) {
++            best_params = $.asv.master_json.graph_param_list[0];
++        }
++
++        return obj_copy(best_params);
++    }
++
++    function setup_state(state_selection) {
++        var index = $.asv.master_json;
++        var state = {};
++
++        state.machine = index.params.machine;
++
++        $.each(index.params, function(param, values) {
++            state[param] = values[0];
++        });
++
++        if (state_selection !== null) {
++            /* Select a specific generic parameter state */
++            $.each(index.params, function(param, values) {
++                if (state_selection[param]) {
++                    state[param] = state_selection[param][0];
++                }
++            });
++        }
++
++        return get_valid_state(state);
++    }
++
++    function construct_machines_comparison_benchmark_table(data) {
++        var index = $.asv.master_json;
++
++        var content_list = $('<div>')
++
++        $.each(data, function(bench_type, type_data) {
++        /* Form a new table */
++        var machines = type_data.machines;
++        var benchmarks = type_data.benchmarks;
++        var average = type_data.average;
++        var baseline_machine = type_data.baseline;
++
++        var second_row = $('<tr/>');
++        var total = $('<td class="stats"/>');
++        total.text('Total number of benchmarks: ' + benchmarks.length);
++        second_row.append(total);
++        var machines_head = '';
++        $.each(machines, function(machine_idx, machine) {
++            machines_head += '<th data-sort="float">' + machine + '</th>'
++            var percent = $('<td class="stats"/>');
++            if (average !== undefined) {
++                percent.append(average[machine_idx].toFixed(2) + '%');
++                second_row.append(percent);
++            }
++            
++        });
++
++        var table = $('<table class="table table-hover"/>');
++        var table_head = $('<thead><tr>' +
++                           '<th data-sort="string">Benchmark</th>' + machines_head +
++                           '</tr></thead>');
++        table.append(table_head);
++
++        var table_body = $('<tbody/>');
++        if (average !== undefined) {
++            table_body.append(second_row);
++        } else {
++            baseline_machine = -1;
++        }
++
++
++        $.each(benchmarks, function(row_idx, row) {
++            var tr = $('<tr/>');
++            var name_td = $('<td/>');
++            var name = $('<a/>');
++            var benchmark_url_args = {};
++            var benchmark_full_url;
++            var benchmark_base_url;
++
++            /* Format benchmark url */
++            benchmark_url_args.location = [row.name];
++            benchmark_url_args.params = {};
++            $.each($.asv.master_json.params, function (key, values) {
++                if (values.length > 1) {
++                    benchmark_url_args.params[key] = [state[key]];
++                }
++            });
++            benchmark_base_url = $.asv.format_hash_string(benchmark_url_args);
++            if (row.idx !== null) {
++                var benchmark = $.asv.master_json.benchmarks[row.name];
++                $.each($.asv.param_selection_from_flat_idx(benchmark.params, row.idx).slice(1),
++                       function(i, param_values) {
++                           benchmark_url_args.params['p-'+benchmark.param_names[i]]
++                               = [benchmark.params[i][param_values[0]]];
++                       });
++            }
++            benchmark_full_url = $.asv.format_hash_string(benchmark_url_args);
++
++            /* Benchmark name column */
++            var bm_link;
++            if (row.idx === null) {
++                bm_link = $('<a/>').attr('href', benchmark_base_url).text(row.pretty_name);
++                name_td.append(bm_link);
++            }
++            else {
++                var basename = row.pretty_name;
++                var args = null;
++                var m = row.pretty_name.match(/(.*)\(.*$/);
++                if (m) {
++                    basename = m[1];
++                    args = row.pretty_name.slice(basename.length);
++                }
++                bm_link = $('<a/>').attr('href', benchmark_base_url).text(basename);
++                name_td.append(bm_link);
++                if (args) {
++                    var bm_idx_link;
++                    var graph_url;
++                    bm_idx_link = $('<a/>').attr('href', benchmark_full_url).text(' ' + args);
++                    name_td.append(bm_idx_link);
++                    graph_url = $.asv.graph_to_path(row.name, state);
++                    $.asv.ui.hover_graph(bm_idx_link, graph_url, row.name, row.idx, null);
++                }
++            }
++            $.asv.ui.hover_summary_graph(bm_link, row.name);
++            tr.append(name_td);
++
++            /* Values column */
++            $.each(machines, function(machine_idx, machine) {
++                var last_value = row.last_value[machine_idx];
++                var last_err = row.last_err[machine_idx];
++                var value_class = "value";
++                if (row.best === machine_idx) {
++                    value_class = "value-best";
++                } else if (row.worst === machine_idx) {
++                    value_class = "value-worst";
++                }
++                var value_td = $('<td class="' + value_class + '"/>');
++                if (last_value !== null) {
++                    var value, err, err_str, sort_value;
++                    var unit = $.asv.master_json.benchmarks[row.name].unit;
++                    value = $.asv.pretty_unit(last_value, unit);
++                    if (unit == "seconds") {
++                        sort_value = last_value * 1e100;
++                    }
++                    else {
++                        sort_value = last_value;
++                    }
++                    var baseline_percent = '';
++                    if (baseline_machine !== -1 && baseline_machine !== machine_idx) {
++                        baseline_percent = ' (' + row.cmp_percent[machine_idx].toFixed(2) + '%)';
++                    }
++                    var value_span = $('<span/>').text(value + baseline_percent);
++
++                    err = 100*last_err/last_value;
++                    if (err == err) {
++                        err_str = " \u00b1 " + err.toFixed(0.1) + '%';
++                    }
++                    else {
++                        err_str = "";
++                    }
++                    value_span.attr('data-toggle', 'tooltip');
++                    value_span.attr('title', value + err_str);
++                    value_td.append(value_span);
++                    value_td.attr('data-sort-value', sort_value);
++                }
++                else {
++                    value_td.attr('data-sort-value', -1e99);
++                }
++                tr.append(value_td);
++            });
++            table_body.append(tr);
++        });
++
++        table_body.find('[data-toggle="tooltip"]').tooltip();
++
++        /* Finalize */
++        table.append(table_body);
++        // setup_sort(table);
++    
++        var type_table_button = $('<button type="button" class="collapsible">' + bench_type + '</button>');
++        var type_table_content = $('<div class="content">');
++        type_table_content.append(table);
++        content_list.append(type_table_button);
++        content_list.append(type_table_content);
++        // return table;
++        });
++
++        return content_list;
++    }
++
++    function setup_sort(table) {
++        var info = $.asv.parse_hash_string(window.location.hash);
++
++        table.stupidtable();
++
++        table.on('aftertablesort', function (event, data) {
++            var info = $.asv.parse_hash_string(window.location.hash);
++            info.params['sort'] = [data.column];
++            info.params['dir'] = [data.direction];
++            window.location.hash = $.asv.format_hash_string(info);
++
++            /* Update appearance */
++            table.find('thead th').removeClass('asc');
++            table.find('thead th').removeClass('desc');
++            var th_to_sort = table.find("thead th").eq(parseInt(data.column));
++            if (th_to_sort) {
++                th_to_sort.addClass(data.direction);
++            }
++        });
++
++        if (info.params.sort && info.params.dir) {
++            var th_to_sort = table.find("thead th").eq(parseInt(info.params.sort[0]));
++            th_to_sort.stupidsort(info.params.dir[0]);
++        }
++        else {
++            var th_to_sort = table.find("thead th").eq(0);
++            th_to_sort.stupidsort("asc");
++        }
++    }
++
++    /*
++     * Entry point
++     */
++    $.asv.register_page('comparisonlist', function(params) {
++        var state_selection = null;
++
++        if (Object.keys(params).length > 0) {
++            state_selection = params;
++        }
++
++        setup_display(state_selection);
++
++        $('#comparisonlist-display').show();
++        $("#title").text("List of benchmarks");
++    });
++});
+diff --git a/asv/www/index.html b/asv/www/index.html
+index d1651ba..c69a6f1 100644
+--- a/asv/www/index.html
++++ b/asv/www/index.html
+@@ -59,6 +59,9 @@
+     <script language="javascript" type="text/javascript"
+             src="summarylist.js">
+     </script>
++    <script language="javascript" type="text/javascript"
++            src="comparisonlist.js">
++    </script>
+     <script language="javascript" type="text/javascript"
+             src="graphdisplay.js">
+     </script>
+@@ -68,6 +71,7 @@
+     <link href="asv.css" rel="stylesheet" type="text/css"/>
+     <link href="regressions.css" rel="stylesheet" type="text/css"/>
+     <link href="summarylist.css" rel="stylesheet" type="text/css"/>
++    <link href="comparisonlist.css" rel="stylesheet" type="text/css"/>
+     <link rel="shortcut icon" href="swallow.ico"/>
+     <link rel="alternate" type="application/atom+xml" title="Regressions" href="regressions.xml"/>
+   </head>
+@@ -83,6 +87,7 @@
+         </li>
+ 	<li id="nav-li-" class="active"><a href="#/">Benchmark grid</a></li>
+ 	<li id="nav-li-summarylist"><a href="#/summarylist">Benchmark list</a></li>
++	<li id="nav-li-comparisonlist"><a href="#/comparisonlist">Comparison list</a></li>
+ 	<li id="nav-li-regressions"><a href="#/regressions">Regressions</a></li>
+         <li id="nav-li-graphdisplay">
+           <span class="navbar-brand" id="title">
+@@ -99,6 +104,10 @@
+       <div id="summarylist-body" style="position: absolute; left: 200px; top: 55px; bottom: 0px; right: 0px; overflow-y: scroll;">
+       </div>
+     </div>
++    <div id="comparisonlist-display" style="width: 100%; height: 100%">
++      <div id="comparisonlist-body" style="position: absolute; left: 0; top: 55px; bottom: 0px; right: 0px; overflow-y: scroll;">
++      </div>
++    </div>
+     <div id="graph-display" style="width: 100%; height: 100%;">
+       <div id="graphdisplay-navigation" class="asv-navigation" style="position: absolute; left: 0; top: 55px; bottom: 0; width: 200px; overflow-y: scroll">
+         <div class="panel panel-default">
+diff --git a/docs/source/benchmarks.rst b/docs/source/benchmarks.rst
+index 7a1e3a4..c8bf6eb 100644
+--- a/docs/source/benchmarks.rst
++++ b/docs/source/benchmarks.rst
+@@ -114,6 +114,9 @@ Timing benchmarks
+   benchmark. If not specified, ``warmup_time`` defaults to 0.1 seconds
+   (on PyPy, the default is 1.0 sec).
+ 
++- ``warmup_count``: ``asv`` will run the benchmark this number of time(s)
++  before starting to run the actual benchmark.
++
+ - ``rounds``: How many rounds to run the benchmark in (default: 2).
+   The rounds run different timing benchmarks in an interleaved order,
+   allowing to sample over longer periods of background performance
+-- 
+2.25.1
+

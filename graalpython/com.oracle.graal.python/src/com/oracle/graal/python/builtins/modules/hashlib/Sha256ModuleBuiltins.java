@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -68,10 +69,10 @@ public final class Sha256ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Sha224FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA224Type, "sha224", "sha224", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA224Type, "sha224", "sha224", buffer);
         }
     }
 
@@ -79,10 +80,10 @@ public final class Sha256ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Sha256FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer);
         }
     }
 
@@ -91,8 +92,9 @@ public final class Sha256ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha224Node extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object sha224(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha256.sha224");
+        static Object sha224(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha256.sha224");
         }
     }
 
@@ -101,8 +103,9 @@ public final class Sha256ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha256Node extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object sha256(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha256.sha256");
+        static Object sha256(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha256.sha256");
         }
     }
 }

@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -76,8 +77,9 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        TruffleString setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
+        static TruffleString setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
         }
     }
 
@@ -90,8 +92,9 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        TruffleString setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
+        static TruffleString setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
         }
     }
 
@@ -100,8 +103,9 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
-        Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
+        static Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")

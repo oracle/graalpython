@@ -103,6 +103,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -111,6 +112,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -118,6 +120,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -137,16 +140,18 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class ClosedCheckPythonUnaryBuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
-        Object closedError(PBytesIO self) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
     abstract static class ClosedCheckPythonBinaryBuiltinNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
-        Object closedError(PBytesIO self, Object arg) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -159,8 +164,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
-        Object closedError(PBytesIO self, Object arg) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self, Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -172,19 +178,23 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        PNone init(PBytesIO self, PNone initvalue) {
-            self.checkExports(this);
+        static PNone init(PBytesIO self, PNone initvalue,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
             self.setPos(0);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isPNone(initvalue)")
-        PNone init(VirtualFrame frame, PBytesIO self, Object initvalue,
-                        @Cached WriteNode writeNode) {
+        static PNone init(VirtualFrame frame, PBytesIO self, Object initvalue,
+                        @Bind("this") Node inliningTarget,
+                        @Cached WriteNode writeNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             /* In case, __init__ is called multiple times. */
             self.setStringSize(0);
             self.setPos(0);
-            self.checkExports(this);
+            self.checkExports(inliningTarget, raiseNode);
             writeNode.execute(frame, self, initvalue);
             self.setPos(0);
             return PNone.NONE;
@@ -348,7 +358,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class ReadIntoNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
+        static Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 /* adjust invalid sizes */
@@ -368,7 +379,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
                 return len;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -383,12 +394,14 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class TruncateNode extends ClosedCheckPythonBinaryBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object truncate(PBytesIO self, int size,
+        static Object truncate(PBytesIO self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
-            self.checkExports(this);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
             if (size < 0) {
-                throw raise(ValueError, NEGATIVE_SIZE_VALUE_D, size);
+                throw raiseNode.get(inliningTarget).raise(ValueError, NEGATIVE_SIZE_VALUE_D, size);
             }
             if (size < self.getStringSize()) {
                 self.unshareAndResize(bufferLib, factory, size, true);
@@ -398,20 +411,22 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasBuf()")
-        Object truncate(PBytesIO self, @SuppressWarnings("unused") PNone size,
+        static Object truncate(PBytesIO self, @SuppressWarnings("unused") PNone size,
+                        @Bind("this") Node inliningTarget,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return truncate(self, self.getPos(), bufferLib, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return truncate(self, self.getPos(), inliningTarget, bufferLib, factory, raiseNode);
         }
 
         @Specialization(guards = {"self.hasBuf()", "!isPNone(size)"})
-        @SuppressWarnings("truffle-static-method")
-        Object truncate(VirtualFrame frame, PBytesIO self, Object size,
+        static Object truncate(VirtualFrame frame, PBytesIO self, Object size,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return truncate(self, asSizeNode.executeExact(frame, inliningTarget, size), bufferLib, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return truncate(self, asSizeNode.executeExact(frame, inliningTarget, size), inliningTarget, bufferLib, factory, raiseNode);
         }
     }
 
@@ -420,12 +435,15 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends ClosedCheckPythonBinaryBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()", limit = "3")
-        Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
+        static Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
-            self.checkExports(this);
-            Object buffer = acquireLib.acquireReadonly(b, frame, this);
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
+            Object buffer = acquireLib.acquireReadonly(b, frame, indirectCallData);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 if (len == 0) {
@@ -441,7 +459,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 }
                 return len;
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
     }
@@ -450,14 +468,14 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteLinesNode extends ClosedCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
-        @SuppressWarnings("truffle-static-method") // raise
-        Object writeLines(VirtualFrame frame, PBytesIO self, Object lines,
+        static Object writeLines(VirtualFrame frame, PBytesIO self, Object lines,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNextNode getNextNode,
                         @Cached WriteNode writeNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached PyObjectGetIter getIter) {
-            self.checkExports(this);
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
                 Object line;
@@ -540,31 +558,36 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.hasBuf()", "!isSupportedWhence(whence)"})
-        Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence) {
-            throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
+        static Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getPos())", "whence == 1"})
-        Object largePos1(PBytesIO self, int pos, int whence) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
+        static Object largePos1(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getStringSize())", "whence == 2"})
-        Object largePos2(PBytesIO self, int pos, int whence) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
+        static Object largePos2(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @Specialization(guards = {"self.hasBuf()", "pos < 0", "whence == 0"})
-        Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
+        static Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.hasBuf()")
-        Object closedError(PBytesIO self, int pos, int whence) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 
@@ -618,19 +641,19 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doit(VirtualFrame frame, PBytesIO self, PTuple state,
+        static Object doit(VirtualFrame frame, PBytesIO self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached WriteNode writeNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
-                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            self.checkExports(this);
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
             Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             if (array.length < 3) {
-                return notTuple(self, state);
+                return notTuple(self, state, raiseNode.get(inliningTarget));
             }
             /*
              * Reset the object to its default state. This is only needed to handle the case of
@@ -649,18 +672,18 @@ public final class BytesIOBuiltins extends PythonBuiltins {
              * against erroneous (or malicious) inputs.
              */
             if (!indexCheckNode.execute(inliningTarget, array[1])) {
-                throw raise(TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
+                throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
             }
             int pos = asSizeNode.executeExact(frame, inliningTarget, array[1]);
             if (pos < 0) {
-                throw raise(ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
             }
             self.setPos(pos);
 
             /* Set the dictionary of the instance variables. */
             if (!PGuards.isNone(array[2])) {
                 if (!PGuards.isDict(array[2])) {
-                    throw raise(TypeError, THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P, array[2]);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P, array[2]);
                 }
                 /*
                  * Alternatively, we could replace the internal dictionary completely. However, it
@@ -673,8 +696,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPTuple(state)")
-        Object notTuple(PBytesIO self, Object state) {
-            throw raise(TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
+        static Object notTuple(PBytesIO self, Object state,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
         }
     }
 
@@ -733,8 +757,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object close(PBytesIO self) {
-            self.checkExports(this);
+        static Object close(PBytesIO self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkExports(inliningTarget, raiseNode);
             self.setBuf(null);
             return PNone.NONE;
         }
@@ -745,12 +771,14 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object doit(PBytesIO self,
+        static Object doit(PBytesIO self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return readBytes(self, n, bufferLib, factory);
         }

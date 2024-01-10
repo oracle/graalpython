@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,8 +47,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PBytesIO extends PythonBuiltinObject {
@@ -99,9 +100,9 @@ public final class PBytesIO extends PythonBuiltinObject {
         return exports.getExports().get();
     }
 
-    public void checkExports(PNodeWithRaise raise) {
+    public void checkExports(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (getExports() != 0) {
-            throw raise.raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
         }
     }
 

@@ -61,11 +61,13 @@ import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -118,8 +120,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
+        static PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile isNotNoneTimeout,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
@@ -131,17 +132,18 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile notSelectableBranch,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
-            ObjAndFDList readFDs = seq2set(frame, inliningTarget, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
-            ObjAndFDList writeFDs = seq2set(frame, inliningTarget, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
-            ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            ObjAndFDList readFDs = seq2set(frame, inliningTarget, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
+            ObjAndFDList writeFDs = seq2set(frame, inliningTarget, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
+            ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
 
             Timeval timeoutval = null;
             if (!PGuards.isPNone(timeout)) {
                 isNotNoneTimeout.enter(inliningTarget);
                 timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, inliningTarget, timeout, RoundType.TIMEOUT, SEC_TO_NS));
                 if (timeoutval.getSeconds() < 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
                 }
             }
 
@@ -149,7 +151,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    result = posixLib.select(PosixSupport.get(inliningTarget), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
                 } finally {
                     gil.acquire();
                 }
@@ -181,8 +183,9 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
             return factory.createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private ObjAndFDList seq2set(VirtualFrame frame, Node inliningTarget, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor, PyObjectGetItem callGetItemNode,
-                        FastConstructListNode constructListNode) {
+        private static ObjAndFDList seq2set(VirtualFrame frame, Node inliningTarget, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor,
+                        PyObjectGetItem callGetItemNode,
+                        FastConstructListNode constructListNode, PRaiseNode.Lazy raiseNode) {
             // We cannot assume any size of those two arrays, because the sequence may change as a
             // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
             // repeatedly in the loop condition
@@ -194,7 +197,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 objects.add(pythonObject);
                 int fd = asFileDescriptor.execute(frame, inliningTarget, pythonObject);
                 if (fd >= FD_SETSIZE.value) {
-                    throw raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
                 }
                 fds.add(fd);
             }

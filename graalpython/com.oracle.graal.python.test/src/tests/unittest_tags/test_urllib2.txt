@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_cookie_redirect
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_cookies
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_errors
+*graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_file
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_fixpath_in_weirdurls
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_ftp
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_full_url_deleter
@@ -37,6 +38,7 @@
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_unsupported_auth_digest_handler
 *graalpython.lib-python.3.test.test_urllib2.MiscTests.test_HTTPError_interface
 *graalpython.lib-python.3.test.test_urllib2.MiscTests.test_build_opener
+*graalpython.lib-python.3.test.test_urllib2.MiscTests.test_gh_98778
 *graalpython.lib-python.3.test.test_urllib2.MiscTests.test_issue16464
 *graalpython.lib-python.3.test.test_urllib2.MiscTests.test_parse_proxy
 *graalpython.lib-python.3.test.test_urllib2.MiscTests.test_unsupported_algorithm

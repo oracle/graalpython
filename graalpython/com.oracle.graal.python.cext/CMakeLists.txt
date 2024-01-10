@@ -67,6 +67,13 @@ add_compile_definitions(
     GRAALVM_PYTHON_LLVM
 )
 
+if(${LLVM_MODE} STREQUAL "native")
+    add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
+else()
+    add_compile_definitions(GRAALVM_PYTHON_LLVM_MANAGED)
+endif()
+
+
 if(WIN32)
     add_compile_definitions(
         MS_WINDOWS
@@ -179,6 +186,7 @@ simple_native_module("_sqlite3")
 
 if(NOT WIN32)
     native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")
+    simple_native_module("_testbuffer")
     simple_native_module("_testmultiphase")
     simple_native_module("_ctypes_test")
 

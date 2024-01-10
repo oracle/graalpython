@@ -94,7 +94,7 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -186,7 +186,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             if (fieldsValue != null) {
                 setFieldsAttributeNode.execute(frame, result, fieldsValue);
             } else {
-                StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(inliningTarget, result));
+                StgDictObject basedict = pyTypeStgDictNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, result));
                 if (basedict == null) {
                     return result;
                 }
@@ -201,7 +201,8 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StructUnionTypeBuiltins.class)
-    protected abstract static class PyCStructUnionTypeUpdateStgDict extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 292 -> 275
+    protected abstract static class PyCStructUnionTypeUpdateStgDict extends Node {
         abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory);
 
         /*
@@ -210,7 +211,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("fallthrough")
         @Specialization
-        void PyCStructUnionType_update_stgdict(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory,
+        static void PyCStructUnionType_update_stgdict(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -231,7 +232,8 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * HACK Alert: I cannot be bothered to fix ctypes.com, so there has to be a way to use
              * the old, broken semantics: _fields_ are not extended but replaced in subclasses.
@@ -255,24 +257,24 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                     pack = asSizeNode.executeLossy(frame, inliningTarget, tmp);
                 } catch (PException e) {
                     e.expectTypeOrOverflowError(inliningTarget, isBuiltinClassProfile);
-                    throw raise(ValueError, PACK_MUST_BE_A_NON_NEGATIVE_INTEGER);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, PACK_MUST_BE_A_NON_NEGATIVE_INTEGER);
                 }
             }
 
             int len;
             try {
-                isSequenceNode.execute(fields);
+                isSequenceNode.execute(inliningTarget, fields);
                 len = sizeNode.execute(frame, inliningTarget, fields);
             } catch (PException e) {
                 e.expectTypeError(inliningTarget, isBuiltinClassProfile);
-                throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS);
             }
 
-            StgDictObject stgdict = pyTypeStgDictNode.execute(type);
+            StgDictObject stgdict = pyTypeStgDictNode.execute(inliningTarget, type);
             /* If this structure/union is already marked final we cannot assign _fields_ anymore. */
 
             if ((stgdict.flags & DICTFLAG_FINAL) != 0) { /* is final ? */
-                throw raise(AttributeError, FIELDS_IS_FINAL);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, FIELDS_IS_FINAL);
             }
 
             stgdict.format = null;
@@ -280,7 +282,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             stgdict.ffi_type_pointer = new FFIType();
             stgdict.ffi_type_pointer.elements = null;
 
-            StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(inliningTarget, type));
+            StgDictObject basedict = pyTypeStgDictNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, type));
             if (basedict != null) {
                 stgdict.flags |= basedict.flags & (TYPEFLAG_HASUNION | TYPEFLAG_HASBITFIELD);
             }
@@ -342,23 +344,23 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 Object pair = getItemNode.execute(frame, inliningTarget, fields, i);
                 // !PyArg_ParseTuple(pair, "UO|i", & name, &desc, &bitsize)
                 if (!PGuards.isPTuple(pair)) {
-                    fieldsError();
+                    fieldsError(raiseNode.get(inliningTarget));
                 }
                 Object[] tuple = getArray.execute(inliningTarget, ((PTuple) pair).getSequenceStorage());
                 int tupleLen = tuple.length;
                 if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
-                    fieldsError();
+                    fieldsError(raiseNode.get(inliningTarget));
                 }
                 Object name = tuple[0];
                 Object desc = tuple[1];
                 int bitsize = tupleLen >= 3 ? (int) tuple[2] : 0;
 
-                if (pyTypeCheck.isPyCArrayTypeObject(desc)) {
+                if (pyTypeCheck.isPyCArrayTypeObject(inliningTarget, desc)) {
                     arrays_seen = true;
                 }
-                StgDictObject dict = pyTypeStgDictNode.execute(desc);
+                StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, desc);
                 if (dict == null) {
-                    throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                 }
                 stgdict.ffi_type_pointer.elements[ffi_ofs + i] = dict.ffi_type_pointer;
                 if ((dict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
@@ -384,10 +386,10 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                             }
                             /* else fall through */
                         default:
-                            throw raise(TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(inliningTarget, desc));
+                            throw raiseNode.get(inliningTarget).raise(TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(inliningTarget, desc));
                     }
                     if (bitsize <= 0 || bitsize > dict.size * 8) {
-                        throw raise(ValueError, NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD);
+                        throw raiseNode.get(inliningTarget).raise(ValueError, NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD);
                     }
                 } else {
                     bitsize = 0;
@@ -407,7 +409,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 CFieldObject prop;
                 if (isStruct) {
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
-                    prop = cFieldFromDesc.execute(desc, i, bitsize, pack, big_endian, props, factory);
+                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props, factory);
                     field_size = props[0];
                     bitofs = props[1];
                     size = props[2];
@@ -421,7 +423,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                     offset = 0;
                     align = 0;
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
-                    prop = cFieldFromDesc.execute(desc, i, bitsize, pack, big_endian, props, factory);
+                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props, factory);
                     field_size = props[0];
                     bitofs = props[1];
                     size = props[2];
@@ -552,28 +554,28 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                      */
                     // !PyArg_ParseTuple(pair, "UO|i", & name, &desc, &bitsize)
                     if (!PGuards.isPTuple(pair)) {
-                        fieldsError();
+                        fieldsError(raiseNode.get(inliningTarget));
                     }
                     Object[] tuple = getArray.execute(inliningTarget, ((PTuple) pair).getSequenceStorage());
                     int tupleLen = tuple.length;
                     if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
-                        fieldsError();
+                        fieldsError(raiseNode.get(inliningTarget));
                     }
                     Object desc = tuple[1];
-                    StgDictObject dict = pyTypeStgDictNode.execute(desc);
+                    StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, desc);
                     /* Possibly this check could be avoided, but see above comment. */
                     if (dict == null) {
-                        throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                     }
                     assert (element_index < (ffi_ofs + len)); /* will be used below */
-                    if (!pyTypeCheck.isPyCArrayTypeObject(desc)) {
+                    if (!pyTypeCheck.isPyCArrayTypeObject(inliningTarget, desc)) {
                         /* Not an array. Just copy over the element ffi_type. */
                         element_types[element_index++] = dict.ffi_type_pointer;
                     } else {
                         int length = dict.length;
-                        StgDictObject edict = pyTypeStgDictNode.execute(dict.proto);
+                        StgDictObject edict = pyTypeStgDictNode.execute(inliningTarget, dict.proto);
                         if (edict == null) {
-                            throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
+                            throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                         }
                         FFIType ffiType = new FFIType(
                                         length * edict.ffi_type_pointer.size,
@@ -602,15 +604,15 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
              * We did check that this flag was NOT set above, it must not have been set until now.
              */
             if ((stgdict.flags & DICTFLAG_FINAL) != 0) {
-                throw raise(AttributeError, STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF);
             }
             stgdict.flags |= DICTFLAG_FINAL;
 
             makeAnonFieldsNode.execute(frame, type, factory);
         }
 
-        void fieldsError() {
-            throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS);
+        static void fieldsError(PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS);
         }
     }
 }

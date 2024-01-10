@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -380,7 +381,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_all
          */
         @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
-        @SuppressWarnings("truffle-static-method") // raise
+        @SuppressWarnings("truffle-static-method") // checkIsClosedNode
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached EnterBufferedNode lock,
@@ -392,7 +393,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(inliningTarget, self);
@@ -416,7 +418,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 if (hasReadallProfile.profile(inliningTarget, readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());
                     if (tmp != PNone.NONE && !(tmp instanceof PBytes)) {
-                        throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
+                        throw raiseNode.get(inliningTarget).raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                     }
                     if (currentSize0Profile.profile(inliningTarget, currentSize != 0)) {
                         if (tmp != PNone.NONE) {
@@ -444,7 +446,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                     /* Read until EOF or until read() would block. */
                     Object r = callMethod.execute(frame, inliningTarget, self.getRaw(), T_READ);
                     if (r != PNone.NONE && !(r instanceof PBytes)) {
-                        throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
+                        throw raiseNode.get(inliningTarget).raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                     }
                     if (r != PNone.NONE) {
                         dataLen = bufferLib.getBufferLength(r);
@@ -469,8 +471,9 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!isValidSize(size)"})
-        Object initError(VirtualFrame frame, PBuffered self, int size) {
-            throw raise(ValueError, MUST_BE_NON_NEG_OR_NEG_1);
+        static Object initError(VirtualFrame frame, PBuffered self, int size,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, MUST_BE_NON_NEG_OR_NEG_1);
         }
     }
 
@@ -534,6 +537,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("truffle-static-method")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -613,7 +617,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 return written;
             } finally {
                 EnterBufferedNode.leave(self);
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
@@ -816,16 +820,16 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class NextNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        @SuppressWarnings("truffle-static-method")
-        PBytes doit(VirtualFrame frame, PBuffered self,
+        static PBytes doit(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, inliningTarget, self, -1);
             if (line.length == 0) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return factory.createBytes(line);
         }

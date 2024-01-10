@@ -49,13 +49,16 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextIterator)
 public final class ContextIteratorBuiltins extends PythonBuiltins {
@@ -77,11 +80,13 @@ public final class ContextIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Next extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(PContextIterator self,
-                        @Cached PythonObjectFactory factory) {
+        static Object next(PContextIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object next = self.next(factory);
             if (next == null) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             } else {
                 return next;
             }

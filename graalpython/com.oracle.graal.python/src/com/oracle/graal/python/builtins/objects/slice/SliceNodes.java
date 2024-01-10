@@ -45,10 +45,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes.PyLongSign;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -56,7 +54,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -500,86 +497,6 @@ public abstract class SliceNodes {
                 }
             }
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
-        }
-    }
-
-    @ImportStatic({PythonOptions.class, PGuards.class})
-    public abstract static class CastToSliceComponentNode extends PNodeWithContext {
-        private final int defaultValue;
-        private final int overflowValue;
-
-        public CastToSliceComponentNode(int defaultValue, int overflowValue) {
-            this.defaultValue = defaultValue;
-            this.overflowValue = overflowValue;
-        }
-
-        public abstract int execute(VirtualFrame frame, int i);
-
-        public abstract int execute(VirtualFrame frame, long i);
-
-        public abstract int execute(VirtualFrame frame, Object i);
-
-        @Specialization
-        int doNone(@SuppressWarnings("unused") PNone i) {
-            return defaultValue;
-        }
-
-        @Specialization
-        int doBoolean(boolean i) {
-            return PInt.intValue(i);
-        }
-
-        @Specialization
-        int doInt(int i) {
-            return i;
-        }
-
-        @Specialization
-        int doLong(long i,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("indexErrorProfile") @Cached InlinedBranchProfile indexErrorProfile) {
-            try {
-                return PInt.intValueExact(i);
-            } catch (OverflowException e) {
-                indexErrorProfile.enter(inliningTarget);
-                return overflowValue;
-            }
-        }
-
-        @Specialization
-        int doPInt(PInt i,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("indexErrorProfile") @Cached InlinedBranchProfile indexErrorProfile) {
-            try {
-                return i.intValueExact();
-            } catch (OverflowException e) {
-                indexErrorProfile.enter(inliningTarget);
-                return overflowValue;
-            }
-        }
-
-        @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"})
-        @SuppressWarnings("truffle-static-method")
-        int doGeneric(VirtualFrame frame, Object i,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise,
-                        @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
-            if (indexCheckNode.execute(inliningTarget, i)) {
-                try {
-                    return asSizeNode.executeExact(frame, inliningTarget, i);
-                } catch (PException e) {
-                    e.expect(inliningTarget, PythonBuiltinClassType.OverflowError, errorProfile);
-                    return overflowValue;
-                }
-            } else {
-                throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
-            }
-        }
-
-        public static CastToSliceComponentNode create(int defaultValue, int overflowValue) {
-            return SliceNodesFactory.CastToSliceComponentNodeGen.create(defaultValue, overflowValue);
         }
     }
 }

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -69,20 +70,25 @@ public abstract class PyUnicodeCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
-    static boolean doString(Node inliningTarget, @SuppressWarnings("unused") TruffleString object) {
+    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return true;
     }
 
     @Specialization
-    static boolean doPString(Node inliningTarget, @SuppressWarnings("unused") PString object) {
+    static boolean doPString(@SuppressWarnings("unused") PString object) {
         return true;
     }
 
-    @Fallback
-    static boolean doGeneric(Node inliningTarget, Object object,
+    @Specialization
+    static boolean doNative(Node inliningTarget, PythonAbstractNativeObject object,
                     @Cached GetClassNode getClass,
                     @Cached(inline = false) IsSubtypeNode isSubtype) {
         Object type = getClass.execute(inliningTarget, object);
         return isSubtype.execute(type, PythonBuiltinClassType.PString);
+    }
+
+    @Fallback
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

@@ -1,0 +1,264 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index a2db990..6543a93 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -41,12 +41,6 @@ version = "1.3.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+ 
+-[[package]]
+-name = "cc"
+-version = "1.0.79"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "50d30906286121d95be3d479533b458f87493b30a4b5f79a607db8f5d11aa91f"
+-
+ [[package]]
+ name = "cfg-if"
+ version = "1.0.0"
+@@ -251,7 +245,6 @@ dependencies = [
+  "num-bigint",
+  "pyo3",
+  "pyo3-build-config",
+- "python3-dll-a",
+  "regex",
+  "serde",
+  "serde_json",
+@@ -267,8 +260,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e681a6cfdc4adcc93b4d3cf993749a4552018ee0a9b65fc0ccfad74352c72a38"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+@@ -285,19 +277,16 @@ dependencies = [
+ [[package]]
+ name = "pyo3-build-config"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "076c73d0bc438f7a4ef6fdd0c3bb4732149136abd952b110ac93e4edb13a6ba5"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "once_cell",
+- "python3-dll-a",
+  "target-lexicon",
+ ]
+ 
+ [[package]]
+ name = "pyo3-ffi"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e53cee42e77ebe256066ba8aa77eff722b3bb91f3419177cf4cd0f304d3284d9"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+@@ -306,8 +295,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-macros"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dfeb4c99597e136528c6dd7d5e3de5434d1ceaf487436a3f03b2d56b6fc9efd1"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-macros-backend",
+@@ -318,23 +306,13 @@ dependencies = [
+ [[package]]
+ name = "pyo3-macros-backend"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "947dc12175c254889edc0c02e399476c2f652b4b9ebd123aa655c224de259536"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+  "syn 1.0.109",
+ ]
+ 
+-[[package]]
+-name = "python3-dll-a"
+-version = "0.2.9"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d5f07cd4412be8fa09a721d40007c483981bbe072cd6a21f2e83e04ec8f8343f"
+-dependencies = [
+- "cc",
+-]
+-
+ [[package]]
+ name = "quote"
+ version = "1.0.29"
+diff --git a/Cargo.toml b/Cargo.toml
+index 7101a70..3fcdb3e 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -26,7 +26,7 @@ include = [
+ ]
+ 
+ [dependencies]
+-pyo3 = { version = "0.19.2", features = ["generate-import-lib", "num-bigint"] }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy", features = ["num-bigint"] }
+ regex = "1.9.5"
+ strum = { version = "0.25.0", features = ["derive"] }
+ strum_macros = "0.25.2"
+@@ -41,7 +41,6 @@ url = "2.4.1"
+ idna = "0.4.0"
+ base64 = "0.21.4"
+ num-bigint = "0.4.4"
+-python3-dll-a = "0.2.7"
+ uuid = "1.4.1"
+ 
+ [lib]
+@@ -62,9 +61,9 @@ debug = true
+ strip = false
+ 
+ [dev-dependencies]
+-pyo3 = { version= "0.19.2", features = ["auto-initialize"] }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy", features = ["auto-initialize"] }
+ 
+ [build-dependencies]
+ version_check = "0.9.4"
+ # used where logic has to be version/distribution specific, e.g. pypy
+-pyo3-build-config = { version = "0.19.2" }
++pyo3-build-config = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy" }
+diff --git a/src/input/input_python.rs b/src/input/input_python.rs
+index cf84c55..a6e3ede 100644
+--- a/src/input/input_python.rs
++++ b/src/input/input_python.rs
+@@ -6,7 +6,7 @@ use pyo3::types::{
+     PyBool, PyByteArray, PyBytes, PyDate, PyDateTime, PyDict, PyFloat, PyFrozenSet, PyInt, PyIterator, PyList,
+     PyMapping, PySequence, PySet, PyString, PyTime, PyTuple, PyType,
+ };
+-#[cfg(not(PyPy))]
++#[cfg(CPython)]
+ use pyo3::types::{PyDictItems, PyDictKeys, PyDictValues};
+ use pyo3::{intern, AsPyPointer, PyTypeInfo};
+ use speedate::MicrosecondsPrecisionOverflowBehavior;
+@@ -27,7 +27,7 @@ use super::{
+     GenericIterable, GenericIterator, GenericMapping, Input, JsonInput, PyArgs,
+ };
+ 
+-#[cfg(not(PyPy))]
++#[cfg(CPython)]
+ macro_rules! extract_dict_keys {
+     ($py:expr, $obj:ident) => {
+         $obj.downcast::<PyDictKeys>()
+@@ -36,7 +36,7 @@ macro_rules! extract_dict_keys {
+     };
+ }
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ macro_rules! extract_dict_keys {
+     ($py:expr, $obj:ident) => {
+         if is_dict_keys_type($obj) {
+@@ -47,7 +47,7 @@ macro_rules! extract_dict_keys {
+     };
+ }
+ 
+-#[cfg(not(PyPy))]
++#[cfg(CPython)]
+ macro_rules! extract_dict_values {
+     ($py:expr, $obj:ident) => {
+         $obj.downcast::<PyDictValues>()
+@@ -56,7 +56,7 @@ macro_rules! extract_dict_values {
+     };
+ }
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ macro_rules! extract_dict_values {
+     ($py:expr, $obj:ident) => {
+         if is_dict_values_type($obj) {
+@@ -67,7 +67,7 @@ macro_rules! extract_dict_values {
+     };
+ }
+ 
+-#[cfg(not(PyPy))]
++#[cfg(CPython)]
+ macro_rules! extract_dict_items {
+     ($py:expr, $obj:ident) => {
+         $obj.downcast::<PyDictItems>()
+@@ -76,7 +76,7 @@ macro_rules! extract_dict_items {
+     };
+ }
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ macro_rules! extract_dict_items {
+     ($py:expr, $obj:ident) => {
+         if is_dict_items_type($obj) {
+@@ -758,10 +758,10 @@ fn maybe_as_string(v: &PyAny, unicode_error: ErrorType) -> ValResult<Option<Cow<
+     }
+ }
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ static DICT_KEYS_TYPE: pyo3::once_cell::GILOnceCell<Py<PyType>> = pyo3::once_cell::GILOnceCell::new();
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ fn is_dict_keys_type(v: &PyAny) -> bool {
+     let py = v.py();
+     let keys_type = DICT_KEYS_TYPE
+@@ -776,10 +776,10 @@ fn is_dict_keys_type(v: &PyAny) -> bool {
+     v.is_instance(keys_type).unwrap_or(false)
+ }
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ static DICT_VALUES_TYPE: pyo3::once_cell::GILOnceCell<Py<PyType>> = pyo3::once_cell::GILOnceCell::new();
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ fn is_dict_values_type(v: &PyAny) -> bool {
+     let py = v.py();
+     let values_type = DICT_VALUES_TYPE
+@@ -794,10 +794,10 @@ fn is_dict_values_type(v: &PyAny) -> bool {
+     v.is_instance(values_type).unwrap_or(false)
+ }
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ static DICT_ITEMS_TYPE: pyo3::once_cell::GILOnceCell<Py<PyType>> = pyo3::once_cell::GILOnceCell::new();
+ 
+-#[cfg(PyPy)]
++#[cfg(not(CPython))]
+ fn is_dict_items_type(v: &PyAny) -> bool {
+     let py = v.py();
+     let items_type = DICT_ITEMS_TYPE
+diff --git a/src/input/return_enums.rs b/src/input/return_enums.rs
+index c492f40..162744b 100644
+--- a/src/input/return_enums.rs
++++ b/src/input/return_enums.rs
+@@ -15,9 +15,9 @@ use pyo3::types::{
+ };
+ use pyo3::{ffi, intern, AsPyPointer, PyNativeType};
+ 
+-#[cfg(not(PyPy))]
++#[cfg(CPython)]
+ use pyo3::types::PyFunction;
+-#[cfg(not(PyPy))]
++#[cfg(CPython)]
+ use pyo3::PyTypeInfo;
+ use serde::{ser::Error, Serialize, Serializer};
+ 
+@@ -554,14 +554,14 @@ impl<'py> Iterator for AttributesGenericIterator<'py> {
+                 // the PyFunction::is_type_of(attr) catches `staticmethod`, but also any other function,
+                 // I think that's better than including static methods in the yielded attributes,
+                 // if someone really wants fields, they can use an explicit field, or a function to modify input
+-                #[cfg(not(PyPy))]
++                #[cfg(CPython)]
+                 if !is_bound && !PyFunction::is_type_of(attr) {
+                     return Some(Ok((name, attr)));
+                 }
+                 // MASSIVE HACK! PyFunction doesn't exist for PyPy,
+                 // is_instance_of::<PyFunction> crashes with a null pointer, hence this hack, see
+                 // https://github.com/pydantic/pydantic-core/pull/161#discussion_r917257635
+-                #[cfg(PyPy)]
++                #[cfg(not(CPython))]
+                 if !is_bound && attr.get_type().to_string() != "<class 'function'>" {
+                     return Some(Ok((name, attr)));
+                 }

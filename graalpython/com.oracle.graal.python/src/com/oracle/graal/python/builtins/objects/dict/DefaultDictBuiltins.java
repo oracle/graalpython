@@ -66,6 +66,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -143,8 +144,10 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNone(self.getDefaultFactory())")
-        Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key) {
-            throw raise(PythonBuiltinClassType.KeyError, new Object[]{key});
+        static Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, new Object[]{key});
         }
 
         @Specialization(guards = "!isNone(self.getDefaultFactory())")
@@ -162,16 +165,17 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
+        static Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached DictBuiltins.InitNode dictInitNode,
-                        @Cached PyCallableCheckNode callableCheckNode) {
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] newArgs = args;
             Object newDefault = PNone.NONE;
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
                 if (newDefault != PNone.NONE && !callableCheckNode.execute(inliningTarget, newDefault)) {
-                    throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
+                    throw raiseNode.get(inliningTarget).raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             }
@@ -202,11 +206,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object or(VirtualFrame frame, PDict self, PDict other,
+        static Object or(VirtualFrame frame, PDict self, PDict other,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached CallNode callNode,
-                        @Cached DictNodes.UpdateNode updateNode) {
+                        @Cached DictNodes.UpdateNode updateNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PDefaultDict dd = (PDefaultDict) (self instanceof PDefaultDict ? self : other);
             Object type = getClassNode.execute(inliningTarget, dd);
             Object result = callNode.execute(frame, type, dd.getDefaultFactory(), self);
@@ -215,7 +220,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                 return result;
             } else {
                 /* Cpython doesn't check for this and ends up with SystemError */
-                throw raise(TypeError);
+                throw raiseNode.get(inliningTarget).raise(TypeError);
             }
         }
 

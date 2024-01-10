@@ -52,6 +52,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
@@ -71,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAreDisjoint;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCompareKeys;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
@@ -268,6 +271,32 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached ConvertKeyNode conv,
                         @Cached HashingStorageGetItem getItem) {
             return getItem.hasKey(frame, inliningTarget, self.getDictStorage(), conv.execute(inliningTarget, key));
+        }
+    }
+
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @GenerateNodeFactory
+    abstract static class SubNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PBaseSet left, PBaseSet right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile leftProfile,
+                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingStorageNodes.HashingStorageDiff diffNode,
+                        @Cached PythonObjectFactory factory) {
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
+            if (leftProfile.profile(inliningTarget, left instanceof PFrozenSet)) {
+                return factory.createFrozenSet(storage);
+            } else {
+                return factory.createSet(storage);
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object doOther(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

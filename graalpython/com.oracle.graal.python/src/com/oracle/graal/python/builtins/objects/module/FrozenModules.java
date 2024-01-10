@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -203,10 +203,15 @@ public final class FrozenModules {
         private static final PythonFrozenModule OS = new PythonFrozenModule("OS", "os", false);
         private static final PythonFrozenModule SITE = new PythonFrozenModule("SITE", "site", false);
         private static final PythonFrozenModule STAT = new PythonFrozenModule("STAT", "stat", false);
+        private static final PythonFrozenModule DATETIME = new PythonFrozenModule("DATETIME", "datetime", false);
+        private static final PythonFrozenModule CONTEXTLIB = new PythonFrozenModule("CONTEXTLIB", "contextlib", false);
+        private static final PythonFrozenModule WARNINGS = new PythonFrozenModule("WARNINGS", "warnings", false);
+        private static final PythonFrozenModule INSPECT = new PythonFrozenModule("INSPECT", "inspect", false);
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", "graalpy.__graalpython__", false);
+        private static final PythonFrozenModule GRAALPY__INTEROP_BEHAVIOR = new PythonFrozenModule("GRAALPY__INTEROP_BEHAVIOR", "graalpy._interop_behavior", false);
         private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", "graalpy._sre", false);
         private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", "graalpy._struct", false);
         private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", "graalpy._sysconfig", false);
@@ -545,6 +550,14 @@ public final class FrozenModules {
                 return Map.SITE;
             case "stat":
                 return Map.STAT;
+            case "datetime":
+                return Map.DATETIME;
+            case "contextlib":
+                return Map.CONTEXTLIB;
+            case "warnings":
+                return Map.WARNINGS;
+            case "inspect":
+                return Map.INSPECT;
             case "__hello__":
                 return Map.__HELLO__;
             case "__hello_alias__":
@@ -563,6 +576,8 @@ public final class FrozenModules {
                 return Map._SYSCONFIGDATA;
             case "graalpy.__graalpython__":
                 return Map.GRAALPY___GRAALPYTHON__;
+            case "graalpy._interop_behavior":
+                return Map.GRAALPY__INTEROP_BEHAVIOR;
             case "graalpy._sre":
                 return Map.GRAALPY__SRE;
             case "graalpy._struct":

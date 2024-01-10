@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.exception;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printToStdErr;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -59,7 +60,7 @@ import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -210,7 +211,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private static boolean isSystemExit(PBaseException pythonException) {
-        return InlineIsBuiltinClassProfile.profileClassSlowPath(GetPythonObjectClassNode.executeUncached(pythonException), SystemExit);
+        return IsBuiltinClassProfile.profileClassSlowPath(GetPythonObjectClassNode.executeUncached(pythonException), SystemExit);
     }
 
     @TruffleBoundary
@@ -219,7 +220,11 @@ public final class TopLevelExceptionHandler extends RootNode {
             boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
             if (!exitException) {
                 ExceptionUtils.printPythonLikeStackTrace(getContext(), e);
-                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                boolean withJavaStacktrace = PythonOptions.isWithJavaStacktrace(getPythonLanguage());
+                if (e instanceof AssertionError && !withJavaStacktrace) {
+                    printToStdErr("To get more information about the failed assertion rerun with --python.WithJavaStacktrace=3\n");
+                }
+                if (withJavaStacktrace) {
                     e.printStackTrace();
                 }
             }

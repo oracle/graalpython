@@ -91,7 +91,7 @@ class TestExceptionobject(object):
                                  PyObject* typ1 = NULL;
                                  PyObject* val1 = NULL;
                                  PyObject* tb1 = NULL;
-            
+
                                  Py_XINCREF(typ);
                                  Py_XINCREF(val);
                                  Py_XINCREF(tb);
@@ -113,14 +113,14 @@ class TestExceptionobject(object):
         except:
             typ, val, tb = sys.exc_info()
             assert typ == IndexError
-            
-            
-            
+
+
+
             # overwrite exception info
             expected = (ValueError, ValueError(), None)
             res = tester.set_exc_info(expected)
             assert res
-            
+
             # TODO uncomment once supported
             # actual = sys.exc_info()
             # assert actual == expected
@@ -136,6 +136,13 @@ def raise_exception_with_cause():
     try:
         raise IndexError from exc
     except IndexError as e:
+        return e
+
+
+def raise_exception_without_cause():
+    try:
+        raise RuntimeError()
+    except RuntimeError as e:
         return e
 
 
@@ -156,12 +163,43 @@ class TestExceptionobjectFunctions(CPyExtTestCase):
         arguments=["PyObject* exc", "PyObject* tb"],
     )
 
-    test_PyException_GetCause = CPyExtFunction(
-        lambda args: args[0].__cause__,
-        lambda: (
-            (raise_exception_with_cause(),),
-        ),
-        resultspec="O",
-        argspec="O",
-        arguments=["PyObject* exc"],
-    )
+
+class TestExceptionObjectAccessors(object):
+    def test_PyException_GetCause(self):
+        TestGetCause = CPyExtType("TestGetCause",
+                             """
+                             PyObject* get_cause(PyObject* self, PyObject* e) {
+                                 PyObject *cause = PyException_GetCause(e);
+                                 if (cause == NULL) {
+                                     return PyUnicode_FromString("NULL");
+                                 } else {
+                                     return cause;
+                                 }
+                             }
+                             """,
+                             tp_methods='{"get_cause", (PyCFunction)get_cause, METH_O, ""}'
+        )
+        tester = TestGetCause()
+        e = raise_exception_with_cause()
+        assert tester.get_cause(e) == e.__cause__
+        e = raise_exception_without_cause()
+        assert tester.get_cause(e) == "NULL"
+
+    def test_PyException_GetTraceback(self):
+        TestGetTraceback = CPyExtType("TestGetTraceback",
+                             """
+                             PyObject* get_traceback(PyObject* self, PyObject* e) {
+                                 PyObject *traceback = PyException_GetTraceback(e);
+                                 if (traceback == NULL) {
+                                     return PyUnicode_FromString("NULL");
+                                 } else {
+                                     return traceback;
+                                 }
+                             }
+                             """,
+                             tp_methods='{"get_traceback", (PyCFunction)get_traceback, METH_O, ""}'
+        )
+        tester = TestGetTraceback()
+        e = raise_exception_with_cause()
+        assert tester.get_traceback(e) == e.__traceback__
+        assert tester.get_traceback(e.__cause__) == e.__cause__.__traceback__

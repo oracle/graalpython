@@ -72,6 +72,11 @@ DEFAULT_NUMPY_BENCHMARKS = [
     # "bench_ufunc",
 ]
 
+DEFAULT_PANDAS_BENCHMARKS = [
+    "reshape",
+    "replace"
+]
+
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "2to3",
     # "chameleon",
@@ -275,7 +280,8 @@ class AsvJsonRule(mx_benchmark.Rule):
                             "config.run-flags": " ".join(params),
                         }
                     )
-                    if samples_idx >= 0:
+                    # It may be that the samples are missing; so omit this step
+                    if 0 <= samples_idx < len(result):
                         for iteration, value in enumerate(result[samples_idx][run_idx]):
                             r.append(
                                 {
@@ -764,6 +770,145 @@ class NumPySuite(PySuite):
             return -1, ""
 
 
+class PandasSuite(PySuite):
+    VERSION = "1.5.2"
+    VERSION_TAG = "v" + VERSION
+
+    PREREQUISITES = """
+    setuptools==63.1.0
+    wheel==0.37.1
+    """
+
+    BENCHMARK_REQ = f"""
+    asv==0.5.1
+    distlib==0.3.6
+    filelock==3.8.0
+    platformdirs==2.5.2
+    six==1.16.0
+    virtualenv==20.16.3
+    jinja2
+    numpy==1.23.5
+    pandas=={VERSION}
+    """
+
+    def name(self):
+        return "pandas-suite"
+
+    def group(self):
+        return "Graal"
+
+    def subgroup(self):
+        return "graalpython"
+
+    def benchmarkList(self, bmSuiteArgs):
+        return WildcardList([
+            "reshape",
+            "replace",
+        ])
+
+    def rules(self, output, benchmarks, bmSuiteArgs):
+        return [AsvJsonRule(output, self.name())]
+
+    def createVmCommandLineArgs(self, benchmarks, runArgs):
+        return []
+
+    def get_vm_registry(self):
+        return python_vm_registry
+
+    def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
+        workdir = abspath(workdir)
+        benchdir = join(workdir, "pandas", "asv_bench")
+        vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+
+        if not hasattr(self, "prepared"):
+            self.prepared = True
+            npdir = join(workdir, "pandas")
+            if artifact := os.environ.get("PANDAS_BENCHMARKS_DIR"):
+                shutil.copytree(artifact, npdir)
+            else:
+                mx.warn("PANDAS_BENCHMARKS_DIR is not set, cloning pandas repository")
+                repo_url = os.environ.get("PANDAS_REPO_URL", "https://github.com/pandas-dev/pandas.git")
+                mx.log("Cloning Pandas from " + repo_url)
+                mx.run(
+                    [
+                        "git",
+                        "clone",
+                        "--depth",
+                        "1",
+                        repo_url,
+                        "--branch",
+                        self.VERSION_TAG,
+                        "--single-branch",
+                    ],
+                    cwd=workdir,
+                )
+                shutil.rmtree(join(npdir, ".git"))
+                pandas_benchmarks_dir = join(npdir, "asv_bench", "benchmarks")
+                accepted = ["__init__", "pandas_vb_common"] + list(self.benchmarkList([]))
+                removed_files = []
+                for f in os.listdir(pandas_benchmarks_dir):
+                    # Remove any file or directory that is not a benchmark suite we want to run.
+                    # Keep all files starting with "_"
+                    if os.path.splitext(f)[0] not in accepted:
+                        removed_files.append(f)
+                        f_path = join(pandas_benchmarks_dir, f)
+                        if os.path.isdir(f_path):
+                            shutil.rmtree(f_path)
+                        else:
+                            os.remove(f_path)
+                mx.log("Removed Pandas benchmark files: " + repr(removed_files))
+
+
+            mx.run(["git", "init", "."], cwd=npdir)
+            mx.run(["git", "config", "user.email", "you@example.com"], cwd=npdir)
+            mx.run(["git", "config", "user.name", "YourName"], cwd=npdir)
+            mx.run(["git", "commit", "--allow-empty", "-m", "init"], cwd=npdir)
+            mx.run(["git", "branch", self.VERSION_TAG], cwd=npdir)
+            mx.run(["git", "branch", "main"], cwd=npdir, nonZeroIsFatal=False)
+            mx.run(["git", "branch", "master"], cwd=npdir, nonZeroIsFatal=False)
+
+            vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
+            pip = join(workdir, vm_venv, "bin", "pip")
+            requirements_txt = join(workdir, "requirements.txt")
+            with open(requirements_txt, "w") as f:
+                f.write(self.PREREQUISITES)
+            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
+            with open(requirements_txt, "w") as f:
+                f.write(self.BENCHMARK_REQ)
+            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
+            mx.run(
+                [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
+            )
+
+        if benchmarks:
+            bms = ["-b", "|".join(benchmarks)]
+        else:
+            bms = ["-b", "|".join(DEFAULT_PANDAS_BENCHMARKS)]
+        retcode = mx.run(
+            [
+                join(workdir, vm_venv, "bin", "asv"),
+                "run",
+                "--record-samples",
+                "-e",
+                "--python=same",
+                "--set-commit-hash",
+                self.VERSION_TAG,
+                *bms,
+            ],
+            cwd=benchdir,
+            nonZeroIsFatal=False,
+        )
+
+        json_file = glob.glob(join(benchdir, "results", "*", "*pandas*.json"))
+        mx.log(f"Return code of benchmark harness: {retcode}")
+        if json_file:
+            json_file = json_file[0]
+            shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
+            return 0, json_file
+        else:
+            return -1, ""
+
+
 def register_python_benchmarks():
     global python_vm_registry, SUITE
 
@@ -783,3 +928,4 @@ def register_python_benchmarks():
     mx_benchmark.add_bm_suite(PyPerformanceSuite())
     mx_benchmark.add_bm_suite(PyPySuite())
     mx_benchmark.add_bm_suite(NumPySuite())
+    mx_benchmark.add_bm_suite(PandasSuite())

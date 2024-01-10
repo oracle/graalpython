@@ -107,12 +107,13 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
-        protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
+        static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory) { // "|s:IncrementalDecoder"
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) { // "|s:IncrementalDecoder"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
@@ -122,7 +123,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -160,8 +161,10 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteIncrementalDecoder_decode_impl
         @Specialization
-        Object decode(VirtualFrame frame, MultibyteIncrementalDecoderObject self, byte[] input, int end,
-                        @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode) {
+        static Object decode(VirtualFrame frame, MultibyteIncrementalDecoderObject self, byte[] input, int end,
+                        @Bind("this") Node inliningTarget,
+                        @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] data = input;
             int size = input.length;
 
@@ -171,7 +174,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
             byte[] wdata = data;
             if (self.pendingsize != 0) {
                 if (size > MAXSIZE - self.pendingsize) {
-                    throw raise(MemoryError);
+                    throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
                 wsize = size + self.pendingsize;
                 wdata = new byte[wsize];
@@ -182,7 +185,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
             MultibyteDecodeBuffer buf = new MultibyteDecodeBuffer(wdata);
 
-            decoderFeedBuffer(frame, self, buf, decodeErrorNode, getRaiseNode());
+            decoderFeedBuffer(frame, self, buf, decodeErrorNode, inliningTarget);
 
             if (end != 0 && !buf.isFull()) {
                 try {
@@ -197,19 +200,19 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
             }
 
             if (!buf.isFull()) { /* pending sequence still exists */
-                decoderAppendPending(self, buf, getRaiseNode());
+                decoderAppendPending(inliningTarget, self, buf, raiseNode);
             }
 
             return buf.toTString();
         }
 
-        static int decoderAppendPending(MultibyteStatefulDecoderContext ctx,
+        static int decoderAppendPending(Node inliningTarge, MultibyteStatefulDecoderContext ctx,
                         MultibyteDecodeBuffer buf,
-                        PRaiseNode raiseNode) {
+                        PRaiseNode.Lazy raiseNode) {
             int npendings = buf.remaining();
             if (npendings + ctx.pendingsize > MAXDECPENDING ||
                             npendings > MAXSIZE - ctx.pendingsize) {
-                throw raiseNode.raise(UnicodeError, PENDING_BUFFER_OVERFLOW);
+                throw raiseNode.get(inliningTarge).raise(UnicodeError, PENDING_BUFFER_OVERFLOW);
             }
             buf.getRemaining(ctx.pending, ctx.pendingsize, npendings);
             ctx.pendingsize += npendings;
@@ -219,9 +222,9 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         static int decoderFeedBuffer(VirtualFrame frame, MultibyteStatefulDecoderContext ctx,
                         MultibyteDecodeBuffer buf,
                         MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
-                        PRaiseNode raiseNode) {
+                        Node raisingNode) {
             while (!buf.isFull()) {
-                int r = ctx.codec.decode(ctx.state, buf, raiseNode);
+                int r = ctx.codec.decode(ctx.state, buf, raisingNode);
                 if (r == 0 || r == MBERR_TOOFEW) {
                     break;
                 } else {
@@ -240,6 +243,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
 
         // _multibytecodec_MultibyteIncrementalDecoder_getstate_impl
+        @Specialization
         static Object getstate(MultibyteIncrementalDecoderObject self,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
                         @Cached PythonObjectFactory factory) {
@@ -261,11 +265,13 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         }
 
         // _multibytecodec_MultibyteIncrementalDecoder_setstate_impl
-        Object setstate(VirtualFrame frame, MultibyteIncrementalDecoderObject self, PTuple state,
+        @Specialization
+        static Object setstate(VirtualFrame frame, MultibyteIncrementalDecoderObject self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             Object buffer = array[0];
             Object statelong = array[1];
@@ -273,7 +279,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
             byte[] bufferstr = toBytesNode.execute(frame, buffer);
             int buffersize = bufferstr.length;
             if (buffersize > MAXDECPENDING) {
-                throw raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
+                throw raiseNode.get(inliningTarget).raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
             }
 
             self.pendingsize = buffersize;

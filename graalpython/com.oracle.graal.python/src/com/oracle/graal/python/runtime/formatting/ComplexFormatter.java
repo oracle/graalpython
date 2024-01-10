@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,15 +41,15 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.nodes.Node;
 
 public class ComplexFormatter extends InternalFormat.Formatter {
     private final FloatFormatter reFormatter;
     private final FloatFormatter imFormatter;
 
-    protected ComplexFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
-        super(raiseNode, result, spec);
+    protected ComplexFormatter(FormattingBuffer result, Spec spec, Node raisingNode) {
+        super(result, spec, raisingNode);
         Spec reSpec;
         Spec imSpec;
         if (hasNoSpecType()) {
@@ -63,12 +63,12 @@ public class ComplexFormatter extends InternalFormat.Formatter {
             reSpec = getComponentSpec(spec, spec.sign);
             imSpec = getComponentSpec(spec, '+');
         }
-        reFormatter = new FloatFormatter(raiseNode, result, reSpec, false);
-        imFormatter = new FloatFormatter(raiseNode, result, imSpec, false);
+        reFormatter = new FloatFormatter(result, reSpec, false, raisingNode);
+        imFormatter = new FloatFormatter(result, imSpec, false, raisingNode);
     }
 
-    public ComplexFormatter(PRaiseNode raiseNode, Spec spec) {
-        this(raiseNode, new FormattingBuffer.StringFormattingBuffer(32 + Math.max(0, spec.width)), spec);
+    public ComplexFormatter(Spec spec, Node raisingNode) {
+        this(new FormattingBuffer.StringFormattingBuffer(32 + Math.max(0, spec.width)), spec, raisingNode);
     }
 
     private static Spec getComponentSpec(Spec spec, char sign) {

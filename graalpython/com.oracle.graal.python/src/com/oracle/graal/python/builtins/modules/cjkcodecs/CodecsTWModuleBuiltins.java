@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -111,25 +112,26 @@ public final class CodecsTWModuleBuiltins extends PythonBuiltins {
     abstract static class GetCodecNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object getcodec(Object encoding,
+        static Object getcodec(Object encoding,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
-                throw raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
             }
 
             MultibyteCodec codec = findCodec(CODEC_LIST, asUTF8Node.execute(inliningTarget, encoding), isEqual);
             if (codec == null) {
-                throw raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
+                throw raiseNode.get(inliningTarget).raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
             PyCapsule codecobj = factory.createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME, null);
-            return createCodec(this, codecobj, nameMatchesNode, factory, getRaiseNode());
+            return createCodec(inliningTarget, codecobj, nameMatchesNode, factory, raiseNode);
         }
     }
 

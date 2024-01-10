@@ -21,6 +21,7 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec_redirected
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter_dealloc
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_filter_pickle
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_format
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_general_eval

@@ -51,24 +51,22 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRoo
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -84,19 +82,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodeNodes {
 
-    public static class CreateCodeNode extends PNodeWithContext implements IndirectCallNode {
-        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return dontNeedCallerFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return dontNeedExceptionState;
-        }
+    public static class CreateCodeNode extends PNodeWithContext {
+        @SuppressWarnings("this-escape") // we only need the reference, doesn't matter that the
+                                         // object may not yet be fully constructed
+        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
 
         public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
@@ -108,7 +97,7 @@ public abstract class CodeNodes {
 
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
@@ -119,8 +108,8 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonLanguage language, PythonContext context, @SuppressWarnings("unused") int argcount,
-                        @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
+        private static PCode createCode(PythonLanguage language, PythonContext context, int argCount,
+                        int positionalOnlyArgCount, int kwOnlyArgCount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
@@ -128,17 +117,34 @@ public abstract class CodeNodes {
                         byte[] linetable) {
 
             RootCallTarget ct;
+            Signature signature;
             if (codedata.length == 0) {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
+                /*
+                 * We need to create a proper signature because this code path is used to create
+                 * fake code objects for duck-typed function-like objects, such as Cython functions.
+                 * Even if the code object is not executable, it will be used for introspection when
+                 * you call `inspect.signature()` on such function-like object.
+                 */
+                int posArgCount = argCount + positionalOnlyArgCount;
+                TruffleString[] parameterNames = Arrays.copyOf(varnames, posArgCount);
+                TruffleString[] kwOnlyNames = Arrays.copyOfRange(varnames, posArgCount, posArgCount + kwOnlyArgCount);
+                int varArgsIndex = (flags & PCode.CO_VARARGS) != 0 ? posArgCount : -1;
+                signature = new Signature(positionalOnlyArgCount,
+                                (flags & PCode.CO_VARKEYWORDS) != 0,
+                                varArgsIndex,
+                                positionalOnlyArgCount > 0,
+                                parameterNames,
+                                kwOnlyNames);
             } else {
                 ct = create().deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars);
+                signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
             if (filename != null) {
                 context.setCodeFilename(ct, filename);
             }
             PythonObjectFactory factory = context.factory();
-            return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
-                            firstlineno, linetable);
+            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
         }
 
         @SuppressWarnings("static-method")

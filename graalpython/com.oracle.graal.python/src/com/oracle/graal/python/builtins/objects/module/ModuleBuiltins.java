@@ -68,15 +68,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -100,6 +100,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -160,24 +161,23 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object dir(VirtualFrame frame, PythonModule self,
+        static Object dir(VirtualFrame frame, PythonModule self,
                         @Bind("this") Node inliningTarget,
-                        @Cached IsBuiltinObjectProfile isDictProfile,
+                        @Cached PyDictGetItem pyDictGetItem,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached HashingStorageGetItem getItem) {
-            Object dict = lookup.execute(frame, inliningTarget, self, T___DICT__);
-            if (isDictProfile.profileObject(inliningTarget, dict, PythonBuiltinClassType.PDict)) {
-                HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
-                Object dirFunc = getItem.execute(inliningTarget, dictStorage, T___DIR__);
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            Object dictObj = lookup.execute(frame, inliningTarget, self, T___DICT__);
+            if (dictObj instanceof PDict dict) {
+                Object dirFunc = pyDictGetItem.execute(frame, inliningTarget, dict, T___DIR__);
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {
                     return constructListNode.execute(frame, dict);
                 }
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");
             }
         }
     }
@@ -219,18 +219,21 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Shared @Cached GetDictIfExistsNode getDict) {
+        static Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetDictIfExistsNode getDict,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                doError(self, none);
+                doError(self, none, raiseNode.get(inliningTarget));
             }
             return dict;
         }
 
         @Fallback
-        Object doError(Object self, @SuppressWarnings("unused") Object dict) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
+        static Object doError(Object self, @SuppressWarnings("unused") Object dict,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
         }
 
         private static PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict, PythonObjectFactory factory) {
@@ -266,10 +269,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
+
         @Specialization
-        Object getattributeString(VirtualFrame frame, PythonModule self, TruffleString key,
-                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
+        static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached HandleGetattrExceptionNode handleException) {
+            TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
@@ -277,33 +284,20 @@ public final class ModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
-            TruffleString key;
-            try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-            }
-            return getattributeString(frame, self, key, objectGetattrNode, handleException);
-        }
-
-        protected abstract static class HandleGetattrExceptionNode extends PNodeWithRaise {
+        @GenerateInline(false) // footprint reduction 56 -> 37
+        protected abstract static class HandleGetattrExceptionNode extends PNodeWithContext {
             public abstract Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e);
 
             @Specialization
-            Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
+            static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
                             @Bind("this") Node inliningTarget,
                             @Cached IsBuiltinObjectProfile isAttrError,
                             @Cached ReadAttributeFromObjectNode readGetattr,
                             @Cached InlinedConditionProfile customGetAttr,
                             @Cached CallNode callNode,
                             @Cached CoerceToBooleanNode.YesNode castToBooleanNode,
-                            @Cached CastToTruffleStringNode castNameToStringNode) {
+                            @Cached CastToTruffleStringNode castNameToStringNode,
+                            @Cached PRaiseNode.Lazy raiseNode) {
                 e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, T___GETATTR__);
                 if (customGetAttr.profile(inliningTarget, getAttr != PNone.NO_VALUE)) {
@@ -321,19 +315,20 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         if (moduleSpec != PNone.NO_VALUE) {
                             Object isInitializing = readGetattr.execute(moduleSpec, T__INITIALIZING);
                             if (isInitializing != PNone.NO_VALUE && castToBooleanNode.executeBoolean(frame, inliningTarget, isInitializing)) {
-                                throw raise(AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
+                                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
                             }
                         }
-                        throw raise(AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
+                        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
                     }
-                    throw raise(AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
                 }
             }
         }
 
         @Specialization(guards = "!isPythonModule(self)")
-        Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
+        static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
         }
     }
 
@@ -355,12 +350,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isDeleteMarker(value)")
-        Object delete(Object self, @SuppressWarnings("unused") Object value,
+        static Object delete(Object self, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
-                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToObjectNode write,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                throw raise(AttributeError, new Object[]{T___ANNOTATIONS__});
+                throw raiseNode.get(inliningTarget).raise(AttributeError, new Object[]{T___ANNOTATIONS__});
             }
             write.execute(self, T___ANNOTATIONS__, PNone.NO_VALUE);
             return PNone.NONE;

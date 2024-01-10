@@ -77,6 +77,7 @@
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_makefile_close
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake
+*graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_transport_eof
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_bpo37428_pha_cert_none
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_internal_chain_client
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_internal_chain_server
@@ -88,6 +89,9 @@
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_required
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_required_nocert
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_setter
+*graalpython.lib-python.3.test.test_ssl.TestPreHandshakeClose.test_https_client_non_tls_response_ignored
+*graalpython.lib-python.3.test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_client
+*graalpython.lib-python.3.test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_server
 *graalpython.lib-python.3.test.test_ssl.TestSSLDebug.test_keylog_defaults
 *graalpython.lib-python.3.test.test_ssl.TestSSLDebug.test_keylog_env
 *graalpython.lib-python.3.test.test_ssl.TestSSLDebug.test_keylog_filename

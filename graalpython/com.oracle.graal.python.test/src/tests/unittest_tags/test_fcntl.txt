@@ -3,3 +3,5 @@
 *graalpython.lib-python.3.test.test_fcntl.TestFcntl.test_fcntl_f_pipesize
 *graalpython.lib-python.3.test.test_fcntl.TestFcntl.test_flock
 *graalpython.lib-python.3.test.test_fcntl.TestFcntl.test_flock_overflow
+*graalpython.lib-python.3.test.test_fcntl.TestFcntl.test_lockf_exclusive
+*graalpython.lib-python.3.test.test_fcntl.TestFcntl.test_lockf_share

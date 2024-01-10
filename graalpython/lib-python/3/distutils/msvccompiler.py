@@ -152,6 +152,8 @@ def get_build_version():
     prefix = "MSC v."
     i = sys.version.find(prefix)
     if i == -1:
+        if os.name == 'nt':
+            return 14 # Truffle change to 14
         return 6
     i = i + len(prefix)
     s, rest = sys.version[i:].split(" ", 1)

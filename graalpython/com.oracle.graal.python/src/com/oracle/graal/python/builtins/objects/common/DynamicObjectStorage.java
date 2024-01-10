@@ -52,9 +52,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -204,12 +204,12 @@ public final class DynamicObjectStorage extends HashingStorage {
             return noValueProfile.profile(inliningTarget, result == PNone.NO_VALUE) ? null : result;
         }
 
-        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString.execute(inliningTarget, key)", limit = "1")
         @InliningCutoff
         static Object pstring(Node inliningTarget, DynamicObjectStorage self, PString key, @SuppressWarnings("unused") long keyHash,
+                        @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,
-                        @Cached IsBuiltinObjectProfile profile,
                         @Exclusive @Cached InlinedConditionProfile noValueProfile) {
             return string(inliningTarget, self, castStr.execute(inliningTarget, key), -1, readKey, noValueProfile);
         }

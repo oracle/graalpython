@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -69,10 +70,11 @@ public final class PythonCextTracebackBuiltins {
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
     abstract static class _PyTraceback_Add extends CApiTernaryBuiltinNode {
         @Specialization
-        Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
+        static Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
                         @Cached PyCode_NewEmpty newCode,
-                        @Cached PyTraceBack_Here pyTraceBackHereNode) {
-            PFrame frame = factory().createPFrame(null, newCode.execute(filename, funcname, lineno), factory().createDict(), factory().createDict());
+                        @Cached PyTraceBack_Here pyTraceBackHereNode,
+                        @Cached PythonObjectFactory factory) {
+            PFrame frame = factory.createPFrame(null, newCode.execute(filename, funcname, lineno), factory.createDict(), factory.createDict());
             pyTraceBackHereNode.execute(frame);
             return PNone.NONE;
         }
@@ -81,18 +83,19 @@ public final class PythonCextTracebackBuiltins {
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Direct)
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
-        int tbHere(PFrame frame,
+        static int tbHere(PFrame frame,
                         @Bind("this") Node inliningTarget,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
-            PythonLanguage language = getLanguage();
-            PythonContext.PythonThreadState threadState = getContext().getThreadState(language);
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
+                        @Cached PythonObjectFactory factory) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(language);
             PException currentException = threadState.getCurrentException();
             if (currentException != null) {
                 PTraceback traceback = null;
                 if (currentException.getTraceback() != null) {
                     traceback = materializeLazyTracebackNode.execute(inliningTarget, currentException.getTraceback());
                 }
-                PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
+                PTraceback newTraceback = factory.createTraceback(frame, frame.getLine(), traceback);
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
                 threadState.setCurrentException(PException.fromExceptionInfo(currentException.getUnreifiedException(), newTraceback, withJavaStacktrace));
             }

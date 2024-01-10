@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -102,7 +101,7 @@ public enum CStructs {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object sizesPointer = PCallCapiFunction.getUncached().call(PythonContext.get(null).getCApiContext(), NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES);
+        Object sizesPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES);
         long[] sizes = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(sizesPointer, VALUES.length);
         for (CStructs struct : VALUES) {
             long size = sizes[struct.ordinal()];

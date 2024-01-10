@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,9 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -54,13 +55,14 @@ import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -68,7 +70,9 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -78,40 +82,55 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateInline(false) // Needs to be an indirect call
-public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCall {
+@GenerateInline(false)          // footprint reduction 48 -> 29
+public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
 
     @Specialization
-    PMemoryView fromMemoryView(PMemoryView object,
-                    @Shared @Cached PythonObjectFactory factory) {
-        object.checkReleased(this);
-        return factory.createMemoryView(PythonContext.get(this), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
+    static PMemoryView fromMemoryView(PMemoryView object,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached PythonObjectFactory factory,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        object.checkReleased(inliningTarget, raiseNode);
+        return factory.createMemoryView(PythonContext.get(inliningTarget), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
                         object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                         object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                         object.getBufferSuboffsets(), object.getFlags());
     }
 
     @Specialization
-    PMemoryView fromNative(PythonNativeObject object,
+    static PMemoryView fromNative(PythonNativeObject object,
+                    @Bind("this") Node inliningTarget,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
-        return fromNativeNode.execute(object, BufferFlags.PyBUF_FULL_RO);
+        return fromNativeNode.execute(inliningTarget, object, BufferFlags.PyBUF_FULL_RO);
     }
 
     @Specialization
-    PMemoryView fromMMap(PMMap object,
-                    @Shared @Cached PythonObjectFactory factory,
-                    @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
-        return factory.createMemoryViewForManagedObject(object, 1, (int) object.getLength(), false, T_UINT_8_TYPE_CODE, lengthNode, atIndexNode);
+    static PMemoryView fromPickleBuffer(VirtualFrame frame, PPickleBuffer object,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                    @Cached PyMemoryViewFromObject recursive,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        /*
+         * PickleBuffer is just a buffer proxy for other objects, including native objects or other
+         * memoryviews, we need to process the delegate recursively.
+         */
+        Object owner = null;
+        if (object.getView() != null) {
+            owner = bufferLib.getOwner(object.getView());
+        }
+        if (owner == null) {
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
+        }
+        return recursive.execute(frame, owner);
     }
 
-    @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
-    @SuppressWarnings("truffle-static-method")
-    PMemoryView fromManaged(VirtualFrame frame, Object object,
+    @Fallback
+    static PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
-                    @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
-                    @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Cached("createFor(this)") IndirectCallData indirectCallData,
+                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,
                     @Cached GetClassNode getClassNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
@@ -119,8 +138,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                     @Cached CallNode callNode,
                     @Shared @Cached PythonObjectFactory factory,
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
-                    @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                    @Cached TruffleString.CodePointLengthNode lengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
         if (hasSlotProfile.profile(inliningTarget, getBufferAttr != PNone.NO_VALUE)) {
@@ -151,16 +171,16 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
             Object pythonBuffer = NativeByteSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), false);
             TruffleString format = cBuffer.getFormat();
-            return factory.createMemoryView(PythonContext.get(this), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
+            return factory.createMemoryView(PythonContext.get(inliningTarget), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
                             format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
+            Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
             return factory.createMemoryViewForManagedObject(buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer), bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
         } else {
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
     }
 

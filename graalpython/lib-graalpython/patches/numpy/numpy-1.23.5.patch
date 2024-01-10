@@ -566,11 +566,11 @@ index f959162..2ef579b 100644
          return multiiter_wrong_number_of_args();
      }
 -    ret = multiiter_new_impl(n, PySequence_Fast_ITEMS(fast_seq));
-+    PyObject* seq[n];
++    PyObject** seq = (PyObject **)malloc(n * sizeof(PyObject *));
 +    for (int i = 0; i < n; i++) {
 +    	seq[i] = PySequence_Fast_GET_ITEM(fast_seq, i);
 +    }
-+    ret = multiiter_new_impl(n, seq);
++    ret = multiiter_new_impl(n, seq); free(seq);
      Py_DECREF(fast_seq);
      return ret;
  }

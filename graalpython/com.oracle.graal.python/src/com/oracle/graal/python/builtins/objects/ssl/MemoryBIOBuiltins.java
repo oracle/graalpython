@@ -54,10 +54,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Bind;
@@ -126,11 +128,12 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
+        static int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (self.didWriteEOF()) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
@@ -141,10 +144,10 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
                     self.write(bytes, len);
                     return len;
                 } catch (OverflowException | OutOfMemoryError e) {
-                    throw raise(MemoryError);
+                    throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 

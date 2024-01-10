@@ -74,7 +74,6 @@ import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_JOIN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -180,9 +179,11 @@ import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -196,6 +197,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -220,8 +222,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -229,9 +231,11 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -259,7 +263,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -301,8 +304,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(source)")
-        @SuppressWarnings("truffle-static-method")
-        Object doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
+        static Object doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached InlinedConditionProfile hasBytes,
@@ -311,7 +313,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached PyBytesCheckNode check,
                         @Exclusive @Cached BytesNodes.BytesInitNode bytesInitNode,
-                        @Exclusive @Cached CreateBytes createBytes) {
+                        @Exclusive @Cached CreateBytes createBytes,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(inliningTarget, source), source);
             if (hasBytes.profile(inliningTarget, bytesMethod != PNone.NO_VALUE)) {
                 Object bytes = callBytes.executeObject(frame, bytesMethod, source);
@@ -322,15 +325,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         return createBytes.execute(inliningTarget, cls, toBytesNode.execute(frame, bytes));
                     }
                 } else {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, bytes);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, bytes);
                 }
             }
             return createBytes.execute(inliningTarget, cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
         }
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
-        @SuppressWarnings("truffle-static-method")
-        Object dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+        static Object dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached BytesNodes.BytesInitNode bytesInitNode,
                         @Exclusive @Cached CreateBytes createBytes) {
@@ -387,17 +389,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callComplexNode;
         @Child private WarnNode warnNode;
 
-        private static PComplex createComplex(Object cls, double real, double imaginary, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile, PythonObjectFactory factory) {
-            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
+        private static PComplex createComplex(Object cls, double real, double imaginary, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile, PythonObjectFactory factory) {
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
                 return factory.createComplex(real, imaginary);
             }
             return factory.createComplex(cls, real, imaginary);
         }
 
-        private static PComplex createComplex(Object cls, PComplex value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile, IsBuiltinObjectProfile isBuiltinObjectProfile,
+        private static PComplex createComplex(Object cls, PComplex value, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile, PyComplexCheckExactNode complexCheckExact,
                         PythonObjectFactory factory) {
-            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
-                if (isBuiltinObjectProfile.profileObject(inliningTarget, value, PythonBuiltinClassType.PComplex)) {
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
+                if (complexCheckExact.execute(inliningTarget, value)) {
                     return value;
                 }
                 return factory.createComplex(value.getReal(), value.getImag());
@@ -409,7 +411,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         static PComplex complexFromNone(Object cls, PNone real, PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, 0, 0, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -417,7 +419,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         static PComplex complexFromIntInt(Object cls, int real, int imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -425,7 +427,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         static PComplex complexFromLongLong(Object cls, long real, long imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -433,16 +435,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         PComplex complexFromLongLong(Object cls, PInt real, PInt imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()),
-                            imaginary.doubleValueWithOverflow(getRaiseNode()), inliningTarget, isPrimitiveProfile, factory);
+            return createComplex(cls, real.doubleValueWithOverflow(this),
+                            imaginary.doubleValueWithOverflow(this), inliningTarget, isPrimitiveProfile, factory);
         }
 
         @Specialization
         static PComplex complexFromDoubleDouble(Object cls, double real, double imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -450,7 +452,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(imag)")
         static PComplex complexFromDouble(Object cls, double real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -460,18 +462,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile, factory);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode isBuiltinObjectProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile, factory,
+                            raiseNode);
         }
 
         @Specialization(guards = "isNoValue(imag)")
         static PComplex complexFromInt(Object cls, int real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -479,7 +483,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(imag)")
         static PComplex complexFromLong(Object cls, long real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile, factory);
         }
@@ -489,12 +493,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile, factory);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck, factory,
+                            raiseNode);
         }
 
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
@@ -502,26 +508,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, isResultComplexType);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, number)) {
                     return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, number), 0.0, inliningTarget, isPrimitiveProfile, factory);
                 } else {
-                    throw raiseFirstArgError(number);
+                    throw raiseFirstArgError(number, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value, inliningTarget, isPrimitiveProfile, isBuiltinObjectProfile, factory);
+            return createComplex(cls, value, inliningTarget, isPrimitiveProfile, complexCheck, factory);
         }
 
         @Specialization
         static PComplex complexFromLongComplex(Object cls, long one, PComplex two,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, one - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
         }
@@ -529,15 +536,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         PComplex complexFromPIntComplex(Object cls, PInt one, PComplex two,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, one.doubleValueWithOverflow(getRaiseNode()) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
+            return createComplex(cls, one.doubleValueWithOverflow(this) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
         }
 
         @Specialization
         static PComplex complexFromDoubleComplex(Object cls, double one, PComplex two,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return createComplex(cls, one - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
         }
@@ -547,16 +554,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two, inliningTarget, isPrimitiveProfile, factory);
                 } else {
-                    throw raiseFirstArgError(one);
+                    throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
             return createComplex(cls, value.getReal(), value.getImag() + two, inliningTarget, isPrimitiveProfile, factory);
@@ -567,16 +575,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two, inliningTarget, isPrimitiveProfile, factory);
                 } else {
-                    throw raiseFirstArgError(one);
+                    throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
             return createComplex(cls, value.getReal(), value.getImag() + two, inliningTarget, isPrimitiveProfile, factory);
@@ -587,19 +596,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
-                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two.doubleValueWithOverflow(getRaiseNode()), inliningTarget, isPrimitiveProfile, factory);
+                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two.doubleValueWithOverflow(this), inliningTarget, isPrimitiveProfile, factory);
                 } else {
-                    throw raiseFirstArgError(one);
+                    throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(getRaiseNode()), inliningTarget, isPrimitiveProfile, factory);
+            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(this), inliningTarget, isPrimitiveProfile, factory);
         }
 
         @Specialization(guards = "!isString(one)")
@@ -607,16 +617,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
                 } else {
-                    throw raiseFirstArgError(one);
+                    throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
             return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal(), inliningTarget, isPrimitiveProfile, factory);
@@ -628,42 +639,47 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
-                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
+                        @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (canBeDoubleNode.execute(inliningTarget, two)) {
                 double twoValue = asDoubleNode.execute(frame, inliningTarget, two);
                 if (oneValue == null) {
                     if (canBeDoubleNode.execute(inliningTarget, one)) {
                         return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), twoValue, inliningTarget, isPrimitiveProfile, factory);
                     } else {
-                        throw raiseFirstArgError(one);
+                        throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                     }
                 }
                 return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue, inliningTarget, isPrimitiveProfile, factory);
             } else {
-                throw raiseSecondArgError(two);
+                throw raiseSecondArgError(two, raiseNode.get(inliningTarget));
             }
         }
 
         @Specialization
         PComplex complexFromString(VirtualFrame frame, Object cls, TruffleString real, Object imaginary,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (imaginary != PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
-            return convertStringToComplex(frame, toJavaStringNode.execute(real), cls, real);
+            return convertStringToComplex(frame, inliningTarget, toJavaStringNode.execute(real), cls, real, raiseNode);
         }
 
         @Specialization
         PComplex complexFromString(VirtualFrame frame, Object cls, PString real, Object imaginary,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (imaginary != PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
-            return convertStringToComplex(frame, castToStringNode.execute(real), cls, real);
+            return convertStringToComplex(frame, inliningTarget, castToStringNode.execute(real), cls, real, raiseNode);
         }
 
         private Object callComplex(VirtualFrame frame, Object object) {
@@ -682,29 +698,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return warnNode;
         }
 
-        private PException raiseFirstArgError(Object x) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "complex() first", x);
+        private static PException raiseFirstArgError(Object x, PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "complex() first", x);
         }
 
-        private PException raiseSecondArgError(Object x) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_NUMBER, "complex() second", x);
+        private static PException raiseSecondArgError(Object x, PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_NUMBER, "complex() second", x);
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, Node inliningTarget,
-                        IsBuiltinObjectProfile isComplexType, IsBuiltinObjectProfile isResultComplexType) {
-            if (isComplexType.profileObject(inliningTarget, object, PythonBuiltinClassType.PComplex)) {
+                        PyComplexCheckExactNode isComplexType, PyComplexCheckExactNode isResultComplexType, PRaiseNode.Lazy raiseNode) {
+            if (isComplexType.execute(inliningTarget, object)) {
                 return (PComplex) object;
             } else {
                 Object result = callComplex(frame, object);
                 if (result instanceof PComplex) {
-                    if (!isResultComplexType.profileObject(inliningTarget, result, PythonBuiltinClassType.PComplex)) {
+                    if (!isResultComplexType.execute(inliningTarget, result)) {
                         getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                         ErrorMessages.WARN_P_RETURNED_NON_P,
                                         object, "__complex__", "complex", result, "complex");
                     }
                     return (PComplex) result;
                 } else if (result != PNone.NO_VALUE) {
-                    throw raise(TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
                 }
                 if (object instanceof PComplex) {
                     // the class extending PComplex but doesn't have __complex__ method
@@ -716,12 +732,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object complexGeneric(Object cls, Object realObj, Object imaginaryObj) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "complex.__new__(X): X", cls);
+        static Object complexGeneric(Object cls, Object realObj, Object imaginaryObj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "complex.__new__(X): X", cls);
         }
 
         // Adapted from CPython's complex_subtype_from_string
-        private PComplex convertStringToComplex(VirtualFrame frame, String src, Object cls, Object origObj) {
+        private PComplex convertStringToComplex(VirtualFrame frame, Node inliningTarget, String src, Object cls, Object origObj, PRaiseNode.Lazy raiseNode) {
             String str = FloatUtils.removeUnicodeAndUnderscores(src);
             if (str == null) {
                 if (callReprNode == null) {
@@ -730,18 +747,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 Object strStr = callReprNode.executeObject(frame, origObj);
                 if (PGuards.isString(strStr)) {
-                    throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_COMPLEX, strStr);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_COMPLEX, strStr);
                 } else {
                     // During the formatting of "ValueError: invalid literal ..." exception,
                     // CPython attempts to raise "TypeError: __repr__ returned non-string",
                     // which gets later overwitten with the original "ValueError",
                     // but without any message (since the message formatting failed)
-                    throw raise(ValueError);
+                    throw raiseNode.get(inliningTarget).raise(ValueError);
                 }
             }
             PComplex c = convertStringToComplexOrNull(str, cls);
             if (c == null) {
-                throw raise(ValueError, ErrorMessages.COMPLEX_ARG_IS_MALFORMED_STR);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COMPLEX_ARG_IS_MALFORMED_STR);
             }
             return c;
         }
@@ -836,7 +853,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (i != len) {
                 return null;
             }
-            return createComplex(cls, x, y, null, InlineIsBuiltinClassProfile.getUncached(), PythonObjectFactory.getUncached());
+            return createComplex(cls, x, y, null, IsBuiltinClassExactProfile.getUncached(), PythonObjectFactory.getUncached());
         }
     }
 
@@ -846,11 +863,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDict)
     @GenerateNodeFactory
     public abstract static class DictionaryNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isBuiltinDict(cls)")
         @SuppressWarnings("unused")
-        public PDict dictEmpty(Object cls, Object[] args, PKeyword[] keywordArgs,
-                        @Cached PythonObjectFactory factory) {
+        static PDict builtinDict(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createDict();
+        }
+
+        @Specialization(replaces = "builtinDict")
+        @SuppressWarnings("unused")
+        static PDict dict(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile orderedProfile,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            if (orderedProfile.profile(inliningTarget, isSubtypeNode.execute(cls, PythonBuiltinClassType.POrderedDict))) {
+                return factory.createOrderedDict(cls);
+            }
             return factory.createDict(cls);
+        }
+
+        protected static boolean isBuiltinDict(Object cls) {
+            return cls == PythonBuiltinClassType.PDict;
         }
     }
 
@@ -896,8 +930,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isIntegerIndex(start)")
-        void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
+        static void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
         }
     }
 
@@ -908,7 +943,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
-        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
+        static PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile overflowProfile,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -921,12 +956,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return factory.createIntRangeIterator(new_start, new_stop, negateExact(lstep), ulen);
             } catch (OverflowException e) {
                 overflowProfile.enter(inliningTarget);
-                return handleOverflow(lstart, lstep, ulen, factory);
+                return handleOverflow(lstart, lstep, ulen, PythonContext.get(inliningTarget).factory());
             }
         }
 
         @TruffleBoundary
-        private PBigRangeIterator handleOverflow(int lstart, int lstep, int ulen, PythonObjectFactory factory) {
+        private static PBigRangeIterator handleOverflow(int lstart, int lstep, int ulen, PythonObjectSlowPathFactory factory) {
             BigInteger bstart = BigInteger.valueOf(lstart);
             BigInteger bstep = BigInteger.valueOf(lstep);
             BigInteger blen = BigInteger.valueOf(ulen);
@@ -938,8 +973,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range,
-                        @Shared @Cached PythonObjectFactory factory) {
+        PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range) {
             BigInteger lstart = range.getBigIntegerStart();
             BigInteger lstep = range.getBigIntegerStep();
             BigInteger ulen = range.getBigIntegerLength();
@@ -947,12 +981,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             BigInteger new_stop = lstart.subtract(lstep);
             BigInteger new_start = new_stop.add(ulen.multiply(lstep));
 
-            return factory.createBigRangeIterator(new_start, new_stop, lstep.negate(), ulen);
+            return getContext().factory().createBigRangeIterator(new_start, new_stop, lstep.negate(), ulen);
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        public PythonObject reversed(Object cls, PString value,
+        static PythonObject reversed(Object cls, PString value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -960,14 +993,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        public PythonObject reversed(Object cls, TruffleString value,
+        static PythonObject reversed(Object cls, TruffleString value,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createStringReverseIterator(cls, value);
         }
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
-        @SuppressWarnings("truffle-static-method")
-        public Object reversed(VirtualFrame frame, Object cls, Object sequence,
+        static Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
@@ -976,20 +1008,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
                         @Cached InlinedConditionProfile noReversedProfile,
                         @Cached InlinedConditionProfile noGetItemProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
             Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);
             if (noReversedProfile.profile(inliningTarget, reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
                 if (noGetItemProfile.profile(inliningTarget, getItem == PNone.NO_VALUE)) {
-                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     Object h = lookupLen.executeObject(frame, sequence);
                     int lengthHint;
                     try {
                         lengthHint = PGuards.expectInt(h);
                     } catch (UnexpectedResultException | OverflowException e) {
-                        throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, h);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, h);
                     }
                     return factory.createSequenceReverseIterator(cls, sequence, lengthHint);
                 }
@@ -1010,7 +1043,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doIt(VirtualFrame frame, Object cls, Object arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
+                        @Cached IsBuiltinClassExactProfile isPrimitiveFloatProfile,
                         @Cached PrimitiveFloatNode primitiveFloatNode,
                         @Cached NeedsNativeAllocationNode needsNativeAllocationNode) {
             if (isPrimitiveFloat(inliningTarget, cls, isPrimitiveFloatProfile)) {
@@ -1058,10 +1091,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Fallback
             @InliningCutoff
             static double floatFromObject(VirtualFrame frame, Node inliningTarget, Object obj,
-                            @Cached IsBuiltinObjectProfile stringProfile,
+                            @Cached PyUnicodeCheckExactNode stringCheck,
                             @Cached PyFloatFromString fromString,
                             @Cached PyNumberFloatNode pyNumberFloat) {
-                if (stringProfile.profileObject(inliningTarget, obj, PythonBuiltinClassType.PString)) {
+                if (stringCheck.execute(inliningTarget, obj)) {
                     return fromString.execute(frame, inliningTarget, obj);
                 }
                 return pyNumberFloat.execute(frame, inliningTarget, obj);
@@ -1109,8 +1142,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        protected static boolean isPrimitiveFloat(Node inliningTarget, Object cls, InlineIsBuiltinClassProfile isPrimitiveProfile) {
-            return isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PFloat);
+        protected static boolean isPrimitiveFloat(Node inliningTarget, Object cls, IsBuiltinClassExactProfile isPrimitiveProfile) {
+            return isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PFloat);
         }
     }
 
@@ -1120,20 +1153,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FrozenSetNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(arg)")
-        public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
+        static PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createFrozenSet(cls);
         }
 
         @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
-        public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
+        static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached IsAnyBuiltinClassProfile isBuiltinClass) {
             return arg;
         }
 
         @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
-        public PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
+        static PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached IsAnyBuiltinClassProfile isBuiltinClass,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -1141,8 +1174,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
-        @SuppressWarnings("truffle-static-method")
-        public PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
+        static PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -1189,10 +1221,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj,
-                        Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         InlinedBranchProfile notSimpleDecimalLiteralProfile, InlinedBranchProfile invalidValueProfile,
                         InlinedBranchProfile bigIntegerProfile, InlinedBranchProfile primitiveIntProfile, InlinedBranchProfile fullIntProfile,
-                        PythonObjectFactory factory) {
+                        PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
             if (base == 0 || base == 10) {
                 Object value = parseSimpleDecimalLiteral(number, 0, number.length());
                 if (value != null) {
@@ -1209,19 +1241,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 Object str = callReprNode.executeObject(frame, origObj);
                 if (PGuards.isString(str)) {
-                    throw raise(ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, str);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, str);
                 } else {
                     // During the formatting of "ValueError: invalid literal ..." exception,
                     // CPython attempts to raise "TypeError: __repr__ returned non-string",
                     // which gets later overwitten with the original "ValueError",
                     // but without any message (since the message formatting failed)
-                    throw raise(ValueError);
+                    throw raiseNode.get(inliningTarget).raise(ValueError);
                 }
             }
             return createInt(cls, value, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
         }
 
-        private static Object createInt(Object cls, Object value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+        private static Object createInt(Object cls, Object value, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         InlinedBranchProfile bigIntegerProfile, InlinedBranchProfile primitiveIntProfile, InlinedBranchProfile fullIntProfile,
                         PythonObjectFactory factory) {
             if (value instanceof BigInteger) {
@@ -1246,13 +1278,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw new IllegalStateException("Unexpected type");
         }
 
-        private void checkBase(int base, Node inliningTarget, InlinedConditionProfile invalidBase) {
+        private static void checkBase(int base, Node inliningTarget, InlinedConditionProfile invalidBase, PRaiseNode.Lazy raiseNode) {
             if (invalidBase.profile(inliningTarget, (base < 2 || base > 36) && base != 0)) {
-                throw raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
             }
         }
 
-        private void checkBase(PInt base, Node inliningTarget, InlinedConditionProfile invalidBase) {
+        private static void checkBase(PInt base, Node inliningTarget, InlinedConditionProfile invalidBase, PRaiseNode.Lazy raiseNode) {
             int ibase;
             try {
                 ibase = base.intValueExact();
@@ -1260,7 +1292,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // this should just trigger the error
                 ibase = 1;
             }
-            checkBase(ibase, inliningTarget, invalidBase);
+            checkBase(ibase, inliningTarget, invalidBase, raiseNode);
         }
 
         // Adapted from Jython
@@ -1416,14 +1448,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return value;
         }
 
-        protected static boolean isPrimitiveInt(Node inliningTarget, Object cls, InlineIsBuiltinClassProfile profile) {
-            return profile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PInt);
+        protected static boolean isPrimitiveInt(Node inliningTarget, Object cls, IsBuiltinClassExactProfile profile) {
+            return profile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PInt);
         }
 
         @Specialization
         static Object parseInt(Object cls, boolean arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return arg ? 1 : 0;
@@ -1435,7 +1467,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(base)")
         static Object createInt(Object cls, int arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         // Dummy argument just so that it can be @Shared in the other
                         // specialization, which generated better code for interpreter
                         @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile isIntProfile,
@@ -1449,7 +1481,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(base)")
         static Object createInt(Object cls, long arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Shared @Cached InlinedConditionProfile isIntProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
@@ -1466,7 +1498,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(base)")
         static Object createInt(Object cls, double arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Cached PyLongFromDoubleNode pyLongFromDoubleNode,
                         @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
                         @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
@@ -1486,7 +1518,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedBranchProfile baseIsNoneBranchProfile,
                         @Exclusive @Cached InlinedBranchProfile baseIsIntBranchProfile,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Exclusive @Cached InlinedConditionProfile invalidBase,
@@ -1495,7 +1527,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
                         @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
                         @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             int intBase;
             if (PGuards.isNoValue(base)) {
                 baseIsNoneBranchProfile.enter(inliningTarget);
@@ -1506,10 +1539,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else {
                 intBase = asSizeNode.executeLossy(frame, inliningTarget, base);
             }
-            checkBase(intBase, inliningTarget, invalidBase);
+            checkBase(intBase, inliningTarget, invalidBase, raiseNode);
             return stringToInt(frame, cls, toJavaStringNode.execute(number), intBase, number,
                             inliningTarget, isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile,
-                            bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
+                            bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory, raiseNode);
         }
 
         // PIBytesLike
@@ -1519,24 +1552,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, Object base,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile baseIsNoneBranchProfile,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Exclusive @Cached InlinedConditionProfile invalidBase,
                         @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
                         @Exclusive @Cached InlinedBranchProfile invalidValueProfile,
                         @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
                         @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
                         @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             int intBase;
             if (baseIsNoneBranchProfile.profile(inliningTarget, PGuards.isNoValue(base))) {
                 intBase = 10;
             } else {
                 intBase = (int) base;
-                checkBase(intBase, inliningTarget, invalidBase);
+                checkBase(intBase, inliningTarget, invalidBase, raiseNode);
             }
             return stringToInt(frame, cls, toString(arg), intBase, arg, inliningTarget,
                             isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile,
-                            primitiveIntProfile, fullIntProfile, factory);
+                            primitiveIntProfile, fullIntProfile, factory, raiseNode);
         }
 
         // PString
@@ -1550,7 +1584,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object parsePString(VirtualFrame frame, Object cls, PString arg, Object base,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Exclusive @Cached CastToJavaStringNode castToStringNode,
                         @Exclusive @Cached InlinedConditionProfile invalidBase,
                         @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
@@ -1558,26 +1592,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
                         @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
                         @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             int intBase;
             if (PGuards.isNoValue(base)) {
                 intBase = 10;
             } else if (base instanceof Integer) {
                 intBase = (int) base;
-                checkBase(intBase, inliningTarget, invalidBase);
+                checkBase(intBase, inliningTarget, invalidBase, raiseNode);
             } else {
                 assert base instanceof PInt;
                 PInt pintBase = (PInt) base;
-                checkBase(pintBase, inliningTarget, invalidBase);
+                checkBase(pintBase, inliningTarget, invalidBase, raiseNode);
                 intBase = (pintBase).intValue();
             }
-            Object result = callInt(frame, arg);
+            Object result = callInt(frame, inliningTarget, arg, raiseNode);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
             return stringToInt(frame, cls, castToStringNode.execute(arg), intBase, arg, inliningTarget,
                             isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile,
-                            primitiveIntProfile, fullIntProfile, factory);
+                            primitiveIntProfile, fullIntProfile, factory, raiseNode);
         }
 
         // other
@@ -1585,7 +1620,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(base)")
         static Object createInt(Object cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile) {
             if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return arg;
             } else {
@@ -1597,7 +1632,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object createInt(Object cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return 0;
@@ -1607,8 +1642,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isString(arg)", "!isBytes(arg)", "!isNoValue(base)"})
-        Object fail(Object cls, Object arg, Object base) {
-            throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
+        static Object fail(Object cls, Object arg, Object base,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
@@ -1617,9 +1653,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached IsBuiltinObjectProfile isPrimitiveIntObjectProfile,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Cached PyLongCheckExactNode longCheckExact,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
@@ -1627,7 +1664,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
                         @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
                         @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
              * in CPython. We don't use PythonObjectLibrary here since the original CPython function
@@ -1639,34 +1677,34 @@ public final class BuiltinConstructors extends PythonBuiltins {
              * return values representing missing magic methods which should be ideally hidden by
              * PythonObjectLibrary.
              */
-            Object result = callInt(frame, obj);
+            Object result = callInt(frame, inliningTarget, obj, raiseNode);
             if (result == PNone.NO_VALUE) {
-                result = callIndex(frame, obj);
+                result = callIndex(frame, inliningTarget, obj, raiseNode);
                 if (result == PNone.NO_VALUE) {
-                    Object truncResult = callTrunc(frame, inliningTarget, obj, indexCheckNode);
+                    Object truncResult = callTrunc(frame, inliningTarget, obj, indexCheckNode, raiseNode);
                     if (truncResult == PNone.NO_VALUE) {
                         Object buffer;
                         try {
-                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
+                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
                         } catch (PException e) {
-                            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
+                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
                         }
                         try {
                             String number = newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
                             return stringToInt(frame, cls, number, 10, obj, inliningTarget, isPrimitiveIntProfile,
-                                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
+                                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory, raiseNode);
                         } finally {
-                            bufferLib.release(buffer, frame, this);
+                            bufferLib.release(buffer, frame, indirectCallData);
                         }
                     }
                     if (isIntegerType(truncResult)) {
                         result = truncResult;
                     } else {
-                        result = callIndex(frame, truncResult);
+                        result = callIndex(frame, inliningTarget, truncResult, raiseNode);
                         if (result == PNone.NO_VALUE) {
-                            result = callInt(frame, truncResult);
+                            result = callInt(frame, inliningTarget, truncResult, raiseNode);
                             if (result == PNone.NO_VALUE) {
-                                throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
+                                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
                             }
                         }
                     }
@@ -1675,7 +1713,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             // If a subclass of int is returned by __int__ or __index__, a conversion to int is
             // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
-            if (!isPrimitiveIntObjectProfile.profileObject(inliningTarget, result, PythonBuiltinClassType.PInt)) {
+            if (!longCheckExact.execute(inliningTarget, result)) {
                 getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.WARN_P_RETURNED_NON_P,
                                 obj, "__int__/__index__", "int", result, "int");
@@ -1696,7 +1734,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
         }
 
-        private Object callIndex(VirtualFrame frame, Object obj) {
+        private Object callIndex(VirtualFrame frame, Node inliningTarget, Object obj, PRaiseNode.Lazy raiseNode) {
             if (callIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Index));
@@ -1705,12 +1743,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
             // is handled in createIntGeneric
             if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, J___INDEX__, result);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INT, J___INDEX__, result);
             }
             return result;
         }
 
-        private Object callTrunc(VirtualFrame frame, Node inliningTarget, Object obj, PyIndexCheckNode indexCheckNode) {
+        private Object callTrunc(VirtualFrame frame, Node inliningTarget, Object obj, PyIndexCheckNode indexCheckNode, PRaiseNode.Lazy raiseNode) {
             if (callTruncNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callTruncNode = insert(LookupAndCallUnaryNode.create(T___TRUNC__));
@@ -1719,22 +1757,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (result != PNone.NO_VALUE) {
                 getWarnNode().warnEx(frame, DeprecationWarning, ErrorMessages.WARN_DELEGATION_OF_INT_TO_TRUNC_IS_DEPRECATED, 1);
                 if (indexCheckNode.execute(inliningTarget, result)) {
-                    return callIndex(frame, result);
+                    return callIndex(frame, inliningTarget, result, raiseNode);
                 } else {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
                 }
             }
             return result;
         }
 
-        private Object callInt(VirtualFrame frame, Object object) {
+        private Object callInt(VirtualFrame frame, Node inliningTarget, Object object, PRaiseNode.Lazy raiseNode) {
             if (callIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIntNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Int));
             }
             Object result = callIntNode.executeObject(frame, object);
             if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, T___INT__, result);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INT, T___INT__, result);
             }
             return result;
         }
@@ -1953,119 +1991,119 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {
         // stop
         @Specialization(guards = "isStop(start, stop, step)")
-        Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+        static Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doInt(cls, 0, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doInt(cls, 0, stop, 1, inliningTarget, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, factory, raiseNode);
         }
 
         @Specialization(guards = "isStop(start, stop, step)")
-        Object doPintStop(Object cls, PInt stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+        static Object doPintStop(Object cls, PInt stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doPint(cls, factory.createInt(0), stop, factory.createInt(1), inliningTarget, stepZeroProfile, lenOfRangeNode, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doPint(cls, factory.createInt(0), stop, factory.createInt(1), inliningTarget, lenOfRangeNode, factory, raiseNode);
         }
 
         @Specialization(guards = "isStop(start, stop, step)")
-        Object doGenericStop(VirtualFrame frame, Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+        static Object doGenericStop(VirtualFrame frame, Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
                         @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
                         @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doGeneric(frame, cls, 0, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doGeneric(frame, cls, 0, stop, 1, inliningTarget, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode, factory, raiseNode);
         }
 
         // start stop
         @Specialization(guards = "isStartStop(start, stop, step)")
-        Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
+        static Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doInt(cls, start, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doInt(cls, start, stop, 1, inliningTarget, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, factory, raiseNode);
         }
 
         @Specialization(guards = "isStartStop(start, stop, step)")
-        Object doPintStartStop(Object cls, PInt start, PInt stop, @SuppressWarnings("unused") PNone step,
+        static Object doPintStartStop(Object cls, PInt start, PInt stop, @SuppressWarnings("unused") PNone step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doPint(cls, start, stop, factory.createInt(1), inliningTarget, stepZeroProfile, lenOfRangeNode, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doPint(cls, start, stop, factory.createInt(1), inliningTarget, lenOfRangeNode, factory, raiseNode);
         }
 
         @Specialization(guards = "isStartStop(start, stop, step)")
-        Object doGenericStartStop(VirtualFrame frame, Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
+        static Object doGenericStartStop(VirtualFrame frame, Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
                         @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
                         @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doGeneric(frame, cls, start, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode, factory);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doGeneric(frame, cls, start, stop, 1, inliningTarget, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode, factory, raiseNode);
         }
 
         // start stop step
         @Specialization
-        Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
+        static Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNode,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            if (stepZeroProfile.profile(inliningTarget, step == 0)) {
-                throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            if (step == 0) {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
             try {
                 int len = lenOfRangeNode.executeInt(inliningTarget, start, stop, step);
                 return factory.createIntRange(start, stop, step, len);
             } catch (OverflowException e) {
-                exceptionProfile.enter(this);
+                exceptionProfile.enter(inliningTarget);
                 return createBigRangeNode.execute(inliningTarget, start, stop, step);
             }
         }
 
         @Specialization
-        Object doPint(@SuppressWarnings("unused") Object cls, PInt start, PInt stop, PInt step,
+        static Object doPint(@SuppressWarnings("unused") Object cls, PInt start, PInt stop, PInt step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            if (stepZeroProfile.profile(inliningTarget, step.isZero())) {
-                throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            if (step.isZero()) {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
             BigInteger len = lenOfRangeNode.execute(inliningTarget, start.getValue(), stop.getValue(), step.getValue());
             return factory.createBigRange(start, stop, step, factory.createInt(len));
         }
 
         @Specialization(guards = "isStartStopStep(start, stop, step)")
-        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+        static Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
                         @Bind("this") Node inliningTarget,
-                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
                         @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
                         @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object lstart = indexNode.execute(frame, inliningTarget, start);
             Object lstop = indexNode.execute(frame, inliningTarget, stop);
             Object lstep = indexNode.execute(frame, inliningTarget, step);
@@ -2074,7 +2112,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 int istart = cast.execute(inliningTarget, lstart);
                 int istop = cast.execute(inliningTarget, lstop);
                 int istep = cast.execute(inliningTarget, lstep);
-                return doInt(cls, istart, istop, istep, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, factory);
+                return doInt(cls, istart, istop, istep, inliningTarget, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, factory, raiseNode);
             } catch (PException e) {
                 e.expect(inliningTarget, OverflowError, overflowProfile);
                 return createBigRangeNode.execute(inliningTarget, lstart, lstop, lstep);
@@ -2112,11 +2150,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = J_STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PString)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
-        @Child private LookupAndCallTernaryNode callDecodeNode;
-
-        @CompilationFinal private ConditionProfile isStringProfile;
-        @CompilationFinal private ConditionProfile isPStringProfile;
-        @Child private CastToTruffleStringNode castToTruffleStringNode;
 
         public final Object executeWith(Object arg) {
             return executeWith(null, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
@@ -2128,38 +2161,40 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object encoding, Object errors);
 
-        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "isNoValue(arg)"})
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "isNoValue(arg)"}, limit = "1")
         @SuppressWarnings("unused")
-        Object strNoArgs(Object cls, PNone arg, Object encoding, Object errors,
+        static Object strNoArgs(Object cls, PNone arg, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Shared @Cached PythonObjectFactory factory) {
             return asPString(cls, T_EMPTY_STRING, inliningTarget, isPrimitiveProfile, factory);
         }
 
-        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        Object strOneArg(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        static Object strOneArg(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        @Shared @Cached PyObjectStrAsObjectNode strNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringProfile,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Exclusive @Cached PyObjectStrAsObjectNode strNode,
                         @Shared @Cached PythonObjectFactory factory) {
             Object result = strNode.execute(frame, inliningTarget, obj);
 
             // try to return a primitive if possible
             result = assertNoJavaString(result);
-            if (getIsStringProfile().profile(result instanceof TruffleString)) {
+            if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
                 return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, factory);
             }
 
-            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
                 // PyObjectStrAsObjectNode guarantees that the returned object is an instanceof of
                 // 'str'
                 return result;
             } else {
                 try {
-                    return asPString(cls, getCastToTruffleStringNode().executeCached(result), inliningTarget, isPrimitiveProfile, factory);
+                    return asPString(cls, castToTruffleStringNode.execute(inliningTarget, result), inliningTarget, isPrimitiveProfile, factory);
                 } catch (CannotCastException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("asPstring result not castable to String");
@@ -2168,41 +2203,39 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
+        static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringProfile,
+                        @Exclusive @Cached InlinedConditionProfile isPStringProfile,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Cached("create(T_DECODE)") LookupAndCallTernaryNode callDecodeNode,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj, frame, this);
+                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
             } catch (PException e) {
-                throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
             try {
                 // TODO(fa): we should directly call '_codecs.decode'
                 // TODO don't copy, CPython creates a memoryview
                 PBytes bytesObj = factory.createBytes(bufferLib.getCopiedByteArray(buffer));
                 Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
-                return decodeBytes(frame, cls, bytesObj, en, errors, inliningTarget, isPrimitiveProfile, factory);
+                Object result = assertNoJavaString(callDecodeNode.execute(frame, bytesObj, en, errors));
+                if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
+                    return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, factory);
+                } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
+                    return result;
+                }
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {
-                bufferLib.release(buffer, frame, this);
+                bufferLib.release(buffer, frame, indirectCallData);
             }
-        }
-
-        private Object decodeBytes(VirtualFrame frame, Object cls, PBytes obj, Object encoding, Object errors, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile,
-                        PythonObjectFactory factory) {
-            Object result = getCallDecodeNode().execute(frame, obj, encoding, errors);
-            result = assertNoJavaString(result);
-            if (getIsStringProfile().profile(result instanceof TruffleString)) {
-                return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, factory);
-            } else if (getIsPStringProfile().profile(result instanceof PString)) {
-                return result;
-            }
-            throw raise(TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, obj, "decode", result);
         }
 
         /**
@@ -2215,9 +2248,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
-                        @Shared @Cached PyObjectStrAsObjectNode strNode,
+                        @Exclusive @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CExtNodes.StringSubtypeNew subtypeNew) {
             if (obj == PNone.NO_VALUE) {
                 return subtypeNew.call(cls, T_EMPTY_STRING);
@@ -2230,47 +2263,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PString);
         }
 
-        private Object asPString(Object cls, TruffleString str, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile,
+        private static Object asPString(Object cls, TruffleString str, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile,
                         PythonObjectFactory factory) {
-            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
                 return str;
             } else {
                 return factory.createString(cls, str);
             }
         }
 
-        private LookupAndCallTernaryNode getCallDecodeNode() {
-            if (callDecodeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callDecodeNode = insert(LookupAndCallTernaryNode.create(T_DECODE));
-            }
-            return callDecodeNode;
-        }
-
-        private ConditionProfile getIsStringProfile() {
-            if (isStringProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isStringProfile = ConditionProfile.create();
-            }
-            return isStringProfile;
-        }
-
-        private ConditionProfile getIsPStringProfile() {
-            if (isPStringProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isPStringProfile = ConditionProfile.create();
-            }
-            return isPStringProfile;
-        }
-
-        private CastToTruffleStringNode getCastToTruffleStringNode() {
-            if (castToTruffleStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToTruffleStringNode = insert(CastToTruffleStringNode.create());
-            }
-            return castToTruffleStringNode;
-        }
-
+        @NeverDefault
         public static StrNode create() {
             return BuiltinConstructorsFactory.StrNodeFactory.create(null);
         }
@@ -2305,8 +2307,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Fallback
-        public PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        static PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -2319,7 +2322,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoneOrEmptyPKeyword(kw)")
-        PZip zip(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") Object kw,
+        static PZip zip(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") Object kw,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Shared @Cached PythonObjectFactory factory) {
@@ -2327,23 +2330,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "kw.length == 1")
-        @SuppressWarnings("truffle-static-method")
-        PZip zip(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kw,
+        static PZip zip(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kw,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode eqNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached InlinedConditionProfile profile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (profile.profile(inliningTarget, eqNode.execute(kw[0].getName(), T_STRICT, TS_ENCODING))) {
                 return zip(frame, inliningTarget, cls, args, isTrueNode.execute(frame, inliningTarget, kw[0].getValue()), getIter, factory);
             }
-            throw raise(TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw[0].getName(), T_ZIP);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw[0].getName(), T_ZIP);
         }
 
         @Specialization(guards = "kw.length != 1")
-        Object zip(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object[] args, PKeyword[] kw) {
-            throw raise(TypeError, ErrorMessages.S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN, T_ZIP, kw.length);
+        static Object zip(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object[] args, PKeyword[] kw,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN, T_ZIP, kw.length);
         }
 
         private static PZip zip(VirtualFrame frame, Node inliningTarget, Object cls, Object[] args, boolean strict, PyObjectGetIter getIter, PythonObjectFactory factory) {
@@ -2425,8 +2429,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PFunction function(@SuppressWarnings("unused") Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
-            throw raise(TypeError, ErrorMessages.FUNC_CONSTRUCTION_NOT_SUPPORTED, cls, code, globals, name, defaultArgs, closure);
+        static PFunction function(@SuppressWarnings("unused") Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.FUNC_CONSTRUCTION_NOT_SUPPORTED, cls, code, globals, name, defaultArgs, closure);
         }
     }
 
@@ -2436,8 +2441,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        public PFunction function(Object cls, Object method_def, Object def, Object name, Object module) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'method_descriptor'");
+        static PFunction function(Object cls, Object method_def, Object def, Object name, Object module,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "method_descriptor");
         }
     }
 
@@ -2649,8 +2655,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictKeysTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_KEYS);
+        static Object dictKeys(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_KEYS);
         }
     }
 
@@ -2659,8 +2666,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictKeysIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_KEYITERATOR);
+        static Object dictKeys(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_KEYITERATOR);
         }
     }
 
@@ -2669,8 +2677,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictValuesTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_VALUES);
+        static Object dictKeys(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_VALUES);
         }
     }
 
@@ -2679,8 +2688,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictValuesIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_VALUEITERATOR);
+        static Object dictKeys(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_VALUEITERATOR);
         }
     }
 
@@ -2689,8 +2699,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictItemsTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_ITEMS);
+        static Object dictKeys(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_ITEMS);
         }
     }
 
@@ -2699,8 +2710,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictItemsIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object dictKeys(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_ITEMITERATOR);
+        static Object dictKeys(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_ITEMITERATOR);
         }
     }
 
@@ -2709,21 +2721,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, className());
-        }
-
-        protected String className() {
-            return "iterator";
+        static Object iterator(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "iterator");
         }
     }
 
     @Builtin(name = "arrayiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PArrayIterator, isPublic = false)
     @GenerateNodeFactory
-    public abstract static class ArrayIteratorTypeNode extends IteratorTypeNode {
-        @Override
-        protected String className() {
-            return "arrayiterator";
+    public abstract static class ArrayIteratorTypeNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        static Object iterator(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "arrayiterator");
         }
     }
 
@@ -2732,8 +2743,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CallableIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'callable_iterator'");
+        static Object iterator(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "callable_iterator");
         }
     }
 
@@ -2742,8 +2754,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ForeignIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object iterator(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'foreign_iterator'");
+        static Object iterator(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "foreign_iterator");
         }
     }
 
@@ -2752,8 +2765,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class GeneratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object generator(Object args, Object kwargs) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'generator'");
+        static Object generator(Object args, Object kwargs,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "generator");
         }
     }
 
@@ -2773,15 +2787,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
+        static Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (callableCheck.execute(inliningTarget, func)) {
                 return factory.createMethod(self, func);
             } else {
-                throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S, "");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S, "");
             }
         }
     }
@@ -2800,8 +2814,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrameTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object call() {
-            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "frame type");
+        static Object call(
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "frame type");
         }
     }
 
@@ -2825,14 +2840,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
         @SuppressWarnings("unused")
-        Object errorNext(Object cls, Object next, Object frame, Object lasti, Object lineno) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ_OR_NONE, next);
+        static Object errorNext(Object cls, Object next, Object frame, Object lasti, Object lineno,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ_OR_NONE, next);
         }
 
         @Specialization(guards = "!isPFrame(frame)")
         @SuppressWarnings("unused")
-        Object errorFrame(Object cls, Object next, Object frame, Object lasti, Object lineno) {
-            throw raise(TypeError, ErrorMessages.TRACEBACK_TYPE_ARG_MUST_BE_FRAME, frame);
+        static Object errorFrame(Object cls, Object next, Object frame, Object lasti, Object lineno,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.TRACEBACK_TYPE_ARG_MUST_BE_FRAME, frame);
         }
 
         protected static boolean isPFrame(Object obj) {
@@ -2891,13 +2908,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PCode call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
+        static PCode call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
                         Object varnames, Object filename, Object name,
                         Object firstlineno, Object linetable,
-                        Object freevars, Object cellvars) {
-            throw raise(TypeError, ErrorMessages.INVALID_ARGS, "code");
+                        Object freevars, Object cellvars,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS, "code");
         }
 
         @Override
@@ -2987,21 +3005,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
-        Object doMapping(Object klass, Object obj,
+        static Object doMapping(Object klass, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyMappingCheckNode mappingCheckNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // descrobject.c mappingproxy_check_mapping()
             if (!(obj instanceof PList || obj instanceof PTuple) && mappingCheckNode.execute(inliningTarget, obj)) {
                 return factory.createMappingproxy(klass, obj);
             }
-            throw raise(TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
         @Specialization(guards = "isNoValue(none)")
         @SuppressWarnings("unused")
-        Object doMissing(Object klass, PNone none) {
-            throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
+        static Object doMissing(Object klass, PNone none,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
         }
     }
 

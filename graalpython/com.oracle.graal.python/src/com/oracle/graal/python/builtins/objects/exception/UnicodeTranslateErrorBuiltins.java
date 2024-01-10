@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -90,21 +91,22 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
         public abstract Object execute(PBaseException self, Object[] args);
 
         @Specialization
-        Object initNoArgs(PBaseException self, Object[] args,
+        static Object initNoArgs(PBaseException self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
                             null, // placeholder for object so we do not redefine the access indexes
                                   // for the other attributes, although this exception does not have
                                   // an encoding set
-                            getArgAsString(inliningTarget, args, 0, this, toStringNode),
-                            getArgAsInt(inliningTarget, args, 1, this, toJavaIntExactNode),
-                            getArgAsInt(inliningTarget, args, 2, this, toJavaIntExactNode),
-                            getArgAsString(inliningTarget, args, 3, this, toStringNode)
+                            getArgAsString(inliningTarget, args, 0, raiseNode, toStringNode),
+                            getArgAsInt(inliningTarget, args, 1, raiseNode, toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 2, raiseNode, toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 3, raiseNode, toStringNode)
             });
             return PNone.NONE;
         }

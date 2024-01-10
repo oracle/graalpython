@@ -1,3 +1,4 @@
 [[rules]]
 # Force re-cythonize
-patch = 'grpcio.patch'
+version = '== 1.56.2'
+patch = 'grpcio-1.56.2.patch'

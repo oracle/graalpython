@@ -52,15 +52,18 @@ import com.oracle.graal.python.builtins.modules.hashlib.ShakeDigestObjectBuiltin
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Sha3Shake128Type, PythonBuiltinClassType.Sha3Shake256Type, PythonBuiltinClassType.HashlibHashXof})
@@ -89,10 +92,12 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes digest(DigestObject self, int length,
-                        @Cached PythonObjectFactory factory) {
+        static PBytes digest(DigestObject self, int length,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getDigestLength() != length) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
             return factory.createBytes(self.digest());
         }
@@ -108,13 +113,15 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString hexdigest(DigestObject self, int length,
-                        @Cached BytesNodes.ByteToHexNode toHexNode) {
+        static TruffleString hexdigest(DigestObject self, int length,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BytesNodes.ByteToHexNode toHexNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getDigestLength() != length) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
             byte[] digest = self.digest();
-            return toHexNode.execute(digest, digest.length, (byte) 0, 0);
+            return toHexNode.execute(inliningTarget, digest, digest.length, (byte) 0, 0);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -35,12 +36,16 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -54,6 +59,7 @@ import org.graalvm.options.OptionValues;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -61,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -87,6 +94,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -183,7 +191,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * version during the build that are checked against these constants.
      */
     public static final int GRAALVM_MAJOR = 24;
-    public static final int GRAALVM_MINOR = 0;
+    public static final int GRAALVM_MINOR = 1;
+    public static final String DEV_TAG;
+
+    /**
+     * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
+     * added the ordinal value of some base character (in this case {@code '!'}) to ensure that we
+     * have a printable character.
+     */
+    private static final int VERSION_BASE = '!';
 
     static {
         switch (RELEASE_LEVEL) {
@@ -203,20 +219,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
-            if (MAJOR != (ch = is.read() - ' ')) {
+            if (MAJOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
             }
-            if (MINOR != (ch = is.read() - ' ')) {
+            if (MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
             }
-            if (MICRO != (ch = is.read() - ' ')) {
+            if (MICRO != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
             }
-            if (GRAALVM_MAJOR != (ch = is.read() - ' ')) {
+            if (GRAALVM_MAJOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
             }
-            if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
+            if (GRAALVM_MINOR != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
+            }
+            is.read(); // skip GraalVM micro version
+            // see mx.graalpython/mx_graalpython.py:dev_tag
+            byte[] rev = new byte[3 /* 'dev' */ + 10 /* revision */];
+            if (is.read(rev) == rev.length) {
+                DEV_TAG = new String(rev, StandardCharsets.US_ASCII).strip();
+            } else {
+                DEV_TAG = "";
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -343,7 +367,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /** A shared shape for the C symbol cache (lazily initialized). */
     private Shape cApiSymbolCache;
-    private Shape hpySymbolCache;
 
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
@@ -968,17 +991,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     /**
-     * Returns the shape used for the HPy API symbol cache.
-     */
-    @TruffleBoundary
-    public synchronized Shape getHPySymbolCacheShape() {
-        if (hpySymbolCache == null) {
-            hpySymbolCache = Shape.newBuilder().build();
-        }
-        return hpySymbolCache;
-    }
-
-    /**
      * Cache call targets that are created for every new context, based on a single key.
      */
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
@@ -1018,5 +1030,24 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (context.getCApiContext() != null) {
             context.getCApiContext().finalizeCapi();
         }
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
+            // Reset signal handlers back to what they were
+            PythonModule signalModule = context.lookupBuiltinModule(T__SIGNAL);
+            if (signalModule != null) {
+                SignalModuleBuiltins.resetSignalHandlers(signalModule);
+            }
+        }
+    }
+
+    private final Map<Node, IndirectCallData> indirectCallDataMap = Collections.synchronizedMap(new WeakHashMap<>());
+
+    public static IndirectCallData lookupIndirectCallData(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        return get(node).indirectCallDataMap.get(node);
+    }
+
+    public static IndirectCallData createIndirectCallData(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        return get(node).indirectCallDataMap.computeIfAbsent(node, n -> new IndirectCallData(node));
     }
 }

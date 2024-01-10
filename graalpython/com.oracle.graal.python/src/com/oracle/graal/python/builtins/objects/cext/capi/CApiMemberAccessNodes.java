@@ -96,6 +96,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -339,8 +340,9 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object value) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
+        Object doGeneric(Object self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
         @TruffleBoundary
@@ -358,12 +360,13 @@ public class CApiMemberAccessNodes {
         private static final Builtin BUILTIN = BadMemberDescrNode.class.getAnnotation(Builtin.class);
 
         @Specialization
-        Object doGeneric(Object self, @SuppressWarnings("unused") Object value) {
+        static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
             if (value == DescriptorDeleteMarker.INSTANCE) {
                 // This node is actually only used for T_NONE, so this error message is right.
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
             }
-            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
         }
 
         @TruffleBoundary
@@ -381,6 +384,7 @@ public class CApiMemberAccessNodes {
         abstract void execute(Object pointer, Object newValue);
     }
 
+    @GenerateInline(false)
     abstract static class WriteByteNode extends WriteTypeNode {
 
         @Specialization
@@ -391,6 +395,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteShortNode extends WriteTypeNode {
 
         @Specialization
@@ -401,6 +406,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteIntNode extends WriteTypeNode {
 
         @Specialization
@@ -411,6 +417,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteLongNode extends WriteTypeNode {
 
         @Specialization
@@ -434,6 +441,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteUIntNode extends WriteTypeNode {
 
         @Specialization
@@ -459,6 +467,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteULongNode extends WriteTypeNode {
 
         @Specialization
@@ -482,6 +491,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteDoubleNode extends WriteTypeNode {
 
         @Specialization
@@ -505,6 +515,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteFloatNode extends WriteTypeNode {
 
         @Specialization
@@ -515,6 +526,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteObjectNode extends WriteTypeNode {
 
         @Specialization
@@ -524,6 +536,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteObjectExNode extends WriteTypeNode {
 
         @Specialization
@@ -539,6 +552,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
+    @GenerateInline(false)
     abstract static class WriteCharNode extends WriteTypeNode {
 
         @Specialization
@@ -616,7 +630,9 @@ public class CApiMemberAccessNodes {
         }
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object self, Object value) {
+        Object doGeneric(Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object selfPtr = toSulongNode.execute(self);
             selfPtr = getElement.readGeneric(selfPtr, offset);
 
@@ -628,12 +644,12 @@ public class CApiMemberAccessNodes {
              */
             if (type != T_OBJECT && type != T_OBJECT_EX) {
                 if (value == DescriptorDeleteMarker.INSTANCE) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
                 }
             }
 
             if (type == T_BOOL && !ensureIsSameTypeNode().executeCached(PythonBuiltinClassType.Boolean, ensureGetClassNode().executeCached(value))) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
             }
 
             write.execute(selfPtr, value);

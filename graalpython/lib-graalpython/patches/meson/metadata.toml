@@ -1,3 +1,7 @@
 [[rules]]
 version = '== 1.0.0'
 patch = 'meson-1.0.0.patch'
+
+[[rules]]
+install-priority = 10
+version = '== 1.2.2'

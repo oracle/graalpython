@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -72,20 +73,22 @@ public final class PythonCextByteArrayBuiltins {
         }
 
         @Specialization
-        Object doNative(PythonAbstractNativeObject obj,
+        static Object doNative(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray) {
+                        @Cached CStructAccess.GetElementPtrNode getArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyByteArrayObject__ob_start);
             }
-            return doError(obj);
+            return doError(obj, raiseNode.get(inliningTarget));
         }
 
         @Fallback
-        Object doError(Object obj) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
+        static Object doError(Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
         }
     }
 }

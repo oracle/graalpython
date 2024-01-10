@@ -8,6 +8,7 @@ package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -19,6 +20,7 @@ import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -38,6 +40,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -59,12 +62,12 @@ abstract class FormatProcessor<T> {
 
     protected int index;
     protected final Python3Core core;
-    protected final PRaiseNode raiseNode;
+    protected final Node raisingNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+    public FormatProcessor(Python3Core core, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer, Node raisingNode) {
         this.core = core;
-        this.raiseNode = raiseNode;
+        this.raisingNode = raisingNode;
         this.getTupleItemNode = getTupleItemNode;
         this.buffer = buffer;
         index = 0;
@@ -125,7 +128,7 @@ abstract class FormatProcessor<T> {
                 break;
         }
         if (ret == null) {
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
+            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
         }
         return ret;
     }
@@ -137,11 +140,11 @@ abstract class FormatProcessor<T> {
             try {
                 long value = CastToJavaLongLossyNode.executeUncached(o);
                 if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
-                    throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
+                    throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
                 }
                 return (int) value;
             } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
+                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.STAR_WANTS_INT);
             }
         } else {
             if (Character.isDigit(c)) {
@@ -153,7 +156,7 @@ abstract class FormatProcessor<T> {
                 try {
                     return parseNumber(numStart, index);
                 } catch (NumberFormatException e) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
                 }
             }
             index -= 1;
@@ -192,8 +195,11 @@ abstract class FormatProcessor<T> {
             try {
                 TruffleString magicName = useIndexMagicMethod(specType) ? T___INDEX__ : T___INT__;
                 Object attribute = lookupAttribute(arg, magicName);
-                return call(attribute, arg);
+                if (!(attribute instanceof PNone)) {
+                    return call(attribute, arg);
+                }
             } catch (PException e) {
+                e.expectUncached(AttributeError);
                 // No __int__/__index__ defined (at Python level)
             }
         }
@@ -211,13 +217,13 @@ abstract class FormatProcessor<T> {
     protected InternalFormat.Formatter formatInteger(Object intObj, InternalFormat.Spec spec) {
         IntegerFormatter.Traditional fi;
         if (intObj instanceof Integer) {
-            fi = setupFormat(new IntegerFormatter.Traditional(raiseNode, buffer, spec));
+            fi = setupFormat(new IntegerFormatter.Traditional(buffer, spec, raisingNode));
             fi.format((Integer) intObj);
         } else if (intObj instanceof Long) {
-            fi = setupFormat(new IntegerFormatter.Traditional(raiseNode, buffer, spec));
+            fi = setupFormat(new IntegerFormatter.Traditional(buffer, spec, raisingNode));
             fi.format((BigInteger.valueOf((Long) intObj)));
         } else if (intObj instanceof PInt) {
-            fi = setupFormat(new IntegerFormatter.Traditional(raiseNode, buffer, spec));
+            fi = setupFormat(new IntegerFormatter.Traditional(buffer, spec, raisingNode));
             fi.format(((PInt) intObj).getValue());
         } else {
             // It couldn't be converted, null indicates error
@@ -243,7 +249,7 @@ abstract class FormatProcessor<T> {
         try {
             return formatImpl(args1);
         } catch (OutOfMemoryError e) {
-            throw raiseNode.raise(MemoryError);
+            throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
         }
     }
 
@@ -307,7 +313,7 @@ abstract class FormatProcessor<T> {
             if (c == '(') {
                 // Mapping key, consisting of a parenthesised sequence of characters.
                 if (mapping == null) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
+                    throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
                 }
                 // Scan along until a matching close parenthesis is found
                 int parens = 1;
@@ -446,9 +452,9 @@ abstract class FormatProcessor<T> {
                     f = formatInteger(asNumber(arg, spec.type), spec);
                     if (f == null) {
                         if (allowsFloat(spec.type)) {
-                            throw raiseNode.raise(TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
                         } else {
-                            throw raiseNode.raise(TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
                         }
                     }
                     break;
@@ -460,7 +466,7 @@ abstract class FormatProcessor<T> {
                 case 'g':
                 case 'G':
                     // Format using this Spec the double form of the argument.
-                    f = ff = new FloatFormatter(raiseNode, buffer, spec);
+                    f = ff = new FloatFormatter(buffer, spec, raisingNode);
 
                     // Note various types accepted here as long as they have a __float__ method.
                     arg = getArg();
@@ -470,7 +476,7 @@ abstract class FormatProcessor<T> {
                 default:
                     f = handleRemainingFormats(spec);
                     if (f == null) {
-                        throw raiseNode.raise(ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
+                        throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
                     }
             }
 
@@ -486,7 +492,7 @@ abstract class FormatProcessor<T> {
          * that has not yet been used.
          */
         if (argIndex == -1 || (argIndex >= 0 && PyObjectSizeNode.executeUncached(args1) >= argIndex + 1)) {
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
+            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 
         // Return the final buffer contents as a str or unicode as appropriate.

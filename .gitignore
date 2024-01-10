@@ -22,10 +22,11 @@ GRAALPYTHON.dist
 GRAALPYTHON_UNIT_TESTS.dist
 mx.graalpython/eclipse-launches
 *.json
+!jbang-catalog.json
 !**/resources/*.json
 !**/META-INF/**/*.json
-!graalpython/lib-graalpython/modules/standalone/shared/native-image-resources.json
-!graalpython/lib-graalpython/modules/standalone/shared/native-image-proxy-configuration.json
+!graalpython/lib-graalpython/modules/standalone/native-image-resources.json
+!graalpython/graalpy-archetype/src/main/resources/archetype-resources/native-image-proxy-configuration.json
 language
 *.bc
 *.iml
@@ -85,3 +86,7 @@ graalpython.src.zip.files/
 graalpython/com.oracle.graal.python.test/src/tests/patched_package/build/
 graalpython/com.oracle.graal.python.test/src/tests/patched_package/src/patched_package.egg-info
 graalpython/com.oracle.graal.python.test.integration/target
+graalpython/graalpy-maven-plugin/target
+graalpython/graalpy-archetype-polyglot-app/target
+graalpython/graalpy-archetype-polyglot-app/target
+pom-mx.xml

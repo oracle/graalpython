@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -265,16 +266,16 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(next)")
-        @SuppressWarnings("truffle-static-method")
-        Object set(PTraceback self, PTraceback next,
+        static Object set(PTraceback self, PTraceback next,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Exclusive @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+                        @Exclusive @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // Check for loops
             PTraceback tb = next;
             while (loopProfile.profile(inliningTarget, tb != null)) {
                 if (tb == self) {
-                    throw raise(ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
                 }
                 tb = tb.getNext();
             }
@@ -297,8 +298,9 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(next)", "!isPTraceback(next)"})
-        Object setError(@SuppressWarnings("unused") PTraceback self, Object next) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
+        static Object setError(@SuppressWarnings("unused") PTraceback self, Object next,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
         }
     }
 

@@ -41,27 +41,19 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
+@GenerateInline(value = false, inherit = true)
 public abstract class ArgumentCastNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object value);
 
@@ -73,53 +65,6 @@ public abstract class ArgumentCastNode extends Node {
             return PGuards.isPNone(value);
         } else {
             return PGuards.isNoValue(value);
-        }
-    }
-
-    public abstract static class ArgumentCastNodeWithRaise extends ArgumentCastNode {
-        @Child private PRaiseNode raiseNode;
-
-        public PException raise(PythonBuiltinClassType type, TruffleString string) {
-            return getRaiseNode().raise(type, string);
-        }
-
-        public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
-            return getRaiseNode().raiseWithCause(type, cause, format, arguments);
-        }
-
-        public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
-            return getRaiseNode().raise(type, format, arguments);
-        }
-
-        public final PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-    }
-
-    public abstract static class ArgumentCastNodeWithRaiseAndIndirectCall extends ArgumentCastNodeWithRaise implements IndirectCallNode {
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
-
-        @Override
-        public final Assumption needNotPassFrameAssumption() {
-            if (nativeCodeDoesntNeedMyFrame == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        @Override
-        public final Assumption needNotPassExceptionAssumption() {
-            if (nativeCodeDoesntNeedExceptionState == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedExceptionState;
         }
     }
 

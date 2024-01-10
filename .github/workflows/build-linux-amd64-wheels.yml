@@ -1,0 +1,1123 @@
+name: build-linux-amd64-wheels
+'on':
+  workflow_dispatch:
+    inputs:
+      name:
+        type: string
+        description: Pkg to build (empty for all)
+        required: false
+      graalpy:
+        type: string
+        description: GraalPy download url prefix (empty for default)
+        required: false
+jobs:
+  psutil-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'psutil') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) psutil
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: psutil-linux-amd64
+          path: psutil*.whl
+          if-no-files-found: error
+  numpy-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: psutil-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy' || inputs.name
+      == 'pandas' || inputs.name == 'contourpy' || inputs.name == 'matplotlib' ||
+      inputs.name == 'scipy' || inputs.name == 'scikit-learn' || inputs.name == 'torch')
+      }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y gcc-toolset-12-gcc-gfortran openblas-devel
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from psutil
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: psutil-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy==1.21.6
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy==1.22.4
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy==1.23.1
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy==1.23.4
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: numpy-linux-amd64
+          path: numpy*.whl
+          if-no-files-found: error
+  pandas-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: numpy-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pandas') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y openblas
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) pandas
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: pandas-linux-amd64
+          path: pandas*.whl
+          if-no-files-found: error
+  pybind11-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: pandas-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'pybind11' || inputs.name
+      == 'contourpy' || inputs.name == 'kiwisolver' || inputs.name == 'torch' || inputs.name
+      == 'matplotlib') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from pandas
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: pandas-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) pybind11
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: pybind11-linux-amd64
+          path: pybind11*.whl
+          if-no-files-found: error
+  ninja-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: pybind11-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ninja' || inputs.name
+      == 'contourpy' || inputs.name == 'torch' || inputs.name == 'matplotlib') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from pybind11
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: pybind11-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ninja
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: ninja-linux-amd64
+          path: ninja*.whl
+          if-no-files-found: error
+  Pillow-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: ninja-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'Pillow' || inputs.name
+      == 'matplotlib') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y libtiff-devel libjpeg-devel openjpeg2-devel zlib-devel freetype-devel lcms2-devel libwebp-devel
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from ninja
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: ninja-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) Pillow
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: Pillow-linux-amd64
+          path: Pillow*.whl
+          if-no-files-found: error
+  contourpy-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - ninja-linux-amd64
+      - pybind11-linux-amd64
+      - numpy-linux-amd64
+      - Pillow-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'contourpy' || inputs.name
+      == 'matplotlib') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from ninja
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: ninja-linux-amd64
+      - name: Download artifacts from pybind11
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: pybind11-linux-amd64
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Download artifacts from Pillow
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: Pillow-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) contourpy
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: contourpy-linux-amd64
+          path: contourpy*.whl
+          if-no-files-found: error
+  kiwisolver-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - pybind11-linux-amd64
+      - contourpy-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'kiwisolver' || inputs.name
+      == 'matplotlib') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from pybind11
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: pybind11-linux-amd64
+      - name: Download artifacts from contourpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: contourpy-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) kiwisolver
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: kiwisolver-linux-amd64
+          path: kiwisolver*.whl
+          if-no-files-found: error
+  matplotlib-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - Pillow-linux-amd64
+      - kiwisolver-linux-amd64
+      - numpy-linux-amd64
+      - contourpy-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'matplotlib') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y openblas
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from Pillow
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: Pillow-linux-amd64
+      - name: Download artifacts from kiwisolver
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: kiwisolver-linux-amd64
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Download artifacts from contourpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: contourpy-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) matplotlib
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: matplotlib-linux-amd64
+          path: matplotlib*.whl
+          if-no-files-found: error
+  scipy-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - numpy-linux-amd64
+      - matplotlib-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scipy' || inputs.name
+      == 'scikit-learn') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y gcc-toolset-9 gcc-toolset-9-gcc-gfortran openblas-devel
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Download artifacts from matplotlib
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: matplotlib-linux-amd64
+      - name: Build wheel
+        run: |-
+          source /opt/rh/gcc-toolset-9/enable
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) scipy
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: scipy-linux-amd64
+          path: scipy*.whl
+          if-no-files-found: error
+  scikit-learn-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - numpy-linux-amd64
+      - scipy-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'scikit-learn') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y openblas
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Download artifacts from scipy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: scipy-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) scikit-learn
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: scikit-learn-linux-amd64
+          path: scikit*learn*.whl
+          if-no-files-found: error
+  cffi-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: scikit-learn-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cffi' || inputs.name
+      == 'torch') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y libffi-devel
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from scikit-learn
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: scikit-learn-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) cffi
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: cffi-linux-amd64
+          path: cffi*.whl
+          if-no-files-found: error
+  PyYAML-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: cffi-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML' || inputs.name
+      == 'torch') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from cffi
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: cffi-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) PyYAML
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: PyYAML-linux-amd64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  cmake-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: PyYAML-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'cmake' || inputs.name
+      == 'torch') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: PyYAML-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) cmake
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: cmake-linux-amd64
+          path: cmake*.whl
+          if-no-files-found: error
+  ujson-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: cmake-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from cmake
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: cmake-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: ujson-linux-amd64
+          path: ujson*.whl
+          if-no-files-found: error
+  torch-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - numpy-linux-amd64
+      - ninja-linux-amd64
+      - cmake-linux-amd64
+      - pybind11-linux-amd64
+      - cffi-linux-amd64
+      - PyYAML-linux-amd64
+      - ujson-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'torch') }}
+    env:
+      MAX_JOBS: 4
+      BUILD_TEST: 0
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: Jimver/cuda-toolkit@v0.2.11
+        id: cuda-toolkit
+        if: runner.os != 'macOS'
+        with:
+          cuda: 11.7.0
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Download artifacts from ninja
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: ninja-linux-amd64
+      - name: Download artifacts from cmake
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: cmake-linux-amd64
+      - name: Download artifacts from pybind11
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: pybind11-linux-amd64
+      - name: Download artifacts from cffi
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: cffi-linux-amd64
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: PyYAML-linux-amd64
+      - name: Download artifacts from ujson
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: ujson-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) torch
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: torch-linux-amd64
+          path: torch*.whl
+          if-no-files-found: error
+  opt_einsum-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: torch-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'opt_einsum' || inputs.name
+      == 'tensorflow') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from torch
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: torch-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) opt_einsum
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: opt_einsum-linux-amd64
+          path: opt*einsum*.whl
+          if-no-files-found: error
+  keras_preprocessing-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: opt_einsum-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'keras_preprocessing'
+      || inputs.name == 'tensorflow') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from opt_einsum
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: opt_einsum-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) keras_preprocessing
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: keras_preprocessing-linux-amd64
+          path: keras*preprocessing*.whl
+          if-no-files-found: error
+  tensorflow-linux-amd64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs:
+      - opt_einsum-linux-amd64
+      - keras_preprocessing-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'tensorflow') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@main
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy23.1
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from opt_einsum
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: opt_einsum-linux-amd64
+      - name: Download artifacts from keras_preprocessing
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: keras_preprocessing-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          pip install pip numpy wheel packaging requests opt_einsum
+          pip install keras_preprocessing --no-deps
+          curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/graalpy/bin/bazel
+          chmod +x graalpy/bin/bazel
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          bazel --version
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) tensorflow
+      - name: Store wheels
+        uses: umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db
+        with:
+          name: tensorflow-linux-amd64
+          path: tensorflow*.whl
+          if-no-files-found: error

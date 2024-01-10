@@ -45,8 +45,8 @@ import java.util.Objects;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -184,16 +184,18 @@ public final class ReadCallerFrameNode extends Node {
     /**
      * Walk up the stack to find the currently top Python frame. This method is mostly useful for
      * code that cannot accept a {@code VirtualFrame} parameter (e.g. library code). It is necessary
-     * to provide the requesting node because it might be necessary to locate the last
-     * {@link IndirectCallNode} that effectively executes the requesting node such that the
+     * to provide the requesting node because it might be necessary to locate the last node with
+     * {@link IndirectCallData} that effectively executes the requesting node such that the
      * necessary assumptions can be invalidated to avoid deopt loops.<br/>
      * Consider following situation:<br/>
      *
      * <pre>
-     *     public class SomeCaller extends PRootNode implements IndirectCallNode {
+     *     public class SomeCaller extends PRootNode {
      *         &#64;Child private InteropLibrary lib = ...;
+     *         private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+     *
      *         public Object execute(VirtualFrame frame, Object callee, Object[] args) {
-     *             Object state = IndirectCallContext.enter(frame, ctx, this);
+     *             Object state = IndirectCallContext.enter(frame, ctx, indirectCallData);
      *             try {
      *                 return lib.execute(callee, args);
      *             } finally {
@@ -270,8 +272,8 @@ public final class ReadCallerFrameNode extends Node {
 
             /**
              * We may find the Python frame at the level we desire, but the {@link PRootNode}
-             * associated with it may have been called from a different language, and thus not a
-             * Python {@link IndirectCallNode}. That means that we cannot immediately return when we
+             * associated with it may have been called from a different language, and thus not have
+             * Python {@link IndirectCallData}. That means that we cannot immediately return when we
              * find the correct level frame, but instead we need to remember the frame in
              * {@code outputFrame} and then keep going until we find the previous Python caller on
              * the stack (or not). That last Python caller before the Python frame we need must push
@@ -301,7 +303,7 @@ public final class ReadCallerFrameNode extends Node {
                 RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
                 RootNode rootNode = target.getRootNode();
                 Node callNode = frameInstance.getCallNode();
-                boolean didMark = IndirectCallNode.setEncapsulatingNeedsToPassCallerFrame(callNode != null ? callNode : requestingNode);
+                boolean didMark = IndirectCallData.setEncapsulatingNeedsToPassCallerFrame(callNode != null ? callNode : requestingNode);
                 if (outputFrame[0] == null && rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext()) {
                     pRootNode.setNeedsCallerFrame();
                     if (i < 0 && startFrame != null) {

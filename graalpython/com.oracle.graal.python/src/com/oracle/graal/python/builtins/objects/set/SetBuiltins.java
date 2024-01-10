@@ -35,9 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -75,6 +73,7 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -144,8 +143,9 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        PNone fail(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object self, Object iterable) {
-            throw raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, iterable);
+        static PNone fail(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object self, Object iterable,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, iterable);
         }
     }
 
@@ -636,28 +636,6 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class SubNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageDiff diffNode,
-                        @Cached PythonObjectFactory factory) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
-            return factory.createSet(storage);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doSub(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
     @Builtin(name = J___ISUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ISubNode extends PythonBinaryBuiltinNode {
@@ -784,10 +762,12 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object remove(VirtualFrame frame, PSet self, Object key,
-                        @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
+        static Object remove(VirtualFrame frame, PSet self, Object key,
+                        @Bind("this") Node inliningTarget,
+                        @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!discardNode.execute(frame, self, key)) {
-                throw raise(PythonErrorType.KeyError, new Object[]{key});
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, new Object[]{key});
             }
             return PNone.NONE;
         }
@@ -797,7 +777,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object discard(VirtualFrame frame, PSet self, Object key,
+        static Object discard(VirtualFrame frame, PSet self, Object key,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
             discardNode.execute(frame, self, key);
             return PNone.NONE;
@@ -808,12 +788,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object remove(VirtualFrame frame, PSet self,
+        static Object remove(VirtualFrame frame, PSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageDelItem delItem) {
+                        @Cached HashingStorageDelItem delItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             HashingStorage storage = self.getDictStorage();
             HashingStorageIterator it = getIter.execute(inliningTarget, storage);
             if (iterNext.execute(inliningTarget, storage, it)) {
@@ -823,7 +804,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 delItem.execute(frame, inliningTarget, storage, key, self);
                 return key;
             }
-            throw raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
     }
 

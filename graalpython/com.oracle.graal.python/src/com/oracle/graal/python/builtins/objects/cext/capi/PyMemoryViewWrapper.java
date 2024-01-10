@@ -40,142 +40,158 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__exports;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructs.PyMemoryViewObject;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapperFactory.AllocateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.GetElementPtrNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.SetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wrapper object for {@code PMemoryView}.
  */
-public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
+@ExportLibrary(InteropLibrary.class)
+public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper {
+
+    private Object replacement;
 
     public PyMemoryViewWrapper(PythonObject delegate) {
-        super(delegate);
+        super(delegate, true);
         assert delegate instanceof PMemoryView;
     }
 
-    @GenerateUncached
-    public abstract static class AllocateNode extends PNodeWithContext {
+    private static Object intArrayToNativePySSizeArray(int[] intArray) {
+        Object mem = CStructAccess.AllocateNode.getUncached().alloc(intArray.length * Long.BYTES);
+        CStructAccess.WriteLongNode.getUncached().writeIntArray(mem, intArray);
+        return mem;
+    }
 
-        public abstract Object execute(Object obj);
-
-        @GenerateUncached
-        abstract static class IntArrayToNativePySSizeArray extends Node {
-            public abstract Object execute(int[] array);
-
-            @Specialization
-            static Object getShape(int[] intArray,
-                            @Cached CStructAccess.AllocateNode alloc,
-                            @Cached CStructAccess.WriteLongNode write) {
-                Object mem = alloc.alloc(intArray.length * Long.BYTES);
-                write.writeIntArray(mem, intArray);
-                return mem;
-            }
+    @TruffleBoundary
+    private static Object allocate(PMemoryView object) {
+        if (object.isReleased()) {
+            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
+        GetElementPtrNode getElementNode = GetElementPtrNode.getUncached();
+        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
+        CStructAccess.WriteLongNode writeI64Node = CStructAccess.WriteLongNode.getUncached();
+        CStructAccess.WriteIntNode writeI32Node = CStructAccess.WriteIntNode.getUncached();
+        CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
-        @TruffleBoundary
-        @Specialization
-        Object doPythonNativeWrapper(PMemoryView object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClass,
-                        @Cached PythonToNativeNewRefNode toNative,
-                        @Cached CStructAccess.AllocateNode allocNode,
-                        @Cached CStructAccess.GetElementPtrNode getElementNode,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CStructAccess.WriteLongNode writeI64Node,
-                        @Cached CStructAccess.WriteIntNode writeI32Node,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @Cached SequenceNodes.SetSequenceStorageNode setStorage,
-                        @Cached CExtNodes.PointerAddNode pointerAddNode,
-                        @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode,
-                        @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray,
-                        @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
+        Object mem = CStructAccess.AllocateNode.getUncached().alloc(PyMemoryViewObject);
+        writeI64Node.write(mem, PyObject__ob_refcnt, IMMORTAL_REFCNT); // TODO: immortal for now
+        writePointerNode.write(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeUncached(GetClassNode.executeUncached(object)));
+        writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());
+        writeI64Node.write(mem, PyMemoryViewObject__exports, object.getExports().get());
+        // TODO: ignoring mbuf, hash and weakreflist for now
 
-            Object mem = allocNode.alloc(PyMemoryViewObject);
-            writeI64Node.write(mem, PyObject__ob_refcnt, 0x1000); // TODO: immortal for now
-            writePointerNode.write(mem, PyObject__ob_type, toNative.execute(getClass.execute(inliningTarget, object)));
-            writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());
-            writeI64Node.write(mem, PyMemoryViewObject__exports, object.getExports().get());
-            // TODO: ignoring mbuf, hash and weakreflist for now
+        Object view = getElementNode.getElementPtr(mem, CFields.PyMemoryViewObject__view);
 
-            Object view = getElementNode.getElementPtr(mem, CFields.PyMemoryViewObject__view);
-
-            Object buf;
-            if (object.getBufferPointer() == null) {
-                NativeSequenceStorage nativeStorage;
-                if (object.getOwner() instanceof PSequence owner) {
-                    nativeStorage = toNativeStorageNode.execute(getStorage.execute(inliningTarget, owner), owner instanceof PBytesLike);
-                    setStorage.execute(inliningTarget, owner, nativeStorage);
-                } else if (object.getOwner() instanceof PArray owner) {
-                    nativeStorage = toNativeStorageNode.execute(owner.getSequenceStorage(), true);
-                    owner.setSequenceStorage(nativeStorage);
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere("Cannot convert managed object to native storage");
-                }
-                Object pointer = nativeStorage.getPtr();
-                if (object.getOffset() == 0) {
-                    buf = pointer;
-                } else {
-                    buf = pointerAddNode.execute(pointer, object.getOffset());
-                }
+        Object buf;
+        if (object.getBufferPointer() == null) {
+            NativeSequenceStorage nativeStorage;
+            if (object.getOwner() instanceof PSequence owner) {
+                nativeStorage = ToNativeStorageNode.executeUncached(GetSequenceStorageNode.executeUncached(owner), owner instanceof PBytesLike);
+                SetSequenceStorageNode.executeUncached(owner, nativeStorage);
+            } else if (object.getOwner() instanceof PArray owner) {
+                nativeStorage = ToNativeStorageNode.executeUncached(owner.getSequenceStorage(), true);
+                owner.setSequenceStorage(nativeStorage);
             } else {
-                if (object.getOffset() == 0) {
-                    buf = object.getBufferPointer();
-                } else {
-                    buf = pointerAddNode.execute(object.getBufferPointer(), object.getOffset());
-                }
+                throw shouldNotReachHere("Cannot convert managed object to native storage");
             }
-            writePointerNode.write(view, CFields.Py_buffer__buf, buf);
-
-            if (object.getOwner() != null) {
-                writePointerNode.write(view, CFields.Py_buffer__obj, toNative.execute(object.getOwner()));
+            Object pointer = nativeStorage.getPtr();
+            if (object.getOffset() == 0) {
+                buf = pointer;
+            } else {
+                buf = CExtNodes.pointerAdd(pointer, object.getOffset());
             }
-            writeI64Node.write(view, CFields.Py_buffer__len, object.getLength());
-            writeI64Node.write(view, CFields.Py_buffer__itemsize, object.getItemSize());
-            writeI32Node.write(view, CFields.Py_buffer__readonly, PInt.intValue(object.isReadOnly()));
-            writeI32Node.write(view, CFields.Py_buffer__ndim, object.getDimensions());
-            if (object.getFormatString() != null) {
-                writePointerNode.write(view, CFields.Py_buffer__format, asCharPointerNode.execute(object.getFormatString()));
+        } else {
+            if (object.getOffset() == 0) {
+                buf = object.getBufferPointer();
+            } else {
+                buf = CExtNodes.pointerAdd(object.getBufferPointer(), object.getOffset());
             }
-            if (object.getBufferShape() != null) {
-                writePointerNode.write(view, CFields.Py_buffer__shape, intArrayToNativePySSizeArray.execute(object.getBufferShape()));
-            }
-            if (object.getBufferStrides() != null) {
-                writePointerNode.write(view, CFields.Py_buffer__strides, intArrayToNativePySSizeArray.execute(object.getBufferStrides()));
-            }
-            if (object.getBufferSuboffsets() != null) {
-                writePointerNode.write(view, CFields.Py_buffer__suboffsets, intArrayToNativePySSizeArray.execute(object.getBufferSuboffsets()));
-            }
-            return mem;
         }
+        writePointerNode.write(view, CFields.Py_buffer__buf, buf);
+
+        if (object.getOwner() != null) {
+            writePointerNode.write(view, CFields.Py_buffer__obj, PythonToNativeNewRefNode.executeUncached(object.getOwner()));
+        }
+        writeI64Node.write(view, CFields.Py_buffer__len, object.getLength());
+        writeI64Node.write(view, CFields.Py_buffer__itemsize, object.getItemSize());
+        writeI32Node.write(view, CFields.Py_buffer__readonly, PInt.intValue(object.isReadOnly()));
+        writeI32Node.write(view, CFields.Py_buffer__ndim, object.getDimensions());
+        if (object.getFormatString() != null) {
+            writePointerNode.write(view, CFields.Py_buffer__format, asCharPointerNode.execute(object.getFormatString()));
+        }
+        if (object.getBufferShape() != null) {
+            writePointerNode.write(view, CFields.Py_buffer__shape, intArrayToNativePySSizeArray(object.getBufferShape()));
+        }
+        if (object.getBufferStrides() != null) {
+            writePointerNode.write(view, CFields.Py_buffer__strides, intArrayToNativePySSizeArray(object.getBufferStrides()));
+        }
+        if (object.getBufferSuboffsets() != null) {
+            writePointerNode.write(view, CFields.Py_buffer__suboffsets, intArrayToNativePySSizeArray(object.getBufferSuboffsets()));
+        }
+        return mem;
     }
 
     @Override
-    protected Object allocateReplacememtObject() {
-        return AllocateNodeGen.getUncached().execute(getDelegate());
+    public Object getReplacement(InteropLibrary lib) {
+        if (replacement == null) {
+            Object pointerObject = allocate((PMemoryView) getDelegate());
+            replacement = registerReplacement(pointerObject, lib);
+        }
+        return replacement;
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() throws UnsupportedMessageException {
+        if (!isNative()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        }
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    void toNative() {
+        if (!isNative()) {
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 }

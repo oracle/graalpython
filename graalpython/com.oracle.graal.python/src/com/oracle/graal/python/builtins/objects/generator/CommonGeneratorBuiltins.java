@@ -135,18 +135,18 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         return CommonGeneratorBuiltinsFactory.getFactories();
     }
 
-    private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode.Lazy raiseNode) {
         if (self.isFinished()) {
             if (self.isAsyncGen()) {
-                throw node.raise(StopAsyncIteration);
+                throw raiseNode.get(inliningTarget).raise(StopAsyncIteration);
             }
             if (self.isCoroutine()) {
-                throw node.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
-            throw node.raiseStopIteration();
+            throw raiseNode.get(inliningTarget).raiseStopIteration();
         }
         if (self.isRunning()) {
-            throw node.raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
         }
     }
 
@@ -257,14 +257,15 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class SendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object send(VirtualFrame frame, PGenerator self, Object value,
+        static Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
+                        @Cached ResumeGeneratorNode resumeGeneratorNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
             // generators by PAsyncGenSend
-            checkResumable(this, self);
+            checkResumable(inliningTarget, self, raiseNode);
             if (!self.isStarted() && value != PNone.NONE) {
-                throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
             }
             return resumeGeneratorNode.execute(frame, inliningTarget, self, value);
         }
@@ -276,7 +277,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
+        static Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasTbProfile,
                         @Cached InlinedConditionProfile startedProfile,
@@ -287,25 +288,26 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
                         @Cached ExceptionNodes.SetContextNode setContextNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
             if (hasTb && !(tb instanceof PTraceback)) {
                 invalidTbProfile.enter(inliningTarget);
-                throw raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
             }
             if (self.isRunning()) {
                 runningProfile.enter(inliningTarget);
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             Object instance = prepareExceptionNode.execute(frame, typ, val);
             if (hasTb) {
                 setTracebackNode.execute(inliningTarget, instance, tb);
             }
-            PythonLanguage language = getLanguage();
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             setContextNode.execute(inliningTarget, instance, PNone.NONE); // Will be filled when
                                                                           // caught
             if (self.isCoroutine() && self.isFinished()) {
-                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
@@ -335,21 +337,22 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object close(VirtualFrame frame, PGenerator self,
+        static Object close(VirtualFrame frame, PGenerator self,
                         @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isGeneratorExit,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached InlinedConditionProfile isStartedPorfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (self.isRunning()) {
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             if (isStartedPorfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = factory.createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(getLanguage());
+                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget));
                 try {
                     resumeGeneratorNode.execute(frame, inliningTarget, self, new ThrowData(pythonException, withJavaStacktrace));
                 } catch (PException pe) {
@@ -361,7 +364,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 } finally {
                     self.markAsFinished();
                 }
-                throw raise(RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
+                throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
             } else {
                 self.markAsFinished();
                 return PNone.NONE;

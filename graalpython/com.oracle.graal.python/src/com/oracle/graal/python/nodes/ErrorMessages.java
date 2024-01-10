@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,6 +109,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_READABLE = tsLiteral("item %s of %s object is not readable");
     public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_WRITABLE = tsLiteral("item %s of %s object is not writable");
     public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_REMOVABLE = tsLiteral("item %s of %s object is not removable");
+    public static final TruffleString UNRECOGNIZED_LOCKF_ARGUMENT = tsLiteral("unrecognized lockf argument");
 
     public static final TruffleString ATTR_S_READONLY = tsLiteral("attribute %s is read-only");
     public static final TruffleString ATTR_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
@@ -128,6 +129,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_MARSHAL_DATA_EOF = tsLiteral("marshal data too short");
     public static final TruffleString BAD_MARSHAL_DATA_NULL = tsLiteral("bad NULL object in marshal data");
     public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_P = tsLiteral("bad memberdescr type for %p");
+    public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_S = tsLiteral("bad memberdescr type for %s");
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");
     public static final TruffleString BAD_TYPECODE = tsLiteral("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
@@ -144,6 +146,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTESLIKE_OBJ_REQUIRED = tsLiteral("a bytes-like object is required, not '%p'");
     public static final TruffleString BYTE_STRING_OF_LEN_ONE_ONLY = tsLiteral("%s argument 2 must be a byte string of length 1, not %s");
     public static final TruffleString BYTE_MUST_BE_IN_RANGE = tsLiteral("byte must be in range(0, 256)");
+    public static final TruffleString SHORT_MUST_BE_IN_RANGE = tsLiteral("short must be in range(-32768, 32767)");
     public static final TruffleString C_ARG_NOT_IN_RANGE = tsLiteral("%%c arg not in range(0x%s)");
     public static final TruffleString CALL_STACK_NOT_DEEP_ENOUGH = tsLiteral("call stack is not deep enough");
     public static final TruffleString CALLED_MATCH_PAT_MUST_BE_TYPE = tsLiteral("called match pattern must be a type");
@@ -164,6 +167,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CAN_ONLY_JOIN_ITERABLE = tsLiteral("can only join an iterable");
     public static final TruffleString CANNOT_BE_INTEPRETED_AS_LONG = tsLiteral("%s cannot be interpreted as long (type %p)");
     public static final TruffleString S_CANNOT_BE_NEGATIVE_INTEGER_D = tsLiteral("%s cannot be negative integer (%d)");
+    public static final TruffleString S_CANNOT_HAVE_S = tsLiteral("%s cannot have %s");
+
     public static final TruffleString CANNOT_CALL_CTOR_OF = tsLiteral("cannot call constructor of %s");
     public static final TruffleString CANNOT_CLOSE_EXPORTED_PTRS_EXIST = tsLiteral("cannot close exported pointers exist");
     public static final TruffleString CANNOT_CONVERT_DICT_UPDATE_SEQ = tsLiteral("cannot convert dictionary update sequence element #%d to a sequence");
@@ -344,8 +349,9 @@ public abstract class ErrorMessages {
     public static final TruffleString FORMATED_S_TOO_LONG = tsLiteral("formatted %s is too long (precision too large?)");
     public static final TruffleString FUNC_CONSTRUCTION_NOT_SUPPORTED = tsLiteral("function construction not supported for (%p, %p, %p, %p, %p, %p)");
     public static final TruffleString FUNC_TAKES_EXACTLY_D_ARGS = tsLiteral("function takes exaclty %d arguments (%d given)");
-    public static final TruffleString FUNC_S_MUST_BE_S_NOT_P = tsLiteral("%s() %s must be %s, not %p");
-    public static final TruffleString GENERATOR_EXPR_MUST_BE_PARENTHESIZED = tsLiteral("Generator expression must be parenthesized");
+    public static final TruffleString S_TAKES_EXACTLY_D_ARGS = tsLiteral("%s takes exaclty %d arguments (%d given)");
+    public static final TruffleString S_TAKES_VARARGS = tsLiteral("%s takes varargs");
+    public static final TruffleString S_DOES_NOT_TAKE_VARARGS = tsLiteral("%s does not take varargs");
     public static final TruffleString GCD_FOR_NATIVE_NOT_SUPPORTED = tsLiteral("gcd for native objects is not yet supported on GraalPy");
     public static final TruffleString GENERATOR_IGNORED_EXIT = tsLiteral("generator ignored GeneratorExit");
     public static final TruffleString GENERATOR_RAISED_STOPITER = tsLiteral("generator raised StopIteration");
@@ -530,10 +536,11 @@ public abstract class ErrorMessages {
     public static final TruffleString MUST_BE_NON_NEGATIVE = tsLiteral("%s must be non-negative");
     public static final TruffleString MUST_BE_NON_NEGATIVE_INTEGER = tsLiteral("%s must be non-negative integer");
     public static final TruffleString MUST_BE_NUMERIC = tsLiteral("must be numeric, not %p");
+    public static final TruffleString P_MUST_BE_BUFFER = tsLiteral("%p must be a buffer");
     public static final TruffleString MUST_BE_REAL_NUMBER = tsLiteral("must be real number, not %p");
     public static final TruffleString MUST_BE_SEQ_OF_LENGTH_D_NOT_D = tsLiteral("must be sequence of length %d, not %d");
     public static final TruffleString MUST_BE_STR_NOT_P = tsLiteral("must be str, not %p");
-    public static final TruffleString S_MUST_BE_S_NOT_P = tsLiteral("%s must be a %s, not %p");
+    public static final TruffleString S_MUST_BE_S_NOT_P = tsLiteral("%s must be %s, not %p");
     public static final TruffleString MUST_BE_S_NOT_NONE = tsLiteral("must be %s, not None");
     public static final TruffleString MUST_BE_S_NOT_P = tsLiteral("must be %s, not %p");
     public static final TruffleString MUST_BE_S_OR_S = tsLiteral("%s must be %s or %s");
@@ -642,7 +649,7 @@ public abstract class ErrorMessages {
     public static final TruffleString REQUIRES_CODE_OBJ = tsLiteral("%s() requires a code object with %d free vars, not %d");
     public static final TruffleString REQUIRES_INT_OR_CHAR = tsLiteral("%%%c requires int or char");
     public static final TruffleString ROUNDED_VALUE_TOO_LARGE = tsLiteral("rounded value too large to represent");
-    public static final TruffleString S_FORMAT_NUMBER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: a number is required, not %p");
+    public static final TruffleString S_FORMAT_NUMBER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: a real number is required, not %p");
     public static final TruffleString S_FORMAT_INTEGER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: an integer is required, not %p");
     public static final TruffleString C_ARG_NOT_IN_RANGE256_DECIMAL = tsLiteral("%%c arg not in range(256)");
     public static final TruffleString C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = tsLiteral("%%c requires an integer in range(256) or a single byte");
@@ -794,6 +801,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSUPPORTED_FORMAT_CHAR_AT_INDEX = tsLiteral("unsupported format character '%c' (0x%x) at index %d");
     public static final TruffleString UNSUPPORTED_INSTANCEOF = tsLiteral("unsupported instanceof(%p, %p)");
     public static final TruffleString UNSUPPORTED_LOCALE_SETTING = tsLiteral("unsupported locale setting");
+    public static final TruffleString UNKNOWN_LOCALE = tsLiteral("Unknown locale");
     public static final TruffleString UNSUPPORTED_OBJ_IN = tsLiteral("unsupported object in '%s'");
     public static final TruffleString UNSUPPORTED_OPERAND_P = tsLiteral("unsupported operand '%p'");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P = tsLiteral("unsupported operand type(s) for %s: '%p' and '%p'");
@@ -943,7 +951,8 @@ public abstract class ErrorMessages {
     public static final TruffleString SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS = tsLiteral("Second argument must be a string type code or a java.lang.Class object, not %p");
     public static final TruffleString READ_RETURNED_NOT_BYTES = tsLiteral("file.read() returned not bytes but %p");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES = tsLiteral("unsupported operand types(s) or combination of types: '%p' and '%p'");
-    public static final TruffleString UNRECOGNIZED_CONF_NAME = tsLiteral("unrecognized configuration name: %s");
+    public static final TruffleString UNRECOGNIZED_CONF_NAME = tsLiteral("unrecognized configuration name");
+    public static final TruffleString CONFIGURATION_NAMES_MUST_BE_STRINGS_OR_INTEGERS = tsLiteral("configuration names must be strings or integers");
     public static final TruffleString GETPWNAM_NAME_NOT_FOUND = tsLiteral("getpwnam(): name not found: '%s'");
     public static final TruffleString MOD_GLOBALS_MUST_BE_DICT = tsLiteral("module_globals must be a dict, not '%p'");
     public static final TruffleString REENTRANT_CALL_INSIDE_P_REPR = tsLiteral("reentrant call inside %p.__repr__");
@@ -1003,6 +1012,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
+    public static final TruffleString SEMAPHORE_RELEASED_TOO_MANY_TIMES = tsLiteral("semaphore or lock released too many times");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1386,7 +1396,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
     public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString SIG_OF_S_IS_NOT_INT = tsLiteral("signature of %s is not an integer");
-    public static final TruffleString CANNOT_READ_FIELD_NAME_FROM_MEMBER_DEF = tsLiteral("Cannot read field 'name' from member definition");
     public static final TruffleString FIELD_SLOT_S_ISNT_INT = tsLiteral("field 'slot' of %s is not an integer");
     public static final TruffleString INVALID_SLOT_VALUE = tsLiteral("invalid slot value %d");
     public static final TruffleString ERR_WHEN_READING_LEGACY_MEYHOD_FOR_TYPE = tsLiteral("error when reading legacy method definition for type %s");
@@ -1493,6 +1502,9 @@ public abstract class ErrorMessages {
     public static final TruffleString LLVM_NOT_AVAILABLE = tsLiteral("GraalPy option 'NativeModules' is set to false, but the 'llvm' language, which is required for this feature, is not available. " +
                     "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: are you missing a runtime dependency " +
                     "'org.graalvm.polyglot:llvm{-community}'?");
+    public static final TruffleString HPY_CANNOT_USE_JNI_BACKEND = tsLiteral("Cannot use HPy JNI backend because JNI access is forbidden.");
+    public static final TruffleString HPY_NFI_NOT_YET_IMPLEMENTED = tsLiteral("HPy NFI backend is not yet implemented");
+    public static final TruffleString HPY_UNKNOWN_BACKEND = tsLiteral("unknown HPy backend: ");
     private static final String HPY_NON_DEFAULT_MESSAGE = "This is not allowed because custom HPy_mod_create slot cannot return a builtin module object and cannot make any use of any other " +
                     "data defined in the HPyModuleDef. Either do not define HPy_mod_create slot and let the runtime create a builtin module object from the provided HPyModuleDef, or do not " +
                     "define anything else but the HPy_mod_create slot.";
@@ -1584,4 +1596,75 @@ public abstract class ErrorMessages {
     public static final TruffleString ASYNCGEN_RAISED_ASYNCSTOPITER = tsLiteral("async generator raised StopAsyncIteration");
     public static final TruffleString MAXSIZE_SHOULD_BE_INTEGER_OR_NONE = tsLiteral("maxsize should be integer or None");
     public static final TruffleString THE_FIRST_ARGUMENT_MUST_BE_CALLABLE = tsLiteral("the first argument must be callable");
+    public static final TruffleString S_MUST_BE_A_S_TUPLE = tsLiteral("%s must be a %s-tuple");
+
+    // pickle
+    public static final TruffleString STRUCT_SIZE_TOO_LONG = tsLiteral("total struct size too long");
+    public static final TruffleString OP_FORBIDDEN_ON_OBJECT = tsLiteral("operation forbidden on released %s object");
+    public static final TruffleString PICKLE_PROTO_MUST_BE_LE = tsLiteral("pickle protocol must be <= %sd");
+    public static final TruffleString UNSUPPORTED_PICKLE_PROTO = tsLiteral("unsupported pickle protocol: %d");
+    public static final TruffleString FILE_MUST_HAVE_WRITE_ATTR = tsLiteral("file must have a 'write' attribute");
+    public static final TruffleString BUFFCB_NEEDS_PROTO_GE_5 = tsLiteral("buffer_callback needs protocol >= 5");
+    public static final TruffleString FILE_MUST_HAVE_A_AND_B_ATTRS = tsLiteral("file must have '%s' and '%s' attributes");
+    public static final TruffleString INIT_CALLED_WITH = tsLiteral("%s.__init__() was not called by %p.__init__()");
+    public static final TruffleString ATTR_MUST_BE_A_OR_B_NOT_C = tsLiteral("'%s' attribute must be a %s object or %s, not %p");
+    public static final TruffleString VALUES_MUST_BE_2TUPLES = tsLiteral("'%s' values must be 2-item tuples");
+    public static final TruffleString ATTR_MUST_BE_A_CALLABLE = tsLiteral("%s must be a callable taking %s");
+    public static final TruffleString PIDS_MUST_BE_ASCII_STRS = tsLiteral("persistent IDs in protocol 0 must be ASCII strings");
+    public static final TruffleString CANNOT_PICKLE_P_P = tsLiteral("can't pickle '%p' object: %p");
+    public static final TruffleString S_SHOULD_BE_A_S_NOT_A_P = tsLiteral("%s should be a %s not a %p");
+    public static final TruffleString MEMO_ID_TOO_LARGE_FOR_S = tsLiteral("memo id too large for %s");
+    public static final TruffleString MEMO_KEY_MUST_BE_INT = tsLiteral("memo key must be integers");
+    public static final TruffleString MEMO_KEY_MUST_BE_POS_INT = tsLiteral("memo key must be positive integers.");
+    public static final TruffleString S_TO_LARGE_TO_PICKLE = tsLiteral("%s too large to pickle");
+    public static final TruffleString SER_OVER_4GB = tsLiteral("serializing a bytes object larger than 4 GiB requires pickle protocol 4 or higher");
+    public static final TruffleString FAST_MEMO_CANT_PICKLE_CYCLIC_OBJ_P_S = tsLiteral("fast mode: can't pickle cyclic objects including object type %p at %s");
+    public static final TruffleString PICKLEBUFF_CANNOT_PICKLE_WITH_PROTO5 = tsLiteral("PickleBuffer can only pickled with protocol >= 5");
+    public static final TruffleString CANT_PICKLE_LOCAL_OBJ_S = tsLiteral("Can't pickle local object %s");
+    public static final TruffleString CANT_PICKLE_ATTR_S_OF_P = tsLiteral("Can't pickle local attribute %s on %p");
+    public static final TruffleString CANT_PICKLE_P_ATTR_LOOKUP_FAIL_S_S = tsLiteral("Can't pickle %p: attribute lookup %s on %s failed");
+    public static final TruffleString CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED = tsLiteral("Can't pickle %p: import of module %s failed");
+    public static final TruffleString CANT_PICKLE_P_NOT_SAME_OBJ_AS_S_S = tsLiteral("Can't pickle %p: it's not the same object as %s.%s");
+    public static final TruffleString CANT_PICKLE_P_EXT_CODE_P_NOT_AN_INT = tsLiteral("Can't pickle %p: extension code %p isn't an integer");
+    public static final TruffleString CANT_PICKLE_P_EXT_CODE_OO_RANGE = tsLiteral("Can't pickle %p: extension code %d is out of range");
+    public static final TruffleString CANT_PICKLE_MODULE_S_USING_PROTO_D = tsLiteral("can't pickle module identifier '%s' using pickle protocol %d");
+    public static final TruffleString TUPLE_RET_BY_REDUCE_2_6 = tsLiteral("tuple returned by __reduce__ must contain 2 through 6 elements");
+    public static final TruffleString S_ITEM_REDUCE_MUST_BE_S = tsLiteral("%s item of the tuple returned by __reduce__ must be %s");
+    public static final TruffleString S_ITEM_FROM_S_MUST_BE_S_NOT_P = tsLiteral("%s item from %s argument tuple must be %s, not %p");
+    public static final TruffleString S_ELEM_REDUCE_MUST_BE_S_NOT_P = tsLiteral("%s element of the tuple returned by __reduce__ must be %s, not %p");
+    public static final TruffleString LEN_OF_S_MUST_BE_D_NOT_D = tsLiteral("length of the %s argument tuple must be exactly %d, not %d");
+    public static final TruffleString ARGS_0_FROM_S_ARGS_S = tsLiteral("args[0] from %s args %s");
+    public static final TruffleString PDATA_UNEXPECTED_MARK_FOUND = tsLiteral("unexpected MARK found");
+    public static final TruffleString PDATA_UNPICKLING_STACK_UNDERFLOW = tsLiteral("unpickling stack underflow");
+    public static final TruffleString READ_OVERFLOW = tsLiteral("read would overflow (invalid bytecode)");
+    public static final TruffleString PICKLE_DATA_WAS_TRUNCATED = tsLiteral("pickle data was truncated");
+    public static final TruffleString LONG_PICKLE_HAS_NEG_BYTE_CNT = tsLiteral("LONG pickle has negative byte count");
+    public static final TruffleString S_EXCEEDS_MAX_SIZE_N_BYTES = tsLiteral("%s exceeds system's maximum size of %d bytes");
+    public static final TruffleString S_RETURNED_NON_BYTES_P = tsLiteral("%s returned non-bytes object (%p)");
+    public static final TruffleString S_RETURNED_NEG_SIZE = tsLiteral("%s returned negative size");
+    public static final TruffleString PICKLE_STREAM_NO_BUFFERS = tsLiteral("pickle stream refers to out-of-band data but no *buffers* argument was given");
+    public static final TruffleString NOT_ENOUGH_BUFFERS = tsLiteral("not enough out-of-band buffers");
+    public static final TruffleString COULD_NOT_FIND_MARK = tsLiteral("could not find MARK");
+    public static final TruffleString ODD_NR_ITEMS_FOR_S = tsLiteral("odd number of items for %s");
+    public static final TruffleString S_OPCODE_ARG_MUST_BE_QUOTED = tsLiteral("the %s opcode argument must be quoted");
+    public static final TruffleString NEG_S_ARG = tsLiteral("negative %s argument");
+    public static final TruffleString S_REQ_STR = tsLiteral("%s requires str");
+    public static final TruffleString PID_PROTO_0 = tsLiteral("persistent IDs in protocol 0 must be ASCII strings");
+    public static final TruffleString PID_NO_FUNC = tsLiteral("A load persistent id instruction was encountered,\nbut no persistent_load function was specified");
+    public static final TruffleString S_EXPECTED_AN_ARG_S = tsLiteral("%s expected an arg %s");
+    public static final TruffleString S_CLASS_ARG_S = tsLiteral("%s class argument %s");
+    public static final TruffleString S_CLASS_ARG_MUST_BE_TYPE_NOT_P = tsLiteral("%s class argument must be a type, not %p");
+    public static final TruffleString S_CLASS_ARG_DOES_NOT_HAVE_S = tsLiteral("$s class argument doesn't have %s");
+    public static final TruffleString S_STATE_NOT_DICT = tsLiteral("%sstate is not a dictionary");
+    public static final TruffleString EXT_CODE_LE_0 = tsLiteral("EXT specifies code <= 0");
+    public static final TruffleString EXT_UNREGISTERED = tsLiteral("unregistered extension code %d");
+    public static final TruffleString INV_REG_NOT_2TUPLE = tsLiteral("_inverted_registry[%d] isn't a 2-tuple of strings");
+    public static final TruffleString INVALID_LOAD_KEY_CHR = tsLiteral("invalid load key, '%c'.");
+    public static final TruffleString INVALID_LOAD_KEY_HEX = tsLiteral("invalid load key, '0x%02X'.");
+    public static final TruffleString S_SHOULD_BE_S_NOT_P = tsLiteral("%s values should be %s, not %p");
+    public static final TruffleString S_SHOULD_BE_S_NOT_P_P = tsLiteral("%s values should be %s, not (%p, %p)");
+    public static final TruffleString RAN_OUT_OF_INPUT = tsLiteral("Ran out of input");
+    public static final TruffleString CANNOT_EXTRACT_RAW_BUFFER_FROM_NON_CONTIGUOUS = tsLiteral("cannot extract raw buffer from non-contiguous buffer");
+    public static final TruffleString MEMO_VALUE_NOT_FOUND_AT_INDEX_D = tsLiteral("Memo value not found at index %d");
+    public static final TruffleString ATRIBUTE_DELETION_NOT_SUPPORTED = tsLiteral("attribute deletion is not supported");
 }

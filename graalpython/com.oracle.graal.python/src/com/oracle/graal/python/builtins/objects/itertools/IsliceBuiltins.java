@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -99,19 +100,20 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
-        Object next(@SuppressWarnings("unused") PIslice self) {
-            throw raiseStopIteration();
+        static Object next(@SuppressWarnings("unused") PIslice self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
-        @SuppressWarnings("truffle-static-method")
-        Object next(VirtualFrame frame, PIslice self,
+        static Object next(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile nextExceptionProfile,
                         @Cached InlinedBranchProfile nextExceptionProfile2,
-                        @Cached InlinedBranchProfile setNextProfile) {
+                        @Cached InlinedBranchProfile setNextProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object it = self.getIterable();
             int stop = self.getStop();
             Object item;
@@ -128,7 +130,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
             }
             if (stop != -1 && self.getCnt() >= stop) {
                 self.setIterable(PNone.NONE);
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             try {
                 item = nextNode.execute(frame, it, PNone.NO_VALUE);
@@ -179,13 +181,14 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object setState(PIslice self, Object state,
+        static Object setState(PIslice self, Object state,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaIntLossyNode castInt) {
+                        @Cached CastToJavaIntLossyNode castInt,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 self.setCnt(castInt.execute(inliningTarget, state));
             } catch (CannotCastException e) {
-                throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

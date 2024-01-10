@@ -2348,7 +2348,10 @@ class SimpleBackgroundTests(unittest.TestCase):
             self.assertIsNone(sslobj.get_channel_binding('tls-unique'))
         self.ssl_io_loop(sock, incoming, outgoing, sslobj.do_handshake)
         self.assertTrue(sslobj.cipher())
-        self.assertIsNone(sslobj.shared_ciphers())
+        # GraalVM change: Java SSL does not expose the information which
+        # ciphers are shared between the client and the server. We return
+        # what CPython used to return prior to gh-96931
+        # self.assertIsNone(sslobj.shared_ciphers())
         self.assertIsNotNone(sslobj.version())
         self.assertTrue(sslobj.getpeercert())
         if 'tls-unique' in ssl.CHANNEL_BINDING_TYPES:
@@ -5101,7 +5104,7 @@ class TestPreHandshakeClose(unittest.TestCase):
         server = self.SingleConnectionTestServerThread(
                 call_after_accept=call_after_accept,
                 name="preauth_data_to_tls_client")
-        self.enterContext(server)  # starts it & unittest.TestCase stops it.
+(??)
         # Redundant; call_after_accept sets SO_LINGER on the accepted conn.
         set_socket_so_linger_on_with_zero_timeout(server.listener)
 

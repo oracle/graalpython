@@ -115,6 +115,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void flock(Object receiver, int fd, int operation) throws PosixException;
 
+    public abstract void fcntlLock(Object receiver, int fd, boolean blocking, int lockType, int whence, long start, long length) throws PosixException;
+
     public abstract boolean getBlocking(Object receiver, int fd) throws PosixException;
 
     public abstract void setBlocking(Object receiver, int fd, boolean blocking) throws PosixException;
@@ -280,6 +282,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getgid(Object receiver);
 
+    public abstract long getegid(Object receiver);
+
     public abstract long getppid(Object receiver);
 
     public abstract long getpgid(Object receiver, long pid) throws PosixException;
@@ -331,6 +335,26 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
 
     public abstract long mmapGetPointer(Object receiver, Object mmap);
+
+    public abstract long semOpen(Object receiver, Object name, int openFlags, int mode, int value) throws PosixException;
+
+    public final long semOpen(Object receiver, Object name) throws PosixException {
+        return semOpen(receiver, name, 0, 0, 0);
+    }
+
+    public abstract void semClose(Object receiver, long handle) throws PosixException;
+
+    public abstract void semUnlink(Object receiver, Object name) throws PosixException;
+
+    public abstract int semGetValue(Object receiver, long handle) throws PosixException;
+
+    public abstract void semPost(Object receiver, long handle) throws PosixException;
+
+    public abstract void semWait(Object receiver, long handle) throws PosixException;
+
+    public abstract boolean semTryWait(Object receiver, long handle) throws PosixException;
+
+    public abstract boolean semTimedWait(Object receiver, long handle, long deadlineNs) throws PosixException;
 
     public static final class PwdResult {
         public final TruffleString name;

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -123,14 +124,15 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached InlinedConditionProfile initialNoValueProfile,
                         @Cached IsBuiltinObjectProfile stopIterProfile,
-                        @Cached IsBuiltinObjectProfile typeError) {
+                        @Cached IsBuiltinObjectProfile typeError,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object initial = initialNoValueProfile.profile(inliningTarget, PGuards.isNoValue(initialIn)) ? null : initialIn;
             Object seqIterator, result = initial;
             try {
                 seqIterator = getIter.execute(frame, inliningTarget, sequence);
             } catch (PException pe) {
                 pe.expectTypeError(inliningTarget, typeError);
-                throw raise(PythonBuiltinClassType.TypeError, S_ARG_N_MUST_SUPPORT_ITERATION, "reduce()", 2);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_ARG_N_MUST_SUPPORT_ITERATION, "reduce()", 2);
             }
 
             Object[] args = new Object[2];
@@ -159,7 +161,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
             reportLoopCount(this, count >= 0 ? count : Integer.MAX_VALUE);
 
             if (result == null) {
-                throw raise(PythonBuiltinClassType.TypeError, REDUCE_EMPTY_SEQ);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, REDUCE_EMPTY_SEQ);
             }
 
             return result;

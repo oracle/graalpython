@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.GenerateInline;
 
-public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
+@GenerateInline(value = false, inherit = true)
+public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
 }

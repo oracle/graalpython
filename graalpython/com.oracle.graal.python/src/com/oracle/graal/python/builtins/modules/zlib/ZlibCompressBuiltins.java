@@ -140,8 +140,9 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
-        PBytes error(ZLibCompObject self, Object data) {
-            throw raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+        static PBytes error(ZLibCompObject self, Object data,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
         }
     }
 
@@ -280,8 +281,9 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
-        PNone error(ZLibCompObject self, int mode) {
-            throw raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+        static PNone error(ZLibCompObject self, int mode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
         }
     }
 

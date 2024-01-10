@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.CachedHashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
@@ -58,12 +60,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
-import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastBuiltinStringToTruffleStringNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -266,10 +266,10 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage economicMap(Frame frame, Node inliningTarget, EconomicMapStorage self, Object key, long keyHash, Object value,
-                        @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode) {
             putNode.execute(frame, inliningTarget, self.map, key, keyHash, value);
-            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(inliningTarget, key, profile)) {
+            if (!self.map.hasSideEffect() && !isBuiltinString.execute(inliningTarget, key)) {
                 self.map.setSideEffectingKeysFlag();
             }
             return self;
@@ -277,11 +277,11 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage empty(Frame frame, Node inliningTarget, @SuppressWarnings("unused") EmptyStorage self, Object key, long keyHash, Object value,
-                        @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode) {
             EconomicMapStorage storage = EconomicMapStorage.create(1);
             putNode.execute(frame, inliningTarget, storage.map, key, keyHash, value);
-            if (!PGuards.isBuiltinString(inliningTarget, key, profile)) {
+            if (!isBuiltinString.execute(inliningTarget, key)) {
                 storage.map.setSideEffectingKeysFlag();
             }
             return storage;
@@ -299,12 +299,12 @@ public class HashingStorageNodes {
         @InliningCutoff
         static HashingStorage dom(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value,
                         @Cached InlinedConditionProfile shouldTransitionProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile builtinProfile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Cached DOMStorageSetItemWithHash domNode) {
             boolean transition = true;
             if (shouldTransitionProfile.profile(inliningTarget, !self.shouldTransitionOnPut())) {
-                if (PGuards.isBuiltinString(inliningTarget, key, builtinProfile)) {
+                if (isBuiltinString.execute(inliningTarget, key)) {
                     transition = false;
                 }
             }
@@ -314,13 +314,13 @@ public class HashingStorageNodes {
         @Specialization
         @InliningCutoff
         static HashingStorage keywords(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, long keyHash, Object value,
-                        @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode,
                         @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(inliningTarget, result, specializedPutNode);
-            return economicMap(frame, inliningTarget, result, key, keyHash, value, profile, putNode);
+            return economicMap(frame, inliningTarget, result, key, keyHash, value, isBuiltinString, putNode);
         }
 
         @GenerateUncached
@@ -331,10 +331,10 @@ public class HashingStorageNodes {
             public abstract HashingStorage execute(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value,
                             boolean transition, DynamicObjectLibrary dylib);
 
-            @Specialization(guards = {"!transition", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
+            @Specialization(guards = {"!transition", "isBuiltinString.execute(inliningTarget, key)"}, limit = "1")
             static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
-                            @Cached IsBuiltinObjectProfile profile,
+                            @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                             @Cached CastBuiltinStringToTruffleStringNode castStr,
                             @Cached InlinedBranchProfile invalidateMroProfile) {
                 self.setStringKey(castStr.execute(inliningTarget, key), value, dylib, inliningTarget, invalidateMroProfile);
@@ -387,11 +387,11 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage economicMap(Frame frame, Node inliningTarget, EconomicMapStorage self, Object key, Object value,
-                        @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode) {
             putNode.execute(frame, inliningTarget, self.map, key, hashNode.execute(frame, inliningTarget, key), value);
-            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(inliningTarget, key, profile)) {
+            if (!self.map.hasSideEffect() && !isBuiltinString.execute(inliningTarget, key)) {
                 self.map.setSideEffectingKeysFlag();
             }
             return self;
@@ -399,7 +399,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage empty(Frame frame, Node inliningTarget, @SuppressWarnings("unused") EmptyStorage self, Object key, Object value,
-                        @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode) {
             // The ObjectHashMap.PutNode is @Exclusive because profiles for a put into a freshly new
@@ -407,7 +407,7 @@ public class HashingStorageNodes {
             // putting into a map that already has or will have some more items in it
             // It is also @Cached(inline = false) because inlining it triggers GR-44836
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
-            return economicMap(frame, inliningTarget, EconomicMapStorage.create(1), key, value, profile, hashNode, putNode);
+            return economicMap(frame, inliningTarget, EconomicMapStorage.create(1), key, value, isBuiltinString, hashNode, putNode);
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
@@ -422,12 +422,12 @@ public class HashingStorageNodes {
         @InliningCutoff
         static HashingStorage dom(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                         @Cached InlinedConditionProfile shouldTransitionProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile builtinProfile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Cached DOMStorageSetItem domNode) {
             boolean transition = true;
             if (shouldTransitionProfile.profile(inliningTarget, !self.shouldTransitionOnPut())) {
-                if (PGuards.isBuiltinString(inliningTarget, key, builtinProfile)) {
+                if (isBuiltinString.execute(inliningTarget, key)) {
                     transition = false;
                 }
             }
@@ -438,13 +438,13 @@ public class HashingStorageNodes {
         @InliningCutoff
         static HashingStorage keywords(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, Object value,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached IsBuiltinObjectProfile profile,
+                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode,
                         @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(inliningTarget, result, specializedPutNode);
-            return economicMap(frame, inliningTarget, result, key, value, profile, hashNode, putNode);
+            return economicMap(frame, inliningTarget, result, key, value, isBuiltinString, hashNode, putNode);
         }
 
         @GenerateUncached
@@ -455,10 +455,10 @@ public class HashingStorageNodes {
             public abstract HashingStorage execute(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                             boolean transition, DynamicObjectLibrary dylib);
 
-            @Specialization(guards = {"!transition", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
+            @Specialization(guards = {"!transition", "isBuiltinString.execute(inliningTarget, key)"}, limit = "1")
             static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
-                            @Cached IsBuiltinObjectProfile profile,
+                            @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                             @Cached CastBuiltinStringToTruffleStringNode castStr,
                             @Cached InlinedBranchProfile invalidateMroProfile) {
                 self.setStringKey(castStr.execute(inliningTarget, key), value, dylib, inliningTarget, invalidateMroProfile);
@@ -535,12 +535,12 @@ public class HashingStorageNodes {
         @Specialization
         @InliningCutoff
         static Object domStringKey(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object keyObj, boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
-                        @Cached IsBuiltinObjectProfile profile,
+                        @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastBuiltinStringToTruffleStringNode castStr,
                         @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached InlinedBranchProfile invalidateMroProfile,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            if (!PGuards.isBuiltinString(inliningTarget, keyObj, profile)) {
+            if (!isBuiltinString.execute(inliningTarget, keyObj)) {
                 // Just for the potential side effects
                 hashNode.execute(frame, inliningTarget, keyObj);
                 return null;

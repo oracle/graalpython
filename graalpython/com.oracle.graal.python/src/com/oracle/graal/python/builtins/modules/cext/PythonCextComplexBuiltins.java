@@ -58,15 +58,19 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextComplexBuiltins {
@@ -74,15 +78,17 @@ public final class PythonCextComplexBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
     abstract static class PyTruffleComplex_AsCComplex extends CApiUnaryBuiltinNode {
         @Specialization
-        PTuple asComplex(PComplex c) {
-            return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
+        static PTuple asComplex(PComplex c,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{c.getReal(), c.getImag()});
         }
 
         @Specialization(guards = "!isPComplex(obj)")
-        Object asComplex(Object obj,
-                        @Cached ComplexNode complexNode) {
+        static Object asComplex(Object obj,
+                        @Cached ComplexNode complexNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PComplex c = (PComplex) complexNode.execute(null, PythonBuiltinClassType.PComplex, obj, PNone.NO_VALUE);
-            return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
+            return factory.createTuple(new Object[]{c.getReal(), c.getImag()});
         }
     }
 
@@ -101,31 +107,25 @@ public final class PythonCextComplexBuiltins {
             return d.getReal();
         }
 
-        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object asDouble(Object obj,
+        @Specialization(guards = "!isPComplex(obj)")
+        static Object asDouble(Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isComplexSubtypeProfile,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            try {
-                return callNode.execute(getAttr.execute(null, inliningTarget, obj, T_REAL));
-            } catch (PException e) {
-                throw raise(TypeError);
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString name;
+            if (isComplexSubtypeProfile.profile(inliningTarget, isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode))) {
+                name = T_REAL;
+            } else {
+                name = T___FLOAT__;
             }
-        }
-
-        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object asDoubleFloat(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttr,
-                        @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             try {
-                return callNode.execute(getAttr.execute(null, inliningTarget, obj, T___FLOAT__));
+                return callNode.execute(getAttr.execute(null, inliningTarget, obj, name));
             } catch (PException e) {
-                throw raise(TypeError);
+                throw raiseNode.get(inliningTarget).raise(TypeError);
             }
         }
     }
@@ -146,17 +146,17 @@ public final class PythonCextComplexBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return callNode.execute(getAttr.execute(null, inliningTarget, obj, T_IMAG));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object asDouble(Object obj,
+        static Object asDouble(Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return 0.0;
         }
     }
@@ -165,8 +165,9 @@ public final class PythonCextComplexBuiltins {
     abstract static class PyComplex_FromDoubles extends CApiBinaryBuiltinNode {
 
         @Specialization
-        PComplex asDouble(double r, double i) {
-            return factory().createComplex(r, i);
+        static PComplex asDouble(double r, double i,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createComplex(r, i);
         }
     }
 }

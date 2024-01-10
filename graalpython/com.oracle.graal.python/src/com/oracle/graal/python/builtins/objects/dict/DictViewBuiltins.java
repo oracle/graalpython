@@ -100,13 +100,15 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -172,7 +174,6 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @SuppressWarnings("truffle-static-method")
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getReversedKeysViewIter(PDictKeysView self,
@@ -366,76 +367,63 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-static-method")
-    protected abstract static class DictViewRichcompareNode extends PythonBinaryBuiltinNode {
-        protected boolean reverse() {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("subclass should have implemented reverse");
-        }
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class DictViewRichcompareHelperNode extends Node {
 
-        protected boolean lenCompare(@SuppressWarnings("unused") int lenSelf, @SuppressWarnings("unused") int lenOther) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("subclass should have implemented lenCompare");
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object self, Object other, ComparisonOp op);
+
+        protected static boolean reverse(ComparisonOp op) {
+            return op == ComparisonOp.GE || op == ComparisonOp.GT;
         }
 
         @Specialization
-        boolean doView(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+        static boolean doView(VirtualFrame frame, Node inliningTarget, PDictView self, PBaseSet other, ComparisonOp op,
                         @Shared @Cached HashingStorageLen selfLenNode,
                         @Shared @Cached HashingStorageLen otherLenNode,
-                        @Shared @Cached ContainedInNode allContained) {
+                        @Shared @Cached(inline = false) ContainedInNode allContained) {
             int lenSelf = selfLenNode.execute(inliningTarget, self.getWrappedDict().getDictStorage());
             int lenOther = otherLenNode.execute(inliningTarget, other.getDictStorage());
-            return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
+            return op.cmpResultToBool(lenSelf - lenOther) && (reverse(op) ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Specialization
-        boolean doView(VirtualFrame frame, PDictView self, PDictView other,
-                        @Bind("this") Node inliningTarget,
+        static boolean doView(VirtualFrame frame, Node inliningTarget, PDictView self, PDictView other, ComparisonOp op,
                         @Shared @Cached HashingStorageLen selfLenNode,
                         @Shared @Cached HashingStorageLen otherLenNode,
-                        @Shared @Cached ContainedInNode allContained) {
+                        @Shared @Cached(inline = false) ContainedInNode allContained) {
             int lenSelf = selfLenNode.execute(inliningTarget, self.getWrappedDict().getDictStorage());
             int lenOther = otherLenNode.execute(inliningTarget, other.getWrappedDict().getDictStorage());
-            return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
+            return op.cmpResultToBool(lenSelf - lenOther) && (reverse(op) ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Fallback
-        static PNotImplemented wrongTypes(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
+        @SuppressWarnings("unused")
+        static PNotImplemented wrongTypes(Object self, Object other, ComparisonOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends DictViewRichcompareNode {
-        @Override
-        protected boolean reverse() {
-            return false;
-        }
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean lenCompare(int lenSelf, int lenOther) {
-            return lenSelf == lenOther;
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DictViewRichcompareHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.EQ);
         }
     }
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Child EqNode eqNode;
-
-        private EqNode getEqNode() {
-            if (eqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(DictViewBuiltinsFactory.EqNodeFactory.create());
-            }
-            return eqNode;
-        }
 
         @Specialization
-        public Object notEqual(VirtualFrame frame, Object self, Object other) {
-            Object result = getEqNode().execute(frame, self, other);
+        static Object notEqual(VirtualFrame frame, Object self, Object other,
+                        @Cached EqNode eqNode) {
+            Object result = eqNode.execute(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             } else {
@@ -492,19 +480,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PBaseSet doNotIterable(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            PSet otherSet = constructSetNode.executeWith(frame, other);
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, selfSet.getDictStorage(), otherSet.getDictStorage());
-            return factory.createSet(storage);
-        }
-
-        @Specialization
-        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
+        static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
@@ -735,57 +711,49 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LessEqualNode extends DictViewRichcompareNode {
-        @Override
-        protected boolean reverse() {
-            return false;
-        }
+    abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean lenCompare(int lenSelf, int lenOther) {
-            return lenSelf <= lenOther;
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DictViewRichcompareHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.LE);
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GreaterEqualNode extends DictViewRichcompareNode {
-        @Override
-        protected boolean reverse() {
-            return true;
-        }
+    abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean lenCompare(int lenSelf, int lenOther) {
-            return lenSelf >= lenOther;
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DictViewRichcompareHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.GE);
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LessThanNode extends DictViewRichcompareNode {
-        @Override
-        protected boolean reverse() {
-            return false;
-        }
+    abstract static class LessThanNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean lenCompare(int lenSelf, int lenOther) {
-            return lenSelf < lenOther;
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DictViewRichcompareHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.LT);
         }
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GreaterThanNode extends DictViewRichcompareNode {
-        @Override
-        protected boolean reverse() {
-            return true;
-        }
+    abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
 
-        @Override
-        protected boolean lenCompare(int lenSelf, int lenOther) {
-            return lenSelf > lenOther;
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached DictViewRichcompareHelperNode helperNode) {
+            return helperNode.execute(frame, inliningTarget, self, other, ComparisonOp.GT);
         }
     }
 }

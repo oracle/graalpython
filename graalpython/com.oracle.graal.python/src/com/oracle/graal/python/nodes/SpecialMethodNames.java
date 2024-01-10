@@ -207,9 +207,6 @@ public abstract class SpecialMethodNames {
     public static final String J___MUL__ = "__mul__";
     public static final TruffleString T___MUL__ = tsLiteral(J___MUL__);
 
-    public static final String J___DIV__ = "__div__";
-// public static final TruffleString T___DIV__ = tsLiteral(J___DIV__);
-
     public static final String J___MATMUL__ = "__matmul__";
     public static final TruffleString T___MATMUL__ = tsLiteral(J___MATMUL__);
 

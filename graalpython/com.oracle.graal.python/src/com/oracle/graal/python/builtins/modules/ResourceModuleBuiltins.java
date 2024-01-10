@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -260,8 +261,9 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        PTuple getruusage(@SuppressWarnings("unused") Object who) {
-            throw raise(ValueError, ErrorMessages.RUSAGE_NOT_YET_IMPLEMENED);
+        static PTuple getruusage(@SuppressWarnings("unused") Object who,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.RUSAGE_NOT_YET_IMPLEMENED);
         }
     }
 
@@ -269,7 +271,7 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetPageSizeNode extends PythonBuiltinNode {
         @Specialization
-        int getPageSize() {
+        static int getPageSize() {
             return 4096;
         }
     }

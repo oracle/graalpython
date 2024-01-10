@@ -111,7 +111,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBuiltin(frame, func, 3)") PythonBuiltinBaseNode builtinNode) {
-        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg2, arg1, arg3);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse"}, //
@@ -129,7 +129,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBuiltin(frame, func, 3)") PythonBuiltinBaseNode builtinNode) {
-        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg2, arg1, arg3);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")

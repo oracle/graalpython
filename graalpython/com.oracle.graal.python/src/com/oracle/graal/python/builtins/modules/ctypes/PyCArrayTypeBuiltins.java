@@ -59,6 +59,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -107,7 +109,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
     protected abstract static class PyCArrayTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
-        Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+        static Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrType,
                         @Cached PyObjectLookupAttr lookupAttrLength,
@@ -118,14 +120,15 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
             Object length_attr = lookupAttrLength.execute(frame, inliningTarget, result, T__LENGTH_);
             if (length_attr == PNone.NO_VALUE) {
-                throw raise(AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
             }
 
             int length;
@@ -133,26 +136,26 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                 length = asSizeNode.executeExact(frame, inliningTarget, length_attr);
             } catch (PException e) {
                 if (e.expectTypeOrOverflowError(inliningTarget, profile)) {
-                    throw raise(OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
                 } else {
-                    throw raise(TypeError, THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER);
                 }
             }
 
             if (length < 0) {
-                throw raise(ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
             }
 
             Object type_attr = lookupAttrType.execute(frame, inliningTarget, result, T__TYPE_);
             if (type_attr == PNone.NO_VALUE) {
-                throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
 
             StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
 
-            StgDictObject itemdict = pyTypeStgDictNode.execute(type_attr);
+            StgDictObject itemdict = pyTypeStgDictNode.execute(inliningTarget, type_attr);
             if (itemdict == null) {
-                throw raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
+                throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
             }
 
             assert itemdict.format != null;
@@ -168,7 +171,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
 
             int itemsize = itemdict.size;
             if (itemsize != 0 && length > Integer.MAX_VALUE / itemsize) {
-                throw raise(OverflowError, ARRAY_TOO_LARGE);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ARRAY_TOO_LARGE);
             }
 
             int itemalign = itemdict.align;
@@ -200,9 +203,9 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
              * strings!
              */
             if (itemdict.getfunc == FieldDesc.c.getfunc) {
-                LazyPyCArrayTypeBuiltins.createCharArrayGetSet(getLanguage(), result);
+                LazyPyCArrayTypeBuiltins.createCharArrayGetSet(PythonLanguage.get(inliningTarget), result);
             } else if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
-                LazyPyCArrayTypeBuiltins.createWCharArrayGetSet(getLanguage(), result);
+                LazyPyCArrayTypeBuiltins.createWCharArrayGetSet(PythonLanguage.get(inliningTarget), result);
             }
 
             return result;

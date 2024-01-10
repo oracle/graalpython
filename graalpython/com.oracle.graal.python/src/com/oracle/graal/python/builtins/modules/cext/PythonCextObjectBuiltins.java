@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -56,6 +57,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
 
@@ -80,10 +83,14 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolvePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -95,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNod
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -108,6 +116,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -118,9 +127,11 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -133,15 +144,64 @@ import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class PythonCextObjectBuiltins {
+public abstract class PythonCextObjectBuiltins {
+
+    private PythonCextObjectBuiltins() {
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Py_ssize_t}, call = Ignored)
+    abstract static class PyTruffle_NotifyRefCount extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasRefProfile) {
+            assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
+            wrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {Pointer, Int}, call = Ignored)
+    abstract static class PyTruffle_BulkNotifyRefCount extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object arrayPointer, int len,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasRefProfile,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached ToPythonWrapperNode toPythonWrapperNode) {
+
+            /*
+             * It may happen that due to several inc- and decrefs applied to a borrowed reference,
+             * that the same pointer is in the list several times. To avoid crashed, we do the
+             * processing in two phases: first, we resolve the pointers to wrappers and second, we
+             * update the reference counts. In this way, we avoid that a reference is made weak when
+             * processed the first time and may then be invalid if processed the second time.
+             */
+            PythonNativeWrapper[] resolved = new PythonNativeWrapper[len];
+            for (int i = 0; i < resolved.length; i++) {
+                Object elem = readPointerNode.readArrayElement(arrayPointer, i);
+                resolved[i] = toPythonWrapperNode.executeWrapper(elem, false);
+            }
+            for (int i = 0; i < resolved.length; i++) {
+                if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                    long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
+                    objectNativeWrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+                }
+            }
+            return PNone.NO_VALUE;
+        }
+    }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Direct)
     abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastArgsNode castArgsNode,
                         @Cached CastKwargsNode castKwargsNode,
                         @Cached CallNode callNode) {
@@ -150,9 +210,9 @@ public class PythonCextObjectBuiltins {
             if (singleArg != 0) {
                 args = new Object[]{argsObj};
             } else {
-                args = castArgsNode.execute(null, argsObj);
+                args = castArgsNode.execute(null, inliningTarget, argsObj);
             }
-            PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
+            PKeyword[] keywords = castKwargsNode.execute(inliningTarget, kwargsObj);
             return callNode.execute(null, callable, args, keywords);
         }
     }
@@ -162,14 +222,15 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         static Object doFunction(Object callable, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached NativeToPythonNode toJavaNode) {
-            return callFunction(callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return callFunction(inliningTarget, callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
 
-        static Object callFunction(Object callable, Object vaList,
+        static Object callFunction(Node inliningTarget, Object callable, Object vaList,
                         GetNextVaArgNode getVaArgs,
                         InteropLibrary argLib,
                         CallNode callNode,
@@ -183,7 +244,7 @@ public class PythonCextObjectBuiltins {
             while (true) {
                 Object object;
                 try {
-                    object = getVaArgs.execute(vaList);
+                    object = getVaArgs.execute(inliningTarget, vaList);
                 } catch (InteropException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -207,6 +268,7 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         static Object doMethod(Object receiver, Object methodName, Object vaList,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
@@ -214,7 +276,7 @@ public class PythonCextObjectBuiltins {
                         @Cached NativeToPythonNode toJavaNode) {
 
             Object method = getAnyAttributeNode.executeObject(null, receiver, methodName);
-            return PyTruffleObject_CallFunctionObjArgs.callFunction(method, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return PyTruffleObject_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
     }
 
@@ -230,7 +292,7 @@ public class PythonCextObjectBuiltins {
             if (singleArg != 0) {
                 args = new Object[]{argsObj};
             } else {
-                args = castArgsNode.execute(null, argsObj);
+                args = castArgsNode.execute(null, inliningTarget, argsObj);
             }
             return callMethod.execute(null, inliningTarget, receiver, methodName, args);
         }
@@ -395,7 +457,19 @@ public class PythonCextObjectBuiltins {
         @Specialization
         static Object asFileDescriptor(Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached TruffleString.EqualNode eqNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode) {
+            if (!longCheckNode.execute(inliningTarget, obj)) {
+                Object posixSupport = PythonContext.get(inliningTarget).getPosixSupport();
+                if (eqNode.execute(T_JAVA, posixLib.getBackend(posixSupport), TS_ENCODING)) {
+                    // For non Python `int' objects, we refuse to hand out the fileno
+                    // field when using the emulated Posix backend, because it is likely
+                    // a fake.
+                    return -1;
+                }
+            }
             return asFileDescriptorNode.execute(null, inliningTarget, obj);
         }
     }
@@ -426,11 +500,11 @@ public class PythonCextObjectBuiltins {
         static int hasAttr(Object obj, Object attr,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached BranchProfile exceptioBranchProfile) {
+                        @Cached InlinedBranchProfile exceptioBranchProfile) {
             try {
                 return lookupAttrNode.execute(null, inliningTarget, obj, attr) != PNone.NO_VALUE ? 1 : 0;
             } catch (PException e) {
-                exceptioBranchProfile.enter();
+                exceptioBranchProfile.enter(inliningTarget);
                 return 0;
             }
         }
@@ -439,8 +513,9 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
-        Object unhashable(Object obj) {
-            throw raise(PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
+        static Object unhashable(Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
         }
     }
 
@@ -461,41 +536,42 @@ public class PythonCextObjectBuiltins {
             return bytes;
         }
 
-        @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(inliningTarget, bytes, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(inliningTarget, bytes, getClassNode, isSubtypeNode)"}, limit = "1")
         static Object bytes(Object bytes,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtypeNode) {
             return bytes;
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
-        Object bytes(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Exclusive @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+        static Object bytes(Object obj,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached BytesNode bytesNode) {
             return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "!hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
         static Object bytes(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Exclusive @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PyBytes_FromObject fromObjectNode) {
             return fromObjectNode.execute(obj);
         }
 
         @Specialization(guards = "isNoValue(obj)")
-        Object bytesNoValue(@SuppressWarnings("unused") Object obj) {
+        static Object bytesNoValue(@SuppressWarnings("unused") Object obj,
+                        @Cached PythonObjectFactory factory) {
             /*
              * Note: CPython calls PyBytes_FromString("<NULL>") but we do not directly have it.
              * Therefore, we directly create the bytes object with string "<NULL>" here.
              */
-            return factory().createBytes(BytesUtils.NULL_STRING);
+            return factory.createBytes(BytesUtils.NULL_STRING);
         }
 
         protected static boolean hasBytes(Node inliningTarget, Object obj, PyObjectLookupAttr lookupAttrNode) {
@@ -569,13 +645,16 @@ public class PythonCextObjectBuiltins {
              * At this point we don't know if the pointer is invalid, so we try to resolve it to an
              * object.
              */
-            Object resolved = isWrapper ? ptrObject : ResolveHandleNodeGen.getUncached().execute(ptrObject);
+            Object resolved = isWrapper ? ptrObject : ResolvePointerNode.executeUncached(ptrObject);
             Object pythonObject;
             long refCnt;
             // We need again check if 'resolved' is a wrapper in case we resolved a handle.
-            if (CApiGuards.isNativeWrapper(resolved)) {
-                PythonNativeWrapper wrapper = (PythonNativeWrapper) resolved;
-                refCnt = wrapper.getRefCount();
+            if (resolved instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                if (objectNativeWrapper.isNative()) {
+                    refCnt = objectNativeWrapper.getRefCount();
+                } else {
+                    refCnt = PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                }
             } else {
                 refCnt = readI64.read(PythonToNativeNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
             }

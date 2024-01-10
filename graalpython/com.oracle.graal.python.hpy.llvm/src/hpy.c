@@ -39,7 +39,6 @@
  * SOFTWARE.
  */
 #include "hpy.h"
-#include "hpytypes.h"
 #include "structmember.h"
 #include <graalvm/llvm/polyglot.h>
 #include <truffle.h>
@@ -48,6 +47,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "autogen_c_access.h"
+
 
 #define SRC_CS "utf-8"
 #define UNWRAP(_h) ((_h)._i)
@@ -55,60 +56,39 @@
 
 /* References to the managed HPy contexts (Java objects). */
 static HPyContext *g_universal_ctx;
-static HPyContext *g_debug_ctx;
 
 typedef HPyDef* HPyDefPtr;
 typedef PyMemberDef cpy_PyMemberDef;
 typedef PyGetSetDef cpy_PyGetSetDef;
 typedef PyType_Slot cpy_PyTypeSlot;
+typedef void* VoidPtr;
 
+POLYGLOT_DECLARE_TYPE(VoidPtr);
 POLYGLOT_DECLARE_TYPE(HPy)
-POLYGLOT_DECLARE_TYPE(HPyField)
-POLYGLOT_DECLARE_TYPE(HPyGlobal)
 POLYGLOT_DECLARE_TYPE(HPyContext)
-POLYGLOT_DECLARE_TYPE(HPyThreadState)
-POLYGLOT_DECLARE_TYPE(HPyDef)
-POLYGLOT_DECLARE_TYPE(HPyDef_Kind)
-POLYGLOT_DECLARE_TYPE(HPyDefPtr)
-POLYGLOT_DECLARE_TYPE(HPySlot)
-POLYGLOT_DECLARE_TYPE(HPyMeth)
-POLYGLOT_DECLARE_TYPE(HPyFunc_Signature)
-POLYGLOT_DECLARE_TYPE(cpy_PyMethodDef)
-POLYGLOT_DECLARE_TYPE(cpy_PyMemberDef)
-POLYGLOT_DECLARE_TYPE(cpy_PyTypeSlot)
-POLYGLOT_DECLARE_TYPE(cpy_PyGetSetDef)
-POLYGLOT_DECLARE_TYPE(HPyMember_FieldType)
-POLYGLOT_DECLARE_TYPE(HPyMember)
-POLYGLOT_DECLARE_TYPE(HPyGetSet)
-POLYGLOT_DECLARE_TYPE(HPyModuleDef)
-POLYGLOT_DECLARE_TYPE(wchar_t)
-POLYGLOT_DECLARE_TYPE(HPyType_Spec)
-POLYGLOT_DECLARE_TYPE(HPyType_SpecParam)
-POLYGLOT_DECLARE_TYPE(HPyCapsule_Destructor)
+POLYGLOT_DECLARE_TYPE(int8_t)
 
-int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject) {
+int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject, int32_t *c_type_sizes, int32_t *c_field_offsets) {
 	// save context in global for NFI upcalls
 	g_universal_ctx = context;
 
 	// register the native type of HPy
 	polyglot_invoke(initObject, "setHPyContextNativeType", polyglot_HPyContext_typeid());
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
-	polyglot_invoke(initObject, "setHPyFieldNativeType", polyglot_HPyField_typeid());
 	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
 
-	// register size of wchar_t
-	polyglot_invoke(initObject, "setWcharSize", sizeof(wchar_t));
+    if (fill_c_type_sizes(c_type_sizes)) {
+        return 1;
+    }
+    if (fill_c_field_offsets(c_field_offsets)) {
+        return 1;
+    }
 
 	return 0;
 }
 
-void *graal_hpy_long2ptr(int64_t lval) {
-	return (void *)lval;
-}
-
-/* Call from Java if the HPy debug context is initialized. */
-void graal_hpy_set_debug_context(HPyContext *debug_ctx) {
-	g_debug_ctx = debug_ctx;
+void *graal_hpy_get_element_ptr(void *base, int64_t offset) {
+	return base + offset;
 }
 
 void* graal_hpy_calloc(size_t count, size_t eltsize) {
@@ -117,86 +97,6 @@ void* graal_hpy_calloc(size_t count, size_t eltsize) {
 
 void graal_hpy_free(void *ptr) {
 	free(ptr);
-}
-
-char* graal_hpy_strdup(const char *ptr) {
-    return strdup(ptr);
-}
-
-char* graal_hpy_type_name(const char *ptr) {
-    const char *s = strrchr(ptr, '.');
-    if (s == NULL) {
-        s = ptr;
-    }
-    else {
-        s++;
-    }
-    return strdup(s);
-}
-
-void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
-	return polyglot_from_HPy_array(arr, len);
-}
-
-void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
-	return polyglot_from_i8_array(arr, len);
-}
-
-void* graal_hpy_from_wchar_array(wchar_t *arr, uint64_t len) {
-    if (len == -1) {
-        len = (uint64_t) wcslen(arr);
-    }
-	return polyglot_from_wchar_t_array(arr, len);
-}
-
-void* graal_hpy_from_HPyMeth(void *ptr) {
-	return polyglot_from_HPyMeth(ptr);
-}
-
-void* graal_hpy_from_HPyModuleDef(void *ptr) {
-	return polyglot_from_HPyModuleDef(ptr);
-}
-
-void* graal_hpy_from_HPyType_Spec(HPyType_Spec *ptr) {
-	return polyglot_from_HPyType_Spec(ptr);
-}
-
-void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
-	if (ptr != NULL) {
-	    uint64_t len=0;
-	    while (ptr[len].kind) {
-		    len++;
-	    }
-	    return polyglot_from_HPyType_SpecParam_array(ptr, len);
-	}
-	return NULL;
-}
-
-void* graal_hpy_from_HPyCapsule_Destructor(void *ptr) {
-	return polyglot_from_HPyCapsule_Destructor(ptr);
-}
-
-
-void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
-	const char *m_doc = moduleDef->doc;
-	if (m_doc) {
-		return polyglot_from_string(m_doc, SRC_CS);
-	}
-	return polyglot_from_string("", SRC_CS);
-}
-
-/* getters for HPyMeth */
-
-void* graal_hpy_get_ml_name(HPyMeth *methodDef) {
-	return polyglot_from_string(methodDef->name, SRC_CS);
-}
-
-void* graal_hpy_get_ml_doc(HPyMeth *methodDef) {
-	return polyglot_from_string(methodDef->doc, SRC_CS);
-}
-
-HPyFunc_Signature graal_hpy_meth_get_signature(HPyMeth *methodDef) {
-	return methodDef->signature;
 }
 
 void* graal_hpy_get_field_i(HPyField *hf) {
@@ -213,150 +113,6 @@ void* graal_hpy_get_global_i(HPyGlobal *hg) {
 
 void graal_hpy_set_global_i(HPyGlobal *hg, void* i) {
 	hg->_i = i;
-}
-
-/* getters for HPySlot */
-
-HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
-	return slot->slot;
-}
-
-/* getters for HPyCallFunction */
-
-void* graal_hpy_call_function_get_impl(HPyCallFunction *def) {
-	return (void *)def->impl;
-}
-
-/* getters for PyType_Slot */
-
-int graal_hpy_legacy_slot_get_slot(cpy_PyTypeSlot *slot) {
-	return slot->slot;
-}
-
-void* graal_hpy_legacy_slot_get_pfunc(cpy_PyTypeSlot *slot) {
-	return slot->pfunc;
-}
-
-void* graal_hpy_legacy_slot_get_methods(cpy_PyTypeSlot *slot) {
-	uint64_t len=0;
-	cpy_PyMethodDef *legacy_methods = (cpy_PyMethodDef *) slot->pfunc;
-	if (legacy_methods != NULL) {
-		while ((legacy_methods[len]).ml_name != NULL) {
-			len++;
-		}
-		return polyglot_from_cpy_PyMethodDef_array(legacy_methods, len);
-	}
-	return NULL;
-}
-
-void* graal_hpy_legacy_slot_get_members(cpy_PyTypeSlot *slot) {
-	uint64_t len=0;
-	cpy_PyMemberDef *legacy_members = (cpy_PyMemberDef *) slot->pfunc;
-	if (legacy_members != NULL) {
-		while ((legacy_members[len]).name != NULL) {
-			len++;
-		}
-		return polyglot_from_cpy_PyMemberDef_array(legacy_members, len);
-	}
-	return NULL;
-}
-
-void* graal_hpy_legacy_slot_get_descrs(cpy_PyTypeSlot *slot) {
-	uint64_t len=0;
-	cpy_PyGetSetDef *legacy_getset = (cpy_PyGetSetDef *) slot->pfunc;
-	if (legacy_getset != NULL) {
-		while (legacy_getset[len].name != NULL) {
-			len++;
-		}
-		return polyglot_from_cpy_PyGetSetDef_array(legacy_getset, len);
-	}
-	return NULL;
-}
-
-/* getters for legacy cpy_PyMethodDef */
-
-void* graal_hpy_legacy_methoddef_get_ml_name(cpy_PyMethodDef *methodDef) {
-	return polyglot_from_string(methodDef->ml_name, SRC_CS);
-}
-
-/* getters for legacy cpy_PyGetSetDef */
-
-void* graal_hpy_legacy_getsetdef_get_name(cpy_PyGetSetDef *getSetDef) {
-	return polyglot_from_string(getSetDef->name, SRC_CS);
-}
-
-/* getters for HPyDef */
-
-int graal_hpy_def_get_kind(HPyDef *def) {
-	return def->kind;
-}
-
-void* graal_hpy_def_get_slot(HPyDef *def) {
-	return polyglot_from_HPySlot(&(def->slot));
-}
-
-void* graal_hpy_def_get_meth(HPyDef *def) {
-	return polyglot_from_HPyMeth(&(def->meth));
-}
-
-void* graal_hpy_def_get_member(HPyDef *def) {
-	return polyglot_from_HPyMember(&(def->member));
-}
-
-void* graal_hpy_def_get_getset(HPyDef *def) {
-	return polyglot_from_HPyGetSet(&(def->getset));
-}
-
-/* getters for HPyMember */
-
-HPyMember_FieldType graal_hpy_member_get_type(HPyMember *member_def) {
-	return member_def->type;
-}
-
-/* getters for HPyType_SpecParam */
-
-HPyType_SpecParam_Kind graal_hpy_HPyType_SpecParam_get_kind(HPyType_SpecParam *def) {
-	return def->kind;
-}
-
-void* graal_hpy_HPyType_SpecParam_get_object(HPyType_SpecParam *def) {
-	return UNWRAP(def->object);
-}
-
-/* getters for HPyModuleDef */
-
-void* graal_hpy_module_get_legacy_methods(HPyModuleDef *moduleDef) {
-	uint64_t len=0;
-	if (moduleDef->legacy_methods != NULL) {
-		while ((moduleDef->legacy_methods[len]).ml_name != NULL) {
-			len++;
-		}
-		return polyglot_from_cpy_PyMethodDef_array(moduleDef->legacy_methods, len);
-	}
-	return NULL;
-}
-
-void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
-	uint64_t len=0;
-	if (moduleDef->defines) {
-	    while (moduleDef->defines[len] != NULL) {
-		    len++;
-	    }
-	    return polyglot_from_HPyDefPtr_array(moduleDef->defines, len);
-	}
-	return NULL;
-}
-
-uint64_t graal_hpy_module_init_globals(HPyModuleDef *moduleDef, intptr_t startID) {
-	uint64_t len=0;
-	if (moduleDef->globals) {
-	    while (moduleDef->globals[len] != NULL) {
-            moduleDef->globals[len]->_i = startID++;
-		    len++;
-	    }
-	    return len;
-	}
-	return 0;
 }
 
 void* graal_hpy_from_string(const char *ptr) {
@@ -378,35 +134,17 @@ uint64_t graal_hpy_strlen(const char *ptr) {
 	return strlen(ptr);
 }
 
-/* getters for HPyType_Spec */
-
-void* graal_hpy_type_spec_get_defines(HPyType_Spec *type_spec) {
-	uint64_t len=0;
-	if (type_spec->defines) {
-	    while (type_spec->defines[len] != NULL) {
-		    len++;
-	    }
-	    return polyglot_from_HPyDefPtr_array(type_spec->defines, len);
-	}
-	return NULL;
+void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
+    /*
+     * We attach type 'VoidPtr arr[len]' instead of 'HPy arr[len]' because that
+     * saves the additional read of member '_i' if we would use
+     */
+    return polyglot_from_VoidPtr_array(arr, len);
 }
 
-void* graal_hpy_type_spec_get_legacy_slots(HPyType_Spec *type_spec) {
-	uint64_t len=0;
-	cpy_PyTypeSlot *legacy_slots = (cpy_PyTypeSlot *) type_spec->legacy_slots;
-	if (legacy_slots) {
-	    while (legacy_slots[len].slot != 0) {
-		    len++;
-	    }
-	    return polyglot_from_cpy_PyTypeSlot_array(legacy_slots, len);
-	}
-	return NULL;
+void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
+       return polyglot_from_i8_array(arr, len);
 }
-
-int64_t graal_hpy_type_spec_get_builtin_shape(HPyType_Spec *type_spec) {
-	return (int64_t) type_spec->builtin_shape;
-}
-
 
 /*
  * Casts a 'wchar_t*' array to an 'int8_t*' array and also associates the proper length.
@@ -417,32 +155,6 @@ int8_t* graal_hpy_i8_from_wchar_array(wchar_t *arr, uint64_t len) {
         len = (uint64_t) (wcslen(arr) * sizeof(wchar_t));
     }
 	return polyglot_from_i8_array((int8_t *) arr, len);
-}
-
-typedef void* VoidPtr;
-POLYGLOT_DECLARE_TYPE(VoidPtr);
-
-typedef union {
-	void *ptr;
-	float f;
-	double d;
-	int64_t i64;
-	int32_t i32;
-	int16_t i16;
-	int8_t i8;
-	uint64_t u64;
-	uint32_t u32;
-	uint16_t u16;
-	uint8_t u8;
-	/* TODO(fa) this should be a Py_complex; is there any equivalent ? */
-	uint64_t c;
-} OutVar;
-
-POLYGLOT_DECLARE_TYPE(OutVar);
-typedef struct { OutVar *content; } OutVarPtr;
-POLYGLOT_DECLARE_TYPE(OutVarPtr);
-void* graal_hpy_allocate_outvar() {
-	return polyglot_from_OutVarPtr(truffle_managed_malloc(sizeof(OutVarPtr)));
 }
 
 /*
@@ -477,18 +189,6 @@ HPy_buffer* graal_hpy_buffer_to_native(void* buf, HPy obj, HPy_ssize_t len, HPy_
 	return hpy_buffer;
 }
 
-void graal_hpy_buffer_free(HPy_buffer *hpy_buffer) {
-	free(hpy_buffer->format);
-	free(hpy_buffer->shape);
-	free(hpy_buffer->strides);
-	free(hpy_buffer->suboffsets);
-	free(hpy_buffer);
-}
-
-void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
-	p_outvar->content = (OutVar *)va_arg(*p_va, void *);
-}
-
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
     void* graal_hpy_##__jtype__##_array_to_native(const void* jarray, int64_t len) { \
         int64_t i; \
@@ -513,16 +213,56 @@ PRIMITIVE_ARRAY_TO_NATIVE(pointer, VoidPtr, VoidPtr, (VoidPtr));
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
-int graal_hpy_read_s(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, short);
+bool graal_hpy_read_bool(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, bool);
+}
+
+uint8_t graal_hpy_read_ui8(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, uint8_t);
+}
+
+int8_t graal_hpy_read_i8(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, int8_t);
+}
+
+int16_t graal_hpy_read_i16(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, int16_t);
+}
+
+uint16_t graal_hpy_read_ui16(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, uint16_t);
+}
+
+int32_t graal_hpy_read_i32(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, int32_t);
+}
+
+uint32_t graal_hpy_read_ui32(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, uint32_t);
+}
+
+int64_t graal_hpy_read_i64(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, int64_t);
+}
+
+uint64_t graal_hpy_read_ui64(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, uint64_t);
 }
 
 int graal_hpy_read_i(void* object, HPy_ssize_t offset) {
     return ReadMember(object, offset, int);
 }
 
+unsigned int graal_hpy_read_ui(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned int);
+}
+
 long graal_hpy_read_l(void* object, HPy_ssize_t offset) {
     return ReadMember(object, offset, long);
+}
+
+unsigned long graal_hpy_read_ul(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned long);
 }
 
 double graal_hpy_read_f(void* object, HPy_ssize_t offset) {
@@ -533,49 +273,16 @@ double graal_hpy_read_d(void* object, HPy_ssize_t offset) {
     return ReadMember(object, offset, double);
 }
 
-void* graal_hpy_read_string(void* object, HPy_ssize_t offset) {
-    char *ptr = ReadMember(object, offset, char*);
-    if (ptr != NULL) {
-    	return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
-    }
-    return NULL;
+void* graal_hpy_read_ptr(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, void*);
 }
 
-void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
-    char *addr = (char*) (((char*)object) + offset);
-    return polyglot_from_string(addr, "utf-8");
+void* graal_hpy_read_HPy(void* object, HPy_ssize_t offset) {
+    return UNWRAP_FIELD(ReadMember(object, offset, HPy));
 }
 
 void* graal_hpy_read_HPyField(void* object, HPy_ssize_t offset) {
     return UNWRAP_FIELD(ReadMember(object, offset, HPyField));
-}
-
-char graal_hpy_read_c(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, char);
-}
-
-int graal_hpy_read_uc(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, unsigned char);
-}
-
-int graal_hpy_read_us(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, unsigned short);
-}
-
-long graal_hpy_read_ui(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, unsigned int);
-}
-
-unsigned long graal_hpy_read_ul(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, unsigned long);
-}
-
-long long graal_hpy_read_ll(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, long long);
-}
-
-unsigned long long graal_hpy_read_ull(void* object, HPy_ssize_t offset) {
-    return ReadMember(object, offset, unsigned long long);
 }
 
 HPy_ssize_t graal_hpy_read_HPy_ssize_t(void* object, HPy_ssize_t offset) {
@@ -590,8 +297,40 @@ HPy_ssize_t graal_hpy_read_HPy_ssize_t(void* object, HPy_ssize_t offset) {
 
 #define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (value)
 
-void graal_hpy_write_s(void* object, HPy_ssize_t offset, short value) {
-    WriteMember(object, offset, value, short);
+void graal_hpy_write_bool(void* object, HPy_ssize_t offset, bool value) {
+    WriteMember(object, offset, value, bool);
+}
+
+void graal_hpy_write_i8(void* object, HPy_ssize_t offset, int8_t value) {
+    WriteMember(object, offset, value, int8_t);
+}
+
+void graal_hpy_write_ui8(void* object, HPy_ssize_t offset, uint8_t value) {
+    WriteMember(object, offset, value, uint8_t);
+}
+
+void graal_hpy_write_i16(void* object, HPy_ssize_t offset, int16_t value) {
+    WriteMember(object, offset, value, int16_t);
+}
+
+void graal_hpy_write_ui16(void* object, HPy_ssize_t offset, uint16_t value) {
+    WriteMember(object, offset, value, uint16_t);
+}
+
+void graal_hpy_write_i32(void* object, HPy_ssize_t offset, int32_t value) {
+    WriteMember(object, offset, value, int32_t);
+}
+
+void graal_hpy_write_ui32(void* object, HPy_ssize_t offset, uint32_t value) {
+    WriteMember(object, offset, value, uint32_t);
+}
+
+void graal_hpy_write_i64(void* object, HPy_ssize_t offset, int64_t value) {
+    WriteMember(object, offset, value, int64_t);
+}
+
+void graal_hpy_write_ui64(void* object, HPy_ssize_t offset, uint64_t value) {
+    WriteMember(object, offset, value, uint64_t);
 }
 
 void graal_hpy_write_i(void* object, HPy_ssize_t offset, int value) {
@@ -610,21 +349,6 @@ void graal_hpy_write_d(void* object, HPy_ssize_t offset, double value) {
     WriteMember(object, offset, (value), double);
 }
 
-void graal_hpy_write_string(void* object, HPy_ssize_t offset, char* value) {
-    WriteMember(object, offset, value, char*);
-}
-
-void graal_hpy_write_string_in_place(void* object, HPy_ssize_t offset, char* value) {
-	char *addr = (char*) (((char*)object) + offset);
-	size_t n;
-	if (polyglot_has_array_elements(value)) {
-		n = polyglot_get_array_size(value);
-	} else {
-		n = strlen(value);
-	}
-	memcpy(addr, value, n);
-}
-
 void graal_hpy_write_HPy(void* object, HPy_ssize_t offset, void* value) {
     WriteMember(object, offset, WRAP(value), HPy);
 }
@@ -633,32 +357,12 @@ void graal_hpy_write_HPyField(void* object, HPy_ssize_t offset, void* value) {
     WriteMember(object, offset, WRAP_FIELD(value), HPyField);
 }
 
-void graal_hpy_write_c(void* object, HPy_ssize_t offset, char value) {
-    WriteMember(object, offset, value, char);
-}
-
-void graal_hpy_write_uc(void* object, HPy_ssize_t offset, unsigned char value) {
-    WriteMember(object, offset, value, unsigned char);
-}
-
-void graal_hpy_write_us(void* object, HPy_ssize_t offset, unsigned short value) {
-    WriteMember(object, offset, value, unsigned short);
-}
-
 void graal_hpy_write_ui(void* object, HPy_ssize_t offset, unsigned int value) {
     WriteMember(object, offset, value, unsigned int);
 }
 
 void graal_hpy_write_ul(void* object, HPy_ssize_t offset, unsigned long value) {
     WriteMember(object, offset, value, unsigned long);
-}
-
-void graal_hpy_write_ll(void* object, HPy_ssize_t offset, long long value) {
-    WriteMember(object, offset, value, long long);
-}
-
-void graal_hpy_write_ull(void* object, HPy_ssize_t offset, unsigned long long value) {
-    WriteMember(object, offset, value, unsigned long long);
 }
 
 void graal_hpy_write_HPy_ssize_t(void* object, HPy_ssize_t offset, HPy_ssize_t value) {
@@ -671,31 +375,26 @@ void graal_hpy_write_ptr(void* object, HPy_ssize_t offset, void* value) {
 
 #undef WriteMember
 
-typedef void (*destroyfunc)(void *);
+typedef void (*destroyfunc)(void*);
 /* to be used from Java code only */
-int graal_hpy_bulk_free(uint64_t ptrArray[], int64_t len) {
-	int64_t i;
-	uint64_t obj;
-	destroyfunc func;
+int graal_hpy_bulk_free(uint64_t ptrArray[], int64_t len)
+{
+    int64_t i;
+    uint64_t obj;
+    destroyfunc func;
 
-	for (i=0; i < len; i+=2) {
-		obj = ptrArray[i];
-	    func = (destroyfunc) ptrArray[i+1];
-		if (obj) {
-		    if (func != NULL) {
-		        func((void *) obj);
-		    }
-			free((void *) obj);
-		}
-	}
+    for (i = 0; i < len; i += 2) {
+        obj = ptrArray[i];
+        func = (destroyfunc) ptrArray[i + 1];
+        if (obj) {
+            if (func != NULL) {
+                func((void*) obj);
+            }
+            free((void*) obj);
+        }
+    }
     return 0;
 }
-
-POLYGLOT_DECLARE_TYPE(HPy_buffer);
-HPy_buffer *graal_hpy_allocate_buffer() {
-	return polyglot_from_HPy_buffer((HPy_buffer *) malloc(sizeof(HPy_buffer)));
-}
-
 
 /*****************************************************************************/
 /* HPy context helper functions                                              */
@@ -722,7 +421,7 @@ typedef HPyGlobal* _HPyGlobalPtr;
 #define HPyGlobal void*
 #define _HPyCapsule_key int32_t
 
-#define SELECT_CTX(__ctx__) ((__ctx__) == g_universal_ctx ? g_universal_ctx : g_debug_ctx)
+#define SELECT_CTX(__ctx__) (g_universal_ctx)
 
 #define UPCALL_HPY(__name__, __ctx__, ...) polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__)
 #define UPCALL_HPY0(__name__, __ctx__) polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__))

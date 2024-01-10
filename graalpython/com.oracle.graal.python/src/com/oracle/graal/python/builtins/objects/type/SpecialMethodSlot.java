@@ -444,6 +444,10 @@ public enum SpecialMethodSlot {
     private static final Object builtinSlotsInitializationLock = new Object();
     private static volatile boolean builtinSlotsInitialized;
 
+    public static boolean areBuiltinSlotsInitialized() {
+        return builtinSlotsInitialized;
+    }
+
     /**
      * Initialized builtin type according to its respective builtin class. Only context independent
      * values are pushed from the class to the type, because types are shared across contexts. This

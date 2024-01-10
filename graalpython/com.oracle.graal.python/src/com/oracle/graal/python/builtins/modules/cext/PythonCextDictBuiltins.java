@@ -95,19 +95,22 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextDictBuiltins {
 
@@ -115,8 +118,8 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_New extends CApiNullaryBuiltinNode {
 
         @Specialization
-        Object run() {
-            return factory().createDict();
+        static Object run(@Cached PythonObjectFactory factory) {
+            return factory.createDict();
         }
     }
 
@@ -124,7 +127,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyTruffleDict_Next extends CApiBinaryBuiltinNode {
 
         @Specialization
-        Object run(PDict dict, long pos,
+        static Object run(PDict dict, long pos,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
@@ -136,7 +139,8 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached PromoteBorrowedValue promoteKeyNode,
                         @Cached PromoteBorrowedValue promoteValueNode,
-                        @Cached HashingStorageSetItem setItem) {
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached PythonObjectFactory factory) {
             /*
              * We need to promote primitive values and strings to object types for borrowing to work
              * correctly. This is very hard to do mid-iteration, so we do all the promotion for the
@@ -152,7 +156,8 @@ public final class PythonCextDictBuiltins {
                         economicMapProfile.enter(inliningTarget);
                         HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                         while (itNext.execute(inliningTarget, storage, it)) {
-                            if (promoteKeyNode.execute(itKey.execute(inliningTarget, storage, it)) != null || promoteValueNode.execute(itValue.execute(inliningTarget, storage, it)) != null) {
+                            if (promoteKeyNode.execute(inliningTarget, itKey.execute(inliningTarget, storage, it)) != null ||
+                                            promoteValueNode.execute(inliningTarget, itValue.execute(inliningTarget, storage, it)) != null) {
                                 needsRewrite = true;
                                 break;
                             }
@@ -171,11 +176,11 @@ public final class PythonCextDictBuiltins {
                         while (itNext.execute(inliningTarget, storage, it)) {
                             Object key = itKey.execute(inliningTarget, storage, it);
                             Object value = itValue.execute(inliningTarget, storage, it);
-                            Object promotedKey = promoteKeyNode.execute(key);
+                            Object promotedKey = promoteKeyNode.execute(inliningTarget, key);
                             if (promotedKey != null) {
                                 key = promotedKey;
                             }
-                            Object promotedValue = promoteValueNode.execute(value);
+                            Object promotedValue = promoteValueNode.execute(inliningTarget, value);
                             if (promotedValue != null) {
                                 value = promotedValue;
                             }
@@ -196,15 +201,15 @@ public final class PythonCextDictBuiltins {
             it.setState((int) pos - 1);
             boolean hasNext = itNext.execute(inliningTarget, storage, it);
             if (!hasNext) {
-                return getNativeNull();
+                return getNativeNull(inliningTarget);
             }
             Object key = itKey.execute(inliningTarget, storage, it);
             Object value = itValue.execute(inliningTarget, storage, it);
-            assert promoteKeyNode.execute(key) == null;
-            assert promoteValueNode.execute(value) == null;
+            assert promoteKeyNode.execute(inliningTarget, key) == null;
+            assert promoteValueNode.execute(inliningTarget, value) == null;
             long hash = itKeyHash.execute(inliningTarget, storage, it);
             int newPos = it.getState() + 1;
-            return factory().createTuple(new Object[]{key, value, hash, newPos});
+            return factory.createTuple(new Object[]{key, value, hash, newPos});
         }
 
         @Fallback
@@ -245,14 +250,15 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
-        Object copy(PDict dict,
+        static Object copy(PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCopy copyNode) {
-            return factory().createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        PythonNativePointer fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -261,19 +267,19 @@ public final class PythonCextDictBuiltins {
     public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
-        Object getItem(PDict dict, Object key,
+        static Object getItem(PDict dict, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
-                        @Cached BranchProfile noResultProfile) {
+                        @Cached InlinedBranchProfile noResultProfile) {
             try {
                 Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
                 if (res == null) {
-                    noResultProfile.enter();
-                    return getNativeNull();
+                    noResultProfile.enter(inliningTarget);
+                    return getNativeNull(inliningTarget);
                 }
-                Object promotedValue = promoteNode.execute(res);
+                Object promotedValue = promoteNode.execute(inliningTarget, res);
                 if (promotedValue != null) {
                     setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                     return promotedValue;
@@ -281,14 +287,15 @@ public final class PythonCextDictBuiltins {
                 return res;
             } catch (PException e) {
                 // PyDict_GetItem suppresses all exceptions for historical reasons
-                return getNativeNull();
+                return getNativeNull(inliningTarget);
             }
         }
 
         @Specialization(guards = "!isDict(obj)")
-        Object getItem(Object obj, @SuppressWarnings("unused") Object key,
-                        @Cached StrNode strNode) {
-            return raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
+        static Object getItem(Object obj, @SuppressWarnings("unused") Object key,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNode raiseNode) {
+            return raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
 
         protected boolean isDict(Object obj) {
@@ -299,18 +306,18 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
-        Object getItem(PDict dict, Object key,
+        static Object getItem(PDict dict, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
-                        @Cached BranchProfile noResultProfile) {
+                        @Cached InlinedBranchProfile noResultProfile) {
             Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (res == null) {
-                noResultProfile.enter();
-                return getNativeNull();
+                noResultProfile.enter(inliningTarget);
+                return getNativeNull(inliningTarget);
             }
-            Object promotedValue = promoteNode.execute(res);
+            Object promotedValue = promoteNode.execute(inliningTarget, res);
             if (promotedValue != null) {
                 setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                 return promotedValue;
@@ -319,7 +326,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict, @SuppressWarnings("unused") Object key) {
+        PythonNativePointer fallback(Object dict, @SuppressWarnings("unused") Object key) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -336,7 +343,7 @@ public final class PythonCextDictBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public int fallback(Object dict, Object key, Object value) {
+        int fallback(Object dict, Object key, Object value) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -344,15 +351,16 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject, Py_hash_t}, call = Direct)
     abstract static class _PyDict_SetItem_KnownHash extends CApiQuaternaryBuiltinNode {
         @Specialization
-        int setItem(PDict dict, Object key, Object value, Object givenHash,
+        static int setItem(PDict dict, Object key, Object value, Object givenHash,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
-                        @Cached BranchProfile wrongHashProfile) {
+                        @Cached InlinedBranchProfile wrongHashProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (hashNode.execute(null, inliningTarget, key) != castToLong.execute(inliningTarget, givenHash)) {
-                wrongHashProfile.enter();
-                throw raise(PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
+                wrongHashProfile.enter(inliningTarget);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
             }
             setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
@@ -360,7 +368,7 @@ public final class PythonCextDictBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public int fallback(Object dict, Object key, Object value, Object givenHash) {
+        int fallback(Object dict, Object key, Object value, Object givenHash) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -442,13 +450,14 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyDict_Keys extends CApiUnaryBuiltinNode {
         @Specialization
-        Object keys(PDict dict,
-                        @Cached ConstructListNode listNode) {
-            return listNode.execute(null, factory().createDictKeysView(dict));
+        static Object keys(PDict dict,
+                        @Cached ConstructListNode listNode,
+                        @Cached PythonObjectFactory factory) {
+            return listNode.execute(null, factory.createDictKeysView(dict));
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        PythonNativePointer fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -456,13 +465,14 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyDict_Values extends CApiUnaryBuiltinNode {
         @Specialization
-        Object values(PDict dict,
-                        @Cached ConstructListNode listNode) {
-            return listNode.execute(null, factory().createDictValuesView(dict));
+        static Object values(PDict dict,
+                        @Cached ConstructListNode listNode,
+                        @Cached PythonObjectFactory factory) {
+            return listNode.execute(null, factory.createDictValuesView(dict));
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        PythonNativePointer fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -471,14 +481,15 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Merge extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = {"override != 0"})
-        int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
+        static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupKeys,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached CallNode callNode) {
+                        @Shared @Cached CallNode callNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // lookup "keys" to raise the right error:
             if (lookupKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
-                throw raise(AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
             }
             Object updateCallable = lookupAttr.execute(null, inliningTarget, a, T_UPDATE);
             callNode.execute(updateCallable, new Object[]{b});
@@ -495,11 +506,11 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKeyHash itBKeyHash,
                         @Cached HashingStorageGetItemWithHash getAItem,
                         @Cached HashingStorageSetItemWithHash setAItem,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             HashingStorage bStorage = b.getDictStorage();
             HashingStorageIterator bIt = getBIter.execute(inliningTarget, bStorage);
             HashingStorage aStorage = a.getDictStorage();
-            while (loopProfile.profile(itBNext.execute(inliningTarget, bStorage, bIt))) {
+            while (loopProfile.profile(inliningTarget, itBNext.execute(inliningTarget, bStorage, bIt))) {
                 Object key = itBKey.execute(inliningTarget, bStorage, bIt);
                 long hash = itBKeyHash.execute(inliningTarget, bStorage, bIt);
                 if (getAItem.execute(null, inliningTarget, aStorage, key, hash) != null) {
@@ -510,28 +521,28 @@ public final class PythonCextDictBuiltins {
         }
 
         @Specialization(guards = {"override == 0", "!isDict(b)"})
-        int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
+        static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached GetItemNode getKeyNode,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getValueNode,
                         @Cached HashingStorageGetItem getItemA,
                         @Cached HashingStorageSetItem setItemA,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached BranchProfile noKeyProfile) {
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedBranchProfile noKeyProfile) {
             Object attr = getAttrNode.execute(null, inliningTarget, a, T_KEYS);
             PList keys = listNode.execute(null, callNode.execute(null, attr));
 
             SequenceStorage keysStorage = keys.getSequenceStorage();
             HashingStorage aStorage = a.getDictStorage();
             int size = keysStorage.length();
-            loopProfile.profileCounted(size);
-            for (int i = 0; loopProfile.inject(i < size); i++) {
+            loopProfile.profileCounted(inliningTarget, size);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < size); i++) {
                 Object key = getKeyNode.execute(keysStorage, i);
                 if (!getItemA.hasKey(null, inliningTarget, aStorage, key)) {
-                    noKeyProfile.enter();
+                    noKeyProfile.enter(inliningTarget);
                     Object value = getValueNode.execute(null, inliningTarget, b, key);
                     aStorage = setItemA.execute(null, inliningTarget, aStorage, key, value);
                 }
@@ -541,7 +552,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        public int fallback(Object dict, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") Object override) {
+        int fallback(Object dict, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") Object override) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }

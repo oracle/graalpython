@@ -41,13 +41,13 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 
 /**
  * Equivalent of CPython's {@code PySet_CheckExact}.
  */
 public abstract class PySetCheckExactNode {
     public static boolean executeUncached(Object object) {
-        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PSet);
+        return IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PSet);
     }
 }

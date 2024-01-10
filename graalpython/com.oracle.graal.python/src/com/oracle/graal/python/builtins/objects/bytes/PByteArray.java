@@ -27,12 +27,14 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -94,9 +96,9 @@ public final class PByteArray extends PBytesLike {
         this.exports = exports;
     }
 
-    public void checkCanResize(PythonBuiltinBaseNode node) {
+    public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (exports != 0) {
-            throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
     }
 
@@ -197,32 +199,32 @@ public final class PByteArray extends PBytesLike {
     }
 
     @ExportMessage
-    void writeShort(int byteOffset, short value,
+    void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeShort(store, byteOffset, value);
+        bufferLib.writeShortByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeInt(int byteOffset, int value,
+    void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeInt(store, byteOffset, value);
+        bufferLib.writeIntByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeLong(int byteOffset, long value,
+    void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeLong(store, byteOffset, value);
+        bufferLib.writeLongByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeFloat(int byteOffset, float value,
+    void writeFloatByteOrder(int byteOffset, float value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeFloat(store, byteOffset, value);
+        bufferLib.writeFloatByteOrder(store, byteOffset, value, byteOrder);
     }
 
     @ExportMessage
-    void writeDouble(int byteOffset, double value,
+    void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.writeDouble(store, byteOffset, value);
+        bufferLib.writeDoubleByteOrder(store, byteOffset, value, byteOrder);
     }
 }

@@ -115,6 +115,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -287,6 +288,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached ReadAttributeFromDynamicObjectNode readNameNode,
                         @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -297,7 +299,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return run(context, new ModuleSpec(name, path, moduleSpec));
             } catch (ApiInitException ie) {
@@ -340,9 +342,12 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
-        int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
+        static int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached ExecModuleNode execModuleNode) {
+                        @Cached ExecModuleNode execModuleNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
                 return 0;
@@ -357,17 +362,17 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 return 0;
             }
 
-            PythonContext context = getContext();
+            PythonContext context = PythonContext.get(inliningTarget);
             if (!context.hasCApiContext()) {
-                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
             }
 
             /*
              * ExecModuleNode will run the module definition's exec function which may run arbitrary
              * C code. So we need to setup an indirect call.
              */
-            PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return execModuleNode.execute(context.getCApiContext(), extensionModule, nativeModuleDef);
             } finally {
@@ -421,13 +426,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         public static final TruffleString T_LOADER = tsLiteral("loader");
 
         @Specialization
-        public Object run(VirtualFrame frame, PythonObject moduleSpec,
+        static Object run(VirtualFrame frame, PythonObject moduleSpec,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached("create(T___LOADER__)") SetAttributeNode setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
             Object name = lookup.execute(frame, inliningTarget, moduleSpec, T_NAME);
-            PythonModule builtinModule = getContext().lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
+            PythonModule builtinModule = PythonContext.get(inliningTarget).lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
             if (builtinModule != null) {
                 // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
                 // We are setting the loader to the spec loader (since this is the loader that is
@@ -439,7 +444,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 return builtinModule;
             }
-            throw raise(NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
         }
     }
 
@@ -534,28 +540,29 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, TruffleString name, Object dataObj,
+        static Object run(VirtualFrame frame, TruffleString name, Object dataObj,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached InlinedConditionProfile isCodeObjectProfile) {
+                        @Cached InlinedConditionProfile isCodeObjectProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
                     info = new FrozenInfo(bufferLib.getInternalOrCopiedByteArray(dataObj), bufferLib.getBufferLength(dataObj));
                 } finally {
-                    bufferLib.release(dataObj, frame, this);
+                    bufferLib.release(dataObj, frame, indirectCallData);
                 }
                 if (info.size == 0) {
                     /* Does not contain executable code. */
-                    raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+                    raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
                 }
             } else {
-                FrozenResult result = findFrozen(getContext(), name, equalNode);
+                FrozenResult result = findFrozen(PythonContext.get(inliningTarget), name, equalNode);
                 FrozenStatus status = result.status;
                 info = result.info;
-                raiseFrozenError(status, name, raiseNode);
+                raiseFrozenError(status, name, raiseNode.get(inliningTarget));
             }
 
             Object code = null;
@@ -563,11 +570,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
             } catch (MarshalError | NumberFormatException e) {
-                raiseFrozenError(FROZEN_INVALID, name, raiseNode);
+                raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
             }
 
             if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
-                throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
             return code;

@@ -591,6 +591,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     synchronized Signature initializeSignature(RootCallTarget rootCallTarget) {
+        assert PythonContext.get(null).ownsGil(); // otherwise this is racy
         if (signature == null) {
             if (rootCallTarget.getRootNode() instanceof PRootNode) {
                 signature = ((PRootNode) rootCallTarget.getRootNode()).getSignature();
@@ -601,7 +602,7 @@ public final class PCode extends PythonBuiltinObject {
         return signature;
     }
 
-    private RootCallTarget getRootCallTarget() {
+    public RootCallTarget getRootCallTarget() {
         if (callTarget == null) {
             initializeCallTarget();
         }
@@ -610,6 +611,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     synchronized RootCallTarget initializeCallTarget() {
+        assert PythonContext.get(null).ownsGil(); // otherwise this is racy
         if (callTarget == null) {
             callTarget = (RootCallTarget) callTargetSupplier.get();
             callTargetSupplier = null;
@@ -665,7 +667,12 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String toDisassembledString(boolean quickened) {
-        final RootNode rootNode = getRootCallTarget().getRootNode();
+        RootNode rootNode = getRootCallTarget().getRootNode();
+        if (rootNode instanceof PBytecodeGeneratorRootNode r) {
+            rootNode = r.getBytecodeRootNode();
+        } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
+            rootNode = r.getBytecodeRootNode();
+        }
         if (rootNode instanceof PBytecodeRootNode) {
             CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
             if (quickened) {

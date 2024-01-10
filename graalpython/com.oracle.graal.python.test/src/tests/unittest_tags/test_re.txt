@@ -103,6 +103,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists_errors
+*graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists_validation_bug
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_overflow
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_match
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_split

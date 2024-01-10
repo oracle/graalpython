@@ -274,6 +274,10 @@ class EnvBuilder:
             args.append(context.env_dir)
             args = ' '.join(args)
             f.write(f'command = {sys.executable} -m venv {args}\n')
+            # Truffle change: setup our a launcher by adding the path to the creating executable
+            if os.name == 'nt':
+                f.write('venvlauncher_command = %s\n' % (__graalpython__.venvlauncher_command or sys.executable))
+            # End of Truffle change
 
     if os.name != 'nt':
         def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
@@ -337,14 +341,6 @@ class EnvBuilder:
                 return
 
             shutil.copyfile(src, dst)
-            # Truffle change: setup our a launcher by appending the path to the creating executable
-            if src == srcfn:
-                with open(dst, "ab") as f:
-                    sz = f.write((__graalpython__.venvlauncher_command or sys.executable).encode("utf-16le"))
-                    import struct
-                    assert f.write(struct.pack("@I", sz)) == 4
-                    f.flush()
-            # End of Truffle change
 
     def setup_python(self, context):
         """
@@ -430,8 +426,13 @@ class EnvBuilder:
 
     def _setup_pip(self, context):
         """Installs or upgrades pip in a virtual environment"""
-        self._call_new_python(context, '-m', 'ensurepip', '--upgrade',
+        try:
+            self._call_new_python(context, '-m', 'ensurepip', '--upgrade',
                               '--default-pip', stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                print('Error output of "ensurepip":', err.output.decode(errors='replace'), sep='\n\n')
+            raise err
 
     def setup_scripts(self, context):
         """

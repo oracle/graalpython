@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -103,8 +104,9 @@ public final class RepeatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() == 0")
-        Object nextZero(PRepeat self) {
-            throw raiseStopIteration();
+        static Object nextZero(PRepeat self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseStopIteration();
         }
 
         @Specialization(guards = "self.getCnt() < 0")
@@ -123,8 +125,9 @@ public final class RepeatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() < 0")
-        Object hintNeg(PRepeat self) {
-            throw raise(TypeError, LEN_OF_UNSIZED_OBJECT);
+        static Object hintNeg(PRepeat self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, LEN_OF_UNSIZED_OBJECT);
         }
     }
 

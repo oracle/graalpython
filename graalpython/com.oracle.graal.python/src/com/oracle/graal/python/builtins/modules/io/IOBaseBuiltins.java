@@ -320,11 +320,12 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone flush(VirtualFrame frame, PythonObject self,
+        static PNone flush(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookup) {
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isClosed(inliningTarget, self, frame, lookup)) {
-                throw raise(ValueError, ErrorMessages.IO_CLOSED);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
         }
@@ -334,8 +335,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonBuiltinNode {
         @Specialization
-        Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args) {
-            throw unsupported(getRaiseNode(), T_SEEK);
+        static Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args,
+                        @Cached PRaiseNode raiseNode) {
+            throw unsupported(raiseNode, T_SEEK);
         }
     }
 
@@ -343,8 +345,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBuiltinNode {
         @Specialization
-        Object truncate(@SuppressWarnings("unused") PythonObject self) {
-            throw unsupported(getRaiseNode(), T_TRUNCATE);
+        static Object truncate(@SuppressWarnings("unused") PythonObject self,
+                        @Cached PRaiseNode raiseNode) {
+            throw unsupported(raiseNode, T_TRUNCATE);
         }
     }
 
@@ -386,8 +389,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FilenoNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object fileno(@SuppressWarnings("unused") PythonObject self) {
-            throw unsupported(getRaiseNode(), T_FILENO);
+        static Object fileno(@SuppressWarnings("unused") PythonObject self,
+                        @Cached PRaiseNode raiseNode) {
+            throw unsupported(raiseNode, T_FILENO);
         }
     }
 
@@ -419,13 +423,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PythonObject self,
+        static Object next(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectSizeNode sizeNode) {
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
             if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
-                throw raiseStopIteration();
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return line;
         }
@@ -473,7 +478,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:_io__IOBase_readline_impl
          */
         @Specialization
-        PBytes readline(VirtualFrame frame, Object self, int limit,
+        static PBytes readline(VirtualFrame frame, Object self, int limit,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupPeek,
                         @Cached CallNode callPeek,
@@ -481,7 +486,8 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasPeek,
                         @Cached InlinedConditionProfile isBytes,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lookupPeek.execute(frame, inliningTarget, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
@@ -491,7 +497,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     Object readahead = callPeek.execute(frame, peek, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
                     if (isBytes.profile(inliningTarget, !(readahead instanceof PBytes))) {
-                        throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
+                        throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
                     }
                     byte[] buf = bufferLib.getInternalOrCopiedByteArray(readahead);
                     int bufLen = bufferLib.getBufferLength(readahead);
@@ -508,7 +514,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
                 Object b = callRead.execute(frame, inliningTarget, self, T_READ, nreadahead);
                 if (isBytes.profile(inliningTarget, !(b instanceof PBytes))) {
-                    throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
+                    throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(b);
                 int bytesLen = bufferLib.getBufferLength(b);

@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -126,8 +127,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object getClosure(Object self) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
+        static Object getClosure(Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
         }
     }
 
@@ -150,8 +152,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object getGlobals(Object self) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
+        static Object getGlobals(Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
         }
     }
 
@@ -202,8 +205,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object getModule(PBuiltinFunction self, Object value) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
+        static Object getModule(PBuiltinFunction self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
         }
     }
 
@@ -233,8 +237,9 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object getModule(PBuiltinFunction self, Object value) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
+        static Object getModule(PBuiltinFunction self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
         }
     }
 
@@ -257,14 +262,16 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        PNone dict(@SuppressWarnings("unused") PFunction self, Object mapping) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        static PNone dict(@SuppressWarnings("unused") PFunction self, Object mapping,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        Object builtinCode(PBuiltinFunction self, Object mapping) {
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__dict__");
+        static Object builtinCode(PBuiltinFunction self, Object mapping,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__dict__");
         }
     }
 
@@ -276,11 +283,13 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         private static final TruffleString KWARGS = tsLiteral("**kwargs");
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
-                        @Cached ReadAttributeFromObjectNode readNode) {
+        static Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object signature = readNode.execute(self, T___TEXT_SIGNATURE__);
             if (signature == PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "function", "__text_signature__");
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "function", "__text_signature__");
             }
             return signature;
         }
@@ -293,7 +302,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        protected static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
+        static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
             Signature signature = self.getSignature();
             return signatureToText(signature, false);
         }
@@ -360,9 +369,10 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        protected Object setBuiltin(@SuppressWarnings("unused") PBuiltinFunction self,
-                        @SuppressWarnings("unused") Object value) {
-            throw raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__text_signature__", "builtin_function_or_method");
+        static Object setBuiltin(@SuppressWarnings("unused") PBuiltinFunction self,
+                        @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__text_signature__", "builtin_function_or_method");
         }
 
         public static TextSignatureNode create() {

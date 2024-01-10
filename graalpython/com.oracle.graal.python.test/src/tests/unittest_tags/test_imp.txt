@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_bug7732
+*graalpython.lib-python.3.test.test_imp.ImportTests.test_create_builtin_subinterp
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_find_and_load_checked_pyc
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_find_module_encoding
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_import_encoded_module

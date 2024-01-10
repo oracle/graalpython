@@ -58,8 +58,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.CreateGetSetNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.NewClassMethodNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextDescrBuiltins {
@@ -77,9 +80,10 @@ public final class PythonCextDescrBuiltins {
     abstract static class PyTruffleDescr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
-        Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
+        static Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
+                        @Bind("this") Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode) {
-            return createGetSetNode.execute(name, cls, getter, setter, doc, closure);
+            return createGetSetNode.execute(inliningTarget, name, cls, getter, setter, doc, closure);
         }
     }
 
@@ -87,15 +91,17 @@ public final class PythonCextDescrBuiltins {
     abstract static class PyTruffleDescr_NewClassMethod extends CApi7BuiltinNode {
 
         @Specialization
-        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
-                        @Cached NewClassMethodNode newClassMethodNode) {
-            Object func = newClassMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, type, doc);
+        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
+                        @Bind("this") Node inliningTarget,
+                        @Cached NewClassMethodNode newClassMethodNode,
+                        @Cached PythonObjectFactory factory) {
+            Object func = newClassMethodNode.execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, type, doc);
             if (!isClassOrStaticMethod(flags)) {
                 /*
                  * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we
                  * need to do so here.
                  */
-                func = factory().createClassmethodFromCallableObj(func);
+                func = factory.createClassmethodFromCallableObj(func);
             }
             return func;
         }

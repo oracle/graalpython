@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -78,8 +78,8 @@ public class CDataObject extends PythonBuiltinObject {
         this.b_needsfree = b_needsfree;
     }
 
-    public static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
-        return new CDataObjectWrapper(dictObject, storage);
+    public static CDataObjectWrapper createWrapper(Object delegate, StgDictObject dictObject, byte[] storage) {
+        return new CDataObjectWrapper(delegate, dictObject, storage);
     }
 
     @ExportMessage
@@ -142,20 +142,18 @@ public class CDataObject extends PythonBuiltinObject {
 
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)
-    public static class CDataObjectWrapper extends PythonNativeWrapper {
+    public static final class CDataObjectWrapper extends PythonAbstractObjectNativeWrapper {
 
-        final byte[] storage;
-        final StgDictObject stgDict;
-
-        Object nativePointer;
+        private final byte[] storage;
+        private final StgDictObject stgDict;
 
         private String[] members;
 
-        public CDataObjectWrapper(StgDictObject stgDict, byte[] storage) {
+        public CDataObjectWrapper(Object delegate, StgDictObject stgDict, byte[] storage) {
+            super(delegate);
             this.storage = storage;
             assert stgDict != null;
             this.stgDict = stgDict;
-            this.nativePointer = null;
         }
 
         private int getIndex(String field, CastToJavaStringNode toJavaStringNode) {
@@ -192,13 +190,13 @@ public class CDataObject extends PythonBuiltinObject {
         }
 
         @ExportMessage
-        final boolean isMemberModifiable(String member,
+        boolean isMemberModifiable(String member,
                         @Shared @Cached CastToJavaStringNode toJavaStringNode) {
             return isMemberReadable(member, toJavaStringNode);
         }
 
         @ExportMessage
-        final boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
             return false;
         }
 
@@ -226,21 +224,22 @@ public class CDataObject extends PythonBuiltinObject {
         // TO POINTER / AS POINTER / TO NATIVE
 
         @ExportMessage
-        protected boolean isPointer() {
+        boolean isPointer() {
             return isNative();
         }
 
         @ExportMessage
-        public long asPointer() {
+        long asPointer() {
             return getNativePointer();
         }
 
         @ExportMessage
-        protected void toNative(
+        void toNative(
                         @Bind("$node") Node inliningTarget,
-                        @Cached InlinedConditionProfile isNativeProfile) {
+                        @Cached InlinedConditionProfile isNativeProfile,
+                        @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
             if (!isNative(inliningTarget, isNativeProfile)) {
-                CApiTransitions.firstToNative(this);
+                setNativePointer(firstToNativeNode.execute(inliningTarget, this));
             }
         }
     }
