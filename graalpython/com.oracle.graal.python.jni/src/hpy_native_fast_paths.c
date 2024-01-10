@@ -93,6 +93,7 @@ static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+static int (*original_IsTrue)(HPyContext *ctx, HPy h);
 static HPy (*original_Type)(HPyContext *ctx, HPy obj);
 static HPy (*original_Add)(HPyContext *ctx, HPy h1, HPy h2);
 static HPy (*original_Subtract)(HPyContext *ctx, HPy h1, HPy h2);
@@ -123,6 +124,18 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     } else {
         return 0;
     }
+}
+
+static int augment_IsTrue(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return unboxInt(bits) != 0;
+    } else if (isBoxedDouble(bits)) {
+        return unboxDouble(bits) != 0.0;
+    } else if (augment_Is(ctx, ctx->h_None, h)) {
+        return 0;
+    }
+    return original_IsTrue(ctx, h);
 }
 
 static void *augment_AsStruct_Object(HPyContext *ctx, HPy h) {
@@ -457,6 +470,8 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(Field_Store);
 
     AUGMENT(Is);
+
+    AUGMENT(IsTrue);
 
     AUGMENT(Type);
 
