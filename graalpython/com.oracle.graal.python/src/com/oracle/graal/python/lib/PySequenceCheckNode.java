@@ -106,11 +106,13 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "GetItem", inline = false) LookupCallableSlotInMRONode lookupGetItem,
+                    @Cached(parameters = "Len", inline = false) LookupCallableSlotInMRONode lookupLen,
                     @Cached LazyInteropLibrary lazyLib) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lazyLib.get(inliningTarget).hasArrayElements(object);
         }
-        return lookupGetItem.execute(type) != PNone.NO_VALUE;
+        // sequence definition: https://docs.python.org/3.11/glossary.html#term-sequence
+        return lookupGetItem.execute(type) != PNone.NO_VALUE && lookupLen.execute(type) != PNone.NO_VALUE;
     }
 }
