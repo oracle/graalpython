@@ -125,23 +125,29 @@ PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
 #define Py_Is(x, y) ((x) == (y))
 
 
-PyAPI_FUNC(Py_ssize_t) Py_REFCNT(PyObject *ob);
-
+PyAPI_FUNC(Py_ssize_t) PyTruffle_REFCNT(PyObject *ob);
+static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
+    return PyTruffle_REFCNT(ob);
+}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_REFCNT(ob) Py_REFCNT(_PyObject_CAST(ob))
 #endif
 
 
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
-PyAPI_FUNC(PyTypeObject*) Py_TYPE(PyObject *ob);
-
+PyAPI_FUNC(PyTypeObject*) PyTruffle_TYPE(PyObject *ob);
+static inline PyTypeObject* Py_TYPE(PyObject *ob) {
+    return PyTruffle_TYPE(ob);
+}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_TYPE(ob) Py_TYPE(_PyObject_CAST(ob))
 #endif
 
 // bpo-39573: The Py_SET_SIZE() function must be used to set an object size.
-PyAPI_FUNC(Py_ssize_t) Py_SIZE(PyObject *ob);
-
+PyAPI_FUNC(Py_ssize_t) PyTruffle_SIZE(PyObject *ob);
+static inline Py_ssize_t Py_SIZE(PyObject *ob) {
+    return PyTruffle_SIZE(ob);
+}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SIZE(ob) Py_SIZE(_PyObject_CAST(ob))
 #endif
@@ -155,22 +161,28 @@ static inline int Py_IS_TYPE(PyObject *ob, PyTypeObject *type) {
 #endif
 
 
-PyAPI_FUNC(void) Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt);
-
+PyAPI_FUNC(void) PyTruffle_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt);
+static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
+    PyTruffle_SET_REFCNT(ob, refcnt);
+}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_REFCNT(ob, refcnt) Py_SET_REFCNT(_PyObject_CAST(ob), refcnt)
 #endif
 
 
-PyAPI_FUNC(void) Py_SET_TYPE(PyObject *ob, PyTypeObject *type);
-
+PyAPI_FUNC(void) PyTruffle_SET_TYPE(PyObject *ob, PyTypeObject *type);
+static inline void Py_SET_TYPE(PyObject *ob, PyTypeObject *type) {
+    PyTruffle_SET_TYPE(ob, type);
+}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_TYPE(ob, type) Py_SET_TYPE(_PyObject_CAST(ob), type)
 #endif
 
 
-PyAPI_DATA(void) Py_SET_SIZE(PyVarObject *ob, Py_ssize_t size);
-
+PyAPI_FUNC(void) PyTruffle_SET_SIZE(PyVarObject *ob, Py_ssize_t size);
+static inline void Py_SET_SIZE(PyVarObject *ob, Py_ssize_t size) {
+    PyTruffle_SET_SIZE(ob, size);
+}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_SIZE(ob, size) Py_SET_SIZE(_PyVarObject_CAST(ob), size)
 #endif
@@ -724,7 +736,12 @@ static inline int
 PyType_HasFeature(PyTypeObject *type, unsigned long feature)
 {
     unsigned long flags;
+#ifdef Py_LIMITED_API
+    // PyTypeObject is opaque in the limited C API
     flags = PyType_GetFlags(type);
+#else
+    flags = type->tp_flags;
+#endif
     return ((flags & feature) != 0);
 }
 

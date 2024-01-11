@@ -11,44 +11,6 @@
 #include "pycore_object.h"
 #include "pycore_pymem.h"         // _PyMem_IsPtrFreed()
 
-#undef Py_REFCNT
-Py_ssize_t Py_REFCNT(PyObject *obj) {
-	return PyObject_ob_refcnt(obj);
-}
-
-#undef Py_SET_REFCNT
-void Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-	set_PyObject_ob_refcnt(obj, cnt);
-}
-
-#undef Py_TYPE
-PyTypeObject* Py_TYPE(PyObject *a) {
-	return PyObject_ob_type(a);
-}
-
-#undef Py_SIZE
-Py_ssize_t Py_SIZE(PyObject *a) {
-	return PyVarObject_ob_size(a);
-}
-
-#undef Py_SET_TYPE
-void Py_SET_TYPE(PyObject *a, PyTypeObject *b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the type of an object is not supported\n");
-	} else {
-		a->ob_type = b;
-	}
-}
-
-#undef Py_SET_SIZE
-void Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the size of an object is not supported\n");
-	} else {
-		a->ob_size = b;
-	}
-}
-
 // 134
 void Py_IncRef(PyObject *op)
 {
@@ -584,9 +546,11 @@ _PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method)
 void
 _Py_NewReference(PyObject *op)
 {
+    /* GraalPy change
     if (_Py_tracemalloc_config.tracing) {
         _PyTraceMalloc_NewReference(op);
     }
+    */
 #ifdef Py_REF_DEBUG
     _Py_RefTotal++;
 #endif
@@ -701,7 +665,7 @@ int Py_IsFalse(PyObject *x)
 }
 
 // GraalPy additions
-Py_ssize_t _Py_REFCNT(const PyObject *obj) {
+Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return IMMORTAL_REFCNT;
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
@@ -724,7 +688,7 @@ Py_ssize_t _Py_REFCNT(const PyObject *obj) {
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
-Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return IMMORTAL_REFCNT;
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
@@ -744,11 +708,10 @@ Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
         dest = obj;
     }
     dest->ob_refcnt = cnt;
-	return cnt;
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
-PyTypeObject* _Py_TYPE(const PyObject *a) {
+PyTypeObject* PyTruffle_TYPE(PyObject *a) {
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return PyObject_ob_type(a);
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
@@ -771,18 +734,18 @@ PyTypeObject* _Py_TYPE(const PyObject *a) {
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
-Py_ssize_t _Py_SIZE(const PyVarObject *a) {
+Py_ssize_t PyTruffle_SIZE(PyObject *a) {
 	return PyVarObject_ob_size(a);
 }
 
-void _Py_SET_TYPE(PyObject *a, PyTypeObject *b) {
+void PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b) {
 	if (points_to_py_handle_space(a)) {
 		printf("changing the type of an object is not supported\n");
 	} else {
 		a->ob_type = b;
 	}
 }
-void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
+void PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
 	if (points_to_py_handle_space(a)) {
 		printf("changing the size of an object is not supported\n");
 	} else {

@@ -137,6 +137,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -233,6 +234,17 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
+    abstract static class Py_get_PyASCIIObject_state_interned extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int get(PString object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+            return isInternedStringNode.execute(inliningTarget, object) ? 1 : 0;
         }
     }
 

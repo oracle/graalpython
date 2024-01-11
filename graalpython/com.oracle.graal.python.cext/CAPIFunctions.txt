@@ -16,15 +16,12 @@ PyBuffer_IsContiguous;int;const Py_buffer*|char
 PyBuffer_Release;void;Py_buffer*
 PyBuffer_SizeFromFormat;Py_ssize_t;const char*
 PyBuffer_ToContiguous;int;void*|const Py_buffer*|Py_ssize_t|char
-PyByteArray_AS_STRING;char*;PyObject*
 PyByteArray_AsString;char*;PyObject*
 PyByteArray_Concat;PyObject*;PyObject*|PyObject*
 PyByteArray_FromObject;PyObject*;PyObject*
 PyByteArray_FromStringAndSize;PyObject*;const char*|Py_ssize_t
-PyByteArray_GET_SIZE;Py_ssize_t;PyObject*
 PyByteArray_Resize;int;PyObject*|Py_ssize_t
 PyByteArray_Size;Py_ssize_t;PyObject*
-PyBytes_AS_STRING;char*;PyObject*
 PyBytes_AsString;char*;PyObject*
 PyBytes_AsStringAndSize;int;PyObject*|char**|Py_ssize_t*
 PyBytes_Concat;void;PyObject**|PyObject*
@@ -35,14 +32,9 @@ PyBytes_FromFormatV;PyObject*;const char*|va_list
 PyBytes_FromObject;PyObject*;PyObject*
 PyBytes_FromString;PyObject*;const char*
 PyBytes_FromStringAndSize;PyObject*;const char*|Py_ssize_t
-PyBytes_GET_SIZE;Py_ssize_t;PyObject*
 PyBytes_Repr;PyObject*;PyObject*|int
 PyBytes_Size;Py_ssize_t;PyObject*
 PyCFunction_Call;PyObject*;PyObject*|PyObject*|PyObject*
-PyCFunction_GET_CLASS;PyTypeObject*;PyObject*
-PyCFunction_GET_FLAGS;int;PyObject*
-PyCFunction_GET_FUNCTION;PyCFunction;PyObject*
-PyCFunction_GET_SELF;PyObject*;PyObject*
 PyCFunction_GetFlags;int;PyObject*
 PyCFunction_GetFunction;PyCFunction;PyObject*
 PyCFunction_GetSelf;PyObject*;PyObject*
@@ -322,13 +314,11 @@ PyIter_Next;PyObject*;PyObject*
 PyIter_Send;PySendResult;PyObject*|PyObject*|PyObject**
 PyList_Append;int;PyObject*|PyObject*
 PyList_AsTuple;PyObject*;PyObject*
-PyList_GET_SIZE;Py_ssize_t;PyObject*
 PyList_GetItem;PyObject*;PyObject*|Py_ssize_t
 PyList_GetSlice;PyObject*;PyObject*|Py_ssize_t|Py_ssize_t
 PyList_Insert;int;PyObject*|Py_ssize_t|PyObject*
 PyList_New;PyObject*;Py_ssize_t
 PyList_Reverse;int;PyObject*
-PyList_SET_ITEM;void;PyObject*|Py_ssize_t|PyObject*
 PyList_SetItem;int;PyObject*|Py_ssize_t|PyObject*
 PyList_SetSlice;int;PyObject*|Py_ssize_t|Py_ssize_t|PyObject*
 PyList_Size;Py_ssize_t;PyObject*
@@ -475,9 +465,7 @@ PyObject_CallFinalizerFromDealloc;int;PyObject*
 PyObject_CallFunction;PyObject*;PyObject*|const char*|...
 PyObject_CallFunctionObjArgs;PyObject*;PyObject*|...
 PyObject_CallMethod;PyObject*;PyObject*|const char*|const char*|...
-PyObject_CallMethodNoArgs;PyObject*;PyObject*|PyObject*
 PyObject_CallMethodObjArgs;PyObject*;PyObject*|PyObject*|...
-PyObject_CallMethodOneArg;PyObject*;PyObject*|PyObject*|PyObject*
 PyObject_CallNoArgs;PyObject*;PyObject*
 PyObject_CallObject;PyObject*;PyObject*|PyObject*
 PyObject_CallOneArg;PyObject*;PyObject*|PyObject*
@@ -535,7 +523,6 @@ PyObject_SetItem;int;PyObject*|PyObject*|PyObject*
 PyObject_Size;Py_ssize_t;PyObject*
 PyObject_Str;PyObject*;PyObject*
 PyObject_Type;PyObject*;PyObject*
-PyObject_TypeCheck;int;PyObject*|PyTypeObject*
 PyObject_Vectorcall;PyObject*;PyObject*|PyObject*const*|size_t|PyObject*
 PyObject_VectorcallDict;PyObject*;PyObject*|PyObject*const*|size_t|PyObject*
 PyObject_VectorcallMethod;PyObject*;PyObject*|PyObject*const*|size_t|PyObject*
@@ -676,16 +663,12 @@ PyTraceBack_Here;int;PyFrameObject*
 PyTraceBack_Print;int;PyObject*|PyObject*
 PyTraceMalloc_Track;int;unsigned int|uintptr_t|size_t
 PyTraceMalloc_Untrack;int;unsigned int|uintptr_t
-PyTuple_GET_SIZE;Py_ssize_t;PyObject*
 PyTuple_GetItem;PyObject*;PyObject*|Py_ssize_t
 PyTuple_GetSlice;PyObject*;PyObject*|Py_ssize_t|Py_ssize_t
 PyTuple_New;PyObject*;Py_ssize_t
 PyTuple_Pack;PyObject*;Py_ssize_t|...
-PyTuple_SET_ITEM;void;PyObject*|Py_ssize_t|PyObject*
 PyTuple_SetItem;int;PyObject*|Py_ssize_t|PyObject*
 PyTuple_Size;Py_ssize_t;PyObject*
-PyType_Check;int;PyObject*
-PyType_CheckExact;int;PyObject*
 PyType_ClearCache;unsigned int;void
 PyType_FromModuleAndSpec;PyObject*;PyObject*|PyType_Spec*|PyObject*
 PyType_FromSpec;PyObject*;PyType_Spec*
@@ -699,7 +682,6 @@ PyType_GetModuleState;void*;PyTypeObject*
 PyType_GetName;PyObject*;PyTypeObject*
 PyType_GetQualName;PyObject*;PyTypeObject*
 PyType_GetSlot;void*;PyTypeObject*|int
-PyType_HasFeature;int;PyTypeObject*|unsigned long
 PyType_IsSubtype;int;PyTypeObject*|PyTypeObject*
 PyType_Modified;void;PyTypeObject*
 PyType_Ready;int;PyTypeObject*
@@ -728,8 +710,6 @@ PyUnicodeTranslateError_GetStart;int;PyObject*|Py_ssize_t*
 PyUnicodeTranslateError_SetEnd;int;PyObject*|Py_ssize_t
 PyUnicodeTranslateError_SetReason;int;PyObject*|const char*
 PyUnicodeTranslateError_SetStart;int;PyObject*|Py_ssize_t
-PyUnicode_AS_DATA;const char*;PyObject*
-PyUnicode_AS_UNICODE;Py_UNICODE*;PyObject*
 PyUnicode_Append;void;PyObject**|PyObject*
 PyUnicode_AppendAndDel;void;PyObject**|PyObject*
 PyUnicode_AsASCIIString;PyObject*;PyObject*
@@ -754,14 +734,12 @@ PyUnicode_AsUnicodeEscapeString;PyObject*;PyObject*
 PyUnicode_AsWideChar;Py_ssize_t;PyObject*|wchar_t*|Py_ssize_t
 PyUnicode_AsWideCharString;wchar_t*;PyObject*|Py_ssize_t*
 PyUnicode_BuildEncodingMap;PyObject*;PyObject*
-PyUnicode_CHECK_INTERNED;unsigned int;PyObject*
 PyUnicode_Compare;int;PyObject*|PyObject*
 PyUnicode_CompareWithASCIIString;int;PyObject*|const char*
 PyUnicode_Concat;PyObject*;PyObject*|PyObject*
 PyUnicode_Contains;int;PyObject*|PyObject*
 PyUnicode_CopyCharacters;Py_ssize_t;PyObject*|Py_ssize_t|PyObject*|Py_ssize_t|Py_ssize_t
 PyUnicode_Count;Py_ssize_t;PyObject*|PyObject*|Py_ssize_t|Py_ssize_t
-PyUnicode_DATA;void*;PyObject*
 PyUnicode_Decode;PyObject*;const char*|Py_ssize_t|const char*|const char*
 PyUnicode_DecodeASCII;PyObject*;const char*|Py_ssize_t|const char*
 PyUnicode_DecodeCharmap;PyObject*;const char*|Py_ssize_t|PyObject*|const char*
@@ -798,27 +776,16 @@ PyUnicode_FromString;PyObject*;const char*
 PyUnicode_FromStringAndSize;PyObject*;const char*|Py_ssize_t
 PyUnicode_FromUnicode;PyObject*;const Py_UNICODE*|Py_ssize_t
 PyUnicode_FromWideChar;PyObject*;const wchar_t*|Py_ssize_t
-PyUnicode_GET_DATA_SIZE;Py_ssize_t;PyObject*
-PyUnicode_GET_LENGTH;Py_ssize_t;PyObject*
-PyUnicode_GET_SIZE;Py_ssize_t;PyObject*
 PyUnicode_GetDefaultEncoding;const char*;void
 PyUnicode_GetLength;Py_ssize_t;PyObject*
 PyUnicode_GetSize;Py_ssize_t;PyObject*
-PyUnicode_IS_ASCII;unsigned int;PyObject*
-PyUnicode_IS_COMPACT;unsigned int;PyObject*
-PyUnicode_IS_COMPACT_ASCII;int;PyObject*
-PyUnicode_IS_READY;unsigned int;PyObject*
 PyUnicode_InternFromString;PyObject*;const char*
 PyUnicode_InternImmortal;void;PyObject**
 PyUnicode_InternInPlace;void;PyObject**
 PyUnicode_IsIdentifier;int;PyObject*
 PyUnicode_Join;PyObject*;PyObject*|PyObject*
-PyUnicode_MAX_CHAR_VALUE;Py_UCS4;PyObject*
 PyUnicode_New;PyObject*;Py_ssize_t|Py_UCS4
 PyUnicode_Partition;PyObject*;PyObject*|PyObject*
-PyUnicode_READ;Py_UCS4;int|const void*|Py_ssize_t
-PyUnicode_READY;int;PyObject*
-PyUnicode_READ_CHAR;Py_UCS4;PyObject*|Py_ssize_t
 PyUnicode_RPartition;PyObject*;PyObject*|PyObject*
 PyUnicode_RSplit;PyObject*;PyObject*|PyObject*|Py_ssize_t
 PyUnicode_ReadChar;Py_UCS4;PyObject*|Py_ssize_t
@@ -830,13 +797,9 @@ PyUnicode_Splitlines;PyObject*;PyObject*|int
 PyUnicode_Substring;PyObject*;PyObject*|Py_ssize_t|Py_ssize_t
 PyUnicode_Tailmatch;Py_ssize_t;PyObject*|PyObject*|Py_ssize_t|Py_ssize_t|int
 PyUnicode_Translate;PyObject*;PyObject*|PyObject*|const char*
-PyUnicode_WRITE;void;int|void*|Py_ssize_t|Py_UCS4
-PyUnicode_WSTR_LENGTH;Py_ssize_t;PyObject*
 PyUnicode_WriteChar;int;PyObject*|Py_ssize_t|Py_UCS4
 PyVectorcall_Call;PyObject*;PyObject*|PyObject*|PyObject*
 PyVectorcall_Function;vectorcallfunc;PyObject*
-PyVectorcall_NARGS;Py_ssize_t;size_t
-PyWeakref_GET_OBJECT;PyObject*;PyObject*
 PyWeakref_GetObject;PyObject*;PyObject*
 PyWeakref_NewProxy;PyObject*;PyObject*|PyObject*
 PyWeakref_NewRef;PyObject*;PyObject*|PyObject*
@@ -850,7 +813,6 @@ Py_BytesMain;int;int|char**
 Py_CompileString;PyObject*;const char*|const char*|int
 Py_CompileStringExFlags;PyObject*;const char*|const char*|int|PyCompilerFlags*|int
 Py_CompileStringObject;PyObject*;const char*|PyObject*|int|PyCompilerFlags*|int
-Py_DECREF;void;PyObject*
 Py_DecRef;void;PyObject*
 Py_DecodeLocale;wchar_t*;const char*|size_t*
 Py_EncodeLocale;char*;const wchar_t*|size_t*
@@ -878,8 +840,6 @@ Py_GetProgramName;wchar_t*;void
 Py_GetPythonHome;wchar_t*;void
 Py_GetRecursionLimit;int;void
 Py_GetVersion;const char*;void
-Py_INCREF;void;PyObject*
-Py_IS_TYPE;int;PyObject*|PyTypeObject*
 Py_IncRef;void;PyObject*
 Py_Initialize;void;void
 Py_InitializeEx;void;int
@@ -897,24 +857,16 @@ Py_NewRef;PyObject*;PyObject*
 Py_PreInitialize;PyStatus;const PyPreConfig*
 Py_PreInitializeFromArgs;PyStatus;const PyPreConfig*|Py_ssize_t|wchar_t**
 Py_PreInitializeFromBytesArgs;PyStatus;const PyPreConfig*|Py_ssize_t|char**
-Py_REFCNT;Py_ssize_t;PyObject*
 Py_ReprEnter;int;PyObject*
 Py_ReprLeave;void;PyObject*
 Py_RunMain;int;void
-Py_SET_REFCNT;void;PyObject*|Py_ssize_t
-Py_SET_SIZE;void;PyVarObject*|Py_ssize_t
-Py_SET_TYPE;void;PyObject*|PyTypeObject*
-Py_SIZE;Py_ssize_t;PyObject*
 Py_SetPath;void;const wchar_t*
 Py_SetProgramName;void;const wchar_t*
 Py_SetPythonHome;void;const wchar_t*
 Py_SetRecursionLimit;void;int
 Py_SetStandardStreamEncoding;int;const char*|const char*
-Py_TYPE;PyTypeObject*;PyObject*
 Py_UniversalNewlineFgets;char*;char*|int|FILE*|PyObject*
 Py_VaBuildValue;PyObject*;const char*|va_list
-Py_XDECREF;void;PyObject*
-Py_XINCREF;void;PyObject*
 Py_XNewRef;PyObject*;PyObject*
 _PyArg_BadArgument;void;const char*|const char*|const char*|PyObject*
 _PyArg_CheckPositional;int;const char*|Py_ssize_t|Py_ssize_t|Py_ssize_t
@@ -948,10 +900,8 @@ _PyCodecInfo_GetIncrementalDecoder;PyObject*;PyObject*|const char*
 _PyCodecInfo_GetIncrementalEncoder;PyObject*;PyObject*|const char*
 _PyCodec_DecodeText;PyObject*;PyObject*|const char*|const char*
 _PyCodec_EncodeText;PyObject*;PyObject*|const char*|const char*
-_PyCodec_Forget;int;const char*
 _PyCodec_Lookup;PyObject*;const char*
 _PyCodec_LookupTextEncoding;PyObject*;const char*|const char*
-_PyComplex_FormatAdvancedWriter;int;_PyUnicodeWriter*|PyObject*|PyObject*|Py_ssize_t|Py_ssize_t
 _PyContext_NewHamtForTests;PyObject*;void
 _PyCrossInterpreterData_Lookup;crossinterpdatafunc;PyObject*
 _PyCrossInterpreterData_NewObject;PyObject*;_PyCrossInterpreterData*
@@ -1060,7 +1010,6 @@ _PyModule_Add;int;PyObject*|const char*|PyObject*
 _PyModule_Clear;void;PyObject*
 _PyModule_ClearDict;void;PyObject*
 _PyModule_CreateInitialized;PyObject*;PyModuleDef*|int
-_PyModule_IsExtension;int;PyObject*
 _PyNumber_Index;PyObject*;PyObject*
 _PyOS_IsMainThread;int;void
 _PyOS_URandom;int;void*|Py_ssize_t
@@ -1069,9 +1018,7 @@ _PyObject_AssertFailed;void;PyObject*|const char*|const char*|const char*|int|co
 _PyObject_CallFunction_SizeT;PyObject*;PyObject*|const char*|...
 _PyObject_CallMethod;PyObject*;PyObject*|PyObject*|const char*|...
 _PyObject_CallMethodId;PyObject*;PyObject*|_Py_Identifier*|const char*|...
-_PyObject_CallMethodIdNoArgs;PyObject*;PyObject*|_Py_Identifier*
 _PyObject_CallMethodIdObjArgs;PyObject*;PyObject*|_Py_Identifier*|...
-_PyObject_CallMethodIdOneArg;PyObject*;PyObject*|_Py_Identifier*|PyObject*
 _PyObject_CallMethodId_SizeT;PyObject*;PyObject*|_Py_Identifier*|const char*|...
 _PyObject_CallMethod_SizeT;PyObject*;PyObject*|const char*|const char*|...
 _PyObject_CheckConsistency;int;PyObject*|int
@@ -1103,7 +1050,6 @@ _PyObject_NextNotImplemented;PyObject*;PyObject*
 _PyObject_RealIsInstance;int;PyObject*|PyObject*
 _PyObject_RealIsSubclass;int;PyObject*|PyObject*
 _PyObject_SetAttrId;int;PyObject*|_Py_Identifier*|PyObject*
-_PyObject_VectorcallMethodId;PyObject*;_Py_Identifier*|PyObject*const*|size_t|PyObject*
 _PyRun_AnyFileObject;int;FILE*|PyObject*|int|PyCompilerFlags*
 _PyRun_InteractiveLoopObject;int;FILE*|PyObject*|PyCompilerFlags*
 _PyRun_SimpleFileObject;int;FILE*|PyObject*|int|PyCompilerFlags*
@@ -1181,7 +1127,6 @@ _PyUnicode_AsASCIIString;PyObject*;PyObject*|const char*
 _PyUnicode_AsLatin1String;PyObject*;PyObject*|const char*
 _PyUnicode_AsUTF8String;PyObject*;PyObject*|const char*
 _PyUnicode_AsUnicode;const Py_UNICODE*;PyObject*
-_PyUnicode_COMPACT_DATA;void*;PyObject*
 _PyUnicode_CheckConsistency;int;PyObject*|int
 _PyUnicode_Copy;PyObject*;PyObject*
 _PyUnicode_DecodeRawUnicodeEscapeStateful;PyObject*;const char*|Py_ssize_t|const char*|Py_ssize_t*
@@ -1218,7 +1163,6 @@ _PyUnicode_IsWhitespace;int;const Py_UCS4
 _PyUnicode_IsXidContinue;int;Py_UCS4
 _PyUnicode_IsXidStart;int;Py_UCS4
 _PyUnicode_JoinArray;PyObject*;PyObject*|PyObject*const*|Py_ssize_t
-_PyUnicode_NONCOMPACT_DATA;void*;PyObject*
 _PyUnicode_Ready;int;PyObject*
 _PyUnicode_ScanIdentifier;Py_ssize_t;PyObject*
 _PyUnicode_ToDecimalDigit;int;Py_UCS4
@@ -1259,7 +1203,6 @@ _Py_IsCoreInitialized;int;void
 _Py_IsFinalizing;int;void
 _Py_LegacyLocaleDetected;int;int
 _Py_NewInterpreter;PyThreadState*;int
-_Py_NewRef;PyObject*;PyObject*
 _Py_NewReference;void;PyObject*
 _Py_RestoreSignals;void;void
 _Py_SetLocaleFromEnv;char*;int
@@ -1269,7 +1212,6 @@ _Py_UniversalNewlineFgetsWithSize;char*;char*|int|FILE*|PyObject*|size_t*
 _Py_VaBuildStack;PyObject**;PyObject**|Py_ssize_t|const char*|va_list|Py_ssize_t*
 _Py_VaBuildStack_SizeT;PyObject**;PyObject**|Py_ssize_t|const char*|va_list|Py_ssize_t*
 _Py_VaBuildValue_SizeT;PyObject*;const char*|va_list
-_Py_XNewRef;PyObject*;PyObject*
 _Py_add_one_to_index_C;void;int|Py_ssize_t*|const Py_ssize_t*
 _Py_add_one_to_index_F;void;int|Py_ssize_t*|const Py_ssize_t*
 _Py_c_abs;double;Py_complex

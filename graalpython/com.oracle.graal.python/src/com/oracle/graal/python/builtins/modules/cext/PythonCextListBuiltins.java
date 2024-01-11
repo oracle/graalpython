@@ -306,7 +306,7 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    abstract static class PyList_SET_ITEM extends CApiTernaryBuiltinNode {
+    abstract static class PyTruffleList_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doManaged(PList list, long index, Object element,
                         @Bind("this") Node inliningTarget,

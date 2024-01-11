@@ -196,7 +196,6 @@ typedef struct {
     BUILTIN(PyList_Insert, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_New, PyObject*, Py_ssize_t) \
     BUILTIN(PyList_Reverse, int, PyObject*) \
-    BUILTIN(PyList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_SetSlice, int, PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_Size, Py_ssize_t, PyObject*) \
@@ -325,6 +324,7 @@ typedef struct {
     BUILTIN(PyTruffleGILState_Ensure, int) \
     BUILTIN(PyTruffleGILState_Release, void) \
     BUILTIN(PyTruffleHash_InitSecret, void, int8_t*) \
+    BUILTIN(PyTruffleList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
     BUILTIN(PyTruffleLong_FromString, PyObject*, PyObject*, int, int) \
     BUILTIN(PyTruffleLong_One, PyObject*) \
@@ -343,6 +343,7 @@ typedef struct {
     BUILTIN(PyTruffleState_FindModule, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffleStructSequence_InitType2, int, PyTypeObject*, void*, int) \
     BUILTIN(PyTruffleStructSequence_NewType, PyTypeObject*, const char*, const char*, void*, int) \
+    BUILTIN(PyTruffleTuple_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTruffleType_AddFunctionToType, int, void*, PyTypeObject*, PyObject*, const char*, void*, int, int, const char*) \
     BUILTIN(PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, const char*, void*) \
     BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, const char*) \
@@ -408,7 +409,6 @@ typedef struct {
     BUILTIN(PyTuple_GetItem, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PyTuple_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PyTuple_New, PyObject*, Py_ssize_t) \
-    BUILTIN(PyTuple_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
@@ -446,6 +446,7 @@ typedef struct {
     BUILTIN(Py_get_PyASCIIObject_length, Py_ssize_t, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_ascii, unsigned int, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_compact, unsigned int, PyASCIIObject*) \
+    BUILTIN(Py_get_PyASCIIObject_state_interned, unsigned int, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_kind, unsigned int, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_ready, unsigned int, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_wstr, wchar_t*, PyASCIIObject*) \
@@ -554,6 +555,7 @@ typedef struct {
 #define PyASCIIObject_length(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_length((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->length )
 #define PyASCIIObject_state_ascii(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_state_ascii((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->state_ascii )
 #define PyASCIIObject_state_compact(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_state_compact((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->state_compact )
+#define PyASCIIObject_state_interned(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_state_interned((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->state_interned )
 #define PyASCIIObject_state_kind(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_state_kind((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->state_kind )
 #define PyASCIIObject_state_ready(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_state_ready((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->state_ready )
 #define PyASCIIObject_wstr(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_wstr((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->wstr )

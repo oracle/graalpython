@@ -493,9 +493,10 @@ public final class CApiCodeGen {
      */
     private static final String[] ADDITIONAL = new String[]{"PyCMethod_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
                     "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer",
-                    "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_KIND", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
-                    "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize", "_PyArray_Data",
-                    "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler"};
+                    "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
+                    "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
+                    "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler",
+    };
 
     /**
      * Check the list of implemented and unimplemented builtins against the list of CPython exported

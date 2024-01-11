@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# This script parses gcc output on the sibling "incl.c" and generates a list of
+# This script parses gcc output on the embedded source and generates a list of
 # C API functions that can be stored in CAPIFunctions.txt to automatically
 # check the consistency of the C API implementation in GraalPy.
 #
@@ -46,19 +46,18 @@
 #
 # Make sure to use the exact same CPython version as we are targeting
 
+import os
 import re
+import subprocess
 import sysconfig
 import tempfile
 
 import pycparser_fake_libc
 from pycparser import c_ast, parse_file, c_generator
 
-include_path = sysconfig.get_config_var("INCLUDEPY")
-
 source = """\
 #define __attribute__(x)
 #define _POSIX_THREADS
-#define Py_BUILD_CORE
 
 #include <Python.h>
 #include <frameobject.h>
@@ -66,11 +65,16 @@ source = """\
 #include <structmember.h>
 """
 
+include_path = sysconfig.get_config_var("INCLUDEPY")
 with tempfile.NamedTemporaryFile('w') as f:
     f.write(source)
     f.flush()
     cpp_args = ['-I', pycparser_fake_libc.directory, '-I', include_path]
     ast = parse_file(f.name, use_cpp=True, cpp_args=cpp_args)
+
+lib_path = os.path.join(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY'))
+out = subprocess.check_output(['nm', '--defined-only', '--just-symbols', lib_path], text=True)
+exported_symbols = out.rstrip().splitlines()
 
 
 def cleanup(str):
@@ -87,6 +91,8 @@ class FuncDeclVisitor(c_ast.NodeVisitor):
 
     def visit_Decl(self, node):
         if isinstance(node.type, c_ast.FuncDecl):
+            if node.name not in exported_symbols:
+                return
             ret = cleanup(self.gen.visit(node.type.type))
             for p in node.type.args.params:
                 # erase parameter names

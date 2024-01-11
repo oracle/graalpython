@@ -849,34 +849,34 @@ PyUnicode_InternFromString(const char *cp)
 
 // GraalPy additions
 
-#undef PyUnicode_GET_LENGTH
-Py_ssize_t PyUnicode_GET_LENGTH(PyObject* op) {
+unsigned int PyTruffleUnicode_CHECK_INTERNED(PyObject *op) {
+    return GET_SLOT_SPECIAL(op, PyASCIIObject, state_interned, state.interned);
+}
+
+Py_ssize_t PyTruffleUnicode_GET_LENGTH(PyObject* op) {
 	return PyASCIIObject_length(op);
 }
 
-wchar_t* _PyASCIIObject_WSTR(PyASCIIObject* op) {
-	return PyASCIIObject_wstr(op);
+Py_ssize_t PyTruffleUnicode_WSTR_LENGTH(PyObject *op) {
+    return PyCompactUnicodeObject_wstr_length(op);
 }
 
-#undef PyUnicode_IS_ASCII
-unsigned int PyUnicode_IS_ASCII(PyObject* op) {
+unsigned int PyTruffleUnicode_IS_ASCII(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ascii, state.ascii);
 }
 
-#undef PyUnicode_IS_COMPACT
-unsigned int PyUnicode_IS_COMPACT(PyObject* op) {
+unsigned int PyTruffleUnicode_IS_COMPACT(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_compact, state.compact);
 }
 
-int _PyUnicode_KIND(PyObject* op) {
+int _PyTruffleUnicode_KIND(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
 }
 
-#undef PyUnicode_IS_READY
-unsigned int PyUnicode_IS_READY(PyObject* op) {
+unsigned int PyTruffleUnicode_IS_READY(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ready, state.ready);
 }
 
-void* _PyUnicode_NONCOMPACT_DATA(PyObject* op) {
+void* _PyTruffleUnicode_NONCOMPACT_DATA(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyUnicodeObject, data, data.any);
 }

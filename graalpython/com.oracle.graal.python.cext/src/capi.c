@@ -889,7 +889,7 @@ void nop_GraalPyTruffle_NotifyRefCount(PyObject* obj, Py_ssize_t refcnt) {
     // do nothing
 }
 
-void nop_GraalPyTruffle_BulkNotifyRefCount(void *, int) {
+void nop_GraalPyTruffle_BulkNotifyRefCount(void* ptrs, int count) {
     // do nothing
 }
 
@@ -1876,10 +1876,6 @@ PyAPI_FUNC(PyObject*) PyList_New(Py_ssize_t a) {
 PyAPI_FUNC(int) PyList_Reverse(PyObject* a) {
     return GraalPyList_Reverse(a);
 }
-#undef PyList_SET_ITEM
-PyAPI_FUNC(void) PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    GraalPyList_SET_ITEM(a, b, c);
-}
 #undef PyList_SetItem
 PyAPI_FUNC(int) PyList_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
     return GraalPyList_SetItem(a, b, c);
@@ -2768,6 +2764,14 @@ PyAPI_FUNC(int) PyTruffleGILState_Ensure() {
 PyAPI_FUNC(void) PyTruffleGILState_Release() {
     GraalPyTruffleGILState_Release();
 }
+#undef PyTruffleList_SET_ITEM
+PyAPI_FUNC(void) PyTruffleList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    GraalPyTruffleList_SET_ITEM(a, b, c);
+}
+#undef PyTruffleTuple_SET_ITEM
+PyAPI_FUNC(void) PyTruffleTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    GraalPyTruffleTuple_SET_ITEM(a, b, c);
+}
 #undef PyTruffle_Debug
 PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
     return GraalPyTruffle_Debug(a);
@@ -2815,10 +2819,6 @@ PyAPI_FUNC(PyObject*) PyTuple_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) 
 #undef PyTuple_New
 PyAPI_FUNC(PyObject*) PyTuple_New(Py_ssize_t a) {
     return GraalPyTuple_New(a);
-}
-#undef PyTuple_SET_ITEM
-PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    GraalPyTuple_SET_ITEM(a, b, c);
 }
 #undef PyTuple_SetItem
 PyAPI_FUNC(int) PyTuple_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
@@ -2992,10 +2992,6 @@ PyAPI_FUNC(wchar_t*) PyUnicode_AsWideCharString(PyObject* a, Py_ssize_t* b) {
 PyAPI_FUNC(PyObject*) PyUnicode_BuildEncodingMap(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyUnicode_CHECK_INTERNED
-PyAPI_FUNC(unsigned int) PyUnicode_CHECK_INTERNED(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyUnicode_Compare
 PyAPI_FUNC(int) PyUnicode_Compare(PyObject* a, PyObject* b) {
     return GraalPyUnicode_Compare(a, b);
@@ -3056,6 +3052,10 @@ PyAPI_FUNC(PyObject*) PyUnicode_DecodeUnicodeEscape(const char* a, Py_ssize_t b,
 PyAPI_FUNC(PyObject*) PyUnicode_EncodeFSDefault(PyObject* a) {
     return GraalPyUnicode_EncodeFSDefault(a);
 }
+#undef PyUnicode_EncodeLocale
+PyAPI_FUNC(PyObject*) PyUnicode_EncodeLocale(PyObject* a, const char* b) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyUnicode_FSDecoder
 PyAPI_FUNC(int) PyUnicode_FSDecoder(PyObject* a, void* b) {
     FUNC_NOT_IMPLEMENTED
@@ -3091,10 +3091,6 @@ PyAPI_FUNC(PyObject*) PyUnicode_FromString(const char* a) {
 #undef PyUnicode_FromWideChar
 PyAPI_FUNC(PyObject*) PyUnicode_FromWideChar(const wchar_t* a, Py_ssize_t b) {
     return GraalPyUnicode_FromWideChar(a, b);
-}
-#undef PyUnicode_GET_SIZE
-PyAPI_FUNC(Py_ssize_t) PyUnicode_GET_SIZE(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicode_GetDefaultEncoding
 PyAPI_FUNC(const char*) PyUnicode_GetDefaultEncoding() {
@@ -3164,16 +3160,8 @@ PyAPI_FUNC(Py_ssize_t) PyUnicode_Tailmatch(PyObject* a, PyObject* b, Py_ssize_t 
 PyAPI_FUNC(PyObject*) PyUnicode_Translate(PyObject* a, PyObject* b, const char* c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyUnicode_WSTR_LENGTH
-PyAPI_FUNC(Py_ssize_t) PyUnicode_WSTR_LENGTH(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyUnicode_WriteChar
 PyAPI_FUNC(int) PyUnicode_WriteChar(PyObject* a, Py_ssize_t b, Py_UCS4 c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyWeakref_GET_OBJECT
-PyAPI_FUNC(PyObject*) PyWeakref_GET_OBJECT(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyWeakref_GetObject
@@ -3464,20 +3452,12 @@ PyAPI_FUNC(PyObject*) _PyCodec_DecodeText(PyObject* a, const char* b, const char
 PyAPI_FUNC(PyObject*) _PyCodec_EncodeText(PyObject* a, const char* b, const char* c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyCodec_Forget
-PyAPI_FUNC(int) _PyCodec_Forget(const char* a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyCodec_Lookup
 PyAPI_FUNC(PyObject*) _PyCodec_Lookup(const char* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyCodec_LookupTextEncoding
 PyAPI_FUNC(PyObject*) _PyCodec_LookupTextEncoding(const char* a, const char* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyComplex_FormatAdvancedWriter
-PyAPI_FUNC(int) _PyComplex_FormatAdvancedWriter(_PyUnicodeWriter* a, PyObject* b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyContext_NewHamtForTests
@@ -3850,10 +3830,6 @@ PyAPI_FUNC(void) _PyModule_Clear(PyObject* a) {
 }
 #undef _PyModule_ClearDict
 PyAPI_FUNC(void) _PyModule_ClearDict(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyModule_IsExtension
-PyAPI_FUNC(int) _PyModule_IsExtension(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyNamespace_New
@@ -4266,10 +4242,6 @@ PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
 }
 #undef _PyUnicode_AsUnicode
 PyAPI_FUNC(const Py_UNICODE*) _PyUnicode_AsUnicode(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyUnicode_COMPACT_DATA
-PyAPI_FUNC(void*) _PyUnicode_COMPACT_DATA(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyUnicode_CheckConsistency
