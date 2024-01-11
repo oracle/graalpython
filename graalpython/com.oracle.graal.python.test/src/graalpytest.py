@@ -723,15 +723,11 @@ class TestRunner(object):
             except KeyboardInterrupt:
                 raise
             except BaseException as e:
-                _, _, tb = sys.exc_info()
-                try:
-                    from traceback import extract_tb
-                    filename, line, func, text = extract_tb(tb)[-1]
-                    self.exceptions.append(
-                        ("In test '%s': Exception occurred in %s:%d" % (path, filename, line), e)
-                    )
-                except BaseException:
-                    self.exceptions.append((path, e))
+                from traceback import extract_tb
+                filename, line, func, text = extract_tb(e.__traceback__)[-1]
+                self.exceptions.append(
+                    ("In test '%s': Exception occurred in %s:%d" % (path, filename, line), e)
+                )
             else:
                 return test_module
             finally:
