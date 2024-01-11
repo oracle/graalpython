@@ -136,7 +136,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
-                        next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        next = factory.createTraceback(pFrame, pFrame.getLine(), pFrame.getLasti(), next);
                         pyIndex++;
                     }
                 }

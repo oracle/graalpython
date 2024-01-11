@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
+import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -864,6 +865,40 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return env.isHostObject(obj) && (env.isHostSymbol(obj) || lib.isMetaObject(obj));
         }
 
+    }
+
+    @Builtin(name = "bci_to_instruction_number", minNumOfPositionalArgs = 2, parameterNames = {"code", "bci"})
+    @ArgumentClinic(name = "bci", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class BciToInstructionNumber extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object convert(PCode code, int bci) {
+            if (bci > 0 && code.getRootCallTarget().getRootNode() instanceof PBytecodeRootNode bytecodeRootNode) {
+                byte[] bytecode = bytecodeRootNode.getCodeUnit().code;
+                int number = 0;
+                for (int i = 0; i < bytecode.length;) {
+                    if (i >= bci) {
+                        return number;
+                    }
+                    i += OpCodes.fromOpCode(bytecode[i]).length();
+                    number++;
+                }
+            }
+            return bci;
+        }
+
+        @Fallback
+        @TruffleBoundary
+        static Object convert(Object code, Object bci,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseUncached(inliningTarget, TypeError);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GraalPythonModuleBuiltinsClinicProviders.BciToInstructionNumberClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "dis", minNumOfPositionalArgs = 1, parameterNames = {"obj", "quickened"}, doc = "Helper to disassemble code objects")

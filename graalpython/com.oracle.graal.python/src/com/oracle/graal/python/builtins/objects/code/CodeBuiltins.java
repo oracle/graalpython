@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -273,11 +274,11 @@ public final class CodeBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object lines(PCode self) {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        static Object lines(PCode self) {
+            PythonObjectFactory factory = PythonContext.get(null).factory();
             PTuple tuple;
-            if (self.getRootNode() instanceof PBytecodeRootNode) {
-                CodeUnit co = ((PBytecodeRootNode) self.getRootNode()).getCodeUnit();
+            if (self.getRootNode() instanceof PBytecodeRootNode bytecodeRootNode) {
+                CodeUnit co = bytecodeRootNode.getCodeUnit();
                 SourceMap map = co.getSourceMap();
                 List<PTuple> lines = new ArrayList<>();
                 if (map != null && map.startLineMap.length > 0) {
@@ -290,6 +291,32 @@ public final class CodeBuiltins extends PythonBuiltins {
                             data.line = map.startLineMap[bci];
                             data.start = nextStart;
                         }
+                    });
+                }
+                tuple = factory.createTuple(lines.toArray());
+            } else {
+                tuple = factory.createEmptyTuple();
+            }
+            return PyObjectGetIter.executeUncached(tuple);
+        }
+    }
+
+    @Builtin(name = "co_positions", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CoPositionsNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object positions(PCode self) {
+            PythonObjectFactory factory = PythonContext.get(null).factory();
+            PTuple tuple;
+            if (self.getRootNode() instanceof PBytecodeRootNode bytecodeRootNode) {
+                CodeUnit co = bytecodeRootNode.getCodeUnit();
+                SourceMap map = co.getSourceMap();
+                List<PTuple> lines = new ArrayList<>();
+                if (map != null && map.startLineMap.length > 0) {
+                    co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
+                        lines.add(factory.createTuple(new int[]{map.startLineMap[bci], map.endLineMap[bci], map.startColumnMap[bci], map.endColumnMap[bci]}));
                     });
                 }
                 tuple = factory.createTuple(lines.toArray());
