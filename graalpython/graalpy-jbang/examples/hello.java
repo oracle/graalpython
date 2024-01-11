@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,10 @@
  */
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 
-//DEPS org.graalvm.python:python-language:24.0.0-dev
-//DEPS org.graalvm.python:python-resources:24.0.0-dev
-//DEPS org.graalvm.python:python-launcher:24.0.0-dev
-//DEPS org.graalvm.python:python-embedding:24.0.0-dev
+//DEPS org.graalvm.python:python-language:24.1.0
+//DEPS org.graalvm.python:python-resources:24.1.0
+//DEPS org.graalvm.python:python-launcher:24.1.0
+//DEPS org.graalvm.python:python-embedding:24.1.0
 //PIP termcolor
 
 import org.graalvm.polyglot.Context;
