@@ -1,0 +1,3 @@
+[[rules]]
+version = '>= 1.2.2'
+patch = 'setproctitle-1.2.2.patch'

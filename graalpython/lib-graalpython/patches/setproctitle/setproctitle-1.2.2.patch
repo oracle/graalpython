@@ -1,0 +1,39 @@
+From 7c3b5c97e7fb0885d44b9db4a20598e8a4c4e2a3 Mon Sep 17 00:00:00 2001
+From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
+Date: Sun, 7 Jan 2024 02:06:09 +0300
+Subject: [PATCH] patch 1.2.2
+
+---
+ src/spt_python.h | 2 +-
+ src/spt_setup.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/spt_python.h b/src/spt_python.h
+index 0e8e907..ff26d31 100644
+--- a/src/spt_python.h
++++ b/src/spt_python.h
+@@ -33,7 +33,7 @@ typedef char argv_t;
+ #endif
+ 
+ /* defined in Modules/main.c but not publically declared */
+-void Py_GetArgcArgv(int *argc, argv_t ***argv);
++// void Py_GetArgcArgv(int *argc, argv_t ***argv);
+ 
+ /* Mangle the module name into the name of the module init function */
+ #ifdef IS_PY3K
+diff --git a/src/spt_setup.c b/src/spt_setup.c
+index 8953786..5cb9931 100644
+--- a/src/spt_setup.c
++++ b/src/spt_setup.c
+@@ -383,7 +383,7 @@ get_argc_argv(int *argc_o, char ***argv_o)
+ 
+ #ifndef IS_PYPY
+     spt_debug("reading argc/argv from Python main");
+-    Py_GetArgcArgv(&argc, &argv_py);
++    // Py_GetArgcArgv(&argc, &argv_py);
+ #endif
+ 
+     if (argc > 0) {
+-- 
+2.25.1
+
