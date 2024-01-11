@@ -4462,6 +4462,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void generalizeLoadFast(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         generalizeVariableStores(index);
+        generalizeFrameSlot(virtualFrame, index);
         bytecode[bci] = OpCodesConstants.LOAD_FAST_O;
         bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
     }
@@ -4506,6 +4507,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private Object generalizeBytecodeLoadFastO(Frame localFrame, int index) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         generalizeVariableStores(index);
+        generalizeFrameSlot(localFrame, index);
         return localFrame.getValue(index);
     }
 
@@ -4528,6 +4530,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    /**
+     * The caller should ensure that the frame slot is assigned the boxed Object value to avoid
+     * repeated FrameSlotTypeException. This can happen in combination with OSR: if there are
+     * multiple OSR bytecode loop invocations that have different view on whether the local
+     * variables are boxed or unboxed in the frame, but they all share the same frame.
+     * <p>
+     * For example, when we enter compiled bytecode loop, variable "hasUnboxedLocals" that captures
+     * CompilerDirectives.inCompiledCode() at the beginning of the bytecode loop is true and frame
+     * slots are unboxed. If we happen to deoptimize during the bytecode loop, then
+     * "hasUnboxedLocals" variable is still true (although CompilerDirectives.inCompiledCode() would
+     * return false) and we will work with unboxed locals even in the interpreter. However, we may
+     * call tryOSR from the interpreter, and invoke another bytecode loop. If we are unlucky, the
+     * OST target will deopt in the meantime, and we'll enter the OSR bytecode loop in interpreter,
+     * so "hasUnboxedLocals" will be false, but the frame will have unboxed locals.
+     * <p>
+     * We could pass the "hasUnboxedLocals" flag down in the OSR state, but it is not worth it for
+     * such a corner case.
+     */
     private void generalizeVariableStores(int index) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         variableTypes[index] = QuickeningTypes.OBJECT;
@@ -4923,9 +4943,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return bytecodeStoreSubscrOOO(virtualFrame, stackTop, bci, localNodes, useCachedNodes, bcioffset);
     }
 
-    private void generalizeFrameSlot(VirtualFrame virtualFrame, int stackTop) {
-        if (!virtualFrame.isObject(stackTop)) {
-            virtualFrame.setObject(stackTop, virtualFrame.getValue(stackTop));
+    private void generalizeFrameSlot(Frame frame, int slot) {
+        if (!frame.isObject(slot)) {
+            frame.setObject(slot, frame.getValue(slot));
         }
     }
 
