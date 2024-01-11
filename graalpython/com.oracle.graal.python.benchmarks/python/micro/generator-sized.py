@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -41,9 +41,8 @@ def call_generator(num, iteration):
 
 def measure(num, iteration):
     last_item = call_generator(num, iteration)
-
-    print("Last item ", last_item)
+    return last_item
 
 
 def __benchmark__(num, it=10000):
-    measure(num, it)
+    return measure(num, it)

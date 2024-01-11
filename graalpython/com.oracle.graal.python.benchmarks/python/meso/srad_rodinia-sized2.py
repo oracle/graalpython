@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -127,7 +127,7 @@ default_size = 256
 
 def measure(nIter, cols=default_size, rows=default_size, r1=0, r2=127, c1=0, c2=127, Lambda=0.5):
 
-    print("Start the SRAD main loop")
+    #print("Start the SRAD main loop")
     size_R = (r2 - r1 + 1) * (c2 - c1 + 1)
     srad(nIter, size_R, cols, rows, data.J, data.dN, data.dS,
          data.dE, data.dW, data.c, r1, r2, c1, c2, Lambda)
@@ -140,13 +140,13 @@ def __benchmark__(nIter=100):
 def __setup__(nIter, cols=default_size, rows=default_size):
     size_I = cols * rows
 
-    print("Initializing...")
+    #print("Initializing...")
     data.dN = [0. for j in range(size_I)]
     data.dS = [0. for j in range(size_I)]
     data.dW = [0. for j in range(size_I)]
     data.dE = [0. for j in range(size_I)]
 
-    print("Randomizing the input matrix")
+    #print("Randomizing the input matrix")
     random.seed(7)
     data.J = [float(math.exp(random.random()/255)) for j in range(size_I)]
     data.JJ = [data.J[j] for j in range(size_I)]

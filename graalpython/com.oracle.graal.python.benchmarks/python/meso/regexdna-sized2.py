@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -60,8 +60,9 @@ def main(seq, iters):
           'agggt[cgt]aa|tt[acg]accct',
           'agggta[cgt]a|t[acg]taccct',
           'agggtaa[cgt]|[acg]ttaccct')
+    total = 0
     for f in variants:
-        print(f, sum(1 for i in finditer(f, seq)))
+        total += sum(1 for i in finditer(f, seq))
 
     subst = {
           'B' : '(c|g|t)', 'D' : '(a|g|t)',   'H' : '(a|c|t)', 'K' : '(g|t)',
@@ -70,13 +71,17 @@ def main(seq, iters):
     for f, r in list(subst.items()):
         seq = sub(f, r, seq)
 
-    print(ilen)
-    print(clen)
-    print(len(seq))
+    return (ilen, clen, len(seq), total)
 
+
+input_seq = None
 
 def __benchmark__(iters=4):
+    return main(input_seq, iters)
+
+
+def __setup__(*args, **kwargs):
+    global input_seq
     import os
     with open(os.path.join(os.path.dirname(__file__), "knucleotide-input.txt")) as f:
-        seq = f.read()
-    main(seq, iters)
+        input_seq = f.read()

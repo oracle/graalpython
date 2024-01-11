@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -161,13 +161,13 @@ data = Data()
 
 
 def measure(boxes1d_arg, alpha=0.5):
-    print("Initializing...")
+    #print("Initializing...")
     initializeHomeBoxes(boxes1d_arg, data.box_py, data.box_py_nei)
 
     #  total number of boxes
     number_boxes = boxes1d_arg * boxes1d_arg * boxes1d_arg
 
-    print("Starting...")
+    #print("Starting...")
     lavaMD(alpha, boxes1d_arg, number_boxes, data.box_py,
            data.box_py_nei, data.rv_py, data.qv_py, data.fv_py)
 
@@ -177,11 +177,12 @@ default_size = 32
 
 def __benchmark__(boxes1d_arg=default_size):
     measure(boxes1d_arg)
+    # no return; "blackhole" is replaced by writing the result to a global
 
 
 def __setup__(boxes1d_arg=default_size):
     #  Print configuration
-    print("Configuration used: boxes1d = %d\n" % (boxes1d_arg))
+    # print("Configuration used: boxes1d = %d\n" % (boxes1d_arg))
     #  total number of boxes
     number_boxes = boxes1d_arg * boxes1d_arg * boxes1d_arg
 

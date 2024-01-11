@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,8 +52,8 @@ def getitem(d, num):
 def measure(num):
     d = {x: x**x for x in range(1000)}
     last_items = getitem(d, num)  # 1000000
-    print("Last items ", last_items)
+    return last_items
 
 
 def __benchmark__(num=1000000):
-    measure(num)
+    return measure(num)

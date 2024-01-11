@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -46,15 +46,17 @@ import sys
 
 
 def main(num):
-    cout = sys.stdout.write
+    #cout = sys.stdout.write
     #size = float(sys.argv[1])
     size_int = num
     xr_size = range(size_int)
     xr_iter = range(50)
     bit = 128
     byte_acc = 0
+    result = [' '] * (size_int**2)
+    result_index = 0
 
-    cout("P4\n%d %d\n" % (size_int, size_int))
+    #cout("P4\n%d %d\n" % (size_int, size_int))
 
     size = float(size_int)
     for y in xr_size:
@@ -74,21 +76,26 @@ def main(num):
                 bit >>= 1
             else:
                 #cout(chr(byte_acc))
+                result[result_index] = chr(byte_acc)
+                result_index += 1
                 bit = 128
                 byte_acc = 0
 
         if bit != 128:
              #cout(chr(byte_acc))
+             result[result_index] = chr(byte_acc)
+             result_index += 1
              bit = 128
              byte_acc = 0
+    return result
 
 
 def measure(num):
-    main(num)
+    return main(num)
     
 
 def __benchmark__(num=4000):
-    measure(num)
+    return measure(num)
 
 
 if __name__ == '__main__':

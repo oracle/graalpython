@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -439,17 +439,14 @@ def entry_point(iterations):
 
 def measure(iteration):
     result = entry_point(iteration)
-    if not result:
-        print("Incorrect results!")
-        return -1
-    print("finished.")
+    return result
 
 
 def __benchmark__(num=200):
-    measure(num)
+    return measure(num)
 
 def java_embedded_bench_entrypoint(num=200):
-    measure(int(num))
+    return measure(int(num))
 
 if __name__ == '__main__':
     import sys

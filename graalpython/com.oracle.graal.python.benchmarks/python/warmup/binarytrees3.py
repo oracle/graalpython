@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -62,7 +62,7 @@ def main(num):
     max_depth = max(min_depth + 2, num)
     stretch_depth = max_depth + 1
 
-    print("stretch tree of depth %d\t check:" % stretch_depth, check_tree(make_tree(0, stretch_depth)))
+    #print("stretch tree of depth %d\t check:" % stretch_depth, check_tree(make_tree(0, stretch_depth)))
 
     long_lived_tree = make_tree(0, max_depth)
 
@@ -74,11 +74,12 @@ def main(num):
         for i in range(1, iterations + 1):
             check += check_tree(make_tree(i, depth)) + check_tree(make_tree(-i, depth))
 
-        print("%d\t trees of depth %d\t check:" % (iterations * 2, depth), check)
+        #print("%d\t trees of depth %d\t check:" % (iterations * 2, depth), check)
         iterations //= 4
 
-    print("long lived tree of depth %d\t check:" % max_depth, check_tree(long_lived_tree))
+    #print("long lived tree of depth %d\t check:" % max_depth, check_tree(long_lived_tree))
+    return (max_depth, check_tree(long_lived_tree))
 
 
 def __benchmark__(num=10):
-    main(num)
+    return main(num)

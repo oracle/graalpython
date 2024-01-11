@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -90,13 +90,14 @@ def measure(prntCnt, upto):
     primes = Primes(Natural())
     cnt = 0
     res = -1
+    result = ''
     while cnt < upto:
         res = primes.next()
         cnt = cnt + 1
         if (cnt % prntCnt == 0):
-            print("Computed %s primes. Last one is %s" % (cnt, res))
+            result += "Computed %s primes. Last one is %s" % (cnt, res)
             prntCnt = prntCnt * 2
-
+    return result
 
 def __benchmark__(num=100000):
-    measure(num, num)
+    return measure(num, num)

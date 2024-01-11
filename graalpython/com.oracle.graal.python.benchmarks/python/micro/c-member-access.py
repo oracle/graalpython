@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -148,11 +148,12 @@ def do_stuff(foo):
 
 
 def measure(num):
+    result = 0
     for i in range(num):
-        result = do_stuff(c_member_access_module.ObjectWithMember(42))
+        result |= do_stuff(c_member_access_module.ObjectWithMember(42))
 
-    print(result)
+    return result
 
 
 def __benchmark__(num=50000):
-    measure(num)
+    return measure(num)

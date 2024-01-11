@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -128,7 +128,7 @@ def report_energy(bodies=SYSTEM, pairs=PAIRS, e=0.0):
         e -= (m1 * m2) / ((dx * dx + dy * dy + dz * dz) ** 0.5)
     for (r, [vx, vy, vz], m) in bodies:
         e += m * (vx * vx + vy * vy + vz * vz) / 2.
-    print("%.9f" % e)
+    return e
 
 
 def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
@@ -144,14 +144,15 @@ def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
 
 def main(n, ref='sun'):
     offset_momentum(BODIES[ref])
-    report_energy()
+    a = report_energy()
     advance(0.01, n)
-    report_energy()
+    b = report_energy()
+    return (a, b)
 
 
 def measure(num):
-    main(num)
+    return main(num)
     
 
 def __benchmark__(num=5000000):
-    measure(num)
+    return measure(num)
