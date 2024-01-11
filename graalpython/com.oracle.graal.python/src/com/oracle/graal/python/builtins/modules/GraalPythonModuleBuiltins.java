@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -456,6 +456,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString doIt() {
             return getContext().getCurrentImport();
+        }
+    }
+
+    @Builtin(name = "blackhole", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Blackhole extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doIt(Object value) {
+            CompilerDirectives.blackhole(value);
+            return PNone.NONE;
         }
     }
 

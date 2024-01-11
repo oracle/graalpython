@@ -759,6 +759,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
         if self._checkup:
             vm_options += ['--engine.TraceCompilation', '--vm.XX:+PrintGC']
+            remaining += ['--live-results']
 
         return vm_options, remaining
 
