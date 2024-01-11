@@ -98,6 +98,8 @@ static HPy (*original_Type)(HPyContext *ctx, HPy obj);
 static HPy (*original_Add)(HPyContext *ctx, HPy h1, HPy h2);
 static HPy (*original_Subtract)(HPyContext *ctx, HPy h1, HPy h2);
 static HPy (*original_Multiply)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_RichCompare)(HPyContext *ctx, HPy v, HPy w, int op);
+static int (*original_RichCompareBool)(HPyContext *ctx, HPy v, HPy w, int op);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     uint64_t bitsA = toBits(a);
@@ -404,6 +406,63 @@ GENERATE_AUGMENTED_BINOP(Add, +)
 GENERATE_AUGMENTED_BINOP(Subtract, -)
 GENERATE_AUGMENTED_BINOP(Multiply, *)
 
+#define HPy_RETURN_RICHCOMPARE_BOOL(ctx, val1, val2, op)                \
+    do {                                                                \
+        int result;                                                     \
+        switch (op) {                                                   \
+        case HPy_EQ: result = ((val1) == (val2)); break;                \
+        case HPy_NE: result = ((val1) != (val2)); break;                \
+        case HPy_LT: result = ((val1) <  (val2)); break;                \
+        case HPy_GT: result = ((val1) >  (val2)); break;                \
+        case HPy_LE: result = ((val1) <= (val2)); break;                \
+        case HPy_GE: result = ((val1) >= (val2)); break;                \
+        default:                                                        \
+            HPy_FatalError(ctx, "Invalid value for HPy_RichCmpOp");     \
+        }                                                               \
+        return result;                                                  \
+    } while (0)
+
+static inline int richcompare_boxed_values(HPyContext *ctx, uint64_t vbits, uint64_t wbits, int op) {
+    if (isBoxedInt(vbits)) {
+        if (isBoxedInt(wbits)) {
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxInt(vbits), unboxInt(wbits), op);
+        } else {
+            assert(isBoxedDouble(wbits));
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxInt(vbits), unboxDouble(wbits), op);
+        }
+    } else {
+        assert(isBoxedDouble(vbits));
+        if (isBoxedInt(wbits)) {
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxDouble(vbits), unboxInt(wbits), op);
+        } else {
+            assert(isBoxedDouble(wbits));
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxDouble(vbits), unboxDouble(wbits), op);
+        }
+    }
+}
+
+static HPy augment_RichCompare(HPyContext *ctx, HPy v, HPy w, int op) {
+    uint64_t vbits = toBits(v);
+    uint64_t wbits = toBits(w);
+    int result;
+    if (!isBoxedHandle(vbits) && !isBoxedHandle(wbits)) {
+        result = richcompare_boxed_values(ctx, vbits, wbits, op);
+        if (result)
+            return HPy_Dup(ctx, ctx->h_True);
+        return HPy_Dup(ctx, ctx->h_False);
+    }
+    return original_RichCompare(ctx, v, w, op);
+}
+
+static int augment_RichCompareBool(HPyContext *ctx, HPy v, HPy w, int op) {
+    uint64_t vbits = toBits(v);
+    uint64_t wbits = toBits(w);
+    if (!isBoxedHandle(vbits) && !isBoxedHandle(wbits)) {
+        return richcompare_boxed_values(ctx, vbits, wbits, op);
+    }
+    return original_RichCompareBool(ctx, v, w, op);
+}
+
 void init_native_fast_paths(HPyContext *context) {
     LOG("%p", context);
 
@@ -411,40 +470,27 @@ void init_native_fast_paths(HPyContext *context) {
     original_ ## name = context->ctx_ ## name;  \
     context->ctx_ ## name = augment_ ## name;
 
-    AUGMENT(Long);
-
     AUGMENT(Float_FromDouble);
-
     AUGMENT(Float_AsDouble);
 
+    AUGMENT(Long);
     AUGMENT(Long_AsInt32_t);
-
     AUGMENT(Long_AsInt64_t);
-
     AUGMENT(Long_AsUInt32_t);
-
     AUGMENT(Long_AsDouble);
-
     AUGMENT(Long_AsSsize_t);
-
     AUGMENT(Long_AsSize_t);
-
     AUGMENT(Long_FromInt32_t);
-
     AUGMENT(Long_FromUInt32_t);
-
     AUGMENT(Long_FromInt64_t);
-
     AUGMENT(Long_FromUInt64_t);
-
     AUGMENT(Long_FromSsize_t);
-
     AUGMENT(Long_FromSize_t);
 
+    AUGMENT(Dup);
     AUGMENT(Close);
 
     AUGMENT(AsStruct_Object);
-
     context->ctx_AsStruct_Legacy = augment_AsStruct_Object;
     context->ctx_AsStruct_Float = augment_AsStruct_Object;
     context->ctx_AsStruct_List = augment_AsStruct_Object;
@@ -453,7 +499,6 @@ void init_native_fast_paths(HPyContext *context) {
     context->ctx_AsStruct_Unicode = augment_AsStruct_Object;
     context->ctx_AsStruct_Tuple = augment_AsStruct_Object;
 
-    AUGMENT(Dup);
 
     AUGMENT(Number_Check);
 
@@ -462,24 +507,22 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(List_Check);
 
     AUGMENT(Global_Load);
-
     AUGMENT(Global_Store);
 
     AUGMENT(Field_Load);
-
     AUGMENT(Field_Store);
 
     AUGMENT(Is);
-
     AUGMENT(IsTrue);
 
     AUGMENT(Type);
 
     AUGMENT(Add);
-
     AUGMENT(Subtract);
-
     AUGMENT(Multiply);
+
+    AUGMENT(RichCompare);
+    AUGMENT(RichCompareBool);
 
 #undef AUGMENT
 }
