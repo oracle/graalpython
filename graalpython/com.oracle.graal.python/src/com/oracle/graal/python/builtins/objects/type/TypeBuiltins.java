@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKREFOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
@@ -1348,6 +1349,17 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode) {
             return getBasicSizeNode.execute(inliningTarget, cls);
+        }
+    }
+
+    @Builtin(name = J___WEAKREFOFFSET__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class WeakrefOffsetNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(Object cls,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetWeakListOffsetNode getWeakListOffsetNode) {
+            return getWeakListOffsetNode.execute(inliningTarget, cls);
         }
     }
 

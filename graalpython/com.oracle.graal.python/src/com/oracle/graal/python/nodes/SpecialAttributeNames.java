@@ -137,12 +137,13 @@ public abstract class SpecialAttributeNames {
     public static final String J___DICTOFFSET__ = "__dictoffset__";
 
     public static final String J___WEAKLISTOFFSET__ = "__weaklistoffset__";
+    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral(J___WEAKLISTOFFSET__);
+
+    public static final String J___WEAKREFOFFSET__ = "__weakrefoffset__";
 
     public static final String J___ITEMSIZE__ = "__itemsize__";
 
     public static final TruffleString T___WEAKREF__ = tsLiteral("__weakref__");
-
-    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral("__weaklistoffset__");
 
     public static final TruffleString T___ALL__ = tsLiteral("__all__");
 
