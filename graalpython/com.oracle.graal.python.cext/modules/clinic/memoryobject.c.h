@@ -27,7 +27,7 @@ memoryview(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     Py_ssize_t nargs = PyTuple_GET_SIZE(args);
     PyObject *object;
 
-    fastargs = _PyArg_UnpackKeywords(_PyTuple_CAST(args)->ob_item, nargs, kwargs, NULL, &_parser, 1, 1, 0, argsbuf);
+    fastargs = _PyArg_UnpackKeywords(PySequence_Fast_ITEMS(args), nargs, kwargs, NULL, &_parser, 1, 1, 0, argsbuf);
     if (!fastargs) {
         goto exit;
     }
