@@ -347,11 +347,7 @@ public final class PException extends AbstractTruffleException {
      * end of `finally`, `__exit__`...
      */
     public PException getExceptionForReraise(boolean rootNodeVisible) {
-        if (pythonException instanceof PBaseException managedException) {
-            managedException.setTraceback(getTraceback());
-        } else {
-            setNativeExceptionTraceback(getTraceback());
-        }
+        ensureReified();
         PException pe = PException.fromObject(pythonException, getLocation(), false);
         if (rootNodeVisible) {
             pe.skipFirstTracebackFrame();
