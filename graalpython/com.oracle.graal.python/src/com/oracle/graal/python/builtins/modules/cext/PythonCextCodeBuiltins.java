@@ -52,7 +52,6 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi17BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi18BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -67,33 +66,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodeBuiltins {
-
-    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
-                    PyObject}, call = Direct)
-    abstract static class PyCode_New extends CApi17BuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public static Object codeNew(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
-                        Object names, Object varnames, Object freevars, Object cellvars,
-                        Object filename, Object name, Object qualname,
-                        int firstlineno, Object lnotab,
-                        @SuppressWarnings("unused") Object exceptionTable,
-                        @Cached CallNode callNode) {
-            /*
-             * This rearranges the arguments (freevars, cellvars).
-             */
-            Object[] args = new Object[]{
-                            argcount,
-                            0, // posonlyargcount
-                            kwonlyargcount, nlocals, stacksize, flags,
-                            code, consts, names, varnames,
-                            filename, name, qualname,
-                            firstlineno, lnotab,
-                            freevars, cellvars
-            };
-            return callNode.execute(PythonBuiltinClassType.PCode, args);
-        }
-    }
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
                     PyObject}, call = Direct)

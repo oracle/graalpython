@@ -257,6 +257,7 @@ graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyrig
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/src/call.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/capsule.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/codeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright

@@ -124,7 +124,6 @@ typedef struct {
     BUILTIN(PyCode_Addr2Line, int, PyCodeObject*, int) \
     BUILTIN(PyCode_GetFileName, PyObject*, PyCodeObject*) \
     BUILTIN(PyCode_GetName, PyObject*, PyCodeObject*) \
-    BUILTIN(PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*, PyObject*) \
     BUILTIN(PyCode_NewEmpty, PyCodeObject*, const char*, const char*, int) \
     BUILTIN(PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*, PyObject*) \
     BUILTIN(PyCodec_Decoder, PyObject*, const char*) \

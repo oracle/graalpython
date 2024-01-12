@@ -1108,10 +1108,6 @@ PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* a) {
 PyAPI_FUNC(PyObject*) PyCode_GetVarnames(PyCodeObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyCode_New
-PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p, PyObject* q) {
-    return GraalPyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q);
-}
 #undef PyCode_NewEmpty
 PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
     return GraalPyCode_NewEmpty(a, b, c);

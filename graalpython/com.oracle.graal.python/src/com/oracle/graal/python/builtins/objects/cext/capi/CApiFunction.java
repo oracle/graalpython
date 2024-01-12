@@ -267,6 +267,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_GetClass", ret = PyTypeObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
+    @CApiBuiltin(name = "PyCode_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
+                    PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_AsCComplex", ret = PY_COMPLEX, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_FromCComplex", ret = PyObject, args = {PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "PyContextVar_Get", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
