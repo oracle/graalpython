@@ -135,6 +135,7 @@ import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.utilities.TriState;
 
 @CoreFunctions(defineModule = ImpModuleBuiltins.J__IMP, isEager = true)
 public final class ImpModuleBuiltins extends PythonBuiltins {
@@ -715,7 +716,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
      * PyImport_ImportFrozenModuleObject, which we don't expose as C API and handle differently_
      */
     private static FrozenResult findFrozen(PythonContext context, TruffleString name, TruffleString.EqualNode equalNode) {
-        if (context.getOption(PythonOptions.DisableFrozenModules)) {
+        TriState override = context.getOverrideFrozenModules();
+        if (override == TriState.FALSE || (override == TriState.UNDEFINED && context.getOption(PythonOptions.DisableFrozenModules))) {
             return new FrozenResult(FROZEN_DISABLED);
         }
         PythonFrozenModule module = FrozenModules.lookup(name.toJavaStringUncached());
@@ -846,4 +848,26 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_override_frozen_modules_for_tests", minNumOfPositionalArgs = 1, parameterNames = {"override"})
+    @ArgumentClinic(name = "override", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class OverrideFrozenModulesForTests extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object set(int override) {
+            TriState value = TriState.UNDEFINED;
+            if (override > 0) {
+                value = TriState.TRUE;
+            } else if (override < 0) {
+                value = TriState.FALSE;
+            }
+            PythonContext.get(null).setOverrideFrozenModules(value);
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.OverrideFrozenModulesForTestsClinicProviderGen.INSTANCE;
+        }
+    }
 }

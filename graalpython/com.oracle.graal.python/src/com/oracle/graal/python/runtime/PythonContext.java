@@ -195,6 +195,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
@@ -761,6 +762,9 @@ public final class PythonContext extends Python3Core {
     private int minIntBitLengthOverLimit;
     private static final double LOG2_10 = Math.log(10) / Math.log(2);
 
+    // Used by CPython tests to selectively enable or disable frozen modules.
+    private TriState overrideFrozenModules = TriState.UNDEFINED;
+
     // the full module name for package imports
     private TruffleString pyPackageContext;
 
@@ -768,9 +772,6 @@ public final class PythonContext extends Python3Core {
     private final PythonNativePointer nativeNull = new PythonNativePointer(null);
 
     public RootCallTarget signatureContainer;
-
-    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
-    }
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;
@@ -815,6 +816,14 @@ public final class PythonContext extends Python3Core {
     public void setIntMaxStrDigits(int intMaxStrDigits) {
         this.intMaxStrDigits = intMaxStrDigits;
         this.minIntBitLengthOverLimit = computeMinIntBitLengthOverLimit(intMaxStrDigits);
+    }
+
+    public TriState getOverrideFrozenModules() {
+        return overrideFrozenModules;
+    }
+
+    public void setOverrideFrozenModules(TriState overrideFrozenModules) {
+        this.overrideFrozenModules = overrideFrozenModules;
     }
 
     @TruffleBoundary
