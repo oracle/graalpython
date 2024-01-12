@@ -102,6 +102,7 @@ typedef struct {
 // by executing the main class CApiCodeGen
 
 #define CAPI_BUILTINS \
+    BUILTIN(PyByteArray_AsString, char*, PyObject*) \
     BUILTIN(PyByteArray_Resize, int, PyObject*, Py_ssize_t) \
     BUILTIN(PyBytes_AsString, char*, PyObject*) \
     BUILTIN(PyBytes_FromObject, PyObject*, PyObject*) \

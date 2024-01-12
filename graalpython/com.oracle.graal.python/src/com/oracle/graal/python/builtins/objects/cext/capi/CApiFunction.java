@@ -126,7 +126,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -184,6 +183,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextByteArrayBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
@@ -251,7 +251,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_IsContiguous", ret = Int, args = {CONST_PY_BUFFER, CHAR}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_Release", ret = Void, args = {PY_BUFFER_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, CONST_PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = CImpl)
-    @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_FromStringAndSize", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyBytes_AsStringAndSize", ret = Int, args = {PyObject, CHAR_PTR_LIST, PY_SSIZE_T_PTR}, call = CImpl)
@@ -1276,6 +1275,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextBoolBuiltins.class);
         addCApiBuiltins(result, PythonCextBuiltins.class);
         addCApiBuiltins(result, PythonCextBytesBuiltins.class);
+        addCApiBuiltins(result, PythonCextByteArrayBuiltins.class);
         addCApiBuiltins(result, PythonCextCapsuleBuiltins.class);
         addCApiBuiltins(result, PythonCextCEvalBuiltins.class);
         addCApiBuiltins(result, PythonCextClassBuiltins.class);
