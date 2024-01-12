@@ -92,7 +92,7 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
-                        TruffleString filename, TruffleString name, int firstlineno,
+                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
 
             PythonLanguage language = PythonLanguage.get(this);
@@ -101,7 +101,8 @@ public abstract class CodeNodes {
             try {
                 return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
-                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
+                                constants, names, varnames, freevars, cellvars,
+                                filename, name, qualname, firstlineno, linetable);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
@@ -113,7 +114,7 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
-                        TruffleString filename, TruffleString name, int firstlineno,
+                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
 
             RootCallTarget ct;
@@ -144,7 +145,7 @@ public abstract class CodeNodes {
                 context.setCodeFilename(ct, filename);
             }
             PythonObjectFactory factory = context.factory();
-            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
+            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
         @SuppressWarnings("static-method")

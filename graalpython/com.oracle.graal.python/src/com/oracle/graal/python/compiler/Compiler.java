@@ -206,7 +206,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 28;
+    public static final int BYTECODE_VERSION = 29;
 
     private final ErrorCallback errorCallback;
 
@@ -961,7 +961,6 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
             newFlags |= OpCodes.MakeFunctionFlags.HAS_CLOSURE;
         }
-        addObject(unit.constants, code.qualname);
         addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) newFlags});
     }
 

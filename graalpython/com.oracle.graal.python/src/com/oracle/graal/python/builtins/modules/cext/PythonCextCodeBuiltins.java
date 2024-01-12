@@ -74,10 +74,11 @@ public final class PythonCextCodeBuiltins {
         @Specialization
         @TruffleBoundary
         public static Object codeNew(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
-                        Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, Object qualname, int firstlineno, Object lnotab,
+                        Object names, Object varnames, Object freevars, Object cellvars,
+                        Object filename, Object name, Object qualname,
+                        int firstlineno, Object lnotab,
                         @SuppressWarnings("unused") Object exceptionTable,
                         @Cached CallNode callNode) {
-            // TODO use qualname
             /*
              * This rearranges the arguments (freevars, cellvars).
              */
@@ -85,7 +86,9 @@ public final class PythonCextCodeBuiltins {
                             argcount,
                             0, // posonlyargcount
                             kwonlyargcount, nlocals, stacksize, flags,
-                            code, consts, names, varnames, filename, name, firstlineno, lnotab,
+                            code, consts, names, varnames,
+                            filename, name, qualname,
+                            firstlineno, lnotab,
                             freevars, cellvars
             };
             return callNode.execute(PythonBuiltinClassType.PCode, args);
@@ -98,10 +101,11 @@ public final class PythonCextCodeBuiltins {
         @Specialization
         @TruffleBoundary
         public static Object codeNew(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
-                        Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, Object qualname, int firstlineno, Object lnotab,
+                        Object names, Object varnames, Object freevars, Object cellvars,
+                        Object filename, Object name, Object qualname,
+                        int firstlineno, Object lnotab,
                         @SuppressWarnings("unused") Object exceptionTable,
                         @Cached CallNode callNode) {
-            // TODO use qualname
             /*
              * This rearranges the arguments (freevars, cellvars).
              */
@@ -109,7 +113,9 @@ public final class PythonCextCodeBuiltins {
                             argcount,
                             posonlyargcount,
                             kwonlyargcount, nlocals, stacksize, flags,
-                            code, consts, names, varnames, filename, name, firstlineno, lnotab,
+                            code, consts, names, varnames,
+                            filename, name, qualname,
+                            firstlineno, lnotab,
                             freevars, cellvars
             };
             return callNode.execute(PythonBuiltinClassType.PCode, args);
@@ -125,8 +131,10 @@ public final class PythonCextCodeBuiltins {
         static PCode newEmpty(TruffleString filename, TruffleString funcname, int lineno,
                         @Cached CodeNodes.CreateCodeNode createCodeNode) {
             return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
-                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
-                            EMPTY_TRUFFLESTRING_ARRAY, filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
+                            EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
+                            filename, funcname, funcname,
+                            lineno, EMPTY_BYTE_ARRAY);
         }
     }
 

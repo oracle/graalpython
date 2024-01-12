@@ -147,6 +147,18 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "co_qualname", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetQualNameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InternStringNode internStringNode) {
+            return internStringNode.execute(inliningTarget, self.co_qualname());
+        }
+    }
+
     @Builtin(name = "co_argcount", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetArgCountNode extends PythonUnaryBuiltinNode {
@@ -406,7 +418,7 @@ public final class CodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self",
                     "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
-                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_linetable"})
+                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_qualname", "co_linetable"})
     @ArgumentClinic(name = "co_argcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
@@ -422,6 +434,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "co_cellvars", conversion = ArgumentClinic.ClinicConversion.Tuple)
     @ArgumentClinic(name = "co_filename", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
     @ArgumentClinic(name = "co_name", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_qualname", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
     @ArgumentClinic(name = "co_linetable", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonClinicBuiltinNode {
@@ -438,7 +451,8 @@ public final class CodeBuiltins extends PythonBuiltins {
                         Object[] coConsts, Object[] coNames,
                         Object[] coVarnames, Object[] coFreevars,
                         Object[] coCellvars, TruffleString coFilename,
-                        TruffleString coName, Object coLnotab,
+                        TruffleString coName, TruffleString coQualname,
+                        Object coLnotab,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
@@ -460,6 +474,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                                 coCellvars.length == 0 ? null : objectArrayToTruffleStringArray(inliningTarget, coCellvars, castToTruffleStringNode),
                                 coFilename.isEmpty() ? self.co_filename() : coFilename,
                                 coName.isEmpty() ? self.co_name() : coName,
+                                coQualname.isEmpty() ? self.co_qualname() : coQualname,
                                 coFirstlineno == -1 ? self.co_firstlineno() : coFirstlineno,
                                 PGuards.isNone(coLnotab) ? self.getLinetable() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {

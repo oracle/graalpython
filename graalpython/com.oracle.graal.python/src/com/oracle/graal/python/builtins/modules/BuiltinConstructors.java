@@ -2862,8 +2862,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, numOfPositionalOnlyArgs = 17, parameterNames = {
-                    "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring", "constants", "names", "varnames", "filename", "name", "firstlineno",
+    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 16, numOfPositionalOnlyArgs = 18, parameterNames = {
+                    "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring",
+                    "constants", "names", "varnames", "filename", "name", "qualname", "firstlineno",
                     "linetable", "freevars", "cellvars"})
     @ArgumentClinic(name = "argcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
@@ -2873,6 +2874,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "filename", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "qualname", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "firstlineno", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class CodeConstructorNode extends PythonClinicBuiltinNode {
@@ -2880,8 +2882,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         PCode call(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        PBytes codestring, PTuple constants, PTuple names,
-                        PTuple varnames, TruffleString filename, TruffleString name,
+                        PBytes codestring, PTuple constants, PTuple names, PTuple varnames,
+                        TruffleString filename, TruffleString name, TruffleString qualname,
                         int firstlineno, PBytes linetable,
                         PTuple freevars, PTuple cellvars,
                         @Bind("this") Node inliningTarget,
@@ -2902,16 +2904,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             nlocals, stacksize, flags,
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
-                            filename, name, firstlineno,
-                            linetableBytes);
+                            filename, name, qualname,
+                            firstlineno, linetableBytes);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         static PCode call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
-                        Object codestring, Object constants, Object names,
-                        Object varnames, Object filename, Object name,
+                        Object codestring, Object constants, Object names, Object varnames,
+                        Object filename, Object name, Object qualname,
                         Object firstlineno, Object linetable,
                         Object freevars, Object cellvars,
                         @Cached PRaiseNode raiseNode) {

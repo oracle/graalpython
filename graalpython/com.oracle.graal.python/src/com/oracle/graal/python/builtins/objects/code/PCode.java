@@ -135,6 +135,9 @@ public final class PCode extends PythonBuiltinObject {
     private TruffleString filename;
     // name with which this code object was defined
     private TruffleString name;
+    // qualified name with which this code object was defined
+    private TruffleString qualname;
+
     // number of first line in Python source code
     private int firstlineno = -1;
     // is a string encoding the mapping from bytecode offsets to line numbers
@@ -169,11 +172,15 @@ public final class PCode extends PythonBuiltinObject {
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
         this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, null,
-                        null, null, null, null, codeUnit.name, -1, codeUnit.srcOffsetTable);
+                        null, null, null, null,
+                        codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, TruffleString[] names,
-                    TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals,
+                    int stacksize, int flags, Object[] constants, TruffleString[] names,
+                    TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
+                    TruffleString filename, TruffleString name, TruffleString qualname,
+                    int firstlineno, byte[] linetable) {
         super(cls, instanceShape);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
@@ -183,6 +190,7 @@ public final class PCode extends PythonBuiltinObject {
         this.varnames = varnames;
         this.filename = filename;
         this.name = name;
+        this.qualname = qualname;
         this.firstlineno = firstlineno;
         this.linetable = linetable;
         this.freevars = freevars;
@@ -434,12 +442,18 @@ public final class PCode extends PythonBuiltinObject {
         return -1;
     }
 
-    @TruffleBoundary
     public TruffleString getName() {
         if (name == null) {
             name = extractName(getRootNode());
         }
         return name;
+    }
+
+    public TruffleString getQualName() {
+        if (qualname == null) {
+            qualname = extractName(getRootNode());
+        }
+        return qualname;
     }
 
     public int getArgcount() {
@@ -703,6 +717,12 @@ public final class PCode extends PythonBuiltinObject {
         TruffleString codeName = this.getName();
         assert codeName != null : "PCode.co_name cannot be null!";
         return codeName;
+    }
+
+    public TruffleString co_qualname() {
+        TruffleString qualName = this.getQualName();
+        assert qualName != null : "PCode.co_qualname cannot be null!";
+        return qualName;
     }
 
     public TruffleString co_filename() {
