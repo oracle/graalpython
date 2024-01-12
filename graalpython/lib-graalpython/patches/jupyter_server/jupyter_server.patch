@@ -1,0 +1,14 @@
+diff --git a/jupyter_server/serverapp.py b/jupyter_server/serverapp.py
+index 9e4a573..973c525 100644
+--- a/jupyter_server/serverapp.py
++++ b/jupyter_server/serverapp.py
+@@ -2479,7 +2479,8 @@ class ServerApp(JupyterApp):
+         for port in random_ports(self.port, self.port_retries + 1):
+             try:
+                 sockets = bind_sockets(port, self.ip)
+-                sockets[0].close()
++                for s in sockets:
++                    s.close()
+             except OSError as e:
+                 if e.errno == errno.EADDRINUSE:
+                     if self.port_retries:

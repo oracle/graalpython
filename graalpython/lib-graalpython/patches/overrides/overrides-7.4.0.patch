@@ -1,0 +1,14 @@
+diff --git a/overrides/overrides.py b/overrides/overrides.py
+index afd643e..adb67a6 100644
+--- a/overrides/overrides.py
++++ b/overrides/overrides.py
+@@ -152,6 +152,9 @@ def override(
+ def _overrides(
+     method: _WrappedMethod, check_signature: bool, check_at_runtime: bool,
+ ) -> _WrappedMethod:
++    import sys
++    if sys.implementation.name == 'graalpy':
++        return method
+     setattr(method, "__override__", True)
+     global_vars = getattr(method, "__globals__", None)
+     if global_vars is None:

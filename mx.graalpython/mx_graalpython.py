@@ -2104,6 +2104,8 @@ def _python_checkpatchfiles():
             # Puts whole license into the field. It's BSD 3-Clause
             'pythran-0.12.0.patch',
             'pythran-0.13.patch',
+            # Puts whole license into the field. It's BSD 3-Clause
+            'jupyter_server.patch',
         }
         allowed_licenses = [
             "MIT",
