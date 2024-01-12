@@ -2592,9 +2592,9 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     // to_bytes
-    @Builtin(name = "to_bytes", minNumOfPositionalArgs = 3, parameterNames = {"$self", "length", "byteorder"}, keywordOnlyNames = {"signed"})
-    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index)
-    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString)
+    @Builtin(name = "to_bytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "length", "byteorder"}, keywordOnlyNames = {"signed"})
+    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index, defaultValue = "1")
+    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString, defaultValue = "T_BIG")
     @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
     @SuppressWarnings("unused")
@@ -2773,8 +2773,8 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "from_bytes", minNumOfPositionalArgs = 3, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
-    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString)
+    @Builtin(name = "from_bytes", minNumOfPositionalArgs = 2, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
+    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString, defaultValue = "T_BIG")
     @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ImportStatic(SpecialMethodNames.class)
     @GenerateNodeFactory
