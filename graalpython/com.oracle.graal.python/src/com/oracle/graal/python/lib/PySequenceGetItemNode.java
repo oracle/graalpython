@@ -81,6 +81,10 @@ public abstract class PySequenceGetItemNode extends Node {
 
     public abstract Object execute(Frame frame, Object object, int index);
 
+    public final Object execute(Object object, int index) {
+        return execute(null, object, index);
+    }
+
     @Specialization(guards = "!isNativeObject(object)")
     static Object doGenericManaged(VirtualFrame frame, Object object, int index,
                     @Bind("this") Node inliningTarget,

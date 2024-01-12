@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -147,6 +149,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -273,7 +276,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("sequenceCheck") @Cached PySequenceCheckNode sequenceCheck,
+                    @Cached PySequenceCheckNode sequenceCheck,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -295,6 +298,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    @Cached PySequenceGetItemNode sequenceGetItem,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -303,7 +307,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.execute(inliningTarget, behavior, method, this, key);
             } else {
-                throw UnsupportedMessageException.create();
+                try {
+                    return sequenceGetItem.execute(this, PInt.intValueExact(key));
+                } catch (OverflowException cce) {
+                    throw InvalidArrayIndexException.create(key);
+                }
             }
         } finally {
             gil.release(mustRelease);
