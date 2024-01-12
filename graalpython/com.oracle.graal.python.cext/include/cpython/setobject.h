@@ -64,7 +64,7 @@ typedef struct {
 } PySetObject;
 
 #define PySet_GET_SIZE(so) \
-    (assert(PyAnySet_Check(so)), (((PySetObject *)(so))->used))
+    (PySet_Size(_PyObject_CAST(so)))
 
 PyAPI_DATA(PyObject *) _PySet_Dummy;
 
