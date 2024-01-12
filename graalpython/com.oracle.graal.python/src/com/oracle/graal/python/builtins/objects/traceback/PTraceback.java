@@ -108,6 +108,10 @@ public final class PTraceback extends PythonBuiltinObject {
         return lasti;
     }
 
+    public void setLasti(int lasti) {
+        this.lasti = lasti;
+    }
+
     public LazyTraceback getLazyTraceback() {
         return lazyTraceback;
     }

@@ -142,6 +142,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 }
             }
             if (lazyTraceback.catchingFrameWantedForTraceback()) {
+                tb.setLasti(pException.getCatchBci());
                 tb.setLineno(pException.getCatchRootNode().bciToLine(pException.getCatchBci()));
                 tb.setNext(next);
             } else {
@@ -308,7 +309,10 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
-        Object get(PTraceback self) {
+        Object get(PTraceback self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+            materializeTruffleStacktraceNode.execute(inliningTarget, self);
             return self.getLasti();
         }
     }
