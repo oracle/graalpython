@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -115,7 +114,6 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
@@ -198,6 +196,7 @@ public abstract class ExternalFunctionNodes {
      * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
      */
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class FromLongNode extends CExtToJavaNode {
 
         @Specialization
@@ -218,6 +217,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class FromUInt32Node extends CExtToJavaNode {
 
         @Specialization
@@ -273,12 +273,26 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class ToPythonStringNode extends CExtToJavaNode {
-        @Child private CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.create();
-        @Child private NativeToPythonNode nativeToPythonNode = NativeToPythonNodeGen.create();
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class WrappedPointerToPythonNode extends CExtToJavaNode {
+        @Specialization
+        static Object doIt(Object object) {
+            if (object instanceof PythonNativeWrapper) {
+                return ((PythonNativeWrapper) object).getDelegate();
+            } else {
+                return object;
+            }
+        }
+    }
 
-        @Override
-        public Object execute(Object object) {
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class ToPythonStringNode extends CExtToJavaNode {
+        @Specialization
+        static Object doIt(Object object,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached NativeToPythonNode nativeToPythonNode) {
             Object result = nativeToPythonNode.execute(object);
             if (result instanceof TruffleString) {
                 return result;
@@ -650,8 +664,16 @@ public abstract class ExternalFunctionNodes {
             return returnValue.createCheckResultNode();
         }
 
+        CheckFunctionResultNode getUncachedCheckFunctionResultNode() {
+            return returnValue.getUncachedCheckResultNode();
+        }
+
         CExtToJavaNode createConvertRetNode() {
             return returnValue.createNativeToPythonNode();
+        }
+
+        CExtToJavaNode getUncachedConvertRetNode() {
+            return returnValue.getUncachedNativeToPythonNode();
         }
 
         CExtToNativeNode[] createConvertArgNodes() {
@@ -714,44 +736,35 @@ public abstract class ExternalFunctionNodes {
     /**
      * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
      */
-    public static final class ExternalFunctionInvokeNode extends PNodeWithContext {
-        private final CApiTiming timing;
-        @Child private CheckFunctionResultNode checkResultNode;
-        @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private CExtToJavaNode convertReturnValue;
-        @Child private InteropLibrary lib;
-        @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
-        @Child private GilNode gilNode = GilNode.create();
-        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class ExternalFunctionInvokeNode extends PNodeWithContext {
+        public abstract Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
 
-        private final PExternalFunctionWrapper provider;
-
-        public PExternalFunctionWrapper getWrapper() {
-            return provider;
-        }
-
-        @TruffleBoundary
-        ExternalFunctionInvokeNode(PExternalFunctionWrapper provider) {
-            this.timing = CApiTiming.create(true, provider.name());
+        public static CheckFunctionResultNode createCheckResultNode(PExternalFunctionWrapper provider) {
             CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
-            this.checkResultNode = node != null ? node : DefaultCheckFunctionResultNodeGen.create();
-            this.convertReturnValue = provider.createConvertRetNode();
-            this.provider = provider;
+            return node != null ? node : DefaultCheckFunctionResultNodeGen.create();
         }
 
-        public Object execute(VirtualFrame frame, TruffleString name, Object callable, Object[] cArguments) {
-            if (lib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                /*
-                 * We must use a dispatched library because we cannot be sure that we always see the
-                 * same type of callable. For example, in multi-context mode you could see an LLVM
-                 * native pointer and an LLVM managed pointer.
-                 */
-                lib = insert(InteropLibrary.getFactory().createDispatched(2));
-            }
+        public static CheckFunctionResultNode getUncachedCheckResultNode(PExternalFunctionWrapper provider) {
+            CheckFunctionResultNode node = provider.getUncachedCheckFunctionResultNode();
+            return node != null ? node : DefaultCheckFunctionResultNodeGen.getUncached();
+        }
 
-            PythonContext ctx = PythonContext.get(this);
-            PythonThreadState threadState = getThreadStateNode.executeCached(ctx);
+        @Specialization(guards = {"provider == cachedProvider"}, limit = "1")
+        static Object invoke(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached("provider") PExternalFunctionWrapper cachedProvider,
+                        @Cached(value = "createCheckResultNode(provider)", uncached = "getUncachedCheckResultNode(provider)") CheckFunctionResultNode checkResultNode,
+                        @Cached(value = "provider.createConvertRetNode()", uncached = "provider.getUncachedConvertRetNode()") CExtToJavaNode convertReturnValue,
+                        @Cached PForeignToPTypeNode fromForeign,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached GilNode gilNode,
+                        @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            PythonContext ctx = PythonContext.get(inliningTarget);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -767,10 +780,10 @@ public abstract class ExternalFunctionNodes {
                 return fromForeign.executeConvert(result);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 CApiTiming.exit(timing);
                 /*
@@ -792,12 +805,18 @@ public abstract class ExternalFunctionNodes {
         }
 
         @NeverDefault
-        public static ExternalFunctionInvokeNode create(PExternalFunctionWrapper provider) {
-            return new ExternalFunctionInvokeNode(provider);
+        public static ExternalFunctionInvokeNode create() {
+            return ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen.create();
+        }
+
+        public static ExternalFunctionInvokeNode getUncached() {
+            return ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen.getUncached();
         }
     }
 
     abstract static class MethodDescriptorRoot extends PRootNode {
+        private final PExternalFunctionWrapper provider;
+        private final CApiTiming timing;
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
@@ -816,8 +835,10 @@ public abstract class ExternalFunctionNodes {
             super(language);
             CompilerAsserts.neverPartOfCompilation();
             this.name = name;
+            this.timing = CApiTiming.create(true, name);
+            this.provider = provider;
             if (provider != null) {
-                this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
+                this.externalInvokeNode = ExternalFunctionInvokeNode.create();
                 this.convertArgs = provider.createConvertArgNodes();
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();
@@ -846,12 +867,12 @@ public abstract class ExternalFunctionNodes {
                     Object[] cArguments = prepareCArguments(frame);
                     prepareArguments(cArguments);
                     try {
-                        return externalInvokeNode.execute(frame, name, callable, cArguments);
+                        assert this.provider != null : "the provider cannot be null";
+                        return externalInvokeNode.execute(frame, provider, timing, name, callable, cArguments);
                     } finally {
                         postprocessCArguments(frame, cArguments);
                     }
                 } else {
-                    assert externalInvokeNode == null;
                     return invokeNode.execute(frame, callable, preparePArguments(frame), PArguments.getKeywordArguments(frame));
                 }
             } finally {
@@ -2032,6 +2053,7 @@ public abstract class ExternalFunctionNodes {
      * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
      */
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "3")
@@ -2068,6 +2090,7 @@ public abstract class ExternalFunctionNodes {
      */
     @ImportStatic(PGuards.class)
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class InitCheckFunctionResultNode extends CheckFunctionResultNode {
         @Specialization
         @SuppressWarnings("unused")
@@ -2161,6 +2184,7 @@ public abstract class ExternalFunctionNodes {
      * {@code Object/typeobject.c: wrap_objobjproc}.
      */
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
 
         @Specialization

@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FinishArgNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
@@ -51,37 +51,65 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.WrappedPointerToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.ToPythonWrapperNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.WrappedPointerToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
-    PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, PythonToNativeNewRefNodeGen::create, NativeToPythonStealingNodeGen::create, null),
-    PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, null, null, null),
-    PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
-    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, null, null, null),
-    Pointer("POINTER", "J", "jlong", "long", null, null, null),
-    WrappedPointer("POINTER", "J", "jlong", "long", WrappedPointerToNativeNodeGen::create, WrappedPointerToPythonNode::new, null),
-    TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, null),
-    Char8("SINT8", "C", "jbyte", "byte", null, null, null),
-    Char16("SINT16", "C", "jchar", "char", null, null, null),
-    Int32("SINT32", "I", "jint", "int", ToInt32NodeGen::create, null, null),
-    UInt32("UINT32", "I", "jint", "int", ToInt32NodeGen::create, FromUInt32NodeGen::create, null),
-    Int64("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, null, null),
-    Long("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, FromLongNodeGen::create, null),
-    Float32("FLOAT", "F", "jfloat", "float", null, null, null),
-    Float64("DOUBLE", "D", "jdouble", "double", null, null, null),
-    Void("VOID", "V", "void", "void", null, null, null),
-    Unknown("SINT64", "J", "jlong", "long", null, null, null);
+    PyObject(
+                    "POINTER",
+                    "J",
+                    "jlong",
+                    "long",
+                    PythonToNativeNodeGen::create,
+                    NativeToPythonNodeGen::create,
+                    NativeToPythonNodeGen.getUncached(),
+                    PythonToNativeNewRefNodeGen::create,
+                    NativeToPythonStealingNodeGen::create,
+                    NativeToPythonStealingNodeGen.getUncached(),
+                    null),
+    PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, NativeToPythonNodeGen.getUncached(), null, null, null, null),
+    PyObjectAsTruffleString(
+                    "POINTER",
+                    "J",
+                    "jlong",
+                    "long",
+                    null,
+                    ExternalFunctionNodesFactory.ToPythonStringNodeGen::create,
+                    ExternalFunctionNodesFactory.ToPythonStringNodeGen.getUncached(),
+                    null,
+                    null,
+                    null,
+                    null),
+    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, ToPythonWrapperNodeGen.getUncached(), null, null, null, null),
+    Pointer("POINTER", "J", "jlong", "long", null, null, null, null),
+    WrappedPointer(
+                    "POINTER",
+                    "J",
+                    "jlong",
+                    "long",
+                    null,
+                    ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen::create,
+                    ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen.getUncached(),
+                    null),
+    TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, CharPtrToPythonNodeGen.getUncached(), null),
+    Char8("SINT8", "C", "jbyte", "byte", null, null, null, null),
+    Char16("SINT16", "C", "jchar", "char", null, null, null, null),
+    Int32("SINT32", "I", "jint", "int", ToInt32NodeGen::create, null, null, null),
+    UInt32("UINT32", "I", "jint", "int", ToInt32NodeGen::create, FromUInt32NodeGen::create, FromUInt32NodeGen.getUncached(), null),
+    Int64("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, null, null, null),
+    Long("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, FromLongNodeGen::create, FromLongNodeGen.getUncached(), null),
+    Float32("FLOAT", "F", "jfloat", "float", null, null, null, null),
+    Float64("DOUBLE", "D", "jdouble", "double", null, null, null, null),
+    Void("VOID", "V", "void", "void", null, null, null, null),
+    Unknown("SINT64", "J", "jlong", "long", null, null, null, null);
 
     public final String nfiSignature;
     public final String jniSignature;
@@ -89,26 +117,32 @@ enum ArgBehavior {
     public final String javaSignature;
     public final Supplier<CExtToNativeNode> pythonToNative;
     public final Supplier<CExtToJavaNode> nativeToPython;
+    public final CExtToJavaNode uncachedNativeToPython;
     public final Supplier<CExtToNativeNode> pythonToNativeTransfer;
     public final Supplier<CExtToJavaNode> nativeToPythonTransfer;
+    public final CExtToJavaNode uncachedNativeToPythonTransfer;
     public final Supplier<FinishArgNode> finish;
 
     ArgBehavior(String nfiSignature, String jniSignature, String jniType, String javaSignature, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
-                    Supplier<CExtToNativeNode> pythonToNativeTransfer, Supplier<CExtToJavaNode> nativeToPythonTransfer, Supplier<FinishArgNode> finish) {
+                    CExtToJavaNode uncachedNativeToPython,
+                    Supplier<CExtToNativeNode> pythonToNativeTransfer, Supplier<CExtToJavaNode> nativeToPythonTransfer, CExtToJavaNode uncachedNativeToPythonTransfer, Supplier<FinishArgNode> finish) {
         this.nfiSignature = nfiSignature;
         this.jniSignature = jniSignature;
         this.jniType = jniType;
         this.javaSignature = javaSignature;
         this.pythonToNative = pythonToNative;
         this.nativeToPython = nativeToPython;
+        this.uncachedNativeToPython = uncachedNativeToPython;
         this.pythonToNativeTransfer = pythonToNativeTransfer;
         this.nativeToPythonTransfer = nativeToPythonTransfer;
+        this.uncachedNativeToPythonTransfer = uncachedNativeToPythonTransfer;
         this.finish = finish;
     }
 
     ArgBehavior(String nfiSignature, String jniSignature, String jniType, String javaType, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
+                    CExtToJavaNode uncachedNativeToPython,
                     Supplier<FinishArgNode> finish) {
-        this(nfiSignature, jniSignature, jniType, javaType, pythonToNative, nativeToPython, null, null, finish);
+        this(nfiSignature, jniSignature, jniType, javaType, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null, finish);
     }
 }
 
@@ -326,22 +360,24 @@ public enum ArgDescriptor {
     func_objvoid("PyObject*(*)(void)"),
     func_objcharsizevoidptr("PyObject*(*)(const char*, Py_ssize_t, void*)"),
 
-    IterResult(ArgBehavior.PyObject, "void*", CheckIterNextResultNodeGen::create, true),
-    InquiryResult(ArgBehavior.Int32, "int", CheckInquiryResultNodeGen::create),
-    InitResult(ArgBehavior.Int32, "int", InitCheckFunctionResultNodeGen::create),
-    PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create),
-    PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create);
+    IterResult(ArgBehavior.PyObject, "void*", CheckIterNextResultNodeGen::create, CheckIterNextResultNodeGen.getUncached(), true),
+    InquiryResult(ArgBehavior.Int32, "int", CheckInquiryResultNodeGen::create, CheckInquiryResultNodeGen.getUncached()),
+    InitResult(ArgBehavior.Int32, "int", InitCheckFunctionResultNodeGen::create, InitCheckFunctionResultNodeGen.getUncached()),
+    PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached()),
+    PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached());
 
     public final String cSignature;
     public final ArgBehavior behavior;
     private final boolean transfer;
     private final Supplier<CheckFunctionResultNode> checkResult;
+    private final CheckFunctionResultNode uncachedCheckResult;
 
     ArgDescriptor(String cSignature) {
         this.behavior = ArgBehavior.Unknown;
         this.cSignature = cSignature;
         this.transfer = false;
         this.checkResult = null;
+        this.uncachedCheckResult = null;
     }
 
     ArgDescriptor(ArgBehavior behavior, String cSignature) {
@@ -349,6 +385,7 @@ public enum ArgDescriptor {
         this.cSignature = cSignature;
         this.transfer = false;
         this.checkResult = null;
+        this.uncachedCheckResult = null;
     }
 
     ArgDescriptor(ArgBehavior behavior, String cSignature, boolean transfer) {
@@ -356,19 +393,22 @@ public enum ArgDescriptor {
         this.cSignature = cSignature;
         this.transfer = transfer;
         this.checkResult = null;
+        this.uncachedCheckResult = null;
     }
 
-    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult) {
+    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, CheckFunctionResultNode uncachedCheckResult) {
         this.behavior = behavior;
         this.cSignature = cSignature;
         this.checkResult = checkResult;
+        this.uncachedCheckResult = uncachedCheckResult;
         this.transfer = false;
     }
 
-    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, boolean transfer) {
+    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, CheckFunctionResultNode uncachedCheckResult, boolean transfer) {
         this.behavior = behavior;
         this.cSignature = cSignature;
         this.checkResult = checkResult;
+        this.uncachedCheckResult = uncachedCheckResult;
         this.transfer = transfer;
     }
 
@@ -398,9 +438,21 @@ public enum ArgDescriptor {
         return factory == null ? null : factory.get();
     }
 
+    public CExtToJavaNode getUncachedNativeToPythonNode() {
+        assert behavior != ArgBehavior.Unknown : "undefined behavior in " + this;
+        CExtToJavaNode node = transfer ? behavior.uncachedNativeToPythonTransfer : behavior.uncachedNativeToPython;
+        assert !(transfer && node == null);
+        return node;
+    }
+
     public CheckFunctionResultNode createCheckResultNode() {
         assert behavior != ArgBehavior.Unknown : "undefined behavior in " + this;
         return checkResult == null ? null : checkResult.get();
+    }
+
+    public CheckFunctionResultNode getUncachedCheckResultNode() {
+        assert behavior != ArgBehavior.Unknown : "undefined behavior in " + this;
+        return uncachedCheckResult;
     }
 
     public String getNFISignature() {
