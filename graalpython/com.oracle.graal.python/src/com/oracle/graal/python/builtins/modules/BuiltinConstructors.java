@@ -2865,7 +2865,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 16, numOfPositionalOnlyArgs = 18, parameterNames = {
                     "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring",
                     "constants", "names", "varnames", "filename", "name", "qualname", "firstlineno",
-                    "linetable", "freevars", "cellvars"})
+                    "linetable", "exceptiontable", "freevars", "cellvars"})
     @ArgumentClinic(name = "argcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
@@ -2884,7 +2884,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names, PTuple varnames,
                         TruffleString filename, TruffleString name, TruffleString qualname,
-                        int firstlineno, PBytes linetable,
+                        int firstlineno, PBytes linetable, @SuppressWarnings("unused") PBytes exceptiontable,
                         PTuple freevars, PTuple cellvars,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
@@ -2914,7 +2914,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names, Object varnames,
                         Object filename, Object name, Object qualname,
-                        Object firstlineno, Object linetable,
+                        Object firstlineno, Object linetable, Object exceptiontable,
                         Object freevars, Object cellvars,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS, "code");

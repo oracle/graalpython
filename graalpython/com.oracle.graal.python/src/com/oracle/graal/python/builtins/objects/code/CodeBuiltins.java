@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 
@@ -276,6 +277,18 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "co_exceptiontable", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetExceptionTableNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        static Object get(PCode self,
+                        @Cached PythonObjectFactory factory) {
+            // We store our exception table together with the bytecode, not in this field
+            return factory.createBytes(EMPTY_BYTE_ARRAY);
+        }
+    }
+
     @Builtin(name = "co_lines", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CoLinesNode extends PythonUnaryBuiltinNode {
@@ -418,7 +431,8 @@ public final class CodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self",
                     "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
-                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_qualname", "co_linetable"})
+                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars",
+                    "co_filename", "co_name", "co_qualname", "co_linetable", "co_exceptiontable"})
     @ArgumentClinic(name = "co_argcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
@@ -452,7 +466,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         Object[] coVarnames, Object[] coFreevars,
                         Object[] coCellvars, TruffleString coFilename,
                         TruffleString coName, TruffleString coQualname,
-                        Object coLnotab,
+                        Object coLnotab, @SuppressWarnings("unused") Object coExceptiontable,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,

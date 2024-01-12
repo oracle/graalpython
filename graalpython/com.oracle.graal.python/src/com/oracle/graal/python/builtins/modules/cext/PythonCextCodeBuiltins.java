@@ -87,7 +87,7 @@ public final class PythonCextCodeBuiltins {
                             kwonlyargcount, nlocals, stacksize, flags,
                             code, consts, names, varnames,
                             filename, name, qualname,
-                            firstlineno, lnotab,
+                            firstlineno, lnotab, exceptionTable,
                             freevars, cellvars
             };
             return callNode.execute(PythonBuiltinClassType.PCode, args);
