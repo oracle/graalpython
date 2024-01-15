@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -55,13 +55,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageClear;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIntersect;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStoragePop;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -788,21 +784,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object remove(VirtualFrame frame, PSet self,
+        static Object remove(PSet self,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetIterator getIter,
-                        @Cached HashingStorageIteratorNext iterNext,
-                        @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageDelItem delItem,
+                        @Cached HashingStoragePop popNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            HashingStorage storage = self.getDictStorage();
-            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
-            if (iterNext.execute(inliningTarget, storage, it)) {
-                Object key = iterKey.execute(inliningTarget, storage, it);
-                // TODO: (GR-41996) this may still invokes __hash__, may invoke __eq__ and is
-                // suboptimal. There is ignored test for this in test_set.py
-                delItem.execute(frame, inliningTarget, storage, key, self);
-                return key;
+            Object[] result = popNode.execute(inliningTarget, self.getDictStorage(), self);
+            if (result != null) {
+                return result[0];
             }
             throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
