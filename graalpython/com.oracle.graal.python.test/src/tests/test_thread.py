@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,18 +36,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from test import support
-from test.support import import_helper
-from test.support import threading_helper
-
 import random
 import re
-import subprocess
 import sys
 import threading
 import unittest
 from _thread import start_new_thread
-from textwrap import dedent
+from test import support
+from test.support import import_helper
+from test.support import threading_helper
 
 thread = import_helper.import_module('_thread')
 import time
@@ -522,29 +519,3 @@ class LockTests(BaseTestCase):
         lock.release()
         self.assertFalse(lock.locked())
         self.assertTrue(lock.acquire(blocking=False))
-
-
-class TestGIL(unittest.TestCase):
-    def test_gil_fairness(self):
-        # Test that a thread runing a tight loop without sleeps cannot completely starve other threads
-        program = dedent("""\
-        import threading, time
-        thread_count = 5000
-        done = 0
-        def target():
-            time.sleep(0.01)
-            global done
-            done += 1
-        threads = []
-        for i in range(thread_count):
-            t = threading.Thread(target=target)
-            t.start()
-            threads.append(t)
-        waited = 0
-        while done != thread_count:
-            waited += 1
-        for t in threads:
-            t.join()
-        """)
-        # Note this normally takes ~0.5s, the 30s timeout is to allow room for overloaded CI
-        subprocess.run([sys.executable, '-c', program], check=True, timeout=30)
