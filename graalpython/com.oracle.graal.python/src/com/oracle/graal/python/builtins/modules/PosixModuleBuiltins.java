@@ -654,8 +654,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTuple getloadavg(@Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory) {
+            double load = -1.0;
             // (mq) without native call we can only obtain system load average for the last minute.
-            double load = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+            if (ManagementFactory.getOperatingSystemMXBean() != null) {
+                load = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+            }
             if (load < 0) {
                 PRaiseNode.raiseUncached(inliningTarget, OSError);
             }
