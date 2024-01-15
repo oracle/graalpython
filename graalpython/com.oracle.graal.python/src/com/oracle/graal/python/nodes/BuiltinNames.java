@@ -466,4 +466,7 @@ public abstract class BuiltinNames {
 
     public static final String J_COPYREG = "copyreg";
     public static final TruffleString T_COPYREG = tsLiteral(J_COPYREG);
+
+    public static final String J_EXCEPTION_GROUP = "ExceptionGroup";
+    public static final TruffleString T_EXCEPTION_GROUP = tsLiteral(J_EXCEPTION_GROUP);
 }

@@ -241,6 +241,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
@@ -516,6 +517,7 @@ public abstract class Python3Core {
                         new MemberDescriptorBuiltins(),
                         new PropertyBuiltins(),
                         new BaseExceptionBuiltins(),
+                        new BaseExceptionGroupBuiltins(),
                         new PosixModuleBuiltins(),
                         new NtModuleBuiltins(),
                         new WinregModuleBuiltins(),
