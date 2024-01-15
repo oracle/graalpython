@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.ordereddict;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
@@ -85,14 +84,13 @@ import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict.ODictNo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -294,22 +292,17 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         static Object reduce(VirtualFrame frame, POrderedDict self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetAttr getAttr,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectGetStateNode getStateNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
                         @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            // Might be overridden
-            Object dict = getAttr.execute(frame, inliningTarget, self, T___DICT__);
-            if (sizeNode.execute(frame, inliningTarget, dict) == 0) {
-                dict = PNone.NONE;
-            }
+            Object state = getStateNode.execute(frame, inliningTarget, self);
             Object args = factory.createEmptyTuple();
             // Might be overridden
             Object items = callMethod.execute(frame, inliningTarget, self, T_ITEMS);
             Object itemsIter = getIter.execute(frame, inliningTarget, items);
-            return factory.createTuple(new Object[]{type, args, dict, PNone.NONE, itemsIter});
+            return factory.createTuple(new Object[]{type, args, state, PNone.NONE, itemsIter});
         }
     }
 

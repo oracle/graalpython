@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_MUTATED_DURING_REMOVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_REMOVE_X_NOT_IN_DEQUE;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
@@ -110,9 +109,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -985,22 +983,18 @@ public final class DequeBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, PDeque self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectGetStateNode getStateNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
-            Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
-            if (PGuards.isNoValue(dict) || sizeNode.execute(frame, inliningTarget, dict) <= 0) {
-                dict = PNone.NONE;
-            }
+            Object state = getStateNode.execute(frame, inliningTarget, self);
             Object it = getIter.execute(frame, inliningTarget, self);
             PTuple emptyTuple = factory.createEmptyTuple();
             int maxLength = self.getMaxLength();
             if (maxLength != -1) {
-                return factory.createTuple(new Object[]{clazz, factory.createTuple(new Object[]{emptyTuple, maxLength}), dict, it});
+                return factory.createTuple(new Object[]{clazz, factory.createTuple(new Object[]{emptyTuple, maxLength}), state, it});
             }
-            return factory.createTuple(new Object[]{clazz, emptyTuple, dict, it});
+            return factory.createTuple(new Object[]{clazz, emptyTuple, state, it});
 
         }
     }

@@ -464,4 +464,6 @@ public abstract class BuiltinNames {
     public static final String J__CODECS_TW = "_codecs_tw";
     public static final TruffleString T__CODECS_TW = tsLiteral(J__CODECS_TW);
 
+    public static final String J_COPYREG = "copyreg";
+    public static final TruffleString T_COPYREG = tsLiteral(J_COPYREG);
 }

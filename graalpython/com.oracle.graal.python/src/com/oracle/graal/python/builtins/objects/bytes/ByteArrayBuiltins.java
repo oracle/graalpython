@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareB
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
@@ -83,7 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -842,18 +841,15 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookupDict,
+                        @Cached PyObjectGetStateNode getStateNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PythonObjectFactory factory) {
             byte[] bytes = getBytes.execute(inliningTarget, self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
-            Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
-            if (dict == PNone.NO_VALUE) {
-                dict = PNone.NONE;
-            }
+            Object state = getStateNode.execute(frame, inliningTarget, self);
             Object clazz = getClassNode.execute(inliningTarget, self);
-            return commonReduce(2, bytes, len, clazz, dict, factory, appendCodePointNode, toStringNode);
+            return commonReduce(2, bytes, len, clazz, state, factory, appendCodePointNode, toStringNode);
         }
     }
 

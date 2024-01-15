@@ -448,7 +448,6 @@ public abstract class ErrorMessages {
     public static final TruffleString MUST_BE_TYPE_A_NOT_TYPE_B = tsLiteral("%s must be a %s, not %p");
     public static final TruffleString SHOULD_RETURN_A_NOT_B = tsLiteral("%s should return a %s, not %s");
     public static final TruffleString SLOTNAMES_SHOULD_BE_A_NOT_B = tsLiteral("%p.__slotnames__ should be a %s, not %p");
-    public static final TruffleString COPYREG_SLOTNAMES = tsLiteral("copyreg._slotnames didn't return a list or None");
     public static final TruffleString D_IS_NOT_IN_RANGE = tsLiteral("%d is not in range");
     public static final TruffleString INIT_TAKES_ONE_ARG = tsLiteral("%N.__init__() takes exactly one argument (the instance to initialize)");
     public static final TruffleString INIT_TAKES_ONE_ARG_OBJECT = tsLiteral("object.__init__() takes exactly one argument (the instance to initialize)");
@@ -1013,6 +1012,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
     public static final TruffleString SEMAPHORE_RELEASED_TOO_MANY_TIMES = tsLiteral("semaphore or lock released too many times");
+    public static final TruffleString N_SLOTNAMES_SHOULD_BE_A_LIST_OR_NONE_NOT_P = tsLiteral("%N.__slotnames__ should be a list or None, not %p");
+    public static final TruffleString COPYREG_SLOTNAMES_DIDN_T_RETURN_A_LIST_OR_NONE = tsLiteral("copyreg._slotnames didn't return a list or None");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

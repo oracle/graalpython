@@ -41,6 +41,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
@@ -946,4 +947,14 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J___GETSTATE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetStateNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object getstate(VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ObjectNodes.ObjectGetStateDefaultNode getstateDefaultNode) {
+            return getstateDefaultNode.execute(frame, inliningTarget, self, false);
+        }
+    }
 }
