@@ -317,8 +317,11 @@ class PolyglotAppTest(unittest.TestCase):
             try:
                 cmd = MVN_CMD + ["-X", "process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
-
+                if "Missing GraalPy dependency org.graalvm.python:python-language" not in out:
+                    print("=== test_fail_without_graalpy_dep output ===================================")
+                    print(out)
+                    print("============================================================================")
+                    assert False, "'Missing GraalPy dependency' text not in output"
             finally:
                 self.purge_local_repo(target_dir, False)
 
