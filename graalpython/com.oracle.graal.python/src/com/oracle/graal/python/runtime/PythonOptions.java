@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -106,6 +106,11 @@ public final class PythonOptions {
      * will be available.
      */
     public static final boolean WITHOUT_NATIVE_POSIX = Boolean.getBoolean("python.WithoutNativePosix");
+    /**
+     * This property can be used to exclude native sha3 support from the build. Only Java based
+     * implementation will be available.
+     */
+    public static final boolean WITHOUT_NATIVE_SHA3 = Boolean.getBoolean("python.WithoutNativeSha3");
 
     /**
      * This property can be used to exclude socket and inet support from the Java posix backend.

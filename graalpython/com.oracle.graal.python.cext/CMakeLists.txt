@@ -183,6 +183,7 @@ simple_native_module("_cpython_sre")
 simple_native_module("_cpython_unicodedata")
 simple_native_module("_cpython_struct")
 simple_native_module("_sqlite3")
+native_module("_sha3" TRUE "${SRC_DIR}/modules/_sha3/sha3module.c")
 
 if(NOT WIN32)
     native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")

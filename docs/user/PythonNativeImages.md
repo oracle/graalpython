@@ -32,6 +32,8 @@ These are:
   These modules have both native and pure Java implementations (the former for performance, the latter for better sandboxing); however, if they are not needed, they can be removed entirely.
 * `python.WithoutNativePosix=true` - The default `os` module backend is a pure Java implementation when GraalPy is embedded rather than run via its launcher.
   The native POSIX backend of GraalPy is recommended only for 100% compatibility with CPython's POSIX interfaces, and if not used, can be removed from the build with this option.
+* `python.WithoutNativeSha3=true` - The default `_sha3` module backend is a pure Java implementation when GraalPy is embedded rather than run via its launcher.
+  The native sha3 backend of GraalPy is recommended only for 100% compatibility with CPython's _sha3 interfaces, and if not used, can be removed from the build with this option.
 * `python.WithoutJavaInet=true` - The Java implementation of Python's `socket` module is based on Java's networking classes.
   If network access is denied for an embedding scenario anyway, this option can reduce the binary size further.
 * `python.AutomaticAsyncActions=false` - Signal handling, Python weak reference callbacks, and cleaning up native resources is usually achieved automatically by spawning GraalPy daemon threads that submit safepoint actions to the Python main thread.

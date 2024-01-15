@@ -1559,6 +1559,7 @@ def graalpython_gate_runner(args, tasks):
                 "-Dpython.WithoutPlatformAccess=true",
                 "-Dpython.WithoutCompressionLibraries=true",
                 "-Dpython.WithoutNativePosix=true",
+                "-Dpython.WithoutNativeSha3=true"
                 "-Dpython.WithoutJavaInet=true",
                 "-Dimage-build-time.PreinitializeContexts=",
                 "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",

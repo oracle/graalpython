@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -122,6 +123,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
     private static final String CONSTRUCTORS = "_constructors";
     private static final HiddenKey ORIGINAL_CONSTRUCTORS = new HiddenKey(CONSTRUCTORS);
+    private static final String _SHA3 = "_sha3";
     private static final String[] DIGEST_ALIASES = new String[]{
                     "md5", "_md5",
                     "sha1", "_sha1",
@@ -129,12 +131,12 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "sha256", "_sha256",
                     "sha384", "_sha512",
                     "sha512", "_sha512",
-                    "sha3_224", "_sha3",
-                    "sha3_256", "_sha3",
-                    "sha3_384", "_sha3",
-                    "sha3_512", "_sha3",
-                    "shake_128", "_sha3",
-                    "shake_256", "_sha3"
+                    "sha3_224", _SHA3,
+                    "sha3_256", _SHA3,
+                    "sha3_384", _SHA3,
+                    "sha3_512", _SHA3,
+                    "shake_128", _SHA3,
+                    "shake_256", _SHA3
     };
     private static final String[] DIGEST_ALGORITHMS;
     static {
@@ -161,18 +163,15 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         EconomicMapStorage storage = EconomicMapStorage.create();
         addBuiltinConstant(CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
         addBuiltinConstant(ORIGINAL_CONSTRUCTORS, storage);
-        ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
-        for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
-            addDigestAlias(core, readNode, DIGEST_ALIASES[i], DIGEST_ALIASES[i + 1]);
-        }
         super.initialize(core);
     }
 
-    private final void addDigestAlias(Python3Core core, ReadAttributeFromDynamicObjectNode readNode, String digest, String module) {
+    private void addDigestAlias(PythonModule self, Object mod, ReadAttributeFromDynamicObjectNode readNode, EconomicMapStorage storage, String digest) {
         TruffleString tsDigest = toTruffleStringUncached(digest);
-        Object function = readNode.execute(core.lookupBuiltinModule(toTruffleStringUncached(module)), tsDigest);
+        Object function = readNode.execute(mod, tsDigest);
         if (function != PNone.NO_VALUE) {
-            addBuiltinConstant(OPENSSL_PREFIX + digest, function);
+            self.setAttribute(toTruffleStringUncached(OPENSSL_PREFIX + digest), function);
+            HashingStorageNodes.HashingStorageSetItem.executeUncached(storage, function, tsDigest);
         }
     }
 
@@ -182,18 +181,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
         EconomicMapStorage storage = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
+        Object sha3module = AbstractImportNode.importModule(toTruffleStringUncached(_SHA3));
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
-            addDigestAlias(self, readNode, storage, DIGEST_ALIASES[i]);
-        }
-    }
-
-    private static final void addDigestAlias(PythonModule self, ReadAttributeFromDynamicObjectNode readNode, EconomicMapStorage storage, String digest) {
-        String digestAttr = OPENSSL_PREFIX + digest;
-        TruffleString tsDigest = toTruffleStringUncached(digest);
-        TruffleString tsDigestAttr = toTruffleStringUncached(digestAttr);
-        Object function = readNode.execute(self, tsDigestAttr);
-        if (function != PNone.NO_VALUE) {
-            HashingStorageNodes.HashingStorageSetItem.executeUncached(storage, function, tsDigest);
+            String module = DIGEST_ALIASES[i + 1];
+            Object mod = module.equals(_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
+            addDigestAlias(self, mod, readNode, storage, DIGEST_ALIASES[i]);
         }
     }
 
