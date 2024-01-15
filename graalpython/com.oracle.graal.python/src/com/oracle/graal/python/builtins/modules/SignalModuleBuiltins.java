@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -381,8 +381,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SigInterruptNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static PNone doInt(int signalnum, boolean flag) {
+        static PNone doInt(VirtualFrame frame, @SuppressWarnings("unused") int signalnum, boolean flag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            if (flag) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
+            }
             return PNone.NONE;
         }
 
