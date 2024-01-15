@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -695,6 +695,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_dg_stdnan", ret = Double, args = {Int}, call = CImpl)
     @CApiBuiltin(name = "_Py_dg_strtod", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
 
     /*
      * Functions that are not implemented at the moment:
@@ -860,7 +861,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_Rshift", ret = PyObject, args = {PyObject, SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Size_t_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedInt_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedLongLong_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedShort_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyMem_GetCurrentAllocatorName", ret = ConstCharPtrAsTruffleString, args = {}, call = NotImplemented)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -3940,10 +3940,6 @@ PyAPI_FUNC(int) _PyLong_UnsignedInt_Converter(PyObject* a, void* b) {
 }
 #undef _PyLong_UnsignedLongLong_Converter
 PyAPI_FUNC(int) _PyLong_UnsignedLongLong_Converter(PyObject* a, void* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyLong_UnsignedLong_Converter
-PyAPI_FUNC(int) _PyLong_UnsignedLong_Converter(PyObject* a, void* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyLong_UnsignedShort_Converter
