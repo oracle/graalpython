@@ -343,6 +343,15 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @GenerateInline(false) // footprint reduction 132 -> 115
     protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
 
+        private static void checkNativeImmutable(PythonAbstractNativeObject object, Object keyObj,
+                        CStructAccess.ReadI64Node getNativeFlags,
+                        PRaiseNode raiseNode) {
+            long flags = getNativeFlags.readFromObj(object, CFields.PyTypeObject__tp_flags);
+            if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
+                throw raiseNode.raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(keyObj), object);
+            }
+        }
+
         /*
          * Simplest case: the key object is a String (so it cannot be a hidden key) and it's not a
          * special method slot.
@@ -357,11 +366,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @SuppressWarnings("unused") @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @SuppressWarnings("unused") @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-
-            long flags = getNativeFlags.readFromObj(object, CFields.PyTypeObject__tp_flags);
-            if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
-                throw raiseNode.raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(keyObj), object);
-            }
+            checkNativeImmutable(object, keyObj, getNativeFlags, raiseNode);
             /*
              * For native types, the type attributes are stored in a dict that is located in
              * 'typePtr->tp_dict'. So, this is different to a native object (that is not a type) and
@@ -390,6 +395,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached TruffleString.EqualNode equalNode) {
             try {
+                checkNativeImmutable(object, keyObj, getNativeFlags, raiseNode);
                 /*
                  * For native types, the type attributes are stored in a dict that is located in
                  * 'typePtr->tp_dict'. So, this is different to a native object (that is not a type)
