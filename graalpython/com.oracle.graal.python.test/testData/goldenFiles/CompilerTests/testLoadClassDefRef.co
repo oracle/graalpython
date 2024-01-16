@@ -11,7 +11,7 @@ Disassembly of f:
   2:4   -   2:18        1 LOAD_CLOSURE                      0    (x)
   2:4   -   2:18        3 CLOSURE_FROM_STACK                1
   2:4   -   2:18        5 MAKE_FUNCTION                     8    (f.<locals>.C)
-  2:4   -   2:18        8 LOAD_STRING                       3    ('C')
+  2:4   -   2:18        8 LOAD_STRING                       2    ('C')
   2:4   -   2:18       10 COLLECTION_FROM_STACK             2    (Object[])
   2:4   -   2:18       12 CALL_FUNCTION_VARARGS
   2:4   -   2:18       13 STORE_FAST                        1    (C)

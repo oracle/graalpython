@@ -16,8 +16,8 @@ Disassembly of <module>:
   3:12  -   3:72       30 JUMP_IF_FALSE_OR_POP              15   (to 45)
   3:35  -   3:38       34 LOAD_NAME                         1    (sys)
   3:35  -   3:43       36 LOAD_ATTR                         3    (argv)
-  3:44  -   3:45       38 LOAD_BYTE_O                       0
-  3:35  -   3:46       40 BINARY_SUBSCR
+  3:44  -   3:45       38 LOAD_BYTE_I                       0                                      can quicken
+  3:35  -   3:46       40 BINARY_SUBSCR                                                            generalizes: 38
   3:50  -   3:72       41 LOAD_STRING                       2    ('java_embedding_bench')
   3:35  -   3:72       43 BINARY_OP                         12   (EQ)                              can quicken
   3:7   -   3:73  >>   45 UNARY_OP                          0    (NOT)                             can quicken, generalizes: 43
@@ -40,8 +40,8 @@ Disassembly of <module>:
   7:18  -   7:21       83 LOAD_NAME                         6    (int)
   7:22  -   7:25       85 LOAD_NAME                         1    (sys)
   7:22  -   7:30       87 LOAD_ATTR                         3    (argv)
-  7:31  -   7:32       89 LOAD_BYTE_O                       1
-  7:22  -   7:33       91 BINARY_SUBSCR
+  7:31  -   7:32       89 LOAD_BYTE_I                       1                                      can quicken
+  7:22  -   7:33       91 BINARY_SUBSCR                                                            generalizes: 89
   7:18  -   7:34       92 CALL_FUNCTION                     1
   7:12  -   7:15       94 STORE_NAME                        7    (num)
   8:12  -   8:25       96 LOAD_NAME                         8    (__benchmark__)

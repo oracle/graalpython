@@ -13,8 +13,8 @@ Disassembly of <module>:
   2:2   -   3:5        24 MATCH_KEYS
   2:2   -   3:5        25 POP_AND_JUMP_IF_FALSE             20   (to 45)
   2:2   -   3:5        29 DUP_TOP
-  2:2   -   3:5        30 LOAD_BYTE_O                       0
-  2:2   -   3:5        32 BINARY_SUBSCR
+  2:2   -   3:5        30 LOAD_BYTE_I                       0                                      can quicken
+  2:2   -   3:5        32 BINARY_SUBSCR                                                            generalizes: 30
   2:2   -   3:5        33 ROT_N                             4
   2:2   -   3:5        35 POP_TOP
   2:2   -   3:5        36 POP_TOP
