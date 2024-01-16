@@ -1098,7 +1098,8 @@ public abstract class CExtNodes {
                         @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
-            getThreadStateNode.setCurrentException(inliningTarget, e);
+            PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+            threadState.setCurrentException(e);
         }
     }
 

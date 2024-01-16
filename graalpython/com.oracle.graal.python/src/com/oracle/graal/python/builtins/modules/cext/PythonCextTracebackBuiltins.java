@@ -53,10 +53,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins.PyCode_NewEmpty;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -91,13 +91,9 @@ public final class PythonCextTracebackBuiltins {
             PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(language);
             PException currentException = threadState.getCurrentException();
             if (currentException != null) {
-                PTraceback traceback = null;
-                if (currentException.getTraceback() != null) {
-                    traceback = materializeLazyTracebackNode.execute(inliningTarget, currentException.getTraceback());
-                }
-                PTraceback newTraceback = factory.createTraceback(frame, frame.getLine(), traceback);
-                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-                threadState.setCurrentException(PException.fromExceptionInfo(currentException.getUnreifiedException(), newTraceback, withJavaStacktrace));
+                PTraceback currentTraceback = materializeLazyTracebackNode.execute(inliningTarget, threadState.getCurrentTraceback());
+                PTraceback newTraceback = factory.createTraceback(frame, frame.getLine(), currentTraceback);
+                threadState.setCurrentTraceback(new LazyTraceback(newTraceback));
             }
 
             return 0;

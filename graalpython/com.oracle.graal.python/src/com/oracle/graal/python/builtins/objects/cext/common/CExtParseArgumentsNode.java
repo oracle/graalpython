@@ -1084,7 +1084,7 @@ public abstract class CExtParseArgumentsNode {
         static void doError(Node inliningTarget, @SuppressWarnings("unused") int statusCode,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached PRaiseNativeNode.Lazy raiseNode) throws ParseArgumentsException {
-            PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
+            PException currentException = getThreadStateNode.execute(inliningTarget).getCurrentException();
             boolean errOccurred = currentException != null;
             if (!errOccurred) {
                 // converter should have set exception

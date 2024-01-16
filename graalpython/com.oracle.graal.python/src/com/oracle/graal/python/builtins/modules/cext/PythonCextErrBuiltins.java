@@ -143,31 +143,24 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyErr_Restore extends CApiTernaryBuiltinNode {
 
-        @Specialization(guards = {"isNoValue(typ)", "isNoValue(val)"})
-        @SuppressWarnings("unused")
-        Object restore(PNone typ, PNone val, Object tb) {
-            getContext().setCurrentException(getLanguage(), null);
-            return PNone.NO_VALUE;
-        }
-
-        @Fallback
+        @Specialization
         Object restore(Object typ, Object val, Object tb,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
-            PythonContext context = getContext();
+                        @Cached PrepareExceptionNode prepareExceptionNode) {
             PythonLanguage language = getLanguage();
-            Object exception;
-            try {
-                exception = prepareExceptionNode.execute(null, typ, val);
-            } catch (PException e) {
-                context.setCurrentException(language, e);
-                return PNone.NO_VALUE;
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(language);
+            if (typ == PNone.NO_VALUE && val == PNone.NO_VALUE) {
+                threadState.clearCurrentException();
+            } else {
+                Object exception;
+                try {
+                    exception = prepareExceptionNode.execute(null, typ, val);
+                } catch (PException e) {
+                    threadState.setCurrentException(e);
+                    return PNone.NO_VALUE;
+                }
+                PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+                threadState.setCurrentException(e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
             }
-            if (tb instanceof PTraceback) {
-                setTracebackNode.execute(inliningTarget, exception, tb);
-            }
-            context.setCurrentException(language, PException.fromExceptionInfo(exception, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NO_VALUE;
         }
     }
@@ -178,25 +171,9 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class _PyErr_ChainExceptions extends CApiTernaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        Object run(PNone typ, PNone val, PNone tb) {
-            getContext().setCurrentException(getLanguage(), null);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            context.setCurrentException(language, PException.fromExceptionInfo(val, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
-            context.setCurrentException(language, PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+        Object run(Object typ, Object val, Object tb,
+                        @Cached PyErr_Restore restore) {
+            restore.execute(typ, val, tb);
             return PNone.NONE;
         }
     }
@@ -210,21 +187,19 @@ public final class PythonCextErrBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached MaterializeLazyTracebackNode materializeTraceback,
                         @Cached PythonObjectFactory factory) {
-            PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
+            PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+            PException currentException = threadState.getCurrentException();
             Object result;
             if (currentException == null) {
                 result = getNativeNull();
             } else {
                 Object exception = currentException.getEscapedException();
-                Object traceback = null;
-                if (currentException.getTraceback() != null) {
-                    traceback = materializeTraceback.execute(inliningTarget, currentException.getTraceback());
-                }
+                Object traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
                 if (traceback == null) {
                     traceback = getNativeNull();
                 }
                 result = factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
-                getThreadStateNode.setCurrentException(inliningTarget, null);
+                threadState.clearCurrentException();
             }
             return result;
         }
@@ -237,7 +212,7 @@ public final class PythonCextErrBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached GetClassNode getClassNode) {
-            PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
+            PException currentException = getThreadStateNode.execute(inliningTarget).getCurrentException();
             if (currentException != null) {
                 // getClassNode acts as a branch profile
                 return getClassNode.execute(inliningTarget, currentException.getUnreifiedException());
@@ -264,22 +239,20 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_SetExcInfo extends CApiTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doClear(PNone typ, PNone val, PNone tb) {
-            getContext().setCaughtException(getLanguage(), PException.NO_EXCEPTION);
+        Object doClear(Object typ, PNone val, Object tb) {
+            PythonContext pythonContext = getContext();
+            PythonLanguage lang = getLanguage();
+            pythonContext.getThreadState(lang).setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
 
         @Specialization
-        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
+        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") Object tb) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            context.setCaughtException(language, PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+            PException e = PException.fromExceptionInfo(val, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            context.getThreadState(language).setCaughtException(e);
             return PNone.NONE;
-        }
-
-        @Specialization
-        Object doWithoutTraceback(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            return doFull(typ, val, null);
         }
 
         @Fallback
@@ -528,7 +501,7 @@ public final class PythonCextErrBuiltins {
             }
             writeAttrNode.execute(val, T___TRACEBACK__, tb);
             writeUnraisableNode.execute((PBaseException) val, m, (obj instanceof PNone) ? PNone.NONE : obj);
-            getThreadStateNode.setCaughtException(inliningTarget, PException.NO_EXCEPTION);
+            getThreadStateNode.execute(inliningTarget).setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
     }

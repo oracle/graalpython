@@ -97,7 +97,7 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
             public Object execute(VirtualFrame frame) {
                 PythonContext context = PythonContext.get(this);
                 getThreadStateNode.setTopFrameInfoCached(context, PFrame.Reference.EMPTY);
-                getThreadStateNode.setCaughtExceptionCached(context, PException.NO_EXCEPTION);
+                getThreadStateNode.executeCached(context).setCaughtException(PException.NO_EXCEPTION);
 
                 Object callable = frame.getArguments()[0];
                 Object[] arguments = (Object[]) frame.getArguments()[1];
@@ -112,7 +112,7 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
                     throw e;
                 } finally {
                     getThreadStateNode.clearTopFrameInfoCached(context);
-                    getThreadStateNode.setCaughtExceptionCached(context, null);
+                    getThreadStateNode.executeCached(context).setCaughtException(null);
                 }
             }
 

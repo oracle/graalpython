@@ -528,18 +528,17 @@ public abstract class CExtCommonNodes {
         private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
                         TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, PException currentException) {
             if (indicatesError) {
-                // consume exception
-                threadState.setCurrentException(null);
                 if (errOccurred) {
                     assert currentException != null;
-                    throw currentException.getExceptionForReraise(false);
+                    throw threadState.reraiseCurrentException();
                 } else if (strict) {
+                    threadState.clearCurrentException();
                     throw raiseNullButNoError(inliningTarget, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 assert currentException != null;
                 // consume exception
-                threadState.setCurrentException(null);
+                threadState.clearCurrentException();
                 throw raiseResultWithError(inliningTarget, name, currentException, resultWithErrorMessage);
             }
         }

@@ -2056,10 +2056,7 @@ public abstract class ExternalFunctionNodes {
                 if (currentException == null) {
                     throw raiseNode.raiseStopIteration();
                 } else {
-                    // consume exception
-                    state.setCurrentException(null);
-                    // re-raise exception
-                    throw currentException.getExceptionForReraise(false);
+                    throw state.reraiseCurrentException();
                 }
             }
             return result;

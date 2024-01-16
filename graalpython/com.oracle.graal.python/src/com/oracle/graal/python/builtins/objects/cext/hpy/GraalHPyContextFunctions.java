@@ -1685,7 +1685,7 @@ public abstract class GraalHPyContextFunctions {
         static int doGeneric(GraalHPyContext hpyContext,
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode) {
-            return getThreadStateNode.getCurrentException(inliningTarget, hpyContext.getContext()) != null ? 1 : 0;
+            return getThreadStateNode.execute(inliningTarget, hpyContext.getContext()).getCurrentException() != null ? 1 : 0;
         }
     }
 
@@ -1698,7 +1698,7 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached RecursiveExceptionMatches exceptionMatches) {
-            PException err = getThreadStateNode.getCurrentException(inliningTarget, hpyContext.getContext());
+            PException err = getThreadStateNode.execute(inliningTarget, hpyContext.getContext()).getCurrentException();
             if (err == null) {
                 return 0;
             }
@@ -1717,7 +1717,8 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext,
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode) {
-            getThreadStateNode.setCurrentException(inliningTarget, hpyContext.getContext(), null);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, hpyContext.getContext());
+            threadState.clearCurrentException();
             return NULL_HANDLE_DELEGATE;
         }
     }
@@ -1747,9 +1748,10 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached WriteUnraisableNode writeUnraisableNode) {
-            PException exception = getThreadStateNode.getCurrentException(inliningTarget, hpyContext.getContext());
-            getThreadStateNode.setCurrentException(inliningTarget, hpyContext.getContext(), null);
-            writeUnraisableNode.execute(null, exception.getUnreifiedException(), null, (object instanceof PNone) ? PNone.NONE : object);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, hpyContext.getContext());
+            PException exception = threadState.getCurrentException();
+            threadState.clearCurrentException();
+            writeUnraisableNode.execute(null, exception.getEscapedException(), null, (object instanceof PNone) ? PNone.NONE : object);
             return 0; // void
         }
     }

@@ -259,7 +259,8 @@ public abstract class GraalHPyNodes {
                         @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
-            getThreadStateNode.setCurrentException(inliningTarget, nativeContext.getContext(), e);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, nativeContext.getContext());
+            threadState.setCurrentException(e);
         }
     }
 
