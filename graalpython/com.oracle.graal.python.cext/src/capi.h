@@ -908,6 +908,7 @@ PY_TRUFFLE_TYPE(PyCStructType_Type, 	"PyCStructType",			&PyType_Type, sizeof(PyO
 PY_TRUFFLE_TYPE(UnionType_Type, 		"_ctypes.UnionType",		&PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCPointerType_Type,	"PyCPointerType", 		    &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCArrayType_Type,		"PyCArrayType", 			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCoro_Type, 			"coroutine", 				&PyType_Type, sizeof(PyCoroObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAIterWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenASend_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenAThrow_Type) \
@@ -932,7 +933,6 @@ PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyCmpWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContext_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContextToken_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContextVar_Type) \
-PY_TRUFFLE_TYPE(PyCoro_Type, 			"coroutine", 				&PyType_Type, sizeof(PyCoroObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictItems_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictIterItem_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictIterKey_Type) \

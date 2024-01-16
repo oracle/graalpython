@@ -190,6 +190,7 @@ public enum SlotMethodDef {
     AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncWrapper::new, MethodsFlags.AM_AWAIT),
     AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncWrapper::new, MethodsFlags.AM_AITER),
     AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, UnaryFuncWrapper::new, MethodsFlags.AM_ANEXT),
+    // (mq) AM_SEND is an internal function and mostly called from within AWAIT, AITER, ANEXT.
     /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, TernaryFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
     SQ_LENGTH(PySequenceMethods__sq_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.SQ_LENGTH),
