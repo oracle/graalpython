@@ -19,6 +19,47 @@ typedef enum {
 static float_format_type double_format, float_format;
 static float_format_type detected_double_format, detected_float_format;
 
+#ifdef _MSC_VER
+#pragma section(".CRT$XCU",read)
+static void init_formats(void);
+__declspec(allocate(".CRT$XCU")) void (*init_formats_)(void) = init_formats;
+__pragma(comment(linker,"/include:" "init_formats_"))
+#else
+__attribute__((constructor))
+#endif
+static void init_formats(void) {
+#if SIZEOF_DOUBLE == 8
+    {
+        double x = 9006104071832581.0;
+        if (memcmp(&x, "\x43\x3f\xff\x01\x02\x03\x04\x05", 8) == 0)
+            detected_double_format = ieee_big_endian_format;
+        else if (memcmp(&x, "\x05\x04\x03\x02\x01\xff\x3f\x43", 8) == 0)
+            detected_double_format = ieee_little_endian_format;
+        else
+            detected_double_format = unknown_format;
+    }
+#else
+    detected_double_format = unknown_format;
+#endif
+
+#if SIZEOF_FLOAT == 4
+    {
+        float y = 16711938.0;
+        if (memcmp(&y, "\x4b\x7f\x01\x02", 4) == 0)
+            detected_float_format = ieee_big_endian_format;
+        else if (memcmp(&y, "\x02\x01\x7f\x4b", 4) == 0)
+            detected_float_format = ieee_little_endian_format;
+        else
+            detected_float_format = unknown_format;
+    }
+#else
+    detected_float_format = unknown_format;
+#endif
+
+    double_format = detected_double_format;
+    float_format = detected_float_format;
+}
+
 
 // Below taken from CPython
 double
