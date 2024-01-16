@@ -1055,6 +1055,9 @@ public abstract class ErrorMessages {
     public static final TruffleString NEG_BUFF_SIZE_IN_RECV = tsLiteral("negative buffersize in recv");
     public static final TruffleString NEG_FILE_DESC = tsLiteral("negative file descriptor");
     public static final TruffleString UNABLE_TO_SELECT_ON_SOCKET = tsLiteral("unable to select on socket");
+    public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL = tsLiteral("'%N' object does not support the context manager protocol");
+    public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL_EXIT = tsLiteral("'%N' object does not support the context manager protocol (missed __exit__ method)");
+
 
     // mmap
     public static final TruffleString MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = tsLiteral("memory mapped length must be positive");
