@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -286,13 +286,14 @@ public final class CompilationUnit {
         int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
         int[][] finishedGeneralizeVarsMap = new int[varCount][];
         for (Instruction insn : quickenedInstructions) {
-            finishedCanQuickenOutput[insn.bci] = insn.quickenOutput;
+            int insnBodyBci = insn.bodyBci();
+            finishedCanQuickenOutput[insnBodyBci] = insn.quickenOutput;
             if (insn.quickeningGeneralizeList != null && insn.quickeningGeneralizeList.size() > 0) {
-                finishedGeneralizeInputsMap[insn.bci] = new int[insn.quickeningGeneralizeList.size()];
-                for (int j = 0; j < finishedGeneralizeInputsMap[insn.bci].length; j++) {
-                    int bci = insn.quickeningGeneralizeList.get(j).bci;
+                finishedGeneralizeInputsMap[insnBodyBci] = new int[insn.quickeningGeneralizeList.size()];
+                for (int j = 0; j < finishedGeneralizeInputsMap[insnBodyBci].length; j++) {
+                    int bci = insn.quickeningGeneralizeList.get(j).bodyBci();
                     assert bci >= 0;
-                    finishedGeneralizeInputsMap[insn.bci][j] = bci;
+                    finishedGeneralizeInputsMap[insnBodyBci][j] = bci;
                 }
             }
         }
@@ -316,7 +317,7 @@ public final class CompilationUnit {
                 List<Instruction> stores = variableStores.get(i);
                 finishedGeneralizeVarsMap[i] = new int[stores.size()];
                 for (int j = 0; j < stores.size(); j++) {
-                    finishedGeneralizeVarsMap[i][j] = stores.get(j).bci;
+                    finishedGeneralizeVarsMap[i][j] = stores.get(j).bodyBci();
                 }
                 if (boxingMetric[i] <= 0) {
                     shouldUnboxVariable[i] = 0;

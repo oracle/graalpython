@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,10 @@ final class Instruction {
     final Block target;
     final SourceRange location;
 
+    /**
+     * Bytecode index of the start of the instruction in the instruction stream including possible
+     * extended args
+     */
     public int bci = -1;
     public byte quickenOutput;
     public List<Instruction> quickeningGeneralizeList;
@@ -74,6 +78,12 @@ final class Instruction {
             return String.format("%s %s", opcode, arg);
         }
         return opcode.toString();
+    }
+
+    public int bodyBci() {
+        assert bci != -1;
+        // 2 bytes for EXTENDED_ARG opcode and the arg itself
+        return bci + 2 * extensions();
     }
 
     public int extensions() {
