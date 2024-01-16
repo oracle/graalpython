@@ -1,5 +1,5 @@
 Disassembly of <module>:
   1:0   -   1:1         0 LOAD_NAME                         0    (a)
-  1:2   -   1:3         2 LOAD_BYTE_O                       3
-  1:0   -   1:4         4 BINARY_SUBSCR
+  1:2   -   1:3         2 LOAD_BYTE_I                       3                                      can quicken
+  1:0   -   1:4         4 BINARY_SUBSCR                                                            generalizes: 2
   1:0   -   1:4         5 RETURN_VALUE
