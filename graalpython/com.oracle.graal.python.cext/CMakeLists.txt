@@ -182,7 +182,19 @@ add_library(${TARGET_LIBPYTHON} SHARED)
 native_module("_cpython_sre" TRUE "${SRC_DIR}/modules/_cpython_sre/sre.c")
 simple_native_module("_cpython_unicodedata")
 simple_native_module("_cpython_struct")
-simple_native_module("_sqlite3")
+set(SQLITE3_SRC
+    "${SRC_DIR}/modules/_sqlite/sqlite/sqlite3.c"
+    "${SRC_DIR}/modules/_sqlite/blob.c"
+    "${SRC_DIR}/modules/_sqlite/connection.c"
+    "${SRC_DIR}/modules/_sqlite/cursor.c"
+    "${SRC_DIR}/modules/_sqlite/microprotocols.c"
+    "${SRC_DIR}/modules/_sqlite/module.c"
+    "${SRC_DIR}/modules/_sqlite/prepare_protocol.c"
+    "${SRC_DIR}/modules/_sqlite/row.c"
+    "${SRC_DIR}/modules/_sqlite/statement.c"
+    "${SRC_DIR}/modules/_sqlite/util.c"
+)
+native_module("_sqlite3" TRUE "${SQLITE3_SRC}")
 
 if(NOT WIN32)
     native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")
