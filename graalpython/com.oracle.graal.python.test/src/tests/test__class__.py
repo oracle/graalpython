@@ -37,9 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import unittest
-from test.support import run_unittest
 import types
+import unittest
+
 
 def find_code_object(t):
     for ob in t:
@@ -94,14 +94,14 @@ class BasicTests(unittest.TestCase):
         X().createY()().methodY()
 
     def test_dir_in_method_without_usage(self):
-         
+
         class X:
             def method(this):
                 self.assertFalse('__class__' in dir(), "__class__ can not be listed (dir()) in method without usage")
         X().method()
 
     def test_dir_in_method_with_usage(self):
-         
+
         class X66:
             def method(this):
                 y = __class__
@@ -110,7 +110,7 @@ class BasicTests(unittest.TestCase):
         X66().method()
 
     def test_dir_in_method_overwrite_class(self):
-         
+
         class X66:
             def method(this):
                 __class__ = 10
@@ -119,27 +119,27 @@ class BasicTests(unittest.TestCase):
         X66().method()
 
     def test_cells_empty(self):
-        
+
         class X:
             pass
-        
+
         co = find_code_object(self.test_cells_empty.__code__.co_consts)
         self.assertEqual('X', co.co_name, "Expected code object with name 'X'")
-        self.assertFalse('__class__' in co.co_cellvars, "__class__ should not be in cellvars of X") 
+        self.assertFalse('__class__' in co.co_cellvars, "__class__ should not be in cellvars of X")
         self.assertFalse('__class__' in co.co_freevars, "__class__ should not be in freevars of X")
 
     def test_only_freevars(self):
-       
+
         class X22:
             def m(self):
                z = __class__
-	
+
         co = find_code_object(self.test_only_freevars.__code__.co_consts)
         self.assertEqual('X22', co.co_name, "Expected code object with name 'X'")
-        self.assertTrue('__class__' in co.co_cellvars, "__class__ should not be in cellvars of X") 
+        self.assertTrue('__class__' in co.co_cellvars, "__class__ should not be in cellvars of X")
         self.assertFalse('__class__' in co.co_freevars, "__class__ should not be in freevars of X")
         co = X22.m.__code__
-        self.assertFalse('__class__' in co.co_cellvars, "__class__ should not be in cellvars of X.m") 
+        self.assertFalse('__class__' in co.co_cellvars, "__class__ should not be in cellvars of X.m")
         self.assertTrue('__class__' in co.co_freevars, "__class__ has to be in freevars of X.m")
 
     def test_nonlocal__class__usage(self):
@@ -161,6 +161,3 @@ class BasicTests(unittest.TestCase):
         x.fn1()
         self.assertIs(YN, x.fn2())
         self.assertIs(YN, x.fn3())
-
-if __name__ == '__main__':
-    unittest.main()

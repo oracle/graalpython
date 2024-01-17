@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import unittest
-from test.support import run_unittest
+
 
 class BasicTests(unittest.TestCase):
 
@@ -115,7 +115,3 @@ class BasicTests(unittest.TestCase):
             f()
         """, glob, loc)
         self.assertEqual(glob['x'], 6)
-
-
-if __name__ == '__main__':
-    unittest.main()
