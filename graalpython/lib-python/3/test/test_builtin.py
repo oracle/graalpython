@@ -920,6 +920,7 @@ class BuiltinTest(unittest.TestCase):
             f2 = filter(filter_char, "abcdeabcde")
             self.check_iter_pickle(f1, list(f2), proto)
 
+    @support.requires_resource('cpu')
     def test_filter_dealloc(self):
         # Tests recursive deallocation of nested filter objects using the
         # thrashcan mechanism. See gh-102356 for more details.
@@ -1991,6 +1992,23 @@ class BuiltinTest(unittest.TestCase):
         bad_iter = map(int, "X")
         self.assertRaises(ValueError, array.extend, bad_iter)
 
+    def test_bytearray_join_with_misbehaving_iterator(self):
+        # Issue #112625
+        array = bytearray(b',')
+        def iterator():
+            array.clear()
+            yield b'A'
+            yield b'B'
+        self.assertRaises(BufferError, array.join, iterator())
+
+    def test_bytearray_join_with_custom_iterator(self):
+        # Issue #112625
+        array = bytearray(b',')
+        def iterator():
+            yield b'A'
+            yield b'B'
+        self.assertEqual(bytearray(b'A,B'), array.join(iterator()))
+
     def test_construct_singletons(self):
         for const in None, Ellipsis, NotImplemented:
             tp = type(const)
@@ -2150,8 +2168,6 @@ class PtyTests(unittest.TestCase):
         if pid == 0:
             # Child
             try:
-                # Make sure we don't get stuck if there's a problem
-                signal.alarm(2)
                 os.close(r)
                 with open(w, "w") as wpipe:
                     child(wpipe)

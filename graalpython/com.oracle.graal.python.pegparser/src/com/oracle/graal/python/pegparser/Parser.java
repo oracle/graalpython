@@ -555,67 +555,67 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_207_ID = 1435;
     private static final int _TMP_208_ID = 1436;
     private static final int _TMP_209_ID = 1437;
-    private static final int _LOOP0_210_ID = 1438;
+    private static final int _TMP_210_ID = 1438;
     private static final int _LOOP0_211_ID = 1439;
     private static final int _LOOP0_212_ID = 1440;
-    private static final int _TMP_213_ID = 1441;
+    private static final int _LOOP0_213_ID = 1441;
     private static final int _TMP_214_ID = 1442;
     private static final int _TMP_215_ID = 1443;
     private static final int _TMP_216_ID = 1444;
-    private static final int _LOOP0_217_ID = 1445;
+    private static final int _TMP_217_ID = 1445;
     private static final int _LOOP0_218_ID = 1446;
-    private static final int _LOOP1_219_ID = 1447;
-    private static final int _TMP_220_ID = 1448;
-    private static final int _LOOP0_221_ID = 1449;
-    private static final int _TMP_222_ID = 1450;
-    private static final int _LOOP0_223_ID = 1451;
-    private static final int _TMP_224_ID = 1452;
-    private static final int _LOOP0_225_ID = 1453;
-    private static final int _LOOP1_226_ID = 1454;
-    private static final int _TMP_227_ID = 1455;
+    private static final int _LOOP0_219_ID = 1447;
+    private static final int _LOOP1_220_ID = 1448;
+    private static final int _TMP_221_ID = 1449;
+    private static final int _LOOP0_222_ID = 1450;
+    private static final int _TMP_223_ID = 1451;
+    private static final int _LOOP0_224_ID = 1452;
+    private static final int _TMP_225_ID = 1453;
+    private static final int _LOOP0_226_ID = 1454;
+    private static final int _LOOP1_227_ID = 1455;
     private static final int _TMP_228_ID = 1456;
     private static final int _TMP_229_ID = 1457;
-    private static final int _LOOP0_230_ID = 1458;
-    private static final int _TMP_231_ID = 1459;
+    private static final int _TMP_230_ID = 1458;
+    private static final int _LOOP0_231_ID = 1459;
     private static final int _TMP_232_ID = 1460;
-    private static final int _LOOP1_233_ID = 1461;
-    private static final int _LOOP0_234_ID = 1462;
+    private static final int _TMP_233_ID = 1461;
+    private static final int _LOOP1_234_ID = 1462;
     private static final int _LOOP0_235_ID = 1463;
-    private static final int _LOOP0_237_ID = 1464;
-    private static final int _GATHER_236_ID = 1465;
-    private static final int _TMP_238_ID = 1466;
-    private static final int _LOOP0_239_ID = 1467;
-    private static final int _TMP_240_ID = 1468;
-    private static final int _LOOP0_241_ID = 1469;
-    private static final int _TMP_242_ID = 1470;
-    private static final int _LOOP0_243_ID = 1471;
-    private static final int _LOOP1_244_ID = 1472;
+    private static final int _LOOP0_236_ID = 1464;
+    private static final int _LOOP0_238_ID = 1465;
+    private static final int _GATHER_237_ID = 1466;
+    private static final int _TMP_239_ID = 1467;
+    private static final int _LOOP0_240_ID = 1468;
+    private static final int _TMP_241_ID = 1469;
+    private static final int _LOOP0_242_ID = 1470;
+    private static final int _TMP_243_ID = 1471;
+    private static final int _LOOP0_244_ID = 1472;
     private static final int _LOOP1_245_ID = 1473;
-    private static final int _TMP_246_ID = 1474;
+    private static final int _LOOP1_246_ID = 1474;
     private static final int _TMP_247_ID = 1475;
-    private static final int _LOOP0_248_ID = 1476;
-    private static final int _TMP_249_ID = 1477;
+    private static final int _TMP_248_ID = 1476;
+    private static final int _LOOP0_249_ID = 1477;
     private static final int _TMP_250_ID = 1478;
     private static final int _TMP_251_ID = 1479;
     private static final int _TMP_252_ID = 1480;
-    private static final int _LOOP0_254_ID = 1481;
-    private static final int _GATHER_253_ID = 1482;
-    private static final int _TMP_255_ID = 1483;
-    private static final int _LOOP0_257_ID = 1484;
-    private static final int _GATHER_256_ID = 1485;
-    private static final int _TMP_258_ID = 1486;
-    private static final int _LOOP0_260_ID = 1487;
-    private static final int _GATHER_259_ID = 1488;
-    private static final int _TMP_261_ID = 1489;
-    private static final int _LOOP0_263_ID = 1490;
-    private static final int _GATHER_262_ID = 1491;
-    private static final int _TMP_264_ID = 1492;
-    private static final int _LOOP0_265_ID = 1493;
-    private static final int _LOOP1_266_ID = 1494;
-    private static final int _TMP_267_ID = 1495;
-    private static final int _LOOP0_268_ID = 1496;
-    private static final int _LOOP1_269_ID = 1497;
-    private static final int _TMP_270_ID = 1498;
+    private static final int _TMP_253_ID = 1481;
+    private static final int _LOOP0_255_ID = 1482;
+    private static final int _GATHER_254_ID = 1483;
+    private static final int _TMP_256_ID = 1484;
+    private static final int _LOOP0_258_ID = 1485;
+    private static final int _GATHER_257_ID = 1486;
+    private static final int _TMP_259_ID = 1487;
+    private static final int _LOOP0_261_ID = 1488;
+    private static final int _GATHER_260_ID = 1489;
+    private static final int _TMP_262_ID = 1490;
+    private static final int _LOOP0_264_ID = 1491;
+    private static final int _GATHER_263_ID = 1492;
+    private static final int _TMP_265_ID = 1493;
+    private static final int _LOOP0_266_ID = 1494;
+    private static final int _LOOP1_267_ID = 1495;
+    private static final int _TMP_268_ID = 1496;
+    private static final int _LOOP0_269_ID = 1497;
+    private static final int _LOOP1_270_ID = 1498;
     private static final int _TMP_271_ID = 1499;
     private static final int _TMP_272_ID = 1500;
     private static final int _TMP_273_ID = 1501;
@@ -629,9 +629,9 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_281_ID = 1509;
     private static final int _TMP_282_ID = 1510;
     private static final int _TMP_283_ID = 1511;
-    private static final int _LOOP0_285_ID = 1512;
-    private static final int _GATHER_284_ID = 1513;
-    private static final int _TMP_286_ID = 1514;
+    private static final int _TMP_284_ID = 1512;
+    private static final int _LOOP0_286_ID = 1513;
+    private static final int _GATHER_285_ID = 1514;
     private static final int _TMP_287_ID = 1515;
     private static final int _TMP_288_ID = 1516;
     private static final int _TMP_289_ID = 1517;
@@ -665,8 +665,14 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_317_ID = 1545;
     private static final int _TMP_318_ID = 1546;
     private static final int _TMP_319_ID = 1547;
-    private static final int _TMP_320_ID = 1548;
-    private static final int _TMP_321_ID = 1549;
+    private static final int _LOOP0_321_ID = 1548;
+    private static final int _GATHER_320_ID = 1549;
+    private static final int _TMP_322_ID = 1550;
+    private static final int _TMP_323_ID = 1551;
+    private static final int _TMP_324_ID = 1552;
+    private static final int _TMP_325_ID = 1553;
+    private static final int _TMP_326_ID = 1554;
+    private static final int _TMP_327_ID = 1555;
 
     public Parser(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
         super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);
@@ -13012,7 +13018,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_arguments:
-    //     | args ',' '*'
+    //     | ((','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs) | kwargs) ',' '*'
     //     | expression for_if_clauses ',' [args | expression for_if_clauses]
     //     | NAME '=' expression for_if_clauses
     //     | args for_if_clauses
@@ -13029,22 +13035,22 @@ public final class Parser extends AbstractParser {
             _res = (Object)cache.getResult(_mark, INVALID_ARGUMENTS_ID);
             return (Object)_res;
         }
-        { // args ',' '*'
+        { // ((','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs) | kwargs) ',' '*'
             if (errorIndicator) {
                 return null;
             }
             Token _literal;
-            Token _literal_1;
-            ExprTy a;
+            Object _tmp_202_var;
+            Token b;
             if (
-                (a = (ExprTy)args_rule()) != null  // args
+                (_tmp_202_var = (Object)_tmp_202_rule()) != null  // (','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs) | kwargs
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (_literal_1 = (Token)expect(16)) != null  // token='*'
+                (b = (Token)expect(16)) != null  // token='*'
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a, "iterable argument unpacking follows keyword argument unpacking");
+                _res = this.raiseSyntaxErrorKnownLocation(b, "iterable argument unpacking follows keyword argument unpacking");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 return (Object)_res;
             }
@@ -13065,7 +13071,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                ((_opt_var = (Object)_tmp_202_rule()) != null || true)  // [args | expression for_if_clauses]
+                ((_opt_var = (Object)_tmp_203_rule()) != null || true)  // [args | expression for_if_clauses]
             )
             {
                 _res = this.raiseSyntaxErrorKnownRange(a, getLastComprehensionItem(lastItem(b)), "Generator expression must be parenthesized");
@@ -13188,7 +13194,7 @@ public final class Parser extends AbstractParser {
             Token a;
             Token b;
             if (
-                (a = (Token)_tmp_203_rule()) != null  // 'True' | 'False' | 'None'
+                (a = (Token)_tmp_204_rule()) != null  // 'True' | 'False' | 'None'
                 &&
                 (b = (Token)expect(22)) != null  // token='='
             )
@@ -13230,7 +13236,7 @@ public final class Parser extends AbstractParser {
             ExprTy a;
             Token b;
             if (
-                genLookahead__tmp_204_rule(false)
+                genLookahead__tmp_205_rule(false)
                 &&
                 (a = (ExprTy)expression_rule()) != null  // expression
                 &&
@@ -13388,7 +13394,7 @@ public final class Parser extends AbstractParser {
             ExprTy a;
             ExprTy b;
             if (
-                genLookahead__tmp_205_rule(false)
+                genLookahead__tmp_206_rule(false)
                 &&
                 (a = (ExprTy)disjunction_rule()) != null  // disjunction
                 &&
@@ -13415,7 +13421,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (b = (ExprTy)disjunction_rule()) != null  // disjunction
                 &&
-                genLookahead__tmp_206_rule(false)
+                genLookahead__tmp_207_rule(false)
             )
             {
                 _res = this.raiseSyntaxErrorKnownRange(a, b, "expected 'else' after 'if' expression");
@@ -13479,7 +13485,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (b = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
                 &&
-                genLookahead__tmp_207_rule(false)
+                genLookahead__tmp_208_rule(false)
             )
             {
                 _res = this.raiseSyntaxErrorKnownRange(a, b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
@@ -13496,7 +13502,7 @@ public final class Parser extends AbstractParser {
             Token b;
             ExprTy bitwise_or_var;
             if (
-                genLookahead__tmp_208_rule(false)
+                genLookahead__tmp_209_rule(false)
                 &&
                 (a = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
                 &&
@@ -13504,7 +13510,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (bitwise_or_var = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
                 &&
-                genLookahead__tmp_209_rule(false)
+                genLookahead__tmp_210_rule(false)
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "cannot assign to %s here. Maybe you meant '==' instead of '='?", getExprName(a));
@@ -13563,7 +13569,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             Token _literal_1;
-            ExprTy[] _loop0_210_var;
+            ExprTy[] _loop0_211_var;
             ExprTy a;
             ExprTy expression_var;
             if (
@@ -13571,7 +13577,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (_loop0_210_var = (ExprTy[])_loop0_210_rule()) != null  // star_named_expressions*
+                (_loop0_211_var = (ExprTy[])_loop0_211_rule()) != null  // star_named_expressions*
                 &&
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
                 &&
@@ -13610,10 +13616,10 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            ExprTy[] _loop0_211_var;
+            ExprTy[] _loop0_212_var;
             ExprTy a;
             if (
-                (_loop0_211_var = (ExprTy[])_loop0_211_rule()) != null  // ((star_targets '='))*
+                (_loop0_212_var = (ExprTy[])_loop0_212_rule()) != null  // ((star_targets '='))*
                 &&
                 (a = (ExprTy)star_expressions_rule()) != null  // star_expressions
                 &&
@@ -13631,10 +13637,10 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            ExprTy[] _loop0_212_var;
+            ExprTy[] _loop0_213_var;
             ExprTy a;
             if (
-                (_loop0_212_var = (ExprTy[])_loop0_212_rule()) != null  // ((star_targets '='))*
+                (_loop0_213_var = (ExprTy[])_loop0_213_rule()) != null  // ((star_targets '='))*
                 &&
                 (a = (ExprTy)yield_expr_rule()) != null  // yield_expr
                 &&
@@ -13651,7 +13657,7 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_213_var;
+            ExprTy _tmp_214_var;
             ExprTy a;
             OperatorTy augassign_var;
             if (
@@ -13659,7 +13665,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (augassign_var = (OperatorTy)augassign_rule()) != null  // augassign
                 &&
-                (_tmp_213_var = (ExprTy)_tmp_213_rule()) != null  // yield_expr | star_expressions
+                (_tmp_214_var = (ExprTy)_tmp_214_rule()) != null  // yield_expr | star_expressions
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "'%s' is an illegal expression for augmented assignment", getExprName(a));
@@ -13829,11 +13835,11 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Token _tmp_214_var;
+            Token _tmp_215_var;
             ExprTy a;
             ComprehensionTy[] for_if_clauses_var;
             if (
-                (_tmp_214_var = (Token)_tmp_214_rule()) != null  // '[' | '(' | '{'
+                (_tmp_215_var = (Token)_tmp_215_rule()) != null  // '[' | '(' | '{'
                 &&
                 (a = (ExprTy)starred_expression_rule()) != null  // starred_expression
                 &&
@@ -13851,12 +13857,12 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Token _tmp_215_var;
+            Token _tmp_216_var;
             ExprTy a;
             ExprTy[] b;
             ComprehensionTy[] for_if_clauses_var;
             if (
-                (_tmp_215_var = (Token)_tmp_215_rule()) != null  // '[' | '{'
+                (_tmp_216_var = (Token)_tmp_216_rule()) != null  // '[' | '{'
                 &&
                 (a = (ExprTy)star_named_expression_rule()) != null  // star_named_expression
                 &&
@@ -13877,12 +13883,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Token _tmp_216_var;
+            Token _tmp_217_var;
             ExprTy a;
             Token b;
             ComprehensionTy[] for_if_clauses_var;
             if (
-                (_tmp_216_var = (Token)_tmp_216_rule()) != null  // '[' | '{'
+                (_tmp_217_var = (Token)_tmp_217_rule()) != null  // '[' | '{'
                 &&
                 (a = (ExprTy)star_named_expression_rule()) != null  // star_named_expression
                 &&
@@ -13968,11 +13974,11 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ArgTy[] _loop0_217_var;
+            ArgTy[] _loop0_218_var;
             ArgTy a;
             Object invalid_parameters_helper_var;
             if (
-                (_loop0_217_var = (ArgTy[])_loop0_217_rule()) != null  // param_no_default*
+                (_loop0_218_var = (ArgTy[])_loop0_218_rule()) != null  // param_no_default*
                 &&
                 (invalid_parameters_helper_var = (Object)invalid_parameters_helper_rule()) != null  // invalid_parameters_helper
                 &&
@@ -13989,17 +13995,17 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ArgTy[] _loop0_218_var;
-            ArgTy[] _loop1_219_var;
+            ArgTy[] _loop0_219_var;
+            ArgTy[] _loop1_220_var;
             Token _opt_var;
             Token a;
             Token b;
             if (
-                (_loop0_218_var = (ArgTy[])_loop0_218_rule()) != null  // param_no_default*
+                (_loop0_219_var = (ArgTy[])_loop0_219_rule()) != null  // param_no_default*
                 &&
                 (a = (Token)expect(7)) != null  // token='('
                 &&
-                (_loop1_219_var = (ArgTy[])_loop1_219_rule()) != null  // param_no_default+
+                (_loop1_220_var = (ArgTy[])_loop1_220_rule()) != null  // param_no_default+
                 &&
                 ((_opt_var = (Token)expect(12)) != null || true)  // ','?
                 &&
@@ -14034,13 +14040,13 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            NameDefaultPair[] _loop0_221_var;
-            Object _tmp_220_var;
+            NameDefaultPair[] _loop0_222_var;
+            Object _tmp_221_var;
             Token a;
             if (
-                (_tmp_220_var = (Object)_tmp_220_rule()) != null  // slash_no_default | slash_with_default
+                (_tmp_221_var = (Object)_tmp_221_rule()) != null  // slash_no_default | slash_with_default
                 &&
-                (_loop0_221_var = (NameDefaultPair[])_loop0_221_rule()) != null  // param_maybe_default*
+                (_loop0_222_var = (NameDefaultPair[])_loop0_222_rule()) != null  // param_maybe_default*
                 &&
                 (a = (Token)expect(17)) != null  // token='/'
             )
@@ -14056,21 +14062,21 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            NameDefaultPair[] _loop0_223_var;
-            NameDefaultPair[] _loop0_225_var;
+            NameDefaultPair[] _loop0_224_var;
+            NameDefaultPair[] _loop0_226_var;
             Object _opt_var;
-            Object _tmp_224_var;
+            Object _tmp_225_var;
             Token a;
             if (
-                ((_opt_var = (Object)_tmp_222_rule()) != null || true)  // [(slash_no_default | slash_with_default)]
+                ((_opt_var = (Object)_tmp_223_rule()) != null || true)  // [(slash_no_default | slash_with_default)]
                 &&
-                (_loop0_223_var = (NameDefaultPair[])_loop0_223_rule()) != null  // param_maybe_default*
+                (_loop0_224_var = (NameDefaultPair[])_loop0_224_rule()) != null  // param_maybe_default*
                 &&
                 (_literal = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_224_var = (Object)_tmp_224_rule()) != null  // ',' | param_no_default
+                (_tmp_225_var = (Object)_tmp_225_rule()) != null  // ',' | param_no_default
                 &&
-                (_loop0_225_var = (NameDefaultPair[])_loop0_225_rule()) != null  // param_maybe_default*
+                (_loop0_226_var = (NameDefaultPair[])_loop0_226_rule()) != null  // param_maybe_default*
                 &&
                 (a = (Token)expect(17)) != null  // token='/'
             )
@@ -14086,10 +14092,10 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            NameDefaultPair[] _loop1_226_var;
+            NameDefaultPair[] _loop1_227_var;
             Token a;
             if (
-                (_loop1_226_var = (NameDefaultPair[])_loop1_226_rule()) != null  // param_maybe_default+
+                (_loop1_227_var = (NameDefaultPair[])_loop1_227_rule()) != null  // param_maybe_default+
                 &&
                 (_literal = (Token)expect(17)) != null  // token='/'
                 &&
@@ -14127,7 +14133,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = (Token)expect(22)) != null  // token='='
                 &&
-                genLookahead__tmp_227_rule(true)
+                genLookahead__tmp_228_rule(true)
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "expected default value expression");
@@ -14161,12 +14167,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object _tmp_228_var;
+            Object _tmp_229_var;
             Token a;
             if (
                 (a = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_228_var = (Object)_tmp_228_rule()) != null  // ')' | ',' (')' | '**')
+                (_tmp_229_var = (Object)_tmp_229_rule()) != null  // ')' | ',' (')' | '**')
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "named arguments must follow bare *");
@@ -14222,20 +14228,20 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            NameDefaultPair[] _loop0_230_var;
-            Object _tmp_229_var;
-            Object _tmp_231_var;
+            NameDefaultPair[] _loop0_231_var;
+            Object _tmp_230_var;
+            Object _tmp_232_var;
             Token a;
             if (
                 (_literal = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_229_var = (Object)_tmp_229_rule()) != null  // param_no_default | ','
+                (_tmp_230_var = (Object)_tmp_230_rule()) != null  // param_no_default | ','
                 &&
-                (_loop0_230_var = (NameDefaultPair[])_loop0_230_rule()) != null  // param_maybe_default*
+                (_loop0_231_var = (NameDefaultPair[])_loop0_231_rule()) != null  // param_maybe_default*
                 &&
                 (a = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_231_var = (Object)_tmp_231_rule()) != null  // param_no_default | ','
+                (_tmp_232_var = (Object)_tmp_232_rule()) != null  // param_no_default | ','
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "* argument may appear only once");
@@ -14321,7 +14327,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal_1 = (Token)expect(12)) != null  // token=','
                 &&
-                (a = (Token)_tmp_232_rule()) != null  // '*' | '**' | '/'
+                (a = (Token)_tmp_233_rule()) != null  // '*' | '**' | '/'
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "arguments cannot follow var-keyword argument");
@@ -14366,12 +14372,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            NameDefaultPair[] _loop1_233_var;
+            NameDefaultPair[] _loop1_234_var;
             if (
-                (_loop1_233_var = (NameDefaultPair[])_loop1_233_rule()) != null  // param_with_default+
+                (_loop1_234_var = (NameDefaultPair[])_loop1_234_rule()) != null  // param_with_default+
             )
             {
-                _res = _loop1_233_var;
+                _res = _loop1_234_var;
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
                 return (Object)_res;
             }
@@ -14404,11 +14410,11 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ArgTy[] _loop0_234_var;
+            ArgTy[] _loop0_235_var;
             ArgTy a;
             Object invalid_lambda_parameters_helper_var;
             if (
-                (_loop0_234_var = (ArgTy[])_loop0_234_rule()) != null  // lambda_param_no_default*
+                (_loop0_235_var = (ArgTy[])_loop0_235_rule()) != null  // lambda_param_no_default*
                 &&
                 (invalid_lambda_parameters_helper_var = (Object)invalid_lambda_parameters_helper_rule()) != null  // invalid_lambda_parameters_helper
                 &&
@@ -14425,17 +14431,17 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ArgTy[] _gather_236_var;
-            ArgTy[] _loop0_235_var;
+            ArgTy[] _gather_237_var;
+            ArgTy[] _loop0_236_var;
             Token _opt_var;
             Token a;
             Token b;
             if (
-                (_loop0_235_var = (ArgTy[])_loop0_235_rule()) != null  // lambda_param_no_default*
+                (_loop0_236_var = (ArgTy[])_loop0_236_rule()) != null  // lambda_param_no_default*
                 &&
                 (a = (Token)expect(7)) != null  // token='('
                 &&
-                (_gather_236_var = (ArgTy[])_gather_236_rule()) != null  // ','.lambda_param+
+                (_gather_237_var = (ArgTy[])_gather_237_rule()) != null  // ','.lambda_param+
                 &&
                 ((_opt_var = (Token)expect(12)) != null || true)  // ','?
                 &&
@@ -14470,13 +14476,13 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            NameDefaultPair[] _loop0_239_var;
-            Object _tmp_238_var;
+            NameDefaultPair[] _loop0_240_var;
+            Object _tmp_239_var;
             Token a;
             if (
-                (_tmp_238_var = (Object)_tmp_238_rule()) != null  // lambda_slash_no_default | lambda_slash_with_default
+                (_tmp_239_var = (Object)_tmp_239_rule()) != null  // lambda_slash_no_default | lambda_slash_with_default
                 &&
-                (_loop0_239_var = (NameDefaultPair[])_loop0_239_rule()) != null  // lambda_param_maybe_default*
+                (_loop0_240_var = (NameDefaultPair[])_loop0_240_rule()) != null  // lambda_param_maybe_default*
                 &&
                 (a = (Token)expect(17)) != null  // token='/'
             )
@@ -14492,21 +14498,21 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            NameDefaultPair[] _loop0_241_var;
-            NameDefaultPair[] _loop0_243_var;
+            NameDefaultPair[] _loop0_242_var;
+            NameDefaultPair[] _loop0_244_var;
             Object _opt_var;
-            Object _tmp_242_var;
+            Object _tmp_243_var;
             Token a;
             if (
-                ((_opt_var = (Object)_tmp_240_rule()) != null || true)  // [(lambda_slash_no_default | lambda_slash_with_default)]
+                ((_opt_var = (Object)_tmp_241_rule()) != null || true)  // [(lambda_slash_no_default | lambda_slash_with_default)]
                 &&
-                (_loop0_241_var = (NameDefaultPair[])_loop0_241_rule()) != null  // lambda_param_maybe_default*
+                (_loop0_242_var = (NameDefaultPair[])_loop0_242_rule()) != null  // lambda_param_maybe_default*
                 &&
                 (_literal = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_242_var = (Object)_tmp_242_rule()) != null  // ',' | lambda_param_no_default
+                (_tmp_243_var = (Object)_tmp_243_rule()) != null  // ',' | lambda_param_no_default
                 &&
-                (_loop0_243_var = (NameDefaultPair[])_loop0_243_rule()) != null  // lambda_param_maybe_default*
+                (_loop0_244_var = (NameDefaultPair[])_loop0_244_rule()) != null  // lambda_param_maybe_default*
                 &&
                 (a = (Token)expect(17)) != null  // token='/'
             )
@@ -14522,10 +14528,10 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            NameDefaultPair[] _loop1_244_var;
+            NameDefaultPair[] _loop1_245_var;
             Token a;
             if (
-                (_loop1_244_var = (NameDefaultPair[])_loop1_244_rule()) != null  // lambda_param_maybe_default+
+                (_loop1_245_var = (NameDefaultPair[])_loop1_245_rule()) != null  // lambda_param_maybe_default+
                 &&
                 (_literal = (Token)expect(17)) != null  // token='/'
                 &&
@@ -14576,12 +14582,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            NameDefaultPair[] _loop1_245_var;
+            NameDefaultPair[] _loop1_246_var;
             if (
-                (_loop1_245_var = (NameDefaultPair[])_loop1_245_rule()) != null  // lambda_param_with_default+
+                (_loop1_246_var = (NameDefaultPair[])_loop1_246_rule()) != null  // lambda_param_with_default+
             )
             {
-                _res = _loop1_245_var;
+                _res = _loop1_246_var;
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
                 return (Object)_res;
             }
@@ -14612,11 +14618,11 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object _tmp_246_var;
+            Object _tmp_247_var;
             if (
                 (_literal = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_246_var = (Object)_tmp_246_rule()) != null  // ':' | ',' (':' | '**')
+                (_tmp_247_var = (Object)_tmp_247_rule()) != null  // ':' | ',' (':' | '**')
             )
             {
                 _res = this.raiseSyntaxError("named arguments must follow bare *");
@@ -14651,20 +14657,20 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            NameDefaultPair[] _loop0_248_var;
-            Object _tmp_247_var;
-            Object _tmp_249_var;
+            NameDefaultPair[] _loop0_249_var;
+            Object _tmp_248_var;
+            Object _tmp_250_var;
             Token a;
             if (
                 (_literal = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_247_var = (Object)_tmp_247_rule()) != null  // lambda_param_no_default | ','
+                (_tmp_248_var = (Object)_tmp_248_rule()) != null  // lambda_param_no_default | ','
                 &&
-                (_loop0_248_var = (NameDefaultPair[])_loop0_248_rule()) != null  // lambda_param_maybe_default*
+                (_loop0_249_var = (NameDefaultPair[])_loop0_249_rule()) != null  // lambda_param_maybe_default*
                 &&
                 (a = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_249_var = (Object)_tmp_249_rule()) != null  // lambda_param_no_default | ','
+                (_tmp_250_var = (Object)_tmp_250_rule()) != null  // lambda_param_no_default | ','
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "* argument may appear only once");
@@ -14753,7 +14759,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal_1 = (Token)expect(12)) != null  // token=','
                 &&
-                (a = (Token)_tmp_250_rule()) != null  // '*' | '**' | '/'
+                (a = (Token)_tmp_251_rule()) != null  // '*' | '**' | '/'
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "arguments cannot follow var-keyword argument");
@@ -14837,7 +14843,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = (ExprTy)expression_rule()) != null  // expression
                 &&
-                genLookahead__tmp_251_rule(true)
+                genLookahead__tmp_252_rule(true)
             )
             {
                 _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a);
@@ -15007,16 +15013,16 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy[] _gather_253_var;
+            ExprTy[] _gather_254_var;
             Token _keyword;
             Token _opt_var;
             Token newline_var;
             if (
-                ((_opt_var = (Token)_tmp_252_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_253_rule()) != null || true)  // ASYNC?
                 &&
                 (_keyword = (Token)expect(667)) != null  // token='with'
                 &&
-                (_gather_253_var = (ExprTy[])_gather_253_rule()) != null  // ','.(expression ['as' star_target])+
+                (_gather_254_var = (ExprTy[])_gather_254_rule()) != null  // ','.(expression ['as' star_target])+
                 &&
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -15031,7 +15037,7 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy[] _gather_256_var;
+            ExprTy[] _gather_257_var;
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -15039,13 +15045,13 @@ public final class Parser extends AbstractParser {
             Token _opt_var_1;
             Token newline_var;
             if (
-                ((_opt_var = (Token)_tmp_255_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_256_rule()) != null || true)  // ASYNC?
                 &&
                 (_keyword = (Token)expect(667)) != null  // token='with'
                 &&
                 (_literal = (Token)expect(7)) != null  // token='('
                 &&
-                (_gather_256_var = (ExprTy[])_gather_256_rule()) != null  // ','.(expressions ['as' star_target])+
+                (_gather_257_var = (ExprTy[])_gather_257_rule()) != null  // ','.(expressions ['as' star_target])+
                 &&
                 ((_opt_var_1 = (Token)expect(12)) != null || true)  // ','?
                 &&
@@ -15083,17 +15089,17 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy[] _gather_259_var;
+            ExprTy[] _gather_260_var;
             Token _literal;
             Token _opt_var;
             Token a;
             Token newline_var;
             if (
-                ((_opt_var = (Token)_tmp_258_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_259_rule()) != null || true)  // ASYNC?
                 &&
                 (a = (Token)expect(667)) != null  // token='with'
                 &&
-                (_gather_259_var = (ExprTy[])_gather_259_rule()) != null  // ','.(expression ['as' star_target])+
+                (_gather_260_var = (ExprTy[])_gather_260_rule()) != null  // ','.(expression ['as' star_target])+
                 &&
                 (_literal = (Token)expect(11)) != null  // token=':'
                 &&
@@ -15112,7 +15118,7 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy[] _gather_262_var;
+            ExprTy[] _gather_263_var;
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -15121,13 +15127,13 @@ public final class Parser extends AbstractParser {
             Token a;
             Token newline_var;
             if (
-                ((_opt_var = (Token)_tmp_261_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_262_rule()) != null || true)  // ASYNC?
                 &&
                 (a = (Token)expect(667)) != null  // token='with'
                 &&
                 (_literal = (Token)expect(7)) != null  // token='('
                 &&
-                (_gather_262_var = (ExprTy[])_gather_262_rule()) != null  // ','.(expressions ['as' star_target])+
+                (_gather_263_var = (ExprTy[])_gather_263_rule()) != null  // ','.(expressions ['as' star_target])+
                 &&
                 ((_opt_var_1 = (Token)expect(12)) != null || true)  // ','?
                 &&
@@ -15204,7 +15210,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (block_var = (StmtTy[])block_rule()) != null  // block
                 &&
-                genLookahead__tmp_264_rule(false)
+                genLookahead__tmp_265_rule(false)
             )
             {
                 _res = this.raiseSyntaxError("expected 'except' or 'finally' block");
@@ -15220,8 +15226,8 @@ public final class Parser extends AbstractParser {
             Token _keyword;
             Token _literal;
             Token _literal_1;
-            StmtTy[] _loop0_265_var;
-            ExceptHandlerTy[] _loop1_266_var;
+            StmtTy[] _loop0_266_var;
+            ExceptHandlerTy[] _loop1_267_var;
             ExprTy _opt_var;
             Token a;
             Token b;
@@ -15231,9 +15237,9 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = (Token)expect(11)) != null  // token=':'
                 &&
-                (_loop0_265_var = (StmtTy[])_loop0_265_rule()) != null  // block*
+                (_loop0_266_var = (StmtTy[])_loop0_266_rule()) != null  // block*
                 &&
-                (_loop1_266_var = (ExceptHandlerTy[])_loop1_266_rule()) != null  // except_block+
+                (_loop1_267_var = (ExceptHandlerTy[])_loop1_267_rule()) != null  // except_block+
                 &&
                 (a = (Token)expect(675)) != null  // token='except'
                 &&
@@ -15241,7 +15247,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
                 &&
-                ((_opt_var = (ExprTy)_tmp_267_rule()) != null || true)  // ['as' NAME]
+                ((_opt_var = (ExprTy)_tmp_268_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
             )
@@ -15259,8 +15265,8 @@ public final class Parser extends AbstractParser {
             Token _keyword;
             Token _literal;
             Token _literal_1;
-            StmtTy[] _loop0_268_var;
-            ExceptHandlerTy[] _loop1_269_var;
+            StmtTy[] _loop0_269_var;
+            ExceptHandlerTy[] _loop1_270_var;
             ExprTy _opt_var;
             Token a;
             if (
@@ -15268,13 +15274,13 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = (Token)expect(11)) != null  // token=':'
                 &&
-                (_loop0_268_var = (StmtTy[])_loop0_268_rule()) != null  // block*
+                (_loop0_269_var = (StmtTy[])_loop0_269_rule()) != null  // block*
                 &&
-                (_loop1_269_var = (ExceptHandlerTy[])_loop1_269_rule()) != null  // except_star_block+
+                (_loop1_270_var = (ExceptHandlerTy[])_loop1_270_rule()) != null  // except_star_block+
                 &&
                 (a = (Token)expect(675)) != null  // token='except'
                 &&
-                ((_opt_var = (ExprTy)_tmp_270_rule()) != null || true)  // [expression ['as' NAME]]
+                ((_opt_var = (ExprTy)_tmp_271_rule()) != null || true)  // [expression ['as' NAME]]
                 &&
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
             )
@@ -15328,7 +15334,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (expressions_var = (ExprTy)expressions_rule()) != null  // expressions
                 &&
-                ((_opt_var_1 = (ExprTy)_tmp_271_rule()) != null || true)  // ['as' NAME]
+                ((_opt_var_1 = (ExprTy)_tmp_272_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
             )
@@ -15355,7 +15361,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
                 &&
-                ((_opt_var_1 = (ExprTy)_tmp_272_rule()) != null || true)  // ['as' NAME]
+                ((_opt_var_1 = (ExprTy)_tmp_273_rule()) != null || true)  // ['as' NAME]
                 &&
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -15389,14 +15395,14 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Token _tmp_273_var;
+            Token _tmp_274_var;
             Token a;
             if (
                 (a = (Token)expect(675)) != null  // token='except'
                 &&
                 (_literal = (Token)expect(16)) != null  // token='*'
                 &&
-                (_tmp_273_var = (Token)_tmp_273_rule()) != null  // NEWLINE | ':'
+                (_tmp_274_var = (Token)_tmp_274_rule()) != null  // NEWLINE | ':'
             )
             {
                 _res = this.raiseSyntaxError("expected one or more exception types");
@@ -15478,7 +15484,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
                 &&
-                ((_opt_var = (ExprTy)_tmp_274_rule()) != null || true)  // ['as' NAME]
+                ((_opt_var = (ExprTy)_tmp_275_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal = (Token)expect(11)) != null  // token=':'
                 &&
@@ -15551,7 +15557,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
                 &&
-                ((_opt_var = (ExprTy)_tmp_275_rule()) != null || true)  // ['as' NAME]
+                ((_opt_var = (ExprTy)_tmp_276_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
                 &&
@@ -15830,7 +15836,7 @@ public final class Parser extends AbstractParser {
             PatternTy[] a;
             KeyPatternPair[] keyword_patterns_var;
             if (
-                ((_opt_var = _tmp_276_rule()) != null || true)  // [positional_patterns ',']
+                ((_opt_var = _tmp_277_rule()) != null || true)  // [positional_patterns ',']
                 &&
                 (keyword_patterns_var = keyword_patterns_rule()) != null  // keyword_patterns
                 &&
@@ -16113,7 +16119,7 @@ public final class Parser extends AbstractParser {
             ExprTy star_expressions_var;
             ExprTy star_targets_var;
             if (
-                ((_opt_var = (Token)_tmp_277_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_278_rule()) != null || true)  // ASYNC?
                 &&
                 (_keyword = (Token)expect(668)) != null  // token='for'
                 &&
@@ -16144,7 +16150,7 @@ public final class Parser extends AbstractParser {
             ExprTy star_expressions_var;
             ExprTy star_targets_var;
             if (
-                ((_opt_var = (Token)_tmp_278_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_279_rule()) != null || true)  // ASYNC?
                 &&
                 (a = (Token)expect(668)) != null  // token='for'
                 &&
@@ -16199,7 +16205,7 @@ public final class Parser extends AbstractParser {
             ExprTy name_var;
             Token newline_var;
             if (
-                ((_opt_var = (Token)_tmp_279_rule()) != null || true)  // ASYNC?
+                ((_opt_var = (Token)_tmp_280_rule()) != null || true)  // ASYNC?
                 &&
                 (a = (Token)expect(664)) != null  // token='def'
                 &&
@@ -16207,11 +16213,11 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = (Token)expect(7)) != null  // token='('
                 &&
-                ((_opt_var_1 = (ArgumentsTy)_tmp_280_rule()) != null || true)  // params?
+                ((_opt_var_1 = (ArgumentsTy)_tmp_281_rule()) != null || true)  // params?
                 &&
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
                 &&
-                ((_opt_var_2 = (ExprTy)_tmp_281_rule()) != null || true)  // ['->' expression]
+                ((_opt_var_2 = (ExprTy)_tmp_282_rule()) != null || true)  // ['->' expression]
                 &&
                 (_literal_2 = (Token)expect(11)) != null  // token=':'
                 &&
@@ -16258,7 +16264,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (name_var = (ExprTy)name_token()) != null  // NAME
                 &&
-                ((_opt_var = (ExprTy)_tmp_282_rule()) != null || true)  // ['(' arguments? ')']
+                ((_opt_var = (ExprTy)_tmp_283_rule()) != null || true)  // ['(' arguments? ')']
                 &&
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -16283,7 +16289,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (name_var = (ExprTy)name_token()) != null  // NAME
                 &&
-                ((_opt_var = (ExprTy)_tmp_283_rule()) != null || true)  // ['(' arguments? ')']
+                ((_opt_var = (ExprTy)_tmp_284_rule()) != null || true)  // ['(' arguments? ')']
                 &&
                 (_literal = (Token)expect(11)) != null  // token=':'
                 &&
@@ -16322,18 +16328,18 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            KeyValuePair[] _gather_284_var;
+            KeyValuePair[] _gather_285_var;
             Token _literal;
             ExprTy invalid_kvpair_var;
             if (
-                (_gather_284_var = (KeyValuePair[])_gather_284_rule()) != null  // ','.double_starred_kvpair+
+                (_gather_285_var = (KeyValuePair[])_gather_285_rule()) != null  // ','.double_starred_kvpair+
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
                 (invalid_kvpair_var = (ExprTy)invalid_kvpair_rule()) != null  // invalid_kvpair
             )
             {
-                _res = dummyName(_gather_284_var, _literal, invalid_kvpair_var);
+                _res = dummyName(_gather_285_var, _literal, invalid_kvpair_var);
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 return (Object)_res;
             }
@@ -16374,7 +16380,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = (Token)expect(11)) != null  // token=':'
                 &&
-                genLookahead__tmp_286_rule(true)
+                genLookahead__tmp_287_rule(true)
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'");
@@ -16411,7 +16417,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = (ExprTy)expression_rule()) != null  // expression
                 &&
-                genLookahead__tmp_287_rule(false)
+                genLookahead__tmp_288_rule(false)
             )
             {
                 _res = this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "':' expected after dictionary key");
@@ -16455,7 +16461,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = (Token)expect(11)) != null  // token=':'
                 &&
-                genLookahead__tmp_288_rule(true)
+                genLookahead__tmp_289_rule(true)
             )
             {
                 _res = this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'");
@@ -17159,12 +17165,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_289_var;
+            ExprTy _tmp_290_var;
             while (
-                (_tmp_289_var = (ExprTy)_tmp_289_rule()) != null  // star_targets '='
+                (_tmp_290_var = (ExprTy)_tmp_290_rule()) != null  // star_targets '='
             )
             {
-                _res = _tmp_289_var;
+                _res = _tmp_290_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -17633,12 +17639,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Token _tmp_290_var;
+            Token _tmp_291_var;
             while (
-                (_tmp_290_var = (Token)_tmp_290_rule()) != null  // '.' | '...'
+                (_tmp_291_var = (Token)_tmp_291_rule()) != null  // '.' | '...'
             )
             {
-                _res = _tmp_290_var;
+                _res = _tmp_291_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
                 } else {
@@ -17673,12 +17679,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Token _tmp_291_var;
+            Token _tmp_292_var;
             while (
-                (_tmp_291_var = (Token)_tmp_291_rule()) != null  // '.' | '...'
+                (_tmp_292_var = (Token)_tmp_292_rule()) != null  // '.' | '...'
             )
             {
-                _res = _tmp_291_var;
+                _res = _tmp_292_var;
                 if (_res instanceof Token) {
                     _children.add((Token)_res);
                 } else {
@@ -17974,12 +17980,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_292_var;
+            ExprTy _tmp_293_var;
             while (
-                (_tmp_292_var = (ExprTy)_tmp_292_rule()) != null  // '@' named_expression NEWLINE
+                (_tmp_293_var = (ExprTy)_tmp_293_rule()) != null  // '@' named_expression NEWLINE
             )
             {
-                _res = _tmp_292_var;
+                _res = _tmp_293_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -18019,7 +18025,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = (Token)expect(7)) != null  // token='('
                 &&
-                ((z = (ExprTy)_tmp_293_rule()) != null || true)  // arguments?
+                ((z = (ExprTy)_tmp_294_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
             )
@@ -20742,12 +20748,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_294_var;
+            ExprTy _tmp_295_var;
             while (
-                (_tmp_294_var = (ExprTy)_tmp_294_rule()) != null  // ',' expression
+                (_tmp_295_var = (ExprTy)_tmp_295_rule()) != null  // ',' expression
             )
             {
-                _res = _tmp_294_var;
+                _res = _tmp_295_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -20849,12 +20855,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_295_var;
+            ExprTy _tmp_296_var;
             while (
-                (_tmp_295_var = (ExprTy)_tmp_295_rule()) != null  // ',' star_expression
+                (_tmp_296_var = (ExprTy)_tmp_296_rule()) != null  // ',' star_expression
             )
             {
-                _res = _tmp_295_var;
+                _res = _tmp_296_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -21034,12 +21040,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_296_var;
+            ExprTy _tmp_297_var;
             while (
-                (_tmp_296_var = (ExprTy)_tmp_296_rule()) != null  // 'or' conjunction
+                (_tmp_297_var = (ExprTy)_tmp_297_rule()) != null  // 'or' conjunction
             )
             {
-                _res = _tmp_296_var;
+                _res = _tmp_297_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -21077,12 +21083,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_297_var;
+            ExprTy _tmp_298_var;
             while (
-                (_tmp_297_var = (ExprTy)_tmp_297_rule()) != null  // 'and' inversion
+                (_tmp_298_var = (ExprTy)_tmp_298_rule()) != null  // 'and' inversion
             )
             {
-                _res = _tmp_297_var;
+                _res = _tmp_298_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -21232,7 +21238,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (ExprTy)_tmp_298_rule()) != null  // slice | starred_expression
+                (elem = (ExprTy)_tmp_299_rule()) != null  // slice | starred_expression
             )
             {
                 _res = elem;
@@ -21269,7 +21275,7 @@ public final class Parser extends AbstractParser {
             ExprTy elem;
             ExprTy[] seq;
             if (
-                (elem = (ExprTy)_tmp_298_rule()) != null  // slice | starred_expression
+                (elem = (ExprTy)_tmp_299_rule()) != null  // slice | starred_expression
                 &&
                 (seq = (ExprTy[])_loop0_124_rule()) != null  // _loop0_124
             )
@@ -21402,7 +21408,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
                 &&
-                ((d = (ExprTy)_tmp_299_rule()) != null || true)  // expression?
+                ((d = (ExprTy)_tmp_300_rule()) != null || true)  // expression?
             )
             {
                 _res = d;
@@ -22553,7 +22559,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                ((z = (ExprTy[])_tmp_300_rule()) != null || true)  // star_named_expressions?
+                ((z = (ExprTy[])_tmp_301_rule()) != null || true)  // star_named_expressions?
             )
             {
                 _res = this.insertInFront(y,z);
@@ -22772,12 +22778,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_301_var;
+            ExprTy _tmp_302_var;
             while (
-                (_tmp_301_var = (ExprTy)_tmp_301_rule()) != null  // 'if' disjunction
+                (_tmp_302_var = (ExprTy)_tmp_302_rule()) != null  // 'if' disjunction
             )
             {
-                _res = _tmp_301_var;
+                _res = _tmp_302_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -22812,12 +22818,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_302_var;
+            ExprTy _tmp_303_var;
             while (
-                (_tmp_302_var = (ExprTy)_tmp_302_rule()) != null  // 'if' disjunction
+                (_tmp_303_var = (ExprTy)_tmp_303_rule()) != null  // 'if' disjunction
             )
             {
-                _res = _tmp_302_var;
+                _res = _tmp_303_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -22938,7 +22944,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (ExprTy)_tmp_303_rule()) != null  // starred_expression | (assignment_expression | expression !':=') !'='
+                (elem = (ExprTy)_tmp_304_rule()) != null  // starred_expression | (assignment_expression | expression !':=') !'='
             )
             {
                 _res = elem;
@@ -22976,7 +22982,7 @@ public final class Parser extends AbstractParser {
             ExprTy elem;
             ExprTy[] seq;
             if (
-                (elem = (ExprTy)_tmp_303_rule()) != null  // starred_expression | (assignment_expression | expression !':=') !'='
+                (elem = (ExprTy)_tmp_304_rule()) != null  // starred_expression | (assignment_expression | expression !':=') !'='
                 &&
                 (seq = (ExprTy[])_loop0_167_rule()) != null  // _loop0_167
             )
@@ -23359,12 +23365,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_304_var;
+            ExprTy _tmp_305_var;
             while (
-                (_tmp_304_var = (ExprTy)_tmp_304_rule()) != null  // ',' star_target
+                (_tmp_305_var = (ExprTy)_tmp_305_rule()) != null  // ',' star_target
             )
             {
-                _res = _tmp_304_var;
+                _res = _tmp_305_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -23541,12 +23547,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_305_var;
+            ExprTy _tmp_306_var;
             while (
-                (_tmp_305_var = (ExprTy)_tmp_305_rule()) != null  // ',' star_target
+                (_tmp_306_var = (ExprTy)_tmp_306_rule()) != null  // ',' star_target
             )
             {
-                _res = _tmp_305_var;
+                _res = _tmp_306_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -24247,7 +24253,9 @@ public final class Parser extends AbstractParser {
         return (Object)_res;
     }
 
-    // _tmp_202: args | expression for_if_clauses
+    // _tmp_202:
+    //     | (','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs)
+    //     | kwargs
     public Object _tmp_202_rule()
     {
         if (errorIndicator) {
@@ -24257,6 +24265,53 @@ public final class Parser extends AbstractParser {
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_202_ID)) {
             _res = (Object)cache.getResult(_mark, _TMP_202_ID);
+            return (Object)_res;
+        }
+        { // (','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs)
+            if (errorIndicator) {
+                return null;
+            }
+            Object _tmp_307_var;
+            if (
+                (_tmp_307_var = (Object)_tmp_307_rule()) != null  // ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs
+            )
+            {
+                _res = _tmp_307_var;
+                cache.putResult(_mark, _TMP_202_ID, _res);
+                return (Object)_res;
+            }
+            reset(_mark);
+        }
+        { // kwargs
+            if (errorIndicator) {
+                return null;
+            }
+            KeywordOrStarred[] kwargs_var;
+            if (
+                (kwargs_var = (KeywordOrStarred[])kwargs_rule()) != null  // kwargs
+            )
+            {
+                _res = kwargs_var;
+                cache.putResult(_mark, _TMP_202_ID, _res);
+                return (Object)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_202_ID, _res);
+        return (Object)_res;
+    }
+
+    // _tmp_203: args | expression for_if_clauses
+    public Object _tmp_203_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_203_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_203_ID);
             return (Object)_res;
         }
         { // args
@@ -24269,7 +24324,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = args_var;
-                cache.putResult(_mark, _TMP_202_ID, _res);
+                cache.putResult(_mark, _TMP_203_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -24287,26 +24342,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(expression_var, for_if_clauses_var);
-                cache.putResult(_mark, _TMP_202_ID, _res);
+                cache.putResult(_mark, _TMP_203_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_202_ID, _res);
+        cache.putResult(_mark, _TMP_203_ID, _res);
         return (Object)_res;
     }
 
-    // _tmp_203: 'True' | 'False' | 'None'
-    public Token _tmp_203_rule()
+    // _tmp_204: 'True' | 'False' | 'None'
+    public Token _tmp_204_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_203_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_203_ID);
+        if (cache.hasResult(_mark, _TMP_204_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_204_ID);
             return (Token)_res;
         }
         { // 'True'
@@ -24319,7 +24374,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_203_ID, _res);
+                cache.putResult(_mark, _TMP_204_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -24334,7 +24389,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_203_ID, _res);
+                cache.putResult(_mark, _TMP_204_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -24349,26 +24404,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_203_ID, _res);
+                cache.putResult(_mark, _TMP_204_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_203_ID, _res);
+        cache.putResult(_mark, _TMP_204_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_204: NAME '='
-    public ExprTy _tmp_204_rule()
+    // _tmp_205: NAME '='
+    public ExprTy _tmp_205_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_204_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_204_ID);
+        if (cache.hasResult(_mark, _TMP_205_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_205_ID);
             return (ExprTy)_res;
         }
         { // NAME '='
@@ -24384,26 +24439,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(name_var, _literal);
-                cache.putResult(_mark, _TMP_204_ID, _res);
+                cache.putResult(_mark, _TMP_205_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_204_ID, _res);
+        cache.putResult(_mark, _TMP_205_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_205: NAME STRING | SOFT_KEYWORD
-    public ExprTy _tmp_205_rule()
+    // _tmp_206: NAME STRING | SOFT_KEYWORD
+    public ExprTy _tmp_206_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_205_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_205_ID);
+        if (cache.hasResult(_mark, _TMP_206_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_206_ID);
             return (ExprTy)_res;
         }
         { // NAME STRING
@@ -24419,7 +24474,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(name_var, string_var);
-                cache.putResult(_mark, _TMP_205_ID, _res);
+                cache.putResult(_mark, _TMP_206_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -24434,26 +24489,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = soft_keyword_var;
-                cache.putResult(_mark, _TMP_205_ID, _res);
+                cache.putResult(_mark, _TMP_206_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_205_ID, _res);
+        cache.putResult(_mark, _TMP_206_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_206: 'else' | ':'
-    public Token _tmp_206_rule()
+    // _tmp_207: 'else' | ':'
+    public Token _tmp_207_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_206_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_206_ID);
+        if (cache.hasResult(_mark, _TMP_207_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_207_ID);
             return (Token)_res;
         }
         { // 'else'
@@ -24466,7 +24521,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_206_ID, _res);
+                cache.putResult(_mark, _TMP_207_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -24481,26 +24536,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_206_ID, _res);
+                cache.putResult(_mark, _TMP_207_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_206_ID, _res);
+        cache.putResult(_mark, _TMP_207_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_207: '=' | ':='
-    public Token _tmp_207_rule()
+    // _tmp_208: '=' | ':='
+    public Token _tmp_208_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_207_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_207_ID);
+        if (cache.hasResult(_mark, _TMP_208_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_208_ID);
             return (Token)_res;
         }
         { // '='
@@ -24513,7 +24568,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_207_ID, _res);
+                cache.putResult(_mark, _TMP_208_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -24528,26 +24583,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_207_ID, _res);
+                cache.putResult(_mark, _TMP_208_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_207_ID, _res);
+        cache.putResult(_mark, _TMP_208_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_208: list | tuple | genexp | 'True' | 'None' | 'False'
-    public Object _tmp_208_rule()
+    // _tmp_209: list | tuple | genexp | 'True' | 'None' | 'False'
+    public Object _tmp_209_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_208_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_208_ID);
+        if (cache.hasResult(_mark, _TMP_209_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_209_ID);
             return (Object)_res;
         }
         { // list
@@ -24560,7 +24615,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = list_var;
-                cache.putResult(_mark, _TMP_208_ID, _res);
+                cache.putResult(_mark, _TMP_209_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -24575,7 +24630,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = tuple_var;
-                cache.putResult(_mark, _TMP_208_ID, _res);
+                cache.putResult(_mark, _TMP_209_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -24590,7 +24645,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = genexp_var;
-                cache.putResult(_mark, _TMP_208_ID, _res);
+                cache.putResult(_mark, _TMP_209_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -24605,7 +24660,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_208_ID, _res);
+                cache.putResult(_mark, _TMP_209_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -24620,7 +24675,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_208_ID, _res);
+                cache.putResult(_mark, _TMP_209_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -24635,26 +24690,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_208_ID, _res);
+                cache.putResult(_mark, _TMP_209_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_208_ID, _res);
+        cache.putResult(_mark, _TMP_209_ID, _res);
         return (Object)_res;
     }
 
-    // _tmp_209: '=' | ':='
-    public Token _tmp_209_rule()
+    // _tmp_210: '=' | ':='
+    public Token _tmp_210_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_209_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_209_ID);
+        if (cache.hasResult(_mark, _TMP_210_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_210_ID);
             return (Token)_res;
         }
         { // '='
@@ -24667,7 +24722,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_209_ID, _res);
+                cache.putResult(_mark, _TMP_210_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -24682,26 +24737,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_209_ID, _res);
+                cache.putResult(_mark, _TMP_210_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_209_ID, _res);
+        cache.putResult(_mark, _TMP_210_ID, _res);
         return (Token)_res;
     }
 
-    // _loop0_210: star_named_expressions
-    public ExprTy[] _loop0_210_rule()
+    // _loop0_211: star_named_expressions
+    public ExprTy[] _loop0_211_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_210_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_210_ID);
+        if (cache.hasResult(_mark, _LOOP0_211_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_211_ID);
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -24718,46 +24773,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = star_named_expressions_var;
-                if (_res instanceof ExprTy) {
-                    _children.add((ExprTy)_res);
-                } else {
-                    _children.addAll(Arrays.asList((ExprTy[])_res));
-                }
-                _mark = mark();
-            }
-            reset(_mark);
-        }
-        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_210_ID, _seq);
-        return _seq;
-    }
-
-    // _loop0_211: (star_targets '=')
-    public ExprTy[] _loop0_211_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        Object _res = null;
-        int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_211_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_211_ID);
-            return (ExprTy[])_res;
-        }
-        int _start_mark = mark();
-        List<ExprTy> _children = new ArrayList<>();
-        int _children_capacity = 1;
-        int _n = 0;
-        { // (star_targets '=')
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy _tmp_306_var;
-            while (
-                (_tmp_306_var = (ExprTy)_tmp_306_rule()) != null  // star_targets '='
-            )
-            {
-                _res = _tmp_306_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -24792,12 +24807,12 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_307_var;
+            ExprTy _tmp_308_var;
             while (
-                (_tmp_307_var = (ExprTy)_tmp_307_rule()) != null  // star_targets '='
+                (_tmp_308_var = (ExprTy)_tmp_308_rule()) != null  // star_targets '='
             )
             {
-                _res = _tmp_307_var;
+                _res = _tmp_308_var;
                 if (_res instanceof ExprTy) {
                     _children.add((ExprTy)_res);
                 } else {
@@ -24812,16 +24827,56 @@ public final class Parser extends AbstractParser {
         return _seq;
     }
 
-    // _tmp_213: yield_expr | star_expressions
-    public ExprTy _tmp_213_rule()
+    // _loop0_213: (star_targets '=')
+    public ExprTy[] _loop0_213_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        Object _res = null;
+        int _mark = mark();
+        if (cache.hasResult(_mark, _LOOP0_213_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_213_ID);
+            return (ExprTy[])_res;
+        }
+        int _start_mark = mark();
+        List<ExprTy> _children = new ArrayList<>();
+        int _children_capacity = 1;
+        int _n = 0;
+        { // (star_targets '=')
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy _tmp_309_var;
+            while (
+                (_tmp_309_var = (ExprTy)_tmp_309_rule()) != null  // star_targets '='
+            )
+            {
+                _res = _tmp_309_var;
+                if (_res instanceof ExprTy) {
+                    _children.add((ExprTy)_res);
+                } else {
+                    _children.addAll(Arrays.asList((ExprTy[])_res));
+                }
+                _mark = mark();
+            }
+            reset(_mark);
+        }
+        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
+        cache.putResult(_start_mark, _LOOP0_213_ID, _seq);
+        return _seq;
+    }
+
+    // _tmp_214: yield_expr | star_expressions
+    public ExprTy _tmp_214_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_213_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_213_ID);
+        if (cache.hasResult(_mark, _TMP_214_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_214_ID);
             return (ExprTy)_res;
         }
         { // yield_expr
@@ -24834,7 +24889,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = yield_expr_var;
-                cache.putResult(_mark, _TMP_213_ID, _res);
+                cache.putResult(_mark, _TMP_214_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -24849,79 +24904,17 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = star_expressions_var;
-                cache.putResult(_mark, _TMP_213_ID, _res);
+                cache.putResult(_mark, _TMP_214_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_213_ID, _res);
+        cache.putResult(_mark, _TMP_214_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_214: '[' | '(' | '{'
-    public Token _tmp_214_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_214_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_214_ID);
-            return (Token)_res;
-        }
-        { // '['
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(9)) != null  // token='['
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_214_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        { // '('
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(7)) != null  // token='('
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_214_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        { // '{'
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(25)) != null  // token='{'
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_214_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_214_ID, _res);
-        return (Token)_res;
-    }
-
-    // _tmp_215: '[' | '{'
+    // _tmp_215: '[' | '(' | '{'
     public Token _tmp_215_rule()
     {
         if (errorIndicator) {
@@ -24940,6 +24933,21 @@ public final class Parser extends AbstractParser {
             Token _literal;
             if (
                 (_literal = (Token)expect(9)) != null  // token='['
+            )
+            {
+                _res = _literal;
+                cache.putResult(_mark, _TMP_215_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        { // '('
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            if (
+                (_literal = (Token)expect(7)) != null  // token='('
             )
             {
                 _res = _literal;
@@ -25015,44 +25023,51 @@ public final class Parser extends AbstractParser {
         return (Token)_res;
     }
 
-    // _loop0_217: param_no_default
-    public ArgTy[] _loop0_217_rule()
+    // _tmp_217: '[' | '{'
+    public Token _tmp_217_rule()
     {
         if (errorIndicator) {
             return null;
         }
-        Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_217_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_217_ID);
-            return (ArgTy[])_res;
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_217_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_217_ID);
+            return (Token)_res;
         }
-        int _start_mark = mark();
-        List<ArgTy> _children = new ArrayList<>();
-        int _children_capacity = 1;
-        int _n = 0;
-        { // param_no_default
+        { // '['
             if (errorIndicator) {
                 return null;
             }
-            ArgTy param_no_default_var;
-            while (
-                (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
+            Token _literal;
+            if (
+                (_literal = (Token)expect(9)) != null  // token='['
             )
             {
-                _res = param_no_default_var;
-                if (_res instanceof ArgTy) {
-                    _children.add((ArgTy)_res);
-                } else {
-                    _children.addAll(Arrays.asList((ArgTy[])_res));
-                }
-                _mark = mark();
+                _res = _literal;
+                cache.putResult(_mark, _TMP_217_ID, _res);
+                return (Token)_res;
             }
             reset(_mark);
         }
-        ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_217_ID, _seq);
-        return _seq;
+        { // '{'
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            if (
+                (_literal = (Token)expect(25)) != null  // token='{'
+            )
+            {
+                _res = _literal;
+                cache.putResult(_mark, _TMP_217_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_217_ID, _res);
+        return (Token)_res;
     }
 
     // _loop0_218: param_no_default
@@ -25095,16 +25110,56 @@ public final class Parser extends AbstractParser {
         return _seq;
     }
 
-    // _loop1_219: param_no_default
-    public ArgTy[] _loop1_219_rule()
+    // _loop0_219: param_no_default
+    public ArgTy[] _loop0_219_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_219_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_219_ID);
+        if (cache.hasResult(_mark, _LOOP0_219_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_219_ID);
+            return (ArgTy[])_res;
+        }
+        int _start_mark = mark();
+        List<ArgTy> _children = new ArrayList<>();
+        int _children_capacity = 1;
+        int _n = 0;
+        { // param_no_default
+            if (errorIndicator) {
+                return null;
+            }
+            ArgTy param_no_default_var;
+            while (
+                (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
+            )
+            {
+                _res = param_no_default_var;
+                if (_res instanceof ArgTy) {
+                    _children.add((ArgTy)_res);
+                } else {
+                    _children.addAll(Arrays.asList((ArgTy[])_res));
+                }
+                _mark = mark();
+            }
+            reset(_mark);
+        }
+        ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
+        cache.putResult(_start_mark, _LOOP0_219_ID, _seq);
+        return _seq;
+    }
+
+    // _loop1_220: param_no_default
+    public ArgTy[] _loop1_220_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        Object _res = null;
+        int _mark = mark();
+        if (cache.hasResult(_mark, _LOOP1_220_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_220_ID);
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -25134,20 +25189,20 @@ public final class Parser extends AbstractParser {
             return null;
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_219_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_220_ID, _seq);
         return _seq;
     }
 
-    // _tmp_220: slash_no_default | slash_with_default
-    public Object _tmp_220_rule()
+    // _tmp_221: slash_no_default | slash_with_default
+    public Object _tmp_221_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_220_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_220_ID);
+        if (cache.hasResult(_mark, _TMP_221_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_221_ID);
             return (Object)_res;
         }
         { // slash_no_default
@@ -25160,7 +25215,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = slash_no_default_var;
-                cache.putResult(_mark, _TMP_220_ID, _res);
+                cache.putResult(_mark, _TMP_221_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25175,26 +25230,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = slash_with_default_var;
-                cache.putResult(_mark, _TMP_220_ID, _res);
+                cache.putResult(_mark, _TMP_221_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_220_ID, _res);
+        cache.putResult(_mark, _TMP_221_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_221: param_maybe_default
-    public NameDefaultPair[] _loop0_221_rule()
+    // _loop0_222: param_maybe_default
+    public NameDefaultPair[] _loop0_222_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_221_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_221_ID);
+        if (cache.hasResult(_mark, _LOOP0_222_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_222_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -25221,20 +25276,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_221_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_222_ID, _seq);
         return _seq;
     }
 
-    // _tmp_222: slash_no_default | slash_with_default
-    public Object _tmp_222_rule()
+    // _tmp_223: slash_no_default | slash_with_default
+    public Object _tmp_223_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_222_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_222_ID);
+        if (cache.hasResult(_mark, _TMP_223_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_223_ID);
             return (Object)_res;
         }
         { // slash_no_default
@@ -25247,7 +25302,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = slash_no_default_var;
-                cache.putResult(_mark, _TMP_222_ID, _res);
+                cache.putResult(_mark, _TMP_223_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25262,26 +25317,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = slash_with_default_var;
-                cache.putResult(_mark, _TMP_222_ID, _res);
+                cache.putResult(_mark, _TMP_223_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_222_ID, _res);
+        cache.putResult(_mark, _TMP_223_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_223: param_maybe_default
-    public NameDefaultPair[] _loop0_223_rule()
+    // _loop0_224: param_maybe_default
+    public NameDefaultPair[] _loop0_224_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_223_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_223_ID);
+        if (cache.hasResult(_mark, _LOOP0_224_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_224_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -25308,20 +25363,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_223_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_224_ID, _seq);
         return _seq;
     }
 
-    // _tmp_224: ',' | param_no_default
-    public Object _tmp_224_rule()
+    // _tmp_225: ',' | param_no_default
+    public Object _tmp_225_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_224_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_224_ID);
+        if (cache.hasResult(_mark, _TMP_225_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_225_ID);
             return (Object)_res;
         }
         { // ','
@@ -25334,7 +25389,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_224_ID, _res);
+                cache.putResult(_mark, _TMP_225_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25349,26 +25404,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = param_no_default_var;
-                cache.putResult(_mark, _TMP_224_ID, _res);
+                cache.putResult(_mark, _TMP_225_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_224_ID, _res);
+        cache.putResult(_mark, _TMP_225_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_225: param_maybe_default
-    public NameDefaultPair[] _loop0_225_rule()
+    // _loop0_226: param_maybe_default
+    public NameDefaultPair[] _loop0_226_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_225_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_225_ID);
+        if (cache.hasResult(_mark, _LOOP0_226_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_226_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -25395,20 +25450,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_225_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_226_ID, _seq);
         return _seq;
     }
 
-    // _loop1_226: param_maybe_default
-    public NameDefaultPair[] _loop1_226_rule()
+    // _loop1_227: param_maybe_default
+    public NameDefaultPair[] _loop1_227_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_226_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_226_ID);
+        if (cache.hasResult(_mark, _LOOP1_227_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_227_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -25438,20 +25493,20 @@ public final class Parser extends AbstractParser {
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_226_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_227_ID, _seq);
         return _seq;
     }
 
-    // _tmp_227: ')' | ','
-    public Token _tmp_227_rule()
+    // _tmp_228: ')' | ','
+    public Token _tmp_228_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_227_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_227_ID);
+        if (cache.hasResult(_mark, _TMP_228_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_228_ID);
             return (Token)_res;
         }
         { // ')'
@@ -25464,7 +25519,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_227_ID, _res);
+                cache.putResult(_mark, _TMP_228_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -25479,26 +25534,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_227_ID, _res);
+                cache.putResult(_mark, _TMP_228_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_227_ID, _res);
+        cache.putResult(_mark, _TMP_228_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_228: ')' | ',' (')' | '**')
-    public Object _tmp_228_rule()
+    // _tmp_229: ')' | ',' (')' | '**')
+    public Object _tmp_229_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_228_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_228_ID);
+        if (cache.hasResult(_mark, _TMP_229_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_229_ID);
             return (Object)_res;
         }
         { // ')'
@@ -25511,7 +25566,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_228_ID, _res);
+                cache.putResult(_mark, _TMP_229_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25521,34 +25576,34 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Token _tmp_308_var;
+            Token _tmp_310_var;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (_tmp_308_var = (Token)_tmp_308_rule()) != null  // ')' | '**'
+                (_tmp_310_var = (Token)_tmp_310_rule()) != null  // ')' | '**'
             )
             {
-                _res = dummyName(_literal, _tmp_308_var);
-                cache.putResult(_mark, _TMP_228_ID, _res);
+                _res = dummyName(_literal, _tmp_310_var);
+                cache.putResult(_mark, _TMP_229_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_228_ID, _res);
+        cache.putResult(_mark, _TMP_229_ID, _res);
         return (Object)_res;
     }
 
-    // _tmp_229: param_no_default | ','
-    public Object _tmp_229_rule()
+    // _tmp_230: param_no_default | ','
+    public Object _tmp_230_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_229_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_229_ID);
+        if (cache.hasResult(_mark, _TMP_230_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_230_ID);
             return (Object)_res;
         }
         { // param_no_default
@@ -25561,7 +25616,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = param_no_default_var;
-                cache.putResult(_mark, _TMP_229_ID, _res);
+                cache.putResult(_mark, _TMP_230_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25576,26 +25631,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_229_ID, _res);
+                cache.putResult(_mark, _TMP_230_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_229_ID, _res);
+        cache.putResult(_mark, _TMP_230_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_230: param_maybe_default
-    public NameDefaultPair[] _loop0_230_rule()
+    // _loop0_231: param_maybe_default
+    public NameDefaultPair[] _loop0_231_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_230_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_230_ID);
+        if (cache.hasResult(_mark, _LOOP0_231_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_231_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -25622,20 +25677,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_230_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_231_ID, _seq);
         return _seq;
     }
 
-    // _tmp_231: param_no_default | ','
-    public Object _tmp_231_rule()
+    // _tmp_232: param_no_default | ','
+    public Object _tmp_232_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_231_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_231_ID);
+        if (cache.hasResult(_mark, _TMP_232_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_232_ID);
             return (Object)_res;
         }
         { // param_no_default
@@ -25648,7 +25703,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = param_no_default_var;
-                cache.putResult(_mark, _TMP_231_ID, _res);
+                cache.putResult(_mark, _TMP_232_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25663,26 +25718,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_231_ID, _res);
+                cache.putResult(_mark, _TMP_232_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_231_ID, _res);
+        cache.putResult(_mark, _TMP_232_ID, _res);
         return (Object)_res;
     }
 
-    // _tmp_232: '*' | '**' | '/'
-    public Token _tmp_232_rule()
+    // _tmp_233: '*' | '**' | '/'
+    public Token _tmp_233_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_232_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_232_ID);
+        if (cache.hasResult(_mark, _TMP_233_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_233_ID);
             return (Token)_res;
         }
         { // '*'
@@ -25695,7 +25750,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_232_ID, _res);
+                cache.putResult(_mark, _TMP_233_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -25710,7 +25765,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_232_ID, _res);
+                cache.putResult(_mark, _TMP_233_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -25725,26 +25780,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_232_ID, _res);
+                cache.putResult(_mark, _TMP_233_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_232_ID, _res);
+        cache.putResult(_mark, _TMP_233_ID, _res);
         return (Token)_res;
     }
 
-    // _loop1_233: param_with_default
-    public NameDefaultPair[] _loop1_233_rule()
+    // _loop1_234: param_with_default
+    public NameDefaultPair[] _loop1_234_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_233_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_233_ID);
+        if (cache.hasResult(_mark, _LOOP1_234_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_234_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -25774,47 +25829,7 @@ public final class Parser extends AbstractParser {
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_233_ID, _seq);
-        return _seq;
-    }
-
-    // _loop0_234: lambda_param_no_default
-    public ArgTy[] _loop0_234_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        Object _res = null;
-        int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_234_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_234_ID);
-            return (ArgTy[])_res;
-        }
-        int _start_mark = mark();
-        List<ArgTy> _children = new ArrayList<>();
-        int _children_capacity = 1;
-        int _n = 0;
-        { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
-            ArgTy lambda_param_no_default_var;
-            while (
-                (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
-            )
-            {
-                _res = lambda_param_no_default_var;
-                if (_res instanceof ArgTy) {
-                    _children.add((ArgTy)_res);
-                } else {
-                    _children.addAll(Arrays.asList((ArgTy[])_res));
-                }
-                _mark = mark();
-            }
-            reset(_mark);
-        }
-        ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_234_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_234_ID, _seq);
         return _seq;
     }
 
@@ -25858,16 +25873,56 @@ public final class Parser extends AbstractParser {
         return _seq;
     }
 
-    // _loop0_237: ',' lambda_param
-    public ArgTy[] _loop0_237_rule()
+    // _loop0_236: lambda_param_no_default
+    public ArgTy[] _loop0_236_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_237_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_237_ID);
+        if (cache.hasResult(_mark, _LOOP0_236_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_236_ID);
+            return (ArgTy[])_res;
+        }
+        int _start_mark = mark();
+        List<ArgTy> _children = new ArrayList<>();
+        int _children_capacity = 1;
+        int _n = 0;
+        { // lambda_param_no_default
+            if (errorIndicator) {
+                return null;
+            }
+            ArgTy lambda_param_no_default_var;
+            while (
+                (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
+            )
+            {
+                _res = lambda_param_no_default_var;
+                if (_res instanceof ArgTy) {
+                    _children.add((ArgTy)_res);
+                } else {
+                    _children.addAll(Arrays.asList((ArgTy[])_res));
+                }
+                _mark = mark();
+            }
+            reset(_mark);
+        }
+        ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
+        cache.putResult(_start_mark, _LOOP0_236_ID, _seq);
+        return _seq;
+    }
+
+    // _loop0_238: ',' lambda_param
+    public ArgTy[] _loop0_238_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        Object _res = null;
+        int _mark = mark();
+        if (cache.hasResult(_mark, _LOOP0_238_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_238_ID);
             return (ArgTy[])_res;
         }
         int _start_mark = mark();
@@ -25897,23 +25952,23 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         ArgTy[] _seq = _children.toArray(new ArgTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_237_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_238_ID, _seq);
         return _seq;
     }
 
-    // _gather_236: lambda_param _loop0_237
-    public Object[] _gather_236_rule()
+    // _gather_237: lambda_param _loop0_238
+    public Object[] _gather_237_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _GATHER_236_ID)) {
-            _res = (Object[])cache.getResult(_mark, _GATHER_236_ID);
+        if (cache.hasResult(_mark, _GATHER_237_ID)) {
+            _res = (Object[])cache.getResult(_mark, _GATHER_237_ID);
             return (Object[])_res;
         }
-        { // lambda_param _loop0_237
+        { // lambda_param _loop0_238
             if (errorIndicator) {
                 return null;
             }
@@ -25922,30 +25977,30 @@ public final class Parser extends AbstractParser {
             if (
                 (elem = (ArgTy)lambda_param_rule()) != null  // lambda_param
                 &&
-                (seq = (ArgTy[])_loop0_237_rule()) != null  // _loop0_237
+                (seq = (ArgTy[])_loop0_238_rule()) != null  // _loop0_238
             )
             {
                 _res = insertInFront(elem, seq, ArgTy.class);
-                cache.putResult(_mark, _GATHER_236_ID, _res);
+                cache.putResult(_mark, _GATHER_237_ID, _res);
                 return (Object[])_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _GATHER_236_ID, _res);
+        cache.putResult(_mark, _GATHER_237_ID, _res);
         return (Object[])_res;
     }
 
-    // _tmp_238: lambda_slash_no_default | lambda_slash_with_default
-    public Object _tmp_238_rule()
+    // _tmp_239: lambda_slash_no_default | lambda_slash_with_default
+    public Object _tmp_239_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_238_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_238_ID);
+        if (cache.hasResult(_mark, _TMP_239_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_239_ID);
             return (Object)_res;
         }
         { // lambda_slash_no_default
@@ -25958,7 +26013,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_slash_no_default_var;
-                cache.putResult(_mark, _TMP_238_ID, _res);
+                cache.putResult(_mark, _TMP_239_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -25973,26 +26028,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_slash_with_default_var;
-                cache.putResult(_mark, _TMP_238_ID, _res);
+                cache.putResult(_mark, _TMP_239_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_238_ID, _res);
+        cache.putResult(_mark, _TMP_239_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_239: lambda_param_maybe_default
-    public NameDefaultPair[] _loop0_239_rule()
+    // _loop0_240: lambda_param_maybe_default
+    public NameDefaultPair[] _loop0_240_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_239_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_239_ID);
+        if (cache.hasResult(_mark, _LOOP0_240_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_240_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -26019,20 +26074,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_239_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_240_ID, _seq);
         return _seq;
     }
 
-    // _tmp_240: lambda_slash_no_default | lambda_slash_with_default
-    public Object _tmp_240_rule()
+    // _tmp_241: lambda_slash_no_default | lambda_slash_with_default
+    public Object _tmp_241_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_240_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_240_ID);
+        if (cache.hasResult(_mark, _TMP_241_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_241_ID);
             return (Object)_res;
         }
         { // lambda_slash_no_default
@@ -26045,7 +26100,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_slash_no_default_var;
-                cache.putResult(_mark, _TMP_240_ID, _res);
+                cache.putResult(_mark, _TMP_241_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -26060,26 +26115,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_slash_with_default_var;
-                cache.putResult(_mark, _TMP_240_ID, _res);
+                cache.putResult(_mark, _TMP_241_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_240_ID, _res);
+        cache.putResult(_mark, _TMP_241_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_241: lambda_param_maybe_default
-    public NameDefaultPair[] _loop0_241_rule()
+    // _loop0_242: lambda_param_maybe_default
+    public NameDefaultPair[] _loop0_242_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_241_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_241_ID);
+        if (cache.hasResult(_mark, _LOOP0_242_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_242_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -26106,20 +26161,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_241_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_242_ID, _seq);
         return _seq;
     }
 
-    // _tmp_242: ',' | lambda_param_no_default
-    public Object _tmp_242_rule()
+    // _tmp_243: ',' | lambda_param_no_default
+    public Object _tmp_243_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_242_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_242_ID);
+        if (cache.hasResult(_mark, _TMP_243_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_243_ID);
             return (Object)_res;
         }
         { // ','
@@ -26132,7 +26187,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_242_ID, _res);
+                cache.putResult(_mark, _TMP_243_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -26147,26 +26202,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_param_no_default_var;
-                cache.putResult(_mark, _TMP_242_ID, _res);
+                cache.putResult(_mark, _TMP_243_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_242_ID, _res);
+        cache.putResult(_mark, _TMP_243_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_243: lambda_param_maybe_default
-    public NameDefaultPair[] _loop0_243_rule()
+    // _loop0_244: lambda_param_maybe_default
+    public NameDefaultPair[] _loop0_244_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_243_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_243_ID);
+        if (cache.hasResult(_mark, _LOOP0_244_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_244_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -26193,20 +26248,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_243_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_244_ID, _seq);
         return _seq;
     }
 
-    // _loop1_244: lambda_param_maybe_default
-    public NameDefaultPair[] _loop1_244_rule()
+    // _loop1_245: lambda_param_maybe_default
+    public NameDefaultPair[] _loop1_245_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_244_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_244_ID);
+        if (cache.hasResult(_mark, _LOOP1_245_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_245_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -26236,20 +26291,20 @@ public final class Parser extends AbstractParser {
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_244_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_245_ID, _seq);
         return _seq;
     }
 
-    // _loop1_245: lambda_param_with_default
-    public NameDefaultPair[] _loop1_245_rule()
+    // _loop1_246: lambda_param_with_default
+    public NameDefaultPair[] _loop1_246_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_245_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_245_ID);
+        if (cache.hasResult(_mark, _LOOP1_246_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_246_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -26279,20 +26334,20 @@ public final class Parser extends AbstractParser {
             return null;
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_245_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_246_ID, _seq);
         return _seq;
     }
 
-    // _tmp_246: ':' | ',' (':' | '**')
-    public Object _tmp_246_rule()
+    // _tmp_247: ':' | ',' (':' | '**')
+    public Object _tmp_247_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_246_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_246_ID);
+        if (cache.hasResult(_mark, _TMP_247_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_247_ID);
             return (Object)_res;
         }
         { // ':'
@@ -26305,7 +26360,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_246_ID, _res);
+                cache.putResult(_mark, _TMP_247_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -26315,34 +26370,34 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Token _tmp_309_var;
+            Token _tmp_311_var;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (_tmp_309_var = (Token)_tmp_309_rule()) != null  // ':' | '**'
+                (_tmp_311_var = (Token)_tmp_311_rule()) != null  // ':' | '**'
             )
             {
-                _res = dummyName(_literal, _tmp_309_var);
-                cache.putResult(_mark, _TMP_246_ID, _res);
+                _res = dummyName(_literal, _tmp_311_var);
+                cache.putResult(_mark, _TMP_247_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_246_ID, _res);
+        cache.putResult(_mark, _TMP_247_ID, _res);
         return (Object)_res;
     }
 
-    // _tmp_247: lambda_param_no_default | ','
-    public Object _tmp_247_rule()
+    // _tmp_248: lambda_param_no_default | ','
+    public Object _tmp_248_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_247_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_247_ID);
+        if (cache.hasResult(_mark, _TMP_248_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_248_ID);
             return (Object)_res;
         }
         { // lambda_param_no_default
@@ -26355,7 +26410,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_param_no_default_var;
-                cache.putResult(_mark, _TMP_247_ID, _res);
+                cache.putResult(_mark, _TMP_248_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -26370,26 +26425,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_247_ID, _res);
+                cache.putResult(_mark, _TMP_248_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_247_ID, _res);
+        cache.putResult(_mark, _TMP_248_ID, _res);
         return (Object)_res;
     }
 
-    // _loop0_248: lambda_param_maybe_default
-    public NameDefaultPair[] _loop0_248_rule()
+    // _loop0_249: lambda_param_maybe_default
+    public NameDefaultPair[] _loop0_249_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_248_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_248_ID);
+        if (cache.hasResult(_mark, _LOOP0_249_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_249_ID);
             return (NameDefaultPair[])_res;
         }
         int _start_mark = mark();
@@ -26416,20 +26471,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         NameDefaultPair[] _seq = _children.toArray(new NameDefaultPair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_248_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_249_ID, _seq);
         return _seq;
     }
 
-    // _tmp_249: lambda_param_no_default | ','
-    public Object _tmp_249_rule()
+    // _tmp_250: lambda_param_no_default | ','
+    public Object _tmp_250_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_249_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_249_ID);
+        if (cache.hasResult(_mark, _TMP_250_ID)) {
+            _res = (Object)cache.getResult(_mark, _TMP_250_ID);
             return (Object)_res;
         }
         { // lambda_param_no_default
@@ -26442,7 +26497,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = lambda_param_no_default_var;
-                cache.putResult(_mark, _TMP_249_ID, _res);
+                cache.putResult(_mark, _TMP_250_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
@@ -26457,26 +26512,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_249_ID, _res);
+                cache.putResult(_mark, _TMP_250_ID, _res);
                 return (Object)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_249_ID, _res);
+        cache.putResult(_mark, _TMP_250_ID, _res);
         return (Object)_res;
     }
 
-    // _tmp_250: '*' | '**' | '/'
-    public Token _tmp_250_rule()
+    // _tmp_251: '*' | '**' | '/'
+    public Token _tmp_251_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_250_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_250_ID);
+        if (cache.hasResult(_mark, _TMP_251_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_251_ID);
             return (Token)_res;
         }
         { // '*'
@@ -26489,7 +26544,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_250_ID, _res);
+                cache.putResult(_mark, _TMP_251_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -26504,7 +26559,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_250_ID, _res);
+                cache.putResult(_mark, _TMP_251_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -26519,26 +26574,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_250_ID, _res);
+                cache.putResult(_mark, _TMP_251_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_250_ID, _res);
+        cache.putResult(_mark, _TMP_251_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_251: ',' | ')' | ':'
-    public Token _tmp_251_rule()
+    // _tmp_252: ',' | ')' | ':'
+    public Token _tmp_252_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_251_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_251_ID);
+        if (cache.hasResult(_mark, _TMP_252_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_252_ID);
             return (Token)_res;
         }
         { // ','
@@ -26551,7 +26606,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_251_ID, _res);
+                cache.putResult(_mark, _TMP_252_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -26566,7 +26621,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_251_ID, _res);
+                cache.putResult(_mark, _TMP_252_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -26581,38 +26636,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_251_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_251_ID, _res);
-        return (Token)_res;
-    }
-
-    // _tmp_252: ASYNC
-    public Token _tmp_252_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_252_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_252_ID);
-            return (Token)_res;
-        }
-        { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
-            Token async_var;
-            if (
-                (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
-            )
-            {
-                _res = async_var;
                 cache.putResult(_mark, _TMP_252_ID, _res);
                 return (Token)_res;
             }
@@ -26623,94 +26646,16 @@ public final class Parser extends AbstractParser {
         return (Token)_res;
     }
 
-    // _loop0_254: ',' (expression ['as' star_target])
-    public ExprTy[] _loop0_254_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        Object _res = null;
-        int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_254_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_254_ID);
-            return (ExprTy[])_res;
-        }
-        int _start_mark = mark();
-        List<ExprTy> _children = new ArrayList<>();
-        int _children_capacity = 1;
-        int _n = 0;
-        { // ',' (expression ['as' star_target])
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            ExprTy elem;
-            while (
-                (_literal = (Token)expect(12)) != null  // token=','
-                &&
-                (elem = (ExprTy)_tmp_310_rule()) != null  // expression ['as' star_target]
-            )
-            {
-                _res = elem;
-                if (_res instanceof ExprTy) {
-                    _children.add((ExprTy)_res);
-                } else {
-                    _children.addAll(Arrays.asList((ExprTy[])_res));
-                }
-                _mark = mark();
-            }
-            reset(_mark);
-        }
-        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_254_ID, _seq);
-        return _seq;
-    }
-
-    // _gather_253: (expression ['as' star_target]) _loop0_254
-    public ExprTy[] _gather_253_rule()
+    // _tmp_253: ASYNC
+    public Token _tmp_253_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _GATHER_253_ID)) {
-            _res = (ExprTy[])cache.getResult(_mark, _GATHER_253_ID);
-            return (ExprTy[])_res;
-        }
-        { // (expression ['as' star_target]) _loop0_254
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy elem;
-            ExprTy[] seq;
-            if (
-                (elem = (ExprTy)_tmp_310_rule()) != null  // expression ['as' star_target]
-                &&
-                (seq = (ExprTy[])_loop0_254_rule()) != null  // _loop0_254
-            )
-            {
-                _res = insertInFront(elem, seq, ExprTy.class);
-                cache.putResult(_mark, _GATHER_253_ID, _res);
-                return (ExprTy[])_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _GATHER_253_ID, _res);
-        return (ExprTy[])_res;
-    }
-
-    // _tmp_255: ASYNC
-    public Token _tmp_255_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_255_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_255_ID);
+        if (cache.hasResult(_mark, _TMP_253_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_253_ID);
             return (Token)_res;
         }
         { // ASYNC
@@ -26723,136 +26668,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = async_var;
-                cache.putResult(_mark, _TMP_255_ID, _res);
+                cache.putResult(_mark, _TMP_253_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_255_ID, _res);
+        cache.putResult(_mark, _TMP_253_ID, _res);
         return (Token)_res;
     }
 
-    // _loop0_257: ',' (expressions ['as' star_target])
-    public ExprTy[] _loop0_257_rule()
+    // _loop0_255: ',' (expression ['as' star_target])
+    public ExprTy[] _loop0_255_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_257_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_257_ID);
-            return (ExprTy[])_res;
-        }
-        int _start_mark = mark();
-        List<ExprTy> _children = new ArrayList<>();
-        int _children_capacity = 1;
-        int _n = 0;
-        { // ',' (expressions ['as' star_target])
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            ExprTy elem;
-            while (
-                (_literal = (Token)expect(12)) != null  // token=','
-                &&
-                (elem = (ExprTy)_tmp_311_rule()) != null  // expressions ['as' star_target]
-            )
-            {
-                _res = elem;
-                if (_res instanceof ExprTy) {
-                    _children.add((ExprTy)_res);
-                } else {
-                    _children.addAll(Arrays.asList((ExprTy[])_res));
-                }
-                _mark = mark();
-            }
-            reset(_mark);
-        }
-        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_257_ID, _seq);
-        return _seq;
-    }
-
-    // _gather_256: (expressions ['as' star_target]) _loop0_257
-    public ExprTy[] _gather_256_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _GATHER_256_ID)) {
-            _res = (ExprTy[])cache.getResult(_mark, _GATHER_256_ID);
-            return (ExprTy[])_res;
-        }
-        { // (expressions ['as' star_target]) _loop0_257
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy elem;
-            ExprTy[] seq;
-            if (
-                (elem = (ExprTy)_tmp_311_rule()) != null  // expressions ['as' star_target]
-                &&
-                (seq = (ExprTy[])_loop0_257_rule()) != null  // _loop0_257
-            )
-            {
-                _res = insertInFront(elem, seq, ExprTy.class);
-                cache.putResult(_mark, _GATHER_256_ID, _res);
-                return (ExprTy[])_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _GATHER_256_ID, _res);
-        return (ExprTy[])_res;
-    }
-
-    // _tmp_258: ASYNC
-    public Token _tmp_258_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_258_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_258_ID);
-            return (Token)_res;
-        }
-        { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
-            Token async_var;
-            if (
-                (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
-            )
-            {
-                _res = async_var;
-                cache.putResult(_mark, _TMP_258_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_258_ID, _res);
-        return (Token)_res;
-    }
-
-    // _loop0_260: ',' (expression ['as' star_target])
-    public ExprTy[] _loop0_260_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        Object _res = null;
-        int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_260_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_260_ID);
+        if (cache.hasResult(_mark, _LOOP0_255_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_255_ID);
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -26882,23 +26717,23 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_260_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_255_ID, _seq);
         return _seq;
     }
 
-    // _gather_259: (expression ['as' star_target]) _loop0_260
-    public ExprTy[] _gather_259_rule()
+    // _gather_254: (expression ['as' star_target]) _loop0_255
+    public ExprTy[] _gather_254_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _GATHER_259_ID)) {
-            _res = (ExprTy[])cache.getResult(_mark, _GATHER_259_ID);
+        if (cache.hasResult(_mark, _GATHER_254_ID)) {
+            _res = (ExprTy[])cache.getResult(_mark, _GATHER_254_ID);
             return (ExprTy[])_res;
         }
-        { // (expression ['as' star_target]) _loop0_260
+        { // (expression ['as' star_target]) _loop0_255
             if (errorIndicator) {
                 return null;
             }
@@ -26907,30 +26742,30 @@ public final class Parser extends AbstractParser {
             if (
                 (elem = (ExprTy)_tmp_312_rule()) != null  // expression ['as' star_target]
                 &&
-                (seq = (ExprTy[])_loop0_260_rule()) != null  // _loop0_260
+                (seq = (ExprTy[])_loop0_255_rule()) != null  // _loop0_255
             )
             {
                 _res = insertInFront(elem, seq, ExprTy.class);
-                cache.putResult(_mark, _GATHER_259_ID, _res);
+                cache.putResult(_mark, _GATHER_254_ID, _res);
                 return (ExprTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _GATHER_259_ID, _res);
+        cache.putResult(_mark, _GATHER_254_ID, _res);
         return (ExprTy[])_res;
     }
 
-    // _tmp_261: ASYNC
-    public Token _tmp_261_rule()
+    // _tmp_256: ASYNC
+    public Token _tmp_256_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_261_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_261_ID);
+        if (cache.hasResult(_mark, _TMP_256_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_256_ID);
             return (Token)_res;
         }
         { // ASYNC
@@ -26943,26 +26778,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = async_var;
-                cache.putResult(_mark, _TMP_261_ID, _res);
+                cache.putResult(_mark, _TMP_256_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_261_ID, _res);
+        cache.putResult(_mark, _TMP_256_ID, _res);
         return (Token)_res;
     }
 
-    // _loop0_263: ',' (expressions ['as' star_target])
-    public ExprTy[] _loop0_263_rule()
+    // _loop0_258: ',' (expressions ['as' star_target])
+    public ExprTy[] _loop0_258_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_263_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_263_ID);
+        if (cache.hasResult(_mark, _LOOP0_258_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_258_ID);
             return (ExprTy[])_res;
         }
         int _start_mark = mark();
@@ -26992,23 +26827,23 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_263_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_258_ID, _seq);
         return _seq;
     }
 
-    // _gather_262: (expressions ['as' star_target]) _loop0_263
-    public ExprTy[] _gather_262_rule()
+    // _gather_257: (expressions ['as' star_target]) _loop0_258
+    public ExprTy[] _gather_257_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _GATHER_262_ID)) {
-            _res = (ExprTy[])cache.getResult(_mark, _GATHER_262_ID);
+        if (cache.hasResult(_mark, _GATHER_257_ID)) {
+            _res = (ExprTy[])cache.getResult(_mark, _GATHER_257_ID);
             return (ExprTy[])_res;
         }
-        { // (expressions ['as' star_target]) _loop0_263
+        { // (expressions ['as' star_target]) _loop0_258
             if (errorIndicator) {
                 return null;
             }
@@ -27017,30 +26852,250 @@ public final class Parser extends AbstractParser {
             if (
                 (elem = (ExprTy)_tmp_313_rule()) != null  // expressions ['as' star_target]
                 &&
-                (seq = (ExprTy[])_loop0_263_rule()) != null  // _loop0_263
+                (seq = (ExprTy[])_loop0_258_rule()) != null  // _loop0_258
             )
             {
                 _res = insertInFront(elem, seq, ExprTy.class);
-                cache.putResult(_mark, _GATHER_262_ID, _res);
+                cache.putResult(_mark, _GATHER_257_ID, _res);
                 return (ExprTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _GATHER_262_ID, _res);
+        cache.putResult(_mark, _GATHER_257_ID, _res);
         return (ExprTy[])_res;
     }
 
-    // _tmp_264: 'except' | 'finally'
-    public Token _tmp_264_rule()
+    // _tmp_259: ASYNC
+    public Token _tmp_259_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_264_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_264_ID);
+        if (cache.hasResult(_mark, _TMP_259_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_259_ID);
+            return (Token)_res;
+        }
+        { // ASYNC
+            if (errorIndicator) {
+                return null;
+            }
+            Token async_var;
+            if (
+                (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
+            )
+            {
+                _res = async_var;
+                cache.putResult(_mark, _TMP_259_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_259_ID, _res);
+        return (Token)_res;
+    }
+
+    // _loop0_261: ',' (expression ['as' star_target])
+    public ExprTy[] _loop0_261_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        Object _res = null;
+        int _mark = mark();
+        if (cache.hasResult(_mark, _LOOP0_261_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_261_ID);
+            return (ExprTy[])_res;
+        }
+        int _start_mark = mark();
+        List<ExprTy> _children = new ArrayList<>();
+        int _children_capacity = 1;
+        int _n = 0;
+        { // ',' (expression ['as' star_target])
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            ExprTy elem;
+            while (
+                (_literal = (Token)expect(12)) != null  // token=','
+                &&
+                (elem = (ExprTy)_tmp_314_rule()) != null  // expression ['as' star_target]
+            )
+            {
+                _res = elem;
+                if (_res instanceof ExprTy) {
+                    _children.add((ExprTy)_res);
+                } else {
+                    _children.addAll(Arrays.asList((ExprTy[])_res));
+                }
+                _mark = mark();
+            }
+            reset(_mark);
+        }
+        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
+        cache.putResult(_start_mark, _LOOP0_261_ID, _seq);
+        return _seq;
+    }
+
+    // _gather_260: (expression ['as' star_target]) _loop0_261
+    public ExprTy[] _gather_260_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _GATHER_260_ID)) {
+            _res = (ExprTy[])cache.getResult(_mark, _GATHER_260_ID);
+            return (ExprTy[])_res;
+        }
+        { // (expression ['as' star_target]) _loop0_261
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy elem;
+            ExprTy[] seq;
+            if (
+                (elem = (ExprTy)_tmp_314_rule()) != null  // expression ['as' star_target]
+                &&
+                (seq = (ExprTy[])_loop0_261_rule()) != null  // _loop0_261
+            )
+            {
+                _res = insertInFront(elem, seq, ExprTy.class);
+                cache.putResult(_mark, _GATHER_260_ID, _res);
+                return (ExprTy[])_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _GATHER_260_ID, _res);
+        return (ExprTy[])_res;
+    }
+
+    // _tmp_262: ASYNC
+    public Token _tmp_262_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_262_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_262_ID);
+            return (Token)_res;
+        }
+        { // ASYNC
+            if (errorIndicator) {
+                return null;
+            }
+            Token async_var;
+            if (
+                (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
+            )
+            {
+                _res = async_var;
+                cache.putResult(_mark, _TMP_262_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_262_ID, _res);
+        return (Token)_res;
+    }
+
+    // _loop0_264: ',' (expressions ['as' star_target])
+    public ExprTy[] _loop0_264_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        Object _res = null;
+        int _mark = mark();
+        if (cache.hasResult(_mark, _LOOP0_264_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_264_ID);
+            return (ExprTy[])_res;
+        }
+        int _start_mark = mark();
+        List<ExprTy> _children = new ArrayList<>();
+        int _children_capacity = 1;
+        int _n = 0;
+        { // ',' (expressions ['as' star_target])
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            ExprTy elem;
+            while (
+                (_literal = (Token)expect(12)) != null  // token=','
+                &&
+                (elem = (ExprTy)_tmp_315_rule()) != null  // expressions ['as' star_target]
+            )
+            {
+                _res = elem;
+                if (_res instanceof ExprTy) {
+                    _children.add((ExprTy)_res);
+                } else {
+                    _children.addAll(Arrays.asList((ExprTy[])_res));
+                }
+                _mark = mark();
+            }
+            reset(_mark);
+        }
+        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
+        cache.putResult(_start_mark, _LOOP0_264_ID, _seq);
+        return _seq;
+    }
+
+    // _gather_263: (expressions ['as' star_target]) _loop0_264
+    public ExprTy[] _gather_263_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _GATHER_263_ID)) {
+            _res = (ExprTy[])cache.getResult(_mark, _GATHER_263_ID);
+            return (ExprTy[])_res;
+        }
+        { // (expressions ['as' star_target]) _loop0_264
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy elem;
+            ExprTy[] seq;
+            if (
+                (elem = (ExprTy)_tmp_315_rule()) != null  // expressions ['as' star_target]
+                &&
+                (seq = (ExprTy[])_loop0_264_rule()) != null  // _loop0_264
+            )
+            {
+                _res = insertInFront(elem, seq, ExprTy.class);
+                cache.putResult(_mark, _GATHER_263_ID, _res);
+                return (ExprTy[])_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _GATHER_263_ID, _res);
+        return (ExprTy[])_res;
+    }
+
+    // _tmp_265: 'except' | 'finally'
+    public Token _tmp_265_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_265_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_265_ID);
             return (Token)_res;
         }
         { // 'except'
@@ -27053,7 +27108,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_264_ID, _res);
+                cache.putResult(_mark, _TMP_265_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -27068,26 +27123,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _keyword;
-                cache.putResult(_mark, _TMP_264_ID, _res);
+                cache.putResult(_mark, _TMP_265_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_264_ID, _res);
+        cache.putResult(_mark, _TMP_265_ID, _res);
         return (Token)_res;
     }
 
-    // _loop0_265: block
-    public StmtTy[] _loop0_265_rule()
+    // _loop0_266: block
+    public StmtTy[] _loop0_266_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_265_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_265_ID);
+        if (cache.hasResult(_mark, _LOOP0_266_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_266_ID);
             return (StmtTy[])_res;
         }
         int _start_mark = mark();
@@ -27114,20 +27169,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         StmtTy[] _seq = _children.toArray(new StmtTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_265_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_266_ID, _seq);
         return _seq;
     }
 
-    // _loop1_266: except_block
-    public ExceptHandlerTy[] _loop1_266_rule()
+    // _loop1_267: except_block
+    public ExceptHandlerTy[] _loop1_267_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_266_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_266_ID);
+        if (cache.hasResult(_mark, _LOOP1_267_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_267_ID);
             return (ExceptHandlerTy[])_res;
         }
         int _start_mark = mark();
@@ -27157,20 +27212,20 @@ public final class Parser extends AbstractParser {
             return null;
         }
         ExceptHandlerTy[] _seq = _children.toArray(new ExceptHandlerTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_266_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_267_ID, _seq);
         return _seq;
     }
 
-    // _tmp_267: 'as' NAME
-    public ExprTy _tmp_267_rule()
+    // _tmp_268: 'as' NAME
+    public ExprTy _tmp_268_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_267_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_267_ID);
+        if (cache.hasResult(_mark, _TMP_268_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_268_ID);
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -27186,26 +27241,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(_keyword, name_var);
-                cache.putResult(_mark, _TMP_267_ID, _res);
+                cache.putResult(_mark, _TMP_268_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_267_ID, _res);
+        cache.putResult(_mark, _TMP_268_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _loop0_268: block
-    public StmtTy[] _loop0_268_rule()
+    // _loop0_269: block
+    public StmtTy[] _loop0_269_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_268_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_268_ID);
+        if (cache.hasResult(_mark, _LOOP0_269_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_269_ID);
             return (StmtTy[])_res;
         }
         int _start_mark = mark();
@@ -27232,20 +27287,20 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         StmtTy[] _seq = _children.toArray(new StmtTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_268_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_269_ID, _seq);
         return _seq;
     }
 
-    // _loop1_269: except_star_block
-    public ExceptHandlerTy[] _loop1_269_rule()
+    // _loop1_270: except_star_block
+    public ExceptHandlerTy[] _loop1_270_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP1_269_ID)) {
-            _res = cache.getResult(_mark, _LOOP1_269_ID);
+        if (cache.hasResult(_mark, _LOOP1_270_ID)) {
+            _res = cache.getResult(_mark, _LOOP1_270_ID);
             return (ExceptHandlerTy[])_res;
         }
         int _start_mark = mark();
@@ -27275,46 +27330,11 @@ public final class Parser extends AbstractParser {
             return null;
         }
         ExceptHandlerTy[] _seq = _children.toArray(new ExceptHandlerTy[_children.size()]);
-        cache.putResult(_start_mark, _LOOP1_269_ID, _seq);
+        cache.putResult(_start_mark, _LOOP1_270_ID, _seq);
         return _seq;
     }
 
-    // _tmp_270: expression ['as' NAME]
-    public ExprTy _tmp_270_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_270_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_270_ID);
-            return (ExprTy)_res;
-        }
-        { // expression ['as' NAME]
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy _opt_var;
-            ExprTy expression_var;
-            if (
-                (expression_var = (ExprTy)expression_rule()) != null  // expression
-                &&
-                ((_opt_var = (ExprTy)_tmp_314_rule()) != null || true)  // ['as' NAME]
-            )
-            {
-                _res = dummyName(expression_var, _opt_var);
-                cache.putResult(_mark, _TMP_270_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_270_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_271: 'as' NAME
+    // _tmp_271: expression ['as' NAME]
     public ExprTy _tmp_271_rule()
     {
         if (errorIndicator) {
@@ -27326,19 +27346,19 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, _TMP_271_ID);
             return (ExprTy)_res;
         }
-        { // 'as' NAME
+        { // expression ['as' NAME]
             if (errorIndicator) {
                 return null;
             }
-            Token _keyword;
-            ExprTy name_var;
+            ExprTy _opt_var;
+            ExprTy expression_var;
             if (
-                (_keyword = (Token)expect(671)) != null  // token='as'
+                (expression_var = (ExprTy)expression_rule()) != null  // expression
                 &&
-                (name_var = (ExprTy)name_token()) != null  // NAME
+                ((_opt_var = (ExprTy)_tmp_316_rule()) != null || true)  // ['as' NAME]
             )
             {
-                _res = dummyName(_keyword, name_var);
+                _res = dummyName(expression_var, _opt_var);
                 cache.putResult(_mark, _TMP_271_ID, _res);
                 return (ExprTy)_res;
             }
@@ -27384,8 +27404,8 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_273: NEWLINE | ':'
-    public Token _tmp_273_rule()
+    // _tmp_273: 'as' NAME
+    public ExprTy _tmp_273_rule()
     {
         if (errorIndicator) {
             return null;
@@ -27393,54 +27413,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_273_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_273_ID);
-            return (Token)_res;
-        }
-        { // NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
-            Token newline_var;
-            if (
-                (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
-            )
-            {
-                _res = newline_var;
-                cache.putResult(_mark, _TMP_273_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        { // ':'
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(11)) != null  // token=':'
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_273_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_273_ID, _res);
-        return (Token)_res;
-    }
-
-    // _tmp_274: 'as' NAME
-    public ExprTy _tmp_274_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_274_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_274_ID);
+            _res = (ExprTy)cache.getResult(_mark, _TMP_273_ID);
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -27456,14 +27429,61 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(_keyword, name_var);
-                cache.putResult(_mark, _TMP_274_ID, _res);
+                cache.putResult(_mark, _TMP_273_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_274_ID, _res);
+        cache.putResult(_mark, _TMP_273_ID, _res);
         return (ExprTy)_res;
+    }
+
+    // _tmp_274: NEWLINE | ':'
+    public Token _tmp_274_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_274_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_274_ID);
+            return (Token)_res;
+        }
+        { // NEWLINE
+            if (errorIndicator) {
+                return null;
+            }
+            Token newline_var;
+            if (
+                (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
+            )
+            {
+                _res = newline_var;
+                cache.putResult(_mark, _TMP_274_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        { // ':'
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            if (
+                (_literal = (Token)expect(11)) != null  // token=':'
+            )
+            {
+                _res = _literal;
+                cache.putResult(_mark, _TMP_274_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_274_ID, _res);
+        return (Token)_res;
     }
 
     // _tmp_275: 'as' NAME
@@ -27501,8 +27521,8 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_276: positional_patterns ','
-    public PatternTy[] _tmp_276_rule()
+    // _tmp_276: 'as' NAME
+    public ExprTy _tmp_276_rule()
     {
         if (errorIndicator) {
             return null;
@@ -27510,7 +27530,42 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_276_ID)) {
-            _res = (PatternTy[])cache.getResult(_mark, _TMP_276_ID);
+            _res = (ExprTy)cache.getResult(_mark, _TMP_276_ID);
+            return (ExprTy)_res;
+        }
+        { // 'as' NAME
+            if (errorIndicator) {
+                return null;
+            }
+            Token _keyword;
+            ExprTy name_var;
+            if (
+                (_keyword = (Token)expect(671)) != null  // token='as'
+                &&
+                (name_var = (ExprTy)name_token()) != null  // NAME
+            )
+            {
+                _res = dummyName(_keyword, name_var);
+                cache.putResult(_mark, _TMP_276_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_276_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_277: positional_patterns ','
+    public PatternTy[] _tmp_277_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_277_ID)) {
+            _res = (PatternTy[])cache.getResult(_mark, _TMP_277_ID);
             return (PatternTy[])_res;
         }
         { // positional_patterns ','
@@ -27526,46 +27581,14 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(positional_patterns_var, _literal);
-                cache.putResult(_mark, _TMP_276_ID, _res);
+                cache.putResult(_mark, _TMP_277_ID, _res);
                 return (PatternTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_276_ID, _res);
-        return (PatternTy[])_res;
-    }
-
-    // _tmp_277: ASYNC
-    public Token _tmp_277_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_277_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_277_ID);
-            return (Token)_res;
-        }
-        { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
-            Token async_var;
-            if (
-                (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
-            )
-            {
-                _res = async_var;
-                cache.putResult(_mark, _TMP_277_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
         cache.putResult(_mark, _TMP_277_ID, _res);
-        return (Token)_res;
+        return (PatternTy[])_res;
     }
 
     // _tmp_278: ASYNC
@@ -27632,8 +27655,8 @@ public final class Parser extends AbstractParser {
         return (Token)_res;
     }
 
-    // _tmp_280: params
-    public ArgumentsTy _tmp_280_rule()
+    // _tmp_280: ASYNC
+    public Token _tmp_280_rule()
     {
         if (errorIndicator) {
             return null;
@@ -27641,7 +27664,39 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_280_ID)) {
-            _res = (ArgumentsTy)cache.getResult(_mark, _TMP_280_ID);
+            _res = (Token)cache.getResult(_mark, _TMP_280_ID);
+            return (Token)_res;
+        }
+        { // ASYNC
+            if (errorIndicator) {
+                return null;
+            }
+            Token async_var;
+            if (
+                (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
+            )
+            {
+                _res = async_var;
+                cache.putResult(_mark, _TMP_280_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_280_ID, _res);
+        return (Token)_res;
+    }
+
+    // _tmp_281: params
+    public ArgumentsTy _tmp_281_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_281_ID)) {
+            _res = (ArgumentsTy)cache.getResult(_mark, _TMP_281_ID);
             return (ArgumentsTy)_res;
         }
         { // params
@@ -27654,26 +27709,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = params_var;
-                cache.putResult(_mark, _TMP_280_ID, _res);
+                cache.putResult(_mark, _TMP_281_ID, _res);
                 return (ArgumentsTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_280_ID, _res);
+        cache.putResult(_mark, _TMP_281_ID, _res);
         return (ArgumentsTy)_res;
     }
 
-    // _tmp_281: '->' expression
-    public ExprTy _tmp_281_rule()
+    // _tmp_282: '->' expression
+    public ExprTy _tmp_282_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_281_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_281_ID);
+        if (cache.hasResult(_mark, _TMP_282_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_282_ID);
             return (ExprTy)_res;
         }
         { // '->' expression
@@ -27689,44 +27744,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(_literal, expression_var);
-                cache.putResult(_mark, _TMP_281_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_281_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_282: '(' arguments? ')'
-    public ExprTy _tmp_282_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_282_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_282_ID);
-            return (ExprTy)_res;
-        }
-        { // '(' arguments? ')'
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            Token _literal_1;
-            ExprTy _opt_var;
-            if (
-                (_literal = (Token)expect(7)) != null  // token='('
-                &&
-                ((_opt_var = (ExprTy)_tmp_315_rule()) != null || true)  // arguments?
-                &&
-                (_literal_1 = (Token)expect(8)) != null  // token=')'
-            )
-            {
-                _res = dummyName(_literal, _opt_var, _literal_1);
                 cache.putResult(_mark, _TMP_282_ID, _res);
                 return (ExprTy)_res;
             }
@@ -27759,7 +27776,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = (Token)expect(7)) != null  // token='('
                 &&
-                ((_opt_var = (ExprTy)_tmp_316_rule()) != null || true)  // arguments?
+                ((_opt_var = (ExprTy)_tmp_317_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
             )
@@ -27775,16 +27792,54 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _loop0_285: ',' double_starred_kvpair
-    public KeyValuePair[] _loop0_285_rule()
+    // _tmp_284: '(' arguments? ')'
+    public ExprTy _tmp_284_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_284_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_284_ID);
+            return (ExprTy)_res;
+        }
+        { // '(' arguments? ')'
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            Token _literal_1;
+            ExprTy _opt_var;
+            if (
+                (_literal = (Token)expect(7)) != null  // token='('
+                &&
+                ((_opt_var = (ExprTy)_tmp_318_rule()) != null || true)  // arguments?
+                &&
+                (_literal_1 = (Token)expect(8)) != null  // token=')'
+            )
+            {
+                _res = dummyName(_literal, _opt_var, _literal_1);
+                cache.putResult(_mark, _TMP_284_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_284_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _loop0_286: ',' double_starred_kvpair
+    public KeyValuePair[] _loop0_286_rule()
     {
         if (errorIndicator) {
             return null;
         }
         Object _res = null;
         int _mark = mark();
-        if (cache.hasResult(_mark, _LOOP0_285_ID)) {
-            _res = cache.getResult(_mark, _LOOP0_285_ID);
+        if (cache.hasResult(_mark, _LOOP0_286_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_286_ID);
             return (KeyValuePair[])_res;
         }
         int _start_mark = mark();
@@ -27814,23 +27869,23 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         KeyValuePair[] _seq = _children.toArray(new KeyValuePair[_children.size()]);
-        cache.putResult(_start_mark, _LOOP0_285_ID, _seq);
+        cache.putResult(_start_mark, _LOOP0_286_ID, _seq);
         return _seq;
     }
 
-    // _gather_284: double_starred_kvpair _loop0_285
-    public KeyValuePair[] _gather_284_rule()
+    // _gather_285: double_starred_kvpair _loop0_286
+    public KeyValuePair[] _gather_285_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _GATHER_284_ID)) {
-            _res = (KeyValuePair[])cache.getResult(_mark, _GATHER_284_ID);
+        if (cache.hasResult(_mark, _GATHER_285_ID)) {
+            _res = (KeyValuePair[])cache.getResult(_mark, _GATHER_285_ID);
             return (KeyValuePair[])_res;
         }
-        { // double_starred_kvpair _loop0_285
+        { // double_starred_kvpair _loop0_286
             if (errorIndicator) {
                 return null;
             }
@@ -27839,30 +27894,30 @@ public final class Parser extends AbstractParser {
             if (
                 (elem = (KeyValuePair)double_starred_kvpair_rule()) != null  // double_starred_kvpair
                 &&
-                (seq = (KeyValuePair[])_loop0_285_rule()) != null  // _loop0_285
+                (seq = (KeyValuePair[])_loop0_286_rule()) != null  // _loop0_286
             )
             {
                 _res = insertInFront(elem, seq, KeyValuePair.class);
-                cache.putResult(_mark, _GATHER_284_ID, _res);
+                cache.putResult(_mark, _GATHER_285_ID, _res);
                 return (KeyValuePair[])_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _GATHER_284_ID, _res);
+        cache.putResult(_mark, _GATHER_285_ID, _res);
         return (KeyValuePair[])_res;
     }
 
-    // _tmp_286: '}' | ','
-    public Token _tmp_286_rule()
+    // _tmp_287: '}' | ','
+    public Token _tmp_287_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_286_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_286_ID);
+        if (cache.hasResult(_mark, _TMP_287_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_287_ID);
             return (Token)_res;
         }
         { // '}'
@@ -27875,7 +27930,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_286_ID, _res);
+                cache.putResult(_mark, _TMP_287_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -27887,38 +27942,6 @@ public final class Parser extends AbstractParser {
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_286_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_286_ID, _res);
-        return (Token)_res;
-    }
-
-    // _tmp_287: ':'
-    public Token _tmp_287_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_287_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_287_ID);
-            return (Token)_res;
-        }
-        { // ':'
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(11)) != null  // token=':'
             )
             {
                 _res = _literal;
@@ -27932,7 +27955,7 @@ public final class Parser extends AbstractParser {
         return (Token)_res;
     }
 
-    // _tmp_288: '}' | ','
+    // _tmp_288: ':'
     public Token _tmp_288_rule()
     {
         if (errorIndicator) {
@@ -27942,6 +27965,38 @@ public final class Parser extends AbstractParser {
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_288_ID)) {
             _res = (Token)cache.getResult(_mark, _TMP_288_ID);
+            return (Token)_res;
+        }
+        { // ':'
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            if (
+                (_literal = (Token)expect(11)) != null  // token=':'
+            )
+            {
+                _res = _literal;
+                cache.putResult(_mark, _TMP_288_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_288_ID, _res);
+        return (Token)_res;
+    }
+
+    // _tmp_289: '}' | ','
+    public Token _tmp_289_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_289_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_289_ID);
             return (Token)_res;
         }
         { // '}'
@@ -27954,7 +28009,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_288_ID, _res);
+                cache.putResult(_mark, _TMP_289_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -27969,26 +28024,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_288_ID, _res);
+                cache.putResult(_mark, _TMP_289_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_288_ID, _res);
+        cache.putResult(_mark, _TMP_289_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_289: star_targets '='
-    public ExprTy _tmp_289_rule()
+    // _tmp_290: star_targets '='
+    public ExprTy _tmp_290_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_289_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_289_ID);
+        if (cache.hasResult(_mark, _TMP_290_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_290_ID);
             return (ExprTy)_res;
         }
         { // star_targets '='
@@ -28004,61 +28059,14 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = z;
-                cache.putResult(_mark, _TMP_289_ID, _res);
+                cache.putResult(_mark, _TMP_290_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_289_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_290: '.' | '...'
-    public Token _tmp_290_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_290_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_290_ID);
-            return (Token)_res;
-        }
-        { // '.'
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(23)) != null  // token='.'
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_290_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        { // '...'
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            if (
-                (_literal = (Token)expect(52)) != null  // token='...'
-            )
-            {
-                _res = _literal;
-                cache.putResult(_mark, _TMP_290_ID, _res);
-                return (Token)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
         cache.putResult(_mark, _TMP_290_ID, _res);
-        return (Token)_res;
+        return (ExprTy)_res;
     }
 
     // _tmp_291: '.' | '...'
@@ -28108,8 +28116,8 @@ public final class Parser extends AbstractParser {
         return (Token)_res;
     }
 
-    // _tmp_292: '@' named_expression NEWLINE
-    public ExprTy _tmp_292_rule()
+    // _tmp_292: '.' | '...'
+    public Token _tmp_292_rule()
     {
         if (errorIndicator) {
             return null;
@@ -28117,7 +28125,54 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_292_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_292_ID);
+            _res = (Token)cache.getResult(_mark, _TMP_292_ID);
+            return (Token)_res;
+        }
+        { // '.'
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            if (
+                (_literal = (Token)expect(23)) != null  // token='.'
+            )
+            {
+                _res = _literal;
+                cache.putResult(_mark, _TMP_292_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        { // '...'
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            if (
+                (_literal = (Token)expect(52)) != null  // token='...'
+            )
+            {
+                _res = _literal;
+                cache.putResult(_mark, _TMP_292_ID, _res);
+                return (Token)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_292_ID, _res);
+        return (Token)_res;
+    }
+
+    // _tmp_293: '@' named_expression NEWLINE
+    public ExprTy _tmp_293_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_293_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_293_ID);
             return (ExprTy)_res;
         }
         { // '@' named_expression NEWLINE
@@ -28136,26 +28191,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = f;
-                cache.putResult(_mark, _TMP_292_ID, _res);
+                cache.putResult(_mark, _TMP_293_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_292_ID, _res);
+        cache.putResult(_mark, _TMP_293_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_293: arguments
-    public ExprTy _tmp_293_rule()
+    // _tmp_294: arguments
+    public ExprTy _tmp_294_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_293_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_293_ID);
+        if (cache.hasResult(_mark, _TMP_294_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_294_ID);
             return (ExprTy)_res;
         }
         { // arguments
@@ -28168,26 +28223,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = arguments_var;
-                cache.putResult(_mark, _TMP_293_ID, _res);
+                cache.putResult(_mark, _TMP_294_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_293_ID, _res);
+        cache.putResult(_mark, _TMP_294_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_294: ',' expression
-    public ExprTy _tmp_294_rule()
+    // _tmp_295: ',' expression
+    public ExprTy _tmp_295_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_294_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_294_ID);
+        if (cache.hasResult(_mark, _TMP_295_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_295_ID);
             return (ExprTy)_res;
         }
         { // ',' expression
@@ -28203,26 +28258,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = c;
-                cache.putResult(_mark, _TMP_294_ID, _res);
+                cache.putResult(_mark, _TMP_295_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_294_ID, _res);
+        cache.putResult(_mark, _TMP_295_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_295: ',' star_expression
-    public ExprTy _tmp_295_rule()
+    // _tmp_296: ',' star_expression
+    public ExprTy _tmp_296_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_295_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_295_ID);
+        if (cache.hasResult(_mark, _TMP_296_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_296_ID);
             return (ExprTy)_res;
         }
         { // ',' star_expression
@@ -28238,26 +28293,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = c;
-                cache.putResult(_mark, _TMP_295_ID, _res);
+                cache.putResult(_mark, _TMP_296_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_295_ID, _res);
+        cache.putResult(_mark, _TMP_296_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_296: 'or' conjunction
-    public ExprTy _tmp_296_rule()
+    // _tmp_297: 'or' conjunction
+    public ExprTy _tmp_297_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_296_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_296_ID);
+        if (cache.hasResult(_mark, _TMP_297_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_297_ID);
             return (ExprTy)_res;
         }
         { // 'or' conjunction
@@ -28273,26 +28328,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = c;
-                cache.putResult(_mark, _TMP_296_ID, _res);
+                cache.putResult(_mark, _TMP_297_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_296_ID, _res);
+        cache.putResult(_mark, _TMP_297_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_297: 'and' inversion
-    public ExprTy _tmp_297_rule()
+    // _tmp_298: 'and' inversion
+    public ExprTy _tmp_298_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_297_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_297_ID);
+        if (cache.hasResult(_mark, _TMP_298_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_298_ID);
             return (ExprTy)_res;
         }
         { // 'and' inversion
@@ -28308,26 +28363,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = c;
-                cache.putResult(_mark, _TMP_297_ID, _res);
+                cache.putResult(_mark, _TMP_298_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_297_ID, _res);
+        cache.putResult(_mark, _TMP_298_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_298: slice | starred_expression
-    public ExprTy _tmp_298_rule()
+    // _tmp_299: slice | starred_expression
+    public ExprTy _tmp_299_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_298_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_298_ID);
+        if (cache.hasResult(_mark, _TMP_299_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_299_ID);
             return (ExprTy)_res;
         }
         { // slice
@@ -28340,7 +28395,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = slice_var;
-                cache.putResult(_mark, _TMP_298_ID, _res);
+                cache.putResult(_mark, _TMP_299_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -28355,26 +28410,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = starred_expression_var;
-                cache.putResult(_mark, _TMP_298_ID, _res);
+                cache.putResult(_mark, _TMP_299_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_298_ID, _res);
+        cache.putResult(_mark, _TMP_299_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_299: expression
-    public ExprTy _tmp_299_rule()
+    // _tmp_300: expression
+    public ExprTy _tmp_300_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_299_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_299_ID);
+        if (cache.hasResult(_mark, _TMP_300_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_300_ID);
             return (ExprTy)_res;
         }
         { // expression
@@ -28387,26 +28442,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = expression_var;
-                cache.putResult(_mark, _TMP_299_ID, _res);
+                cache.putResult(_mark, _TMP_300_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_299_ID, _res);
+        cache.putResult(_mark, _TMP_300_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_300: star_named_expressions
-    public ExprTy[] _tmp_300_rule()
+    // _tmp_301: star_named_expressions
+    public ExprTy[] _tmp_301_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_300_ID)) {
-            _res = (ExprTy[])cache.getResult(_mark, _TMP_300_ID);
+        if (cache.hasResult(_mark, _TMP_301_ID)) {
+            _res = (ExprTy[])cache.getResult(_mark, _TMP_301_ID);
             return (ExprTy[])_res;
         }
         { // star_named_expressions
@@ -28419,49 +28474,14 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = star_named_expressions_var;
-                cache.putResult(_mark, _TMP_300_ID, _res);
+                cache.putResult(_mark, _TMP_301_ID, _res);
                 return (ExprTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_300_ID, _res);
-        return (ExprTy[])_res;
-    }
-
-    // _tmp_301: 'if' disjunction
-    public ExprTy _tmp_301_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_301_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_301_ID);
-            return (ExprTy)_res;
-        }
-        { // 'if' disjunction
-            if (errorIndicator) {
-                return null;
-            }
-            Token _keyword;
-            ExprTy z;
-            if (
-                (_keyword = (Token)expect(665)) != null  // token='if'
-                &&
-                (z = (ExprTy)disjunction_rule()) != null  // disjunction
-            )
-            {
-                _res = z;
-                cache.putResult(_mark, _TMP_301_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
         cache.putResult(_mark, _TMP_301_ID, _res);
-        return (ExprTy)_res;
+        return (ExprTy[])_res;
     }
 
     // _tmp_302: 'if' disjunction
@@ -28499,7 +28519,7 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_303: starred_expression | (assignment_expression | expression !':=') !'='
+    // _tmp_303: 'if' disjunction
     public ExprTy _tmp_303_rule()
     {
         if (errorIndicator) {
@@ -28509,6 +28529,41 @@ public final class Parser extends AbstractParser {
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_303_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_303_ID);
+            return (ExprTy)_res;
+        }
+        { // 'if' disjunction
+            if (errorIndicator) {
+                return null;
+            }
+            Token _keyword;
+            ExprTy z;
+            if (
+                (_keyword = (Token)expect(665)) != null  // token='if'
+                &&
+                (z = (ExprTy)disjunction_rule()) != null  // disjunction
+            )
+            {
+                _res = z;
+                cache.putResult(_mark, _TMP_303_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_303_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_304: starred_expression | (assignment_expression | expression !':=') !'='
+    public ExprTy _tmp_304_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_304_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_304_ID);
             return (ExprTy)_res;
         }
         { // starred_expression
@@ -28521,7 +28576,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = starred_expression_var;
-                cache.putResult(_mark, _TMP_303_ID, _res);
+                cache.putResult(_mark, _TMP_304_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -28530,49 +28585,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            ExprTy _tmp_317_var;
+            ExprTy _tmp_319_var;
             if (
-                (_tmp_317_var = (ExprTy)_tmp_317_rule()) != null  // assignment_expression | expression !':='
+                (_tmp_319_var = (ExprTy)_tmp_319_rule()) != null  // assignment_expression | expression !':='
                 &&
                 genLookahead_expect(false, 22)  // token='='
             )
             {
-                _res = _tmp_317_var;
-                cache.putResult(_mark, _TMP_303_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_303_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_304: ',' star_target
-    public ExprTy _tmp_304_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_304_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_304_ID);
-            return (ExprTy)_res;
-        }
-        { // ',' star_target
-            if (errorIndicator) {
-                return null;
-            }
-            Token _literal;
-            ExprTy c;
-            if (
-                (_literal = (Token)expect(12)) != null  // token=','
-                &&
-                (c = (ExprTy)star_target_rule()) != null  // star_target
-            )
-            {
-                _res = c;
+                _res = _tmp_319_var;
                 cache.putResult(_mark, _TMP_304_ID, _res);
                 return (ExprTy)_res;
             }
@@ -28618,7 +28638,7 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_306: star_targets '='
+    // _tmp_306: ',' star_target
     public ExprTy _tmp_306_rule()
     {
         if (errorIndicator) {
@@ -28630,19 +28650,19 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, _TMP_306_ID);
             return (ExprTy)_res;
         }
-        { // star_targets '='
+        { // ',' star_target
             if (errorIndicator) {
                 return null;
             }
             Token _literal;
-            ExprTy star_targets_var;
+            ExprTy c;
             if (
-                (star_targets_var = (ExprTy)star_targets_rule()) != null  // star_targets
+                (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (_literal = (Token)expect(22)) != null  // token='='
+                (c = (ExprTy)star_target_rule()) != null  // star_target
             )
             {
-                _res = dummyName(star_targets_var, _literal);
+                _res = c;
                 cache.putResult(_mark, _TMP_306_ID, _res);
                 return (ExprTy)_res;
             }
@@ -28653,8 +28673,9 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_307: star_targets '='
-    public ExprTy _tmp_307_rule()
+    // _tmp_307:
+    //     | ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs
+    public Object _tmp_307_rule()
     {
         if (errorIndicator) {
             return null;
@@ -28662,7 +28683,45 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_307_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_307_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_307_ID);
+            return (Object)_res;
+        }
+        { // ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy[] _gather_320_var;
+            Token _literal;
+            KeywordOrStarred[] kwargs_var;
+            if (
+                (_gather_320_var = (ExprTy[])_gather_320_rule()) != null  // ','.(starred_expression | (assignment_expression | expression !':=') !'=')+
+                &&
+                (_literal = (Token)expect(12)) != null  // token=','
+                &&
+                (kwargs_var = (KeywordOrStarred[])kwargs_rule()) != null  // kwargs
+            )
+            {
+                _res = dummyName(_gather_320_var, _literal, kwargs_var);
+                cache.putResult(_mark, _TMP_307_ID, _res);
+                return (Object)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_307_ID, _res);
+        return (Object)_res;
+    }
+
+    // _tmp_308: star_targets '='
+    public ExprTy _tmp_308_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_308_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_308_ID);
             return (ExprTy)_res;
         }
         { // star_targets '='
@@ -28678,26 +28737,61 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(star_targets_var, _literal);
-                cache.putResult(_mark, _TMP_307_ID, _res);
+                cache.putResult(_mark, _TMP_308_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_307_ID, _res);
+        cache.putResult(_mark, _TMP_308_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_308: ')' | '**'
-    public Token _tmp_308_rule()
+    // _tmp_309: star_targets '='
+    public ExprTy _tmp_309_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_308_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_308_ID);
+        if (cache.hasResult(_mark, _TMP_309_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_309_ID);
+            return (ExprTy)_res;
+        }
+        { // star_targets '='
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            ExprTy star_targets_var;
+            if (
+                (star_targets_var = (ExprTy)star_targets_rule()) != null  // star_targets
+                &&
+                (_literal = (Token)expect(22)) != null  // token='='
+            )
+            {
+                _res = dummyName(star_targets_var, _literal);
+                cache.putResult(_mark, _TMP_309_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_309_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_310: ')' | '**'
+    public Token _tmp_310_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_310_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_310_ID);
             return (Token)_res;
         }
         { // ')'
@@ -28710,7 +28804,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_308_ID, _res);
+                cache.putResult(_mark, _TMP_310_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -28725,26 +28819,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_308_ID, _res);
+                cache.putResult(_mark, _TMP_310_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_308_ID, _res);
+        cache.putResult(_mark, _TMP_310_ID, _res);
         return (Token)_res;
     }
 
-    // _tmp_309: ':' | '**'
-    public Token _tmp_309_rule()
+    // _tmp_311: ':' | '**'
+    public Token _tmp_311_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_309_ID)) {
-            _res = (Token)cache.getResult(_mark, _TMP_309_ID);
+        if (cache.hasResult(_mark, _TMP_311_ID)) {
+            _res = (Token)cache.getResult(_mark, _TMP_311_ID);
             return (Token)_res;
         }
         { // ':'
@@ -28757,7 +28851,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_309_ID, _res);
+                cache.putResult(_mark, _TMP_311_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
@@ -28772,84 +28866,14 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = _literal;
-                cache.putResult(_mark, _TMP_309_ID, _res);
+                cache.putResult(_mark, _TMP_311_ID, _res);
                 return (Token)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_309_ID, _res);
-        return (Token)_res;
-    }
-
-    // _tmp_310: expression ['as' star_target]
-    public ExprTy _tmp_310_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_310_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_310_ID);
-            return (ExprTy)_res;
-        }
-        { // expression ['as' star_target]
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy _opt_var;
-            ExprTy expression_var;
-            if (
-                (expression_var = (ExprTy)expression_rule()) != null  // expression
-                &&
-                ((_opt_var = (ExprTy)_tmp_318_rule()) != null || true)  // ['as' star_target]
-            )
-            {
-                _res = dummyName(expression_var, _opt_var);
-                cache.putResult(_mark, _TMP_310_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_310_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_311: expressions ['as' star_target]
-    public ExprTy _tmp_311_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_311_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_311_ID);
-            return (ExprTy)_res;
-        }
-        { // expressions ['as' star_target]
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy _opt_var;
-            ExprTy expressions_var;
-            if (
-                (expressions_var = (ExprTy)expressions_rule()) != null  // expressions
-                &&
-                ((_opt_var = (ExprTy)_tmp_319_rule()) != null || true)  // ['as' star_target]
-            )
-            {
-                _res = dummyName(expressions_var, _opt_var);
-                cache.putResult(_mark, _TMP_311_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
         cache.putResult(_mark, _TMP_311_ID, _res);
-        return (ExprTy)_res;
+        return (Token)_res;
     }
 
     // _tmp_312: expression ['as' star_target]
@@ -28873,7 +28897,7 @@ public final class Parser extends AbstractParser {
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
                 &&
-                ((_opt_var = (ExprTy)_tmp_320_rule()) != null || true)  // ['as' star_target]
+                ((_opt_var = (ExprTy)_tmp_322_rule()) != null || true)  // ['as' star_target]
             )
             {
                 _res = dummyName(expression_var, _opt_var);
@@ -28908,7 +28932,7 @@ public final class Parser extends AbstractParser {
             if (
                 (expressions_var = (ExprTy)expressions_rule()) != null  // expressions
                 &&
-                ((_opt_var = (ExprTy)_tmp_321_rule()) != null || true)  // ['as' star_target]
+                ((_opt_var = (ExprTy)_tmp_323_rule()) != null || true)  // ['as' star_target]
             )
             {
                 _res = dummyName(expressions_var, _opt_var);
@@ -28922,7 +28946,7 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_314: 'as' NAME
+    // _tmp_314: expression ['as' star_target]
     public ExprTy _tmp_314_rule()
     {
         if (errorIndicator) {
@@ -28932,6 +28956,76 @@ public final class Parser extends AbstractParser {
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_314_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_314_ID);
+            return (ExprTy)_res;
+        }
+        { // expression ['as' star_target]
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy _opt_var;
+            ExprTy expression_var;
+            if (
+                (expression_var = (ExprTy)expression_rule()) != null  // expression
+                &&
+                ((_opt_var = (ExprTy)_tmp_324_rule()) != null || true)  // ['as' star_target]
+            )
+            {
+                _res = dummyName(expression_var, _opt_var);
+                cache.putResult(_mark, _TMP_314_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_314_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_315: expressions ['as' star_target]
+    public ExprTy _tmp_315_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_315_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_315_ID);
+            return (ExprTy)_res;
+        }
+        { // expressions ['as' star_target]
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy _opt_var;
+            ExprTy expressions_var;
+            if (
+                (expressions_var = (ExprTy)expressions_rule()) != null  // expressions
+                &&
+                ((_opt_var = (ExprTy)_tmp_325_rule()) != null || true)  // ['as' star_target]
+            )
+            {
+                _res = dummyName(expressions_var, _opt_var);
+                cache.putResult(_mark, _TMP_315_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_315_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_316: 'as' NAME
+    public ExprTy _tmp_316_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_316_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_316_ID);
             return (ExprTy)_res;
         }
         { // 'as' NAME
@@ -28947,70 +29041,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(_keyword, name_var);
-                cache.putResult(_mark, _TMP_314_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_314_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_315: arguments
-    public ExprTy _tmp_315_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_315_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_315_ID);
-            return (ExprTy)_res;
-        }
-        { // arguments
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy arguments_var;
-            if (
-                (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
-            )
-            {
-                _res = arguments_var;
-                cache.putResult(_mark, _TMP_315_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_315_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_316: arguments
-    public ExprTy _tmp_316_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_316_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_316_ID);
-            return (ExprTy)_res;
-        }
-        { // arguments
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy arguments_var;
-            if (
-                (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
-            )
-            {
-                _res = arguments_var;
                 cache.putResult(_mark, _TMP_316_ID, _res);
                 return (ExprTy)_res;
             }
@@ -29021,7 +29051,7 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_317: assignment_expression | expression !':='
+    // _tmp_317: arguments
     public ExprTy _tmp_317_rule()
     {
         if (errorIndicator) {
@@ -29031,6 +29061,70 @@ public final class Parser extends AbstractParser {
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_317_ID)) {
             _res = (ExprTy)cache.getResult(_mark, _TMP_317_ID);
+            return (ExprTy)_res;
+        }
+        { // arguments
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy arguments_var;
+            if (
+                (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
+            )
+            {
+                _res = arguments_var;
+                cache.putResult(_mark, _TMP_317_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_317_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_318: arguments
+    public ExprTy _tmp_318_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_318_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_318_ID);
+            return (ExprTy)_res;
+        }
+        { // arguments
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy arguments_var;
+            if (
+                (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
+            )
+            {
+                _res = arguments_var;
+                cache.putResult(_mark, _TMP_318_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_318_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_319: assignment_expression | expression !':='
+    public ExprTy _tmp_319_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_319_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_319_ID);
             return (ExprTy)_res;
         }
         { // assignment_expression
@@ -29043,7 +29137,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = assignment_expression_var;
-                cache.putResult(_mark, _TMP_317_ID, _res);
+                cache.putResult(_mark, _TMP_319_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -29060,76 +29154,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = expression_var;
-                cache.putResult(_mark, _TMP_317_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_317_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_318: 'as' star_target
-    public ExprTy _tmp_318_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_318_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_318_ID);
-            return (ExprTy)_res;
-        }
-        { // 'as' star_target
-            if (errorIndicator) {
-                return null;
-            }
-            Token _keyword;
-            ExprTy star_target_var;
-            if (
-                (_keyword = (Token)expect(671)) != null  // token='as'
-                &&
-                (star_target_var = (ExprTy)star_target_rule()) != null  // star_target
-            )
-            {
-                _res = dummyName(_keyword, star_target_var);
-                cache.putResult(_mark, _TMP_318_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, _TMP_318_ID, _res);
-        return (ExprTy)_res;
-    }
-
-    // _tmp_319: 'as' star_target
-    public ExprTy _tmp_319_rule()
-    {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, _TMP_319_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_319_ID);
-            return (ExprTy)_res;
-        }
-        { // 'as' star_target
-            if (errorIndicator) {
-                return null;
-            }
-            Token _keyword;
-            ExprTy star_target_var;
-            if (
-                (_keyword = (Token)expect(671)) != null  // token='as'
-                &&
-                (star_target_var = (ExprTy)star_target_rule()) != null  // star_target
-            )
-            {
-                _res = dummyName(_keyword, star_target_var);
                 cache.putResult(_mark, _TMP_319_ID, _res);
                 return (ExprTy)_res;
             }
@@ -29140,16 +29164,95 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // _tmp_320: 'as' star_target
-    public ExprTy _tmp_320_rule()
+    // _loop0_321: ',' (starred_expression | (assignment_expression | expression !':=') !'=')
+    public ExprTy[] _loop0_321_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        Object _res = null;
+        int _mark = mark();
+        if (cache.hasResult(_mark, _LOOP0_321_ID)) {
+            _res = cache.getResult(_mark, _LOOP0_321_ID);
+            return (ExprTy[])_res;
+        }
+        int _start_mark = mark();
+        List<ExprTy> _children = new ArrayList<>();
+        int _children_capacity = 1;
+        int _n = 0;
+        { // ',' (starred_expression | (assignment_expression | expression !':=') !'=')
+            if (errorIndicator) {
+                return null;
+            }
+            Token _literal;
+            ExprTy elem;
+            while (
+                (_literal = (Token)expect(12)) != null  // token=','
+                &&
+                (elem = (ExprTy)_tmp_326_rule()) != null  // starred_expression | (assignment_expression | expression !':=') !'='
+            )
+            {
+                _res = elem;
+                if (_res instanceof ExprTy) {
+                    _children.add((ExprTy)_res);
+                } else {
+                    _children.addAll(Arrays.asList((ExprTy[])_res));
+                }
+                _mark = mark();
+            }
+            reset(_mark);
+        }
+        ExprTy[] _seq = _children.toArray(new ExprTy[_children.size()]);
+        cache.putResult(_start_mark, _LOOP0_321_ID, _seq);
+        return _seq;
+    }
+
+    // _gather_320:
+    //     | (starred_expression | (assignment_expression | expression !':=') !'=') _loop0_321
+    public ExprTy[] _gather_320_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_320_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_320_ID);
+        if (cache.hasResult(_mark, _GATHER_320_ID)) {
+            _res = (ExprTy[])cache.getResult(_mark, _GATHER_320_ID);
+            return (ExprTy[])_res;
+        }
+        { // (starred_expression | (assignment_expression | expression !':=') !'=') _loop0_321
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy elem;
+            ExprTy[] seq;
+            if (
+                (elem = (ExprTy)_tmp_326_rule()) != null  // starred_expression | (assignment_expression | expression !':=') !'='
+                &&
+                (seq = (ExprTy[])_loop0_321_rule()) != null  // _loop0_321
+            )
+            {
+                _res = insertInFront(elem, seq, ExprTy.class);
+                cache.putResult(_mark, _GATHER_320_ID, _res);
+                return (ExprTy[])_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _GATHER_320_ID, _res);
+        return (ExprTy[])_res;
+    }
+
+    // _tmp_322: 'as' star_target
+    public ExprTy _tmp_322_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_322_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_322_ID);
             return (ExprTy)_res;
         }
         { // 'as' star_target
@@ -29165,26 +29268,26 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(_keyword, star_target_var);
-                cache.putResult(_mark, _TMP_320_ID, _res);
+                cache.putResult(_mark, _TMP_322_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_320_ID, _res);
+        cache.putResult(_mark, _TMP_322_ID, _res);
         return (ExprTy)_res;
     }
 
-    // _tmp_321: 'as' star_target
-    public ExprTy _tmp_321_rule()
+    // _tmp_323: 'as' star_target
+    public ExprTy _tmp_323_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, _TMP_321_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, _TMP_321_ID);
+        if (cache.hasResult(_mark, _TMP_323_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_323_ID);
             return (ExprTy)_res;
         }
         { // 'as' star_target
@@ -29200,13 +29303,181 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = dummyName(_keyword, star_target_var);
-                cache.putResult(_mark, _TMP_321_ID, _res);
+                cache.putResult(_mark, _TMP_323_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, _TMP_321_ID, _res);
+        cache.putResult(_mark, _TMP_323_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_324: 'as' star_target
+    public ExprTy _tmp_324_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_324_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_324_ID);
+            return (ExprTy)_res;
+        }
+        { // 'as' star_target
+            if (errorIndicator) {
+                return null;
+            }
+            Token _keyword;
+            ExprTy star_target_var;
+            if (
+                (_keyword = (Token)expect(671)) != null  // token='as'
+                &&
+                (star_target_var = (ExprTy)star_target_rule()) != null  // star_target
+            )
+            {
+                _res = dummyName(_keyword, star_target_var);
+                cache.putResult(_mark, _TMP_324_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_324_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_325: 'as' star_target
+    public ExprTy _tmp_325_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_325_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_325_ID);
+            return (ExprTy)_res;
+        }
+        { // 'as' star_target
+            if (errorIndicator) {
+                return null;
+            }
+            Token _keyword;
+            ExprTy star_target_var;
+            if (
+                (_keyword = (Token)expect(671)) != null  // token='as'
+                &&
+                (star_target_var = (ExprTy)star_target_rule()) != null  // star_target
+            )
+            {
+                _res = dummyName(_keyword, star_target_var);
+                cache.putResult(_mark, _TMP_325_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_325_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_326: starred_expression | (assignment_expression | expression !':=') !'='
+    public ExprTy _tmp_326_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_326_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_326_ID);
+            return (ExprTy)_res;
+        }
+        { // starred_expression
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy starred_expression_var;
+            if (
+                (starred_expression_var = (ExprTy)starred_expression_rule()) != null  // starred_expression
+            )
+            {
+                _res = starred_expression_var;
+                cache.putResult(_mark, _TMP_326_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        { // (assignment_expression | expression !':=') !'='
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy _tmp_327_var;
+            if (
+                (_tmp_327_var = (ExprTy)_tmp_327_rule()) != null  // assignment_expression | expression !':='
+                &&
+                genLookahead_expect(false, 22)  // token='='
+            )
+            {
+                _res = _tmp_327_var;
+                cache.putResult(_mark, _TMP_326_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_326_ID, _res);
+        return (ExprTy)_res;
+    }
+
+    // _tmp_327: assignment_expression | expression !':='
+    public ExprTy _tmp_327_rule()
+    {
+        if (errorIndicator) {
+            return null;
+        }
+        int _mark = mark();
+        Object _res = null;
+        if (cache.hasResult(_mark, _TMP_327_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, _TMP_327_ID);
+            return (ExprTy)_res;
+        }
+        { // assignment_expression
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy assignment_expression_var;
+            if (
+                (assignment_expression_var = (ExprTy)assignment_expression_rule()) != null  // assignment_expression
+            )
+            {
+                _res = assignment_expression_var;
+                cache.putResult(_mark, _TMP_327_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        { // expression !':='
+            if (errorIndicator) {
+                return null;
+            }
+            ExprTy expression_var;
+            if (
+                (expression_var = (ExprTy)expression_rule()) != null  // expression
+                &&
+                genLookahead_expect(false, 53)  // token=':='
+            )
+            {
+                _res = expression_var;
+                cache.putResult(_mark, _TMP_327_ID, _res);
+                return (ExprTy)_res;
+            }
+            reset(_mark);
+        }
+        _res = null;
+        cache.putResult(_mark, _TMP_327_ID, _res);
         return (ExprTy)_res;
     }
 
@@ -29323,13 +29594,6 @@ public final class Parser extends AbstractParser {
         return (result != null) == match;
     }
 
-    private boolean genLookahead__tmp_204_rule(boolean match) {
-        int tmpPos = mark();
-        ExprTy result = _tmp_204_rule();
-        reset(tmpPos);
-        return (result != null) == match;
-    }
-
     private boolean genLookahead__tmp_205_rule(boolean match) {
         int tmpPos = mark();
         ExprTy result = _tmp_205_rule();
@@ -29339,7 +29603,7 @@ public final class Parser extends AbstractParser {
 
     private boolean genLookahead__tmp_206_rule(boolean match) {
         int tmpPos = mark();
-        Token result = _tmp_206_rule();
+        ExprTy result = _tmp_206_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
@@ -29353,35 +29617,42 @@ public final class Parser extends AbstractParser {
 
     private boolean genLookahead__tmp_208_rule(boolean match) {
         int tmpPos = mark();
-        Object result = _tmp_208_rule();
+        Token result = _tmp_208_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
     private boolean genLookahead__tmp_209_rule(boolean match) {
         int tmpPos = mark();
-        Token result = _tmp_209_rule();
+        Object result = _tmp_209_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
-    private boolean genLookahead__tmp_227_rule(boolean match) {
+    private boolean genLookahead__tmp_210_rule(boolean match) {
         int tmpPos = mark();
-        Token result = _tmp_227_rule();
+        Token result = _tmp_210_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
-    private boolean genLookahead__tmp_251_rule(boolean match) {
+    private boolean genLookahead__tmp_228_rule(boolean match) {
         int tmpPos = mark();
-        Token result = _tmp_251_rule();
+        Token result = _tmp_228_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
 
-    private boolean genLookahead__tmp_264_rule(boolean match) {
+    private boolean genLookahead__tmp_252_rule(boolean match) {
         int tmpPos = mark();
-        Token result = _tmp_264_rule();
+        Token result = _tmp_252_rule();
+        reset(tmpPos);
+        return (result != null) == match;
+    }
+
+    private boolean genLookahead__tmp_265_rule(boolean match) {
+        int tmpPos = mark();
+        Token result = _tmp_265_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
@@ -29389,13 +29660,6 @@ public final class Parser extends AbstractParser {
     private boolean genLookahead_name_token(boolean match) {
         int tmpPos = mark();
         ExprTy result = name_token();
-        reset(tmpPos);
-        return (result != null) == match;
-    }
-
-    private boolean genLookahead__tmp_286_rule(boolean match) {
-        int tmpPos = mark();
-        Token result = _tmp_286_rule();
         reset(tmpPos);
         return (result != null) == match;
     }
@@ -29410,6 +29674,13 @@ public final class Parser extends AbstractParser {
     private boolean genLookahead__tmp_288_rule(boolean match) {
         int tmpPos = mark();
         Token result = _tmp_288_rule();
+        reset(tmpPos);
+        return (result != null) == match;
+    }
+
+    private boolean genLookahead__tmp_289_rule(boolean match) {
+        int tmpPos = mark();
+        Token result = _tmp_289_rule();
         reset(tmpPos);
         return (result != null) == match;
     }

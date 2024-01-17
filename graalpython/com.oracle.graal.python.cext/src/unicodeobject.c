@@ -729,7 +729,7 @@ PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right)
 }
 
 // 15659
-PyUnicodeObject *
+PyObject *
 unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
 {
     PyObject *self;
@@ -738,8 +738,7 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     unsigned int kind;
     void *data;
 
-    if (unicode == NULL)
-        return NULL;
+    assert(PyType_IsSubtype(type, &PyUnicode_Type));
     assert(_PyUnicode_CHECK(unicode));
     if (PyUnicode_READY(unicode) == -1) {
         return NULL;
@@ -807,8 +806,7 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     memcpy(data, PyUnicode_DATA(unicode),
               kind * (length + 1));
     assert(_PyUnicode_CheckConsistency(self, 1));
-
-    return (PyUnicodeObject*)self;
+    return self;
 
 onError:
     Py_DECREF(self);

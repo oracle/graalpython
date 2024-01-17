@@ -9,6 +9,7 @@ from test.support import os_helper
 from test.support import socket_helper
 from test.support import threading_helper
 from test.support import warnings_helper
+import array
 import re
 import socket
 import select
@@ -65,10 +66,10 @@ for proto, ver in (
     PROTOCOL_TO_TLS_VERSION[proto] = ver
 
 def data_file(*name):
-    return os.path.join(os.path.dirname(__file__), *name)
+    return os.path.join(os.path.dirname(__file__), "certdata", *name)
 
 # The custom key and certificate files used in test_ssl are generated
-# using Lib/test/make_ssl_certs.py.
+# using Lib/test/certdata/make_ssl_certs.py.
 # Other certificates are simply fetched from the internet servers they
 # are meant to authenticate.
 
@@ -683,7 +684,7 @@ class BasicSocketTests(unittest.TestCase):
     def bad_cert_test(self, certfile):
         """Check that trying to use the given client certificate fails"""
         certfile = os.path.join(os.path.dirname(__file__) or os.curdir,
-                                   certfile)
+                                "certdata", certfile)
         sock = socket.socket()
         self.addCleanup(sock.close)
         with self.assertRaises(ssl.SSLError):
@@ -1966,6 +1967,10 @@ class MemoryBIOTests(unittest.TestCase):
         self.assertEqual(bio.read(), b'bar')
         bio.write(memoryview(b'baz'))
         self.assertEqual(bio.read(), b'baz')
+        m = memoryview(bytearray(b'noncontig'))
+        noncontig_writable = m[::-2]
+        with self.assertRaises(BufferError):
+            bio.write(memoryview(noncontig_writable))
 
     def test_error_types(self):
         bio = ssl.MemoryBIO()
@@ -2294,11 +2299,8 @@ class SimpleBackgroundTests(unittest.TestCase):
         # A simple IO loop. Call func(*args) depending on the error we get
         # (WANT_READ or WANT_WRITE) move data between the socket and the BIOs.
         timeout = kwargs.get('timeout', support.SHORT_TIMEOUT)
-        deadline = time.monotonic() + timeout
         count = 0
-        while True:
-            if time.monotonic() > deadline:
-                self.fail("timeout")
+        for _ in support.busy_retry(timeout):
             errno = None
             count += 1
             try:
@@ -2416,6 +2418,7 @@ class NetworkedTests(unittest.TestCase):
             self.assertIn(rc, (errno.EAGAIN, errno.EWOULDBLOCK))
 
     @unittest.skipUnless(socket_helper.IPV6_ENABLED, 'Needs IPv6')
+    @support.requires_resource('walltime')
     def test_get_server_certificate_ipv6(self):
         with socket_helper.transient_internet('ipv6.google.com'):
             _test_get_server_certificate(self, 'ipv6.google.com', 443)
@@ -2991,6 +2994,7 @@ def try_protocol_combo(server_protocol, client_protocol, expect_success,
 
 class ThreadedTests(unittest.TestCase):
 
+    @support.requires_resource('walltime')
     def test_echo(self):
         """Basic test of an SSL client connecting to a server"""
         if support.verbose:
@@ -3596,12 +3600,12 @@ class ThreadedTests(unittest.TestCase):
         # try to connect
         if support.verbose:
             sys.stdout.write('\n')
-        with open(CERTFILE, 'rb') as f:
+        # Get this test file itself:
+        with open(__file__, 'rb') as f:
             d1 = f.read()
         d2 = ''
         # now fetch the same data from the HTTPS server
-        url = 'https://localhost:%d/%s' % (
-            server.port, os.path.split(CERTFILE)[1])
+        url = f'https://localhost:{server.port}/test_ssl.py'
         context = ssl.create_default_context(cafile=SIGNING_CA)
         f = urllib.request.urlopen(url, context=context)
         try:
@@ -3799,6 +3803,27 @@ class ThreadedTests(unittest.TestCase):
         s.setblocking(False)
         self.assertEqual(s.recv(0), b"")
         self.assertEqual(s.recv_into(bytearray()), 0)
+
+    def test_recv_into_buffer_protocol_len(self):
+        server = ThreadedEchoServer(CERTFILE)
+        self.enterContext(server)
+        s = socket.create_connection((HOST, server.port))
+        self.addCleanup(s.close)
+        s = test_wrap_socket(s, suppress_ragged_eofs=False)
+        self.addCleanup(s.close)
+
+        s.send(b"data")
+        buf = array.array('I', [0, 0])
+        self.assertEqual(s.recv_into(buf), 4)
+        self.assertEqual(bytes(buf)[:4], b"data")
+
+        class B(bytearray):
+            def __len__(self):
+                1/0
+        s.send(b"data")
+        buf = B(6)
+        self.assertEqual(s.recv_into(buf), 4)
+        self.assertEqual(bytes(buf), b"data\0\0")
 
     def test_nonblocking_send(self):
         server = ThreadedEchoServer(CERTFILE,

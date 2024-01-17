@@ -9,21 +9,22 @@ from test import support
 from test.support import os_helper
 
 
-MS_WINDOWS = (sys.platform == 'win32')
 SETUP = os.path.join(os.path.dirname(__file__), 'setup.py')
 
 
 @support.requires_subprocess()
 class TestCPPExt(unittest.TestCase):
+    @support.requires_resource('cpu')
     def test_build_cpp11(self):
         self.check_build(False, '_testcpp11ext')
 
+    @support.requires_resource('cpu')
     def test_build_cpp03(self):
         self.check_build(True, '_testcpp03ext')
 
     # With MSVC, the linker fails with: cannot open file 'python311.lib'
     # https://github.com/python/cpython/pull/32175#issuecomment-1111175897
-    @unittest.skipIf(MS_WINDOWS, 'test fails on Windows')
+    @unittest.skipIf(support.MS_WINDOWS, 'test fails on Windows')
     # Building and running an extension in clang sanitizing mode is not
     # straightforward
     @unittest.skipIf(
@@ -51,7 +52,7 @@ class TestCPPExt(unittest.TestCase):
         python_exe = 'python'
         if sys.executable.endswith('.exe'):
             python_exe += '.exe'
-        if MS_WINDOWS:
+        if support.MS_WINDOWS:
             python = os.path.join(venv_dir, 'Scripts', python_exe)
         else:
             python = os.path.join(venv_dir, 'bin', python_exe)

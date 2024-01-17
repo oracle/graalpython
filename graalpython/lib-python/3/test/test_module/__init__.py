@@ -270,7 +270,7 @@ a = A(destroyed)"""
     @impl_detail("refcounting", graalpy=False)
     def test_module_finalization_at_shutdown(self):
         # Module globals and builtins should still be available during shutdown
-        rc, out, err = assert_python_ok("-c", "from test import final_a")
+        rc, out, err = assert_python_ok("-c", "from test.test_module import final_a")
         self.assertFalse(err)
         lines = out.splitlines()
         self.assertEqual(set(lines), {
@@ -328,7 +328,9 @@ a = A(destroyed)"""
             del foo.__annotations__
 
     def test_annotations_are_created_correctly(self):
-        ann_module4 = import_helper.import_fresh_module('test.ann_module4')
+        ann_module4 = import_helper.import_fresh_module(
+            'test.typinganndata.ann_module4',
+        )
         self.assertTrue("__annotations__" in ann_module4.__dict__)
         del ann_module4.__annotations__
         self.assertFalse("__annotations__" in ann_module4.__dict__)

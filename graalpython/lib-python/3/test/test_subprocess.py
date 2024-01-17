@@ -269,6 +269,7 @@ class ProcessTestCase(BaseTestCase):
         self.assertIn('input', c.exception.args[0])
 
     @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
+    @support.requires_resource('walltime')
     def test_check_output_timeout(self):
         # check_output() function with timeout arg
         with self.assertRaises(subprocess.TimeoutExpired) as c:
@@ -280,8 +281,7 @@ class ProcessTestCase(BaseTestCase):
                      "time.sleep(3600)"],
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
-                    # Graalpython: increased timeout for jvm launcher startup
-                    timeout=20)
+                    timeout=3)
             self.fail("Expected TimeoutExpired.")
         self.assertEqual(c.exception.output, b'BDFL')
 
@@ -748,31 +748,36 @@ class ProcessTestCase(BaseTestCase):
     @unittest.skipUnless(fcntl and hasattr(fcntl, 'F_GETPIPE_SZ'),
                          'fcntl.F_GETPIPE_SZ required for test.')
     def test_pipesize_default(self):
-        p = subprocess.Popen(
+        proc = subprocess.Popen(
             [sys.executable, "-c",
              'import sys; sys.stdin.read(); sys.stdout.write("out"); '
              'sys.stderr.write("error!")'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, pipesize=-1)
-        try:
-            fp_r, fp_w = os.pipe()
+
+        with proc:
             try:
-                default_pipesize = fcntl.fcntl(fp_w, fcntl.F_GETPIPE_SZ)
-                for fifo in [p.stdin, p.stdout, p.stderr]:
-                    self.assertEqual(
-                        fcntl.fcntl(fifo.fileno(), fcntl.F_GETPIPE_SZ),
-                        default_pipesize)
+                fp_r, fp_w = os.pipe()
+                try:
+                    default_read_pipesize = fcntl.fcntl(fp_r, fcntl.F_GETPIPE_SZ)
+                    default_write_pipesize = fcntl.fcntl(fp_w, fcntl.F_GETPIPE_SZ)
+                finally:
+                    os.close(fp_r)
+                    os.close(fp_w)
+
+                self.assertEqual(
+                    fcntl.fcntl(proc.stdin.fileno(), fcntl.F_GETPIPE_SZ),
+                    default_read_pipesize)
+                self.assertEqual(
+                    fcntl.fcntl(proc.stdout.fileno(), fcntl.F_GETPIPE_SZ),
+                    default_write_pipesize)
+                self.assertEqual(
+                    fcntl.fcntl(proc.stderr.fileno(), fcntl.F_GETPIPE_SZ),
+                    default_write_pipesize)
+                # On other platforms we cannot test the pipe size (yet). But above
+                # code using pipesize=-1 should not crash.
             finally:
-                os.close(fp_r)
-                os.close(fp_w)
-            # On other platforms we cannot test the pipe size (yet). But above
-            # code using pipesize=-1 should not crash.
-            p.stdin.close()
-            p.stdout.close()
-            p.stderr.close()
-        finally:
-            p.kill()
-            p.wait()
+                proc.kill()
 
     def test_env(self):
         newenv = os.environ.copy()
@@ -1297,6 +1302,7 @@ class ProcessTestCase(BaseTestCase):
         with self.assertWarnsRegex(RuntimeWarning, 'line buffering'):
             self._test_bufsize_equal_one(line, b'', universal_newlines=False)
 
+    @support.requires_resource('cpu')
     def test_leaking_fds_on_error(self):
         # see bug #5179: Popen leaks file descriptors to PIPEs if
         # the child fails to execute; this will eventually exhaust
@@ -1648,6 +1654,7 @@ class RunFuncTestCase(BaseTestCase):
         self.assertIn('input', c.exception.args[0])
 
     @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
+    @support.requires_resource('walltime')
     def test_check_output_timeout(self):
         with self.assertRaises(subprocess.TimeoutExpired) as c:
             cp = self.run_python((
@@ -1657,8 +1664,7 @@ class RunFuncTestCase(BaseTestCase):
                      "time.sleep(3600)"),
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
-                    # Graalpython: increased timeout for jvm launcher startup
-                    timeout=20, stdout=subprocess.PIPE)
+                    timeout=3, stdout=subprocess.PIPE)
         self.assertEqual(c.exception.output, b'BDFL')
         # output is aliased to stdout
         self.assertEqual(c.exception.stdout, b'BDFL')
