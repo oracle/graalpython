@@ -46,8 +46,6 @@ import tempfile
 import unittest
 from zipfile import ZipFile
 
-import requests
-
 is_enabled = 'ENABLE_JBANG_INTEGRATION_UNITTESTS' in os.environ and os.environ['ENABLE_JBANG_INTEGRATION_UNITTESTS'] == "true"
 MAVEN_REPO = os.environ.get("MAVEN_REPO_OVERRIDE")
 CATALOG_ALIAS = "tested_catalog"
@@ -58,11 +56,8 @@ WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
 def download_latest_jbang():
     github_url = "https://github.com/jbangdev/jbang/releases/latest/download/jbang.zip"
     download_path = os.path.join(WORK_DIR, 'jbang.zip')
-    response = requests.get(github_url, stream=True)
-    with open(download_path, "wb") as file:
-        for chunk in response.iter_content(chunk_size=128):
-            file.write(chunk)
-
+    command = ["curl", "-L", "-o", download_path, github_url]
+    subprocess.run(command, check=True)
     with ZipFile(download_path, "r") as zip_ref:
         zip_ref.extractall(WORK_DIR)
 
