@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -91,7 +91,9 @@ def test_interrupt():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    assert proc.stdout.read(2) == b's\n'
+    actual_out = proc.stdout.read(2)
+    assert actual_out == b's\n', f"{actual_out=}, {proc.stderr.read()=}"
+
     proc.send_signal(signal.SIGINT)
     _, stderr = proc.communicate()
     # TODO we should properly make the process exit indicate the signal, but it might not be feasible under JVM/SVM
