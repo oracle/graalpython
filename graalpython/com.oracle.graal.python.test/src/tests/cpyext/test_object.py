@@ -1377,6 +1377,37 @@ class TestObject(object):
         dummy = object()
         obj.own_a_lot(dummy)
 
+    def test_async_slots(self):
+        import asyncio, types, functools
+        TestTpAsync = CPyExtType("TestTpAsync",
+                                '''
+                                static PyObject* testslots_tp_async(PyObject* self, PyObject *obj) {
+                                    PyAsyncMethods *tp_as_async = Py_TYPE(obj)->tp_as_async;
+                                    if (!tp_as_async) {
+                                        PyErr_SetString(PyExc_RuntimeError, "tp_as_async was not populated!");
+                                        return NULL;
+                                    }
+                                    if (!tp_as_async->am_await) {
+                                        PyErr_SetString(PyExc_RuntimeError, "tp_as_async->am_await was not populated!");
+                                        return NULL;
+                                    }
+                                    return tp_as_async->am_await(obj);
+                                }
+                                ''',
+                                tp_methods='{"get_tp_async_await", (PyCFunction)testslots_tp_async, METH_O, ""}',
+                                )
+        tester = TestTpAsync()
+        async def func(x, y):
+            await asyncio.sleep(0)
+
+        func = types.coroutine(functools.partial(func, 1))
+        loop = asyncio.new_event_loop()
+        p = loop.create_task(func(2))
+        # p._coro <coroutine object at 0x21c7415e>
+        native_coro = tester.get_tp_async_await(p._coro)
+        assert native_coro != None
+
+
 
 class CBytes: 
     def __bytes__(self):
