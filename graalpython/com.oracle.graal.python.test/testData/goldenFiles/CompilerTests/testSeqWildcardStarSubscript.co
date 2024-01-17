@@ -9,8 +9,8 @@ Disassembly of <module>:
   2:2   -   3:5        17 DUP_TOP
   2:2   -   3:5        18 GET_LEN
   2:2   -   3:5        19 LOAD_BYTE_O                       1
-  2:2   -   3:5        21 BINARY_OP                         2    (SUB)
-  2:2   -   3:5        23 BINARY_SUBSCR
+  2:2   -   3:5        21 BINARY_OP                         2    (SUB)                             can quicken
+  2:2   -   3:5        23 BINARY_SUBSCR                                                            generalizes: 21
   2:2   -   3:5        24 ROT_N                             2
   2:2   -   3:5        26 POP_TOP
   2:2   -   3:5        27 STORE_NAME                        0    (y)

@@ -3,7 +3,7 @@ Disassembly of <module>:
   1:0   -   1:24        3 RETURN_VALUE
 
 Disassembly of <lambda>:
-  1:17  -   1:21        0 LOAD_FAST                         1    (args)                            can quicken
+  1:17  -   1:21        0 LOAD_FAST                         1    (args)
   1:22  -   1:23        2 LOAD_FAST                         0    (x)                               can quicken
-  1:17  -   1:24        4 BINARY_SUBSCR                                                            generalizes: 2, 0
+  1:17  -   1:24        4 BINARY_SUBSCR                                                            generalizes: 2
   1:0   -   1:24        5 RETURN_VALUE
