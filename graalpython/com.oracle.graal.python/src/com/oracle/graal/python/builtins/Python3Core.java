@@ -649,7 +649,7 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_DIGEST ? null : new Sha1ModuleBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new Sha256ModuleBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST || !PythonOptions.WITHOUT_NATIVE_SHA3 ? null : new Sha3ModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new Blake2ModuleBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new HashObjectBuiltins(),
@@ -875,6 +875,7 @@ public abstract class Python3Core {
         objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter(), context.getLanguage());
         initializeJavaCore();
         initializeImportlib();
+        context.applyModuleOptions();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;

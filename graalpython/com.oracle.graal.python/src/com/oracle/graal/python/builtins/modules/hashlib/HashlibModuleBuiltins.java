@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_HASHLIB;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_HASHLIB;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -101,11 +105,9 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
-@CoreFunctions(defineModule = HashlibModuleBuiltins.J_HASHLIB)
+// note: we should not eagerly initialize _hashlib, due to having an option for _sha3 (native/java).
+@CoreFunctions(defineModule = J_HASHLIB)
 public final class HashlibModuleBuiltins extends PythonBuiltins {
-
-    static final String J_HASHLIB = "_hashlib";
-    private static final TruffleString T_HASHLIB = tsLiteral(J_HASHLIB);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -123,7 +125,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
     private static final String CONSTRUCTORS = "_constructors";
     private static final HiddenKey ORIGINAL_CONSTRUCTORS = new HiddenKey(CONSTRUCTORS);
-    private static final String _SHA3 = "_sha3";
     private static final String[] DIGEST_ALIASES = new String[]{
                     "md5", "_md5",
                     "sha1", "_sha1",
@@ -131,12 +132,12 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "sha256", "_sha256",
                     "sha384", "_sha512",
                     "sha512", "_sha512",
-                    "sha3_224", _SHA3,
-                    "sha3_256", _SHA3,
-                    "sha3_384", _SHA3,
-                    "sha3_512", _SHA3,
-                    "shake_128", _SHA3,
-                    "shake_256", _SHA3
+                    "sha3_224", J_SHA3,
+                    "sha3_256", J_SHA3,
+                    "sha3_384", J_SHA3,
+                    "sha3_512", J_SHA3,
+                    "shake_128", J_SHA3,
+                    "shake_256", J_SHA3
     };
     private static final String[] DIGEST_ALGORITHMS;
     static {
@@ -181,10 +182,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
         EconomicMapStorage storage = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
-        Object sha3module = AbstractImportNode.importModule(toTruffleStringUncached(_SHA3));
+        Object sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
-            Object mod = module.equals(_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
+            Object mod = module.equals(J_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
             addDigestAlias(self, mod, readNode, storage, DIGEST_ALIASES[i]);
         }
     }

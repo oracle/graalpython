@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -60,7 +62,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(defineModule = "_sha3")
+@CoreFunctions(defineModule = J_SHA3)
 public final class Sha3ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

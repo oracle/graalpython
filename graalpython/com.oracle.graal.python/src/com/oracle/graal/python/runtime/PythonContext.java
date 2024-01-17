@@ -32,6 +32,7 @@ import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
@@ -1657,6 +1658,15 @@ public final class PythonContext extends Python3Core {
         } else {
             // Generate random seed
             getSecureRandom().nextBytes(hashSecret);
+        }
+    }
+
+    public void applyModuleOptions() {
+        assert !isInitialized : "cannot apply module options after initialization";
+        TruffleString sha3Backend = getLanguage().getEngineOption(PythonOptions.Sha3ModuleBackend);
+        TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
+        if (!eqNode.execute(T_JAVA, sha3Backend, TS_ENCODING)) {
+            removeBuiltinModule(T_SHA3);
         }
     }
 

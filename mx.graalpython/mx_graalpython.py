@@ -106,7 +106,7 @@ HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
-SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java']
+SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java', '--python.Sha3ModuleBackend=java']
 
 # Allows disabling rebuild for some mx commands such as graalpytest
 DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
@@ -1477,8 +1477,10 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], report=report())
-            run_python_unittests(graalpy_standalone_jvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], report=report())
+            opt = '--PosixModuleBackend={backend} --Sha3ModuleBackend={backend}'
+            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py"]
+            run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='native').split(), paths=tests_list, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='java').split(), paths=tests_list, report=report())
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
@@ -1559,7 +1561,6 @@ def graalpython_gate_runner(args, tasks):
                 "-Dpython.WithoutPlatformAccess=true",
                 "-Dpython.WithoutCompressionLibraries=true",
                 "-Dpython.WithoutNativePosix=true",
-                "-Dpython.WithoutNativeSha3=true"
                 "-Dpython.WithoutJavaInet=true",
                 "-Dimage-build-time.PreinitializeContexts=",
                 "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
@@ -2244,6 +2245,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '-H:+DetectUserDirectoriesInImageHeap',
                 '-H:-CopyLanguageResources',
                 '-Dpolyglot.python.PosixModuleBackend=native',
+                '-Dpolyglot.python.Sha3ModuleBackend=native',
             ],
             language='python',
             default_vm_args=[

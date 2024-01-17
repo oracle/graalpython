@@ -106,11 +106,6 @@ public final class PythonOptions {
      * will be available.
      */
     public static final boolean WITHOUT_NATIVE_POSIX = Boolean.getBoolean("python.WithoutNativePosix");
-    /**
-     * This property can be used to exclude native sha3 support from the build. Only Java based
-     * implementation will be available.
-     */
-    public static final boolean WITHOUT_NATIVE_SHA3 = Boolean.getBoolean("python.WithoutNativeSha3");
 
     /**
      * This property can be used to exclude socket and inet support from the Java posix backend.
@@ -244,6 +239,9 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
+
+    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the Sha3 module.", usageSyntax = "java|native", stability = OptionStability.STABLE) //
+    public static final OptionKey<TruffleString> Sha3ModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);
