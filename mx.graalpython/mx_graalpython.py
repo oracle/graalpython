@@ -1483,10 +1483,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
             env = {
-                'ENABLE_STANDALONE_UNITTESTS': 'False',
+                'ENABLE_STANDALONE_UNITTESTS': 'true',
                 'ENABLE_JBANG_INTEGRATION_UNITTESTS': 'true',
-                'JAVA_HOME': '/home/petr/labs/standalone/graal/sdk/mxbuild/linux-amd64/GRAALVM_COMMUNITY_JAVA21/graalvm-community-openjdk-21.0.1+12.1',#graalvm_jdk(),
-                'PYTHON_STANDALONE_HOME': '/home/petr/labs/standalone/graal/sdk/mxbuild/linux-amd64/PYTHON_JAVA_STANDALONE_SVM_JAVA21/graalpy-community-24.0.0-dev-linux-amd64' #graalpy_standalone_home('jvm')
+                'JAVA_HOME': graalvm_jdk(),
+                'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')
             }
             mvn_repo_path, version = deploy_local_maven_repo()
             # setup maven downloader overrides
