@@ -7,15 +7,14 @@
 possible to make updates and maintenance easy. Where we deviate in non obvious
 ways, we add comments."""
 
-import os
 import ast
+import os
 import re
-
 from collections import Counter
 from dataclasses import dataclass
-
-from typing import Any, Dict, IO, Optional, List, Text, Tuple, Set
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, IO, Optional, List, Text, Tuple, Set
 
 from pegen import grammar
 from pegen.grammar import (
@@ -374,8 +373,8 @@ ACTION_MAPPINGS_RE = {
     r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (16, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
 }
 
-LICENSE = '''/*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+LICENSE = f'''/*
+ * Copyright (c) 2021, {datetime.now().year}, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
