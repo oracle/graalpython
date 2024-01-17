@@ -315,13 +315,15 @@ class PolyglotAppTest(unittest.TestCase):
                 cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
                 run_cmd(cmd, self.env, cwd=target_dir)
             try:
-                cmd = MVN_CMD + ["-X", "process-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                if "Missing GraalPy dependency org.graalvm.python:python-language" not in out:
-                    print("=== test_fail_without_graalpy_dep output ===================================")
-                    print(out)
-                    print("============================================================================")
-                    assert False, "'Missing GraalPy dependency' text not in output"
+                if sys.platform != 'win32':
+                    assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
+                else: 
+                    # different error message on windows due to generate launcher python script executed 
+                    # before the actuall process-resources goal
+                    assert "Could not find or load main class com.oracle.graal.python.shell.GraalPythonMain" in out
+                    
             finally:
                 self.purge_local_repo(target_dir, False)
 
