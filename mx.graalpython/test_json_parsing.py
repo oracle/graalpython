@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,8 @@ try:
     import mx
 except ImportError:
     if mx_exe := shutil.which("mx"):
-        sys.path.append(os.path.dirname(os.path.realpath(mx_exe)))
+        mx_path = os.path.dirname(os.path.realpath(mx_exe))
+        sys.path.append(os.path.join(mx_path, "src"))
 
 
 class TestJsonBenchmarkParsers(unittest.TestCase):

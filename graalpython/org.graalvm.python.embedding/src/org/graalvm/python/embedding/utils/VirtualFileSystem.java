@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -241,33 +241,37 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             this.extractDir = extractDir;
         }
 
+        private static final SimpleFileVisitor<Path> deleteVisitor = new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        };
+
         @Override
         public void run() {
-            run(extractDir);
+            removeExtractDir();
         }
 
-        private static void run(Path extractDir) {
-            if (extractDir != null) {
+        private void removeExtractDir() {
+            if (extractDir != null && Files.exists(extractDir)) {
                 try {
-                    Files.walkFileTree(extractDir, new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                            Files.delete(file);
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Override
-                        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                            Files.delete(dir);
-                            return FileVisitResult.CONTINUE;
-                        }
-                    });
+                    Files.walkFileTree(extractDir, deleteVisitor);
                 } catch (IOException e) {
                     System.err.format("Could not delete temp directory '%s': %s", extractDir, e);
                 }
             }
         }
     }
+
+    private final DeleteTempDir deleteTempDir;
 
     /**
      * If an extract filter is given, the virtual file system will lazily extract files and
@@ -295,12 +299,14 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (extractFilter != null) {
             try {
                 this.extractDir = Files.createTempDirectory("vfsx");
-                Runtime.getRuntime().addShutdownHook(new DeleteTempDir(this.extractDir));
+                this.deleteTempDir = new DeleteTempDir(this.extractDir);
+                Runtime.getRuntime().addShutdownHook(deleteTempDir);
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }
         } else {
             this.extractDir = null;
+            this.deleteTempDir = null;
         }
         delegate = switch (allowHostIO) {
             case NONE -> null;
@@ -309,8 +315,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         };
     }
 
+    @Override
     public void close() {
-        DeleteTempDir.run(extractDir);
+        if (deleteTempDir != null) {
+            deleteTempDir.removeExtractDir();
+        }
     }
 
     public static boolean isWindows() {

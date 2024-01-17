@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
 The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ Additionally, one can change the polyglot artifacts version with
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <com.oracle.graal.python.test.polyglot.version>24.0.0-dev</com.oracle.graal.python.test.polyglot.version>
+        <com.oracle.graal.python.test.polyglot.version>24.1.0</com.oracle.graal.python.test.polyglot.version>
     </properties>
 
     <build>

@@ -1,0 +1,2 @@
+[[rules]]
+patch = 'jupyter_server.patch'

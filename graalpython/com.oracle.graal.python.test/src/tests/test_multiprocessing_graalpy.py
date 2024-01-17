@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,14 +38,28 @@
 # SOFTWARE.
 import multiprocessing
 from multiprocessing.connection import wait
+from functools import wraps
+from dataclasses import dataclass
 
+import os
 import sys
 import time
 
+
 if sys.implementation.name == 'graalpy':
-    multiprocessing.set_start_method('graalpy', force=True)
+    def graalpy_multiprocessing(test):
+        @wraps(test)
+        def set_graalpy():
+            original_ctx = multiprocessing.get_context().get_start_method()
+            try:
+                multiprocessing.set_start_method('graalpy', force=True)
+                test()
+            finally:
+                multiprocessing.set_start_method(original_ctx, force=True)
+        return set_graalpy
 
 
+    @graalpy_multiprocessing
     def test_SemLock_raises_on_non_string_name():
         from _multiprocessing_graalpy import SemLock
         try:
@@ -56,6 +70,7 @@ if sys.implementation.name == 'graalpy':
             assert False
 
 
+    @graalpy_multiprocessing
     def test_wait_timeout():
         timeout = 3
         a, b = multiprocessing.Pipe()
@@ -69,6 +84,7 @@ if sys.implementation.name == 'graalpy':
             assert delta > timeout / 2
 
 
+    @graalpy_multiprocessing
     def test_wait():
         a, b = multiprocessing.Pipe()
         x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe

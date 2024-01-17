@@ -66,6 +66,7 @@ SERIAL_TESTS = [
     'test_imaplib',
     "test_ftplib",
     'test_multiprocessing_spawn',
+    'test_multiprocessing_graalpy',
     # trying to avoid transient issues there, not sure about the reason
     'test_unittest',
     'test_glob',
