@@ -26,14 +26,7 @@ def threading_setup():
 
 
 def threading_cleanup(*original_values):
-    # Begin Truffle change
-    # GraalPy adds sleeps in various places (e.g. 'gc_collect') to give our GC
-    # more time for garbage collection such that each iteration is two orders of
-    # magnitude slower than on CPython. We therefore reduce to 10 retries since
-    # it seems that most tests reached a fixed point after 2 iterations.
-    # original: _MAX_COUNT = 100
-    _MAX_COUNT = 10
-    # End Truffle change
+    orig_count, orig_ndangling = original_values
 
     timeout = 1.0
     for _ in support.sleeping_retry(timeout, error=False):
