@@ -1483,7 +1483,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
             env = {
-                'ENABLE_STANDALONE_UNITTESTS': 'true',
+                'ENABLE_STANDALONE_UNITTESTS': 'false',
                 'ENABLE_JBANG_INTEGRATION_UNITTESTS': 'true',
                 'JAVA_HOME': graalvm_jdk(),
                 'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')

@@ -92,10 +92,10 @@ class TestJBangIntegration(unittest.TestCase):
         
         http_proxy = os.environ.get('http_proxy')
         https_proxy = os.environ.get('http_proxy')
-        if https_proxy and 'https_proxy' not in java_tools:
+        if https_proxy and 'https_proxy' not in java_tools and len(https_proxy.split(":")) == 2:
             server, port = https_proxy.split(":")
             java_tools = f"{java_tools} -Dhttps.proxyHost={server} -Dhttps.proxyPort={port}"
-        if http_proxy and 'http_proxy' not in java_tools:
+        if http_proxy and 'http_proxy' not in java_tools and len(http_proxy.split(":")) == 2:
             server, port = http_proxy.split(":")
             java_tools = f"{java_tools} -Dhttp.proxyHost={server} -Dhttp.proxyPort={port}"
     
