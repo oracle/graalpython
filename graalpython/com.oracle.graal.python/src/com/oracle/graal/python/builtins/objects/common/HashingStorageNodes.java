@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
-import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.CachedHashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
@@ -60,6 +58,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
@@ -1040,6 +1040,39 @@ public class HashingStorageNodes {
         static long keywords(KeywordsStorage self, HashingStorageIterator it,
                         @Shared("hash") @Cached(inline = false) TruffleString.HashCodeNode hashNode) {
             return PyObjectHashNode.hash(self.keywords[it.index].getName(), hashNode);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HashingStoragePop extends Node {
+        /**
+         * Returns {@code null} if there is nothing to pop, otherwise popped [key, value].
+         */
+        public abstract Object[] execute(Node inliningTarget, HashingStorage storage, PHashingCollection toUpdate);
+
+        @Specialization
+        static Object[] economicMap(Node inliningTarget, EconomicMapStorage self, @SuppressWarnings("unused") PHashingCollection toUpdate,
+                        @Cached ObjectHashMap.PopNode popNode) {
+            return popNode.execute(inliningTarget, self.map);
+        }
+
+        // Other storages should not have any side effects, it's OK if they call __eq__
+        @Fallback
+        static Object[] others(Node inliningTarget, HashingStorage storage, PHashingCollection toUpdate,
+                        @Cached HashingStorageDelItem delItem,
+                        @Cached HashingStorageGetReverseIterator getReverseIterator,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue) {
+            HashingStorageIterator it = getReverseIterator.execute(inliningTarget, storage);
+            if (iterNext.execute(inliningTarget, storage, it)) {
+                Object key = iterKey.execute(inliningTarget, storage, it);
+                var result = new Object[]{key, iterValue.execute(inliningTarget, storage, it)};
+                delItem.execute(null, inliningTarget, storage, key, toUpdate);
+                return result;
+            }
+            return null;
         }
     }
 
