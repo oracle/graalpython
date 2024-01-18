@@ -51,7 +51,7 @@ class TestMixedInheritanceDict:
                              PyObject* obj;
                              _AObject* typedObj;
                              obj = PyBaseObject_Type.tp_new(cls, a, b);
-                             
+
                              typedObj = ((_AObject*)obj);
                              typedObj->a = 1;
                              Py_INCREF(Py_None);
@@ -91,3 +91,64 @@ class TestMixedInheritanceDict:
             pass
         else:
             raise Exception("AttributeError not raised")
+
+    def test_mixed_inheritance_with_length(self):
+        TestMappingSize = CPyExtType("TestMappingSize",
+                                     """
+                                     Py_ssize_t test_mp_length(PyObject* a) {
+                                         return 11;
+                                     }
+                                     PyObject* callSqSize(PyObject* self, PyObject* arg) {
+                                         Py_ssize_t res = PySequence_Size(arg);
+                                         if (PyErr_Occurred()) {
+                                             return NULL;
+                                         }
+                                         return PyLong_FromSsize_t(res);
+                                     }
+                                     PyObject* callMpSize(PyObject* self, PyObject* arg) {
+                                         Py_ssize_t res = PyMapping_Size(arg);
+                                         if (PyErr_Occurred()) {
+                                             return NULL;
+                                         }
+                                         return PyLong_FromSsize_t(res);
+                                     }
+                                     """,
+                                     tp_methods='''
+                                     {"callSqSize", (PyCFunction)callSqSize, METH_O, ""},
+                                     {"callMpSize", (PyCFunction)callMpSize, METH_O, ""}
+                                     ''',
+                                     mp_length="&test_mp_length",
+        )
+        tester = TestMappingSize()
+        try:
+            tester.callSqSize(tester)
+        except TypeError as e:
+            assert "not a sequence" in repr(e)
+        else:
+            assert False
+
+        class B:
+            pass
+
+        class B2:
+            def __len__(self) -> int: ...
+
+        class C(TestMappingSize, B):
+            pass
+
+        assert tester.callSqSize(C()) == 11
+
+        class C(TestMappingSize, B2):
+            pass
+
+        assert tester.callSqSize(C()) == 11
+
+        class B3:
+            def __len__(self):
+                return 128
+
+        class C(B3, TestMappingSize):
+            pass
+
+        assert tester.callSqSize(C()) == 128
+        assert tester.callMpSize(C()) == 128
