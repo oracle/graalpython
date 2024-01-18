@@ -224,7 +224,7 @@ class TestJBangIntegration(unittest.TestCase):
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graalpy_local_repo_template(self):
         template_name = "graalpy_local_repo"
-        test_file = "graalpy_test.java"
+        test_file = "graalpy_test_local_repo.java"
         work_dir = self.tmpdir
         os.chdir(work_dir)
         
