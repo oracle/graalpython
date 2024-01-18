@@ -42,6 +42,7 @@
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_case_sha512_3
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_digest_length_overflow
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_disallow_instantiation
+*graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_extra_sha3
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_get_builtin_constructor
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_get_fips_mode
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_gil
