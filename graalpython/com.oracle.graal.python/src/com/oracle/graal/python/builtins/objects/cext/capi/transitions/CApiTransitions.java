@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1217,6 +1217,36 @@ public abstract class CApiTransitions {
         @Specialization
         static PythonNativeWrapper doWrapper(PythonNativeWrapper wrapper, @SuppressWarnings("unused") boolean strict) {
             return wrapper;
+        }
+    }
+
+    public static final class WrappedPointerToPythonNode extends CExtToJavaNode {
+
+        @Override
+        public Object execute(Object object) {
+            if (object instanceof PythonNativeWrapper) {
+                return ((PythonNativeWrapper) object).getDelegate();
+            } else {
+                return object;
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class WrappedPointerToNativeNode extends CExtToNativeNode {
+        @Specialization
+        static Object doGeneric(Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isWrapperProfile,
+                        @Cached GetReplacementNode getReplacementNode) {
+            if (isWrapperProfile.profile(inliningTarget, object instanceof PythonNativeWrapper)) {
+                Object replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) object);
+                if (replacement != null) {
+                    return replacement;
+                }
+            }
+            return object;
         }
     }
 }
