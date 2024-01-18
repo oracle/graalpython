@@ -364,14 +364,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getArraySize(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -387,6 +387,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
+    private boolean isInBounds(long idx, PySequenceSizeNode sequenceSizeNode) {
+        long length = sequenceSizeNode.execute(this);
+        return 0 <= idx && idx < length;
+    }
+
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementReadable(long idx,
@@ -395,6 +400,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -405,7 +411,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return false;
+                return isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
@@ -420,6 +426,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -430,7 +437,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return false;
+                return isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
@@ -440,13 +447,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementInsertable(long idx,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Bind("$node") Node inliningTarget,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -455,7 +463,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return false;
+                return !isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
@@ -465,13 +473,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementRemovable(long idx,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Bind("$node") Node inliningTarget,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -480,7 +489,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return false;
+                return isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);

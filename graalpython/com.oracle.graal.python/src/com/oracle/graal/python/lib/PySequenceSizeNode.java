@@ -68,7 +68,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PySequence_Size}. For native object it would only call
- * {@code sq_length} and never {@code mp_length}.
+ * {@code sq_length} and never {@code mp_length}. Unlike CPython's {@code PySequence_Size} this node
+ * does not return -1 on error it instead raises TypeError
  */
 @ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
 @GenerateInline(value = false)

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 
 import java.util.Objects;
@@ -48,12 +47,10 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -299,72 +296,5 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         PMemoryView mv = createMemoryView.execute(inliningTarget, this, flags);
         mv.setShouldReleaseImmediately(true);
         return mv;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public boolean hasArrayElements(
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Cached PySequenceCheckNode sequenceCheckNode) {
-        return sequenceCheckNode.execute(inliningTarget, this);
-    }
-
-    private long getSequenceSize(CApiTransitions.PythonToNativeNode toSulongNode, CExtNodes.PCallCapiFunction callCapiFunction) {
-        return (long) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(this));
-    }
-
-    private boolean isInBounds(long idx, CApiTransitions.PythonToNativeNode toSulongNode, CExtNodes.PCallCapiFunction callCapiFunction) {
-        long length = getSequenceSize(toSulongNode, callCapiFunction);
-        return 0 <= idx && idx < length;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public long getArraySize(// GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) throws UnsupportedMessageException {
-        return getSequenceSize(toSulongNode, callCapiFunction);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public boolean isArrayElementReadable(long idx,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-        return isInBounds(idx, toSulongNode, callCapiFunction);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public boolean isArrayElementModifiable(long idx,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-        return isInBounds(idx, toSulongNode, callCapiFunction);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public boolean isArrayElementInsertable(long idx,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-        return !isInBounds(idx, toSulongNode, callCapiFunction);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("truffle-unused")
-    public boolean isArrayElementRemovable(long idx,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CApiTransitions.PythonToNativeNode toSulongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-        return isInBounds(idx, toSulongNode, callCapiFunction);
     }
 }
