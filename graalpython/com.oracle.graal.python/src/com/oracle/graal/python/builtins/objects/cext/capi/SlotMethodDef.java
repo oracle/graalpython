@@ -76,6 +76,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_subtract;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_true_divide;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_xor;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_ass_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_concat;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_length;
@@ -182,6 +183,7 @@ public enum SlotMethodDef {
 
     SQ_LENGTH(PySequenceMethods__sq_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.SQ_LENGTH),
     SQ_ITEM(PySequenceMethods__sq_item, T___GETITEM__, SsizeargfuncWrapper::new, MethodsFlags.SQ_ITEM),
+    SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SetAttrWrapper::new, MethodsFlags.SQ_ASS_ITEM),
     SQ_REPEAT(PySequenceMethods__sq_repeat, T___MUL__, SsizeargfuncWrapper::new, MethodsFlags.SQ_REPEAT),
     SQ_CONCAT(PySequenceMethods__sq_concat, T___ADD__, BinaryFuncWrapper::new, MethodsFlags.SQ_CONCAT),
 
@@ -226,6 +228,11 @@ public enum SlotMethodDef {
     @CompilationFinal public CFields typeField;
     @CompilationFinal public CFields methodsField;
 
+    /**
+     * Different slot that is C-compatible and maps to the same Python method.
+     */
+    @CompilationFinal public SlotMethodDef overlappingSlot;
+
     SlotMethodDef(CFields typeField, TruffleString methodName, Function<Object, PyProcsWrapper> wrapperFactory) {
         this(typeField, null, methodName, wrapperFactory, 0);
     }
@@ -242,7 +249,18 @@ public enum SlotMethodDef {
         this.methodFlag = methodFlag;
     }
 
+    static void overlap(SlotMethodDef a, SlotMethodDef b) {
+        a.overlappingSlot = b;
+        b.overlappingSlot = a;
+    }
+
     static {
+        overlap(SQ_LENGTH, MP_LENGTH);
+        // SQ_(ASS_)ITEM and MP_(ASS_)SUBSCRIPT do *not* overlap for
+        // the purposes of initialising native slots, since the sq
+        // slots use ssizeargfunc/ssizeobjargproc and the mp slots
+        // use binaryfunc/objobjargproc
+
         initGroup(
                         PyTypeObject__tp_as_sequence,
                         SQ_LENGTH,
