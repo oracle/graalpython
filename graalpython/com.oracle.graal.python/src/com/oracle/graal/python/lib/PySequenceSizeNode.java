@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,21 +43,19 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.GETITEM;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -69,52 +67,50 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PySequence_GetItem}. For native object it would only call
- * {@code sq_item} and never {@code mp_item}.
+ * Equivalent of CPython's {@code PySequence_Size}. For native object it would only call
+ * {@code sq_length} and never {@code mp_length}.
  */
 @ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
-@GenerateInline(false) // One lazy usage, one eager usage => not worth it
+@GenerateInline(value = false)
 @GenerateUncached
-public abstract class PySequenceGetItemNode extends Node {
+public abstract class PySequenceSizeNode extends Node {
     // todo: fa [GR-51456]
-    private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM;
+    private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
     private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 
-    public abstract Object execute(Frame frame, Object object, int index);
+    public abstract long execute(Frame frame, Object object);
 
-    public final Object execute(Object object, int index) {
-        return execute(null, object, index);
+    public final long execute(Object object) {
+        return execute(null, object);
     }
 
     @Specialization(guards = "!isNativeObject(object)")
-    static Object doGenericManaged(VirtualFrame frame, Object object, int index,
+    static long doGenericManaged(Object object,
                     @Bind("this") Node inliningTarget,
-                    @Cached GetClassNode getClassNode,
                     @Cached PySequenceCheckNode sequenceCheckNode,
+                    @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached PyMappingCheckNode mappingCheckNode,
-                    @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
-                    @Cached CallBinaryMethodNode callGetItem,
                     @Cached PRaiseNode.Lazy raise) {
         if (sequenceCheckNode.execute(inliningTarget, object)) {
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object getItem = lookupGetItem.execute(frame, type, object);
-            assert getItem != PNone.NO_VALUE;
-            return callGetItem.executeObject(frame, getItem, object, index);
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, object);
+            return storage.length();
         }
         if (mappingCheckNode.execute(inliningTarget, object)) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
         } else {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, object);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
         }
     }
 
     @Specialization
-    static Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
+    static long doNative(VirtualFrame frame, PythonAbstractNativeObject object,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                     @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
                     @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
         Object executable = importCExtSymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), SYMBOL);
-        return invokeNode.execute(frame, GETITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
+        Object size = invokeNode.execute(frame, GETITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object)});
+        assert PGuards.isInteger(size);
+        return (long) size;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -111,6 +111,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -365,6 +366,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public long getArraySize(
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    @Cached PySequenceSizeNode sequenceSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
@@ -378,7 +380,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
             } else {
-                throw UnsupportedMessageException.create();
+                return sequenceSizeNode.execute(this);
             }
         } finally {
             gil.release(mustRelease);
