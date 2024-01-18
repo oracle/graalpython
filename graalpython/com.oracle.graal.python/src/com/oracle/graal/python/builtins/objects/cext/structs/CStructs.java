@@ -64,6 +64,7 @@ public enum CStructs {
     PyAsyncMethods,
     PyBufferProcs,
     PyTypeObject,
+    PyHeapTypeObject,
     PyTupleObject,
     PyFloatObject,
     PyLongObject,

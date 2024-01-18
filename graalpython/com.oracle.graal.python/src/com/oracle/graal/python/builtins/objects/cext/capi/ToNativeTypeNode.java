@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
@@ -192,7 +193,7 @@ public abstract class ToNativeTypeNode {
         return LookupNativeSlotNode.executeUncached(clazz, slot) != PythonContext.get(null).getNativeNull().getPtr();
     }
 
-    static void initializeType(PythonClassNativeWrapper obj, Object mem) {
+    static void initializeType(PythonClassNativeWrapper obj, Object mem, boolean heaptype) {
         CompilerAsserts.neverPartOfCompilation();
 
         PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
@@ -216,6 +217,15 @@ public abstract class ToNativeTypeNode {
             writePtrNode.write(mem, PyObject__ob_type, mem);
         } else {
             writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.executeUncached(clazz)));
+        }
+
+        long flags = getTypeFlagsNode.execute(clazz);
+        /*
+         * Our datetime classes are declared as static types in C, but are implemented as
+         * pure-python heaptypes. Make them into static types on the C-side.
+         */
+        if (!heaptype) {
+            flags &= ~TypeFlags.HEAPTYPE;
         }
 
         Object base = GetBaseClassNode.executeUncached(clazz);
@@ -242,24 +252,28 @@ public abstract class ToNativeTypeNode {
         } else {
             weaklistoffset = LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
+        Object asAsync = nullValue;
+        Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue);
+        Object asSequence = hasSlot(clazz, SlotMethodDef.SQ_LENGTH) ? allocatePySequenceMethods(clazz, nullValue) : nullValue;
+        Object asMapping = hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocatePyMappingMethods(clazz) : nullValue;
+        Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, TypeBuiltins.TYPE_AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, TypeBuiltins.TYPE_DEALLOC));
         writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, TypeBuiltins.TYPE_VECTORCALL_OFFSET));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_setattr, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, nullValue);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, asAsync);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number,
-                        IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, hasSlot(clazz, SlotMethodDef.SQ_LENGTH) ? allocatePySequenceMethods(clazz, nullValue) : nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocatePyMappingMethods(clazz) : nullValue);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_str, lookup(clazz, SlotMethodDef.TP_STR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getattro, LookupNativeGetattroSlotNodeGen.getUncached().execute(clazz));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_setattro, lookup(clazz, SlotMethodDef.TP_SETATTRO));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, lookup(clazz, PyTypeObject__tp_as_buffer, TypeBuiltins.TYPE_AS_BUFFER));
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, getTypeFlagsNode.execute(clazz));
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
+        writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
 
         // return a C string wrapper that really allocates 'char*' on TO_NATIVE
         Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
@@ -330,5 +344,19 @@ public abstract class ToNativeTypeNode {
         writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_finalize, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_vectorcall, nullValue);
+
+        if (heaptype) {
+            assert (flags & TypeFlags.HEAPTYPE) != 0;
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_async, asAsync);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_number, asNumber);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_mapping, asMapping);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_sequence, asSequence);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_buffer, asBuffer);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.execute(clazz.getName()));
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.execute(clazz.getQualName()));
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_module, nullValue);
+            Object slots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_slots, slots != PNone.NO_VALUE ? toNativeNewRef.execute(slots) : nullValue);
+        }
     }
 }

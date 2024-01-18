@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -68,6 +69,8 @@ import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -96,6 +99,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
 public final class WeakRefModuleBuiltins extends PythonBuiltins {
@@ -343,6 +347,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static final TruffleString T_PROXY_TYPE = tsLiteral("ProxyType");
+    private static final TruffleString T_CALLABLE_PROXY_TYPE = tsLiteral("CallableProxyType");
+
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
@@ -351,6 +358,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         PythonBuiltinClass refType = core.lookupType(PythonBuiltinClassType.PReferenceType);
         weakrefModule.setAttribute(T_REF, refType);
         refType.setAttribute(weakRefQueueKey, weakRefQueue);
+        // FIXME we should intrinsify those types
+        TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
+        TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_CALLABLE_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
             if (!ctx.isGcEnabled()) {

@@ -166,7 +166,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         if (classNativeWrapper == null) {
             throw CompilerDirectives.shouldNotReachHere();
         }
-        ToNativeTypeNode.initializeType(classNativeWrapper, pointer);
+        ToNativeTypeNode.initializeType(classNativeWrapper, pointer, false);
     }
 
     @Override
@@ -188,10 +188,12 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
              *
              * If we first set the empty struct and initialize it afterward, everything is fine.
              */
-            Object pointerObject = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
+            PythonManagedClass clazz = (PythonManagedClass) getDelegate();
+            boolean heaptype = (GetTypeFlagsNode.executeUncached(clazz) & TypeFlags.HEAPTYPE) != 0;
+            Object pointerObject = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(heaptype ? CStructs.PyHeapTypeObject : CStructs.PyTypeObject);
             replacement = registerReplacement(pointerObject, lib);
 
-            ToNativeTypeNode.initializeType(this, pointerObject);
+            ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
         }
         return replacement;
     }
