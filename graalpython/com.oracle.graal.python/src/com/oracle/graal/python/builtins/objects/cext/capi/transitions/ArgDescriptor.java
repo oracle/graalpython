@@ -51,12 +51,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.WrappedPointerToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.ToPythonWrapperNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.WrappedPointerToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -68,7 +70,7 @@ enum ArgBehavior {
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
-    WrappedPointer("POINTER", "J", "jlong", "long", null, CApiTransitions.WrappedPointerToPythonNode::new, null),
+    WrappedPointer("POINTER", "J", "jlong", "long", WrappedPointerToNativeNodeGen::create, WrappedPointerToPythonNode::new, null),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null),

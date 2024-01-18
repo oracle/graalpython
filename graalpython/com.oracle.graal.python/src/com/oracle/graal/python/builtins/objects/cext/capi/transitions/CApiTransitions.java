@@ -1231,4 +1231,22 @@ public abstract class CApiTransitions {
             }
         }
     }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class WrappedPointerToNativeNode extends CExtToNativeNode {
+        @Specialization
+        static Object doGeneric(Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isWrapperProfile,
+                        @Cached GetReplacementNode getReplacementNode) {
+            if (isWrapperProfile.profile(inliningTarget, object instanceof PythonNativeWrapper)) {
+                Object replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) object);
+                if (replacement != null) {
+                    return replacement;
+                }
+            }
+            return object;
+        }
+    }
 }
