@@ -41,21 +41,26 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.GETITEM;
+import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.LENFUNC;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -85,16 +90,31 @@ public abstract class PySequenceSizeNode extends Node {
         return execute(null, object);
     }
 
-    @Specialization(guards = "!isNativeObject(object)")
-    static long doGenericManaged(Object object,
+    @Specialization
+    static long doPSequence(PSequence object) {
+        return object.getSequenceStorage().length();
+    }
+
+    @Specialization(guards = {"!isNativeObject(object)", "!isPSequence(object)"})
+    static long doGenericManaged(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
+                    @Cached GetClassNode getClassNode,
                     @Cached PySequenceCheckNode sequenceCheckNode,
-                    @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached PyMappingCheckNode mappingCheckNode,
+                    @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
+                    @Cached CallUnaryMethodNode callLen,
+                    @Cached CastToJavaLongExactNode toJavaLongExactNode,
                     @Cached PRaiseNode.Lazy raise) {
         if (sequenceCheckNode.execute(inliningTarget, object)) {
-            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, object);
-            return storage.length();
+            Object type = getClassNode.execute(inliningTarget, object);
+            Object len = lookupLen.execute(frame, type, object);
+            assert len != PNone.NO_VALUE;
+            Object result = callLen.executeObject(frame, len, object);
+            try {
+                return toJavaLongExactNode.execute(inliningTarget, result);
+            } catch (CannotCastException cce) {
+                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
+            }
         }
         if (mappingCheckNode.execute(inliningTarget, object)) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
@@ -110,7 +130,7 @@ public abstract class PySequenceSizeNode extends Node {
                     @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
                     @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
         Object executable = importCExtSymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), SYMBOL);
-        Object size = invokeNode.execute(frame, GETITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object)});
+        Object size = invokeNode.execute(frame, LENFUNC, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object)});
         assert PGuards.isInteger(size);
         return (long) size;
     }
