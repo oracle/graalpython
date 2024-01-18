@@ -53,30 +53,35 @@ CATALOG_ALIAS = "tested_catalog"
 # whole folder will be deleted after the tests finished
 WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
 
-def download_latest_jbang():
-    github_url = "https://github.com/jbangdev/jbang/releases/latest/download/jbang.zip"
-    download_path = os.path.join(WORK_DIR, 'jbang.zip')
-    command = ["curl", "-L", "-o", download_path, github_url]
-    subprocess.run(command, check=True)
-    with ZipFile(download_path, "r") as zip_ref:
-        zip_ref.extractall(WORK_DIR)
+if is_enabled:
+    def download_latest_jbang():
+        github_url = "https://github.com/jbangdev/jbang/releases/latest/download/jbang.zip"
+        download_path = os.path.join(WORK_DIR, 'jbang.zip')
+        command = ["curl", "-L", "-o", download_path, github_url]
+        subprocess.run(command, check=True)
+        with ZipFile(download_path, "r") as zip_ref:
+            zip_ref.extractall(WORK_DIR)
 
-    jbang_executable = os.path.join(WORK_DIR, "jbang", "bin", "jbang")
-    os.chmod(jbang_executable, stat.S_IRWXU)
-    return jbang_executable
+        jbang_executable = os.path.join(WORK_DIR, "jbang", "bin", "jbang")
+        os.chmod(jbang_executable, stat.S_IRWXU)
+        return jbang_executable
 
-JBANG_CMD = download_latest_jbang()
+    JBANG_CMD = download_latest_jbang()
 
 
 class TestJBangIntegration(unittest.TestCase):
 
     def setUpClass(self):
+        if not is_enabled:
+            return
         self.ensureProxy()
         self.ensureLocalMavenRepo()
         self.catalog_file = self.getCatalogFile()
         self.registerCatalog(self.catalog_file)
      
     def tearDownClass(self):
+        if not is_enabled:
+            return
         shutil.rmtree(WORK_DIR)
         
     def setUp(self):
