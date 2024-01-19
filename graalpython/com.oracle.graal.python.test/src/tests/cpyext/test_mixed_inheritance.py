@@ -152,3 +152,44 @@ class TestMixedInheritanceDict:
 
         assert tester.callSqSize(C()) == 128
         assert tester.callMpSize(C()) == 128
+
+    def test_mixed_inheritance_with_concat(self):
+        CTypeWithConcat = CPyExtType("CTypeWithConcat",
+                                     """
+                                     PyObject* test_concat_function(PyObject* a, PyObject* b) {
+                                         Py_INCREF(b);
+                                         return b;
+                                     }
+                                     Py_ssize_t test_sq_length_function(PyObject* a) {
+                                         return 11;
+                                     }
+                                     PyObject* callNbAdd(PyObject* self, PyObject* arg) {
+                                         if (Py_TYPE(self)->tp_as_number && Py_TYPE(self)->tp_as_number->nb_add) {
+                                             return Py_TYPE(self)->tp_as_number->nb_add(self, arg);
+                                         }
+                                         Py_RETURN_NONE;
+                                     }
+                                     PyObject* callSqConcat(PyObject* self, PyObject* arg) {
+                                         if (Py_TYPE(self)->tp_as_sequence && Py_TYPE(self)->tp_as_sequence->sq_concat) {
+                                             return Py_TYPE(self)->tp_as_sequence->sq_concat(self, arg);
+                                         }
+                                         Py_RETURN_NONE;
+                                     }
+                                     """,
+                                     tp_methods='''
+                                     {"callNbAdd", (PyCFunction)callNbAdd, METH_O, ""},
+                                     {"callSqConcat", (PyCFunction)callSqConcat, METH_O, ""}
+                                     ''',
+                                     sq_length="&test_sq_length_function",
+                                     sq_concat="&test_concat_function",
+        )
+
+        class M(CTypeWithConcat):
+            pass
+
+        native = CTypeWithConcat()
+        managed = M()
+        assert native.callNbAdd(native) is None
+        assert native.callSqConcat(native) is native
+        assert managed.callNbAdd(native) is None
+        assert managed.callSqConcat(native) is native

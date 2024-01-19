@@ -256,10 +256,14 @@ public enum SlotMethodDef {
 
     static {
         overlap(SQ_LENGTH, MP_LENGTH);
+
         // SQ_(ASS_)ITEM and MP_(ASS_)SUBSCRIPT do *not* overlap for
         // the purposes of initialising native slots, since the sq
         // slots use ssizeargfunc/ssizeobjargproc and the mp slots
         // use binaryfunc/objobjargproc
+        //
+        // Similarly for NB_ADD/NB_MUL (wrap_binaryfunc_l) and
+        // SQ_CONCAT/SQ_REPEAT (wrap_binaryfunc)
 
         initGroup(
                         PyTypeObject__tp_as_sequence,
