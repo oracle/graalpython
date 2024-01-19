@@ -132,4 +132,17 @@ public final class RLockBuiltins extends PythonBuiltins {
             return retVal;
         }
     }
+
+    @Builtin(name = "_recursion_count", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class RecursionCountNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int recursionCount(PRLock self) {
+            if (self.isOwned()) {
+                return self.getCount();
+            } else {
+                return 0;
+            }
+        }
+    }
 }
