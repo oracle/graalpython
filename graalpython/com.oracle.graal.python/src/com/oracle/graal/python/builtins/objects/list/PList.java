@@ -188,14 +188,14 @@ public final class PList extends PSequence {
                     @Bind("$node") Node inliningTarget,
                     @Cached PForeignToPTypeNode convert,
                     @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
-                    @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
+                    @Cached SequenceStorageNodes.AppendNode appendNode,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             final int len = store.length();
             try {
                 if (index == len) {
-                    insertItemNode.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
+                    appendNode.execute(inliningTarget, store, convert.executeConvert(value), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                 } else {
                     setItem.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
                 }
