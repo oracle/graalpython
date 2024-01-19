@@ -93,7 +93,7 @@ class TestMixedInheritanceDict:
             raise Exception("AttributeError not raised")
 
     def test_mixed_inheritance_with_length(self):
-        TestMappingSize = CPyExtType("TestMappingSize",
+        TestMixedMpSqLen = CPyExtType("TestMixedMpSqLen",
                                      """
                                      Py_ssize_t test_mp_length(PyObject* a) {
                                          return 11;
@@ -119,7 +119,7 @@ class TestMixedInheritanceDict:
                                      ''',
                                      mp_length="&test_mp_length",
         )
-        tester = TestMappingSize()
+        tester = TestMixedMpSqLen()
         try:
             tester.callSqSize(tester)
         except TypeError as e:
@@ -133,12 +133,12 @@ class TestMixedInheritanceDict:
         class B2:
             def __len__(self) -> int: ...
 
-        class C(TestMappingSize, B):
+        class C(TestMixedMpSqLen, B):
             pass
 
         assert tester.callSqSize(C()) == 11
 
-        class C(TestMappingSize, B2):
+        class C(TestMixedMpSqLen, B2):
             pass
 
         assert tester.callSqSize(C()) == 11
@@ -147,7 +147,7 @@ class TestMixedInheritanceDict:
             def __len__(self):
                 return 128
 
-        class C(B3, TestMappingSize):
+        class C(B3, TestMixedMpSqLen):
             pass
 
         assert tester.callSqSize(C()) == 128
