@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -92,6 +92,7 @@ if sys.implementation.name == "graalpy":
                                      Py_XINCREF(obj);
                                      return obj;
                                 }
+                                
                                 static PyObject* get_data(PyObject* self) {
                                     return ((MyNativeTypeObject*)self)->data;
                                 }
@@ -124,3 +125,84 @@ if sys.implementation.name == "graalpy":
             except Exception as e:
                 # print("Error : ", e)
                 assert False
+
+        @skipIf(is_native, "not supported in native mode")
+        def test_host_interop_extension(self):
+            MyNativeType = CPyExtType("MyNativeType",
+                                """
+                                static PyObject* mymativetype_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                     PyObject* obj;
+                                     MyNativeTypeObject* typedObj;
+                                     obj = PyBaseObject_Type.tp_new(cls, a, b);
+                                     
+                                     typedObj = ((MyNativeTypeObject*)obj);
+                                     // data = [0,1,2,3,4]
+                                     typedObj->data = PyList_New(5);
+                                     PyList_SetItem(typedObj->data, 0, PyLong_FromLong(0));
+                                     PyList_SetItem(typedObj->data, 1, PyLong_FromLong(1));
+                                     PyList_SetItem(typedObj->data, 2, PyLong_FromLong(2));
+                                     PyList_SetItem(typedObj->data, 3, PyLong_FromLong(3));
+                                     PyList_SetItem(typedObj->data, 4, PyLong_FromLong(4));
+                                     Py_XINCREF(obj);
+                                     return obj;
+                                }
+                            
+                                static Py_ssize_t mymativetype_sq_length(PyObject* obj) {
+                                    MyNativeTypeObject* typedObj;
+                                    typedObj = ((MyNativeTypeObject*)obj);
+                                    
+                                    return PyList_Size(typedObj->data);
+                                }
+                                
+                                static PyObject* get_data(PyObject* obj) {
+                                    return ((MyNativeTypeObject*)obj)->data;
+                                }
+                                
+                                static PyObject* mymativetype_sq_item(PyObject *obj, Py_ssize_t i) {
+                                    MyNativeTypeObject* typedObj;
+                                    typedObj = ((MyNativeTypeObject*)obj);
+                                    
+                                    return PyList_GetItem(typedObj->data, i);
+                                }
+                                
+                                static int mymativetype_sq_ass_item(PyObject *obj, Py_ssize_t i, PyObject *v) {
+                                    MyNativeTypeObject* typedObj;
+                                    typedObj = ((MyNativeTypeObject*)obj);
+                                    
+                                    Py_ssize_t len = PyList_Size(typedObj->data);
+                                    if (i == len) {
+                                        return PyList_Insert(typedObj->data, i, v);
+                                    } else {
+                                        if (v == NULL) {
+                                            return PyList_SetSlice(typedObj->data, i, i+1, v);
+                                        } else { 
+                                            return PyList_SetItem(typedObj->data, i, v);
+                                        }
+                                    }
+                                }
+                                """,
+                                cmembers="PyObject* data;",
+                                tp_new="mymativetype_new",
+                                sq_length="mymativetype_sq_length",
+                                sq_ass_item="mymativetype_sq_ass_item",
+                                sq_item="mymativetype_sq_item",
+                                tp_methods='{"get_data", (PyCFunction)get_data, METH_NOARGS, ""}')
+
+            t = MyNativeType()
+            import polyglot
+
+            assert polyglot.__has_size__(t)
+            assert 5 == polyglot.__get_size__(t)
+            assert 1 == polyglot.__read__(t, 1)
+            # remove - [1,2,3,4]
+            polyglot.__remove__(t, 0)
+            assert 4 == polyglot.__get_size__(t)
+            assert 2 == polyglot.__read__(t, 1)
+            # append - [1,2,3,4,5]
+            polyglot.__write__(t, 4, 5)
+            assert 5 == polyglot.__get_size__(t)
+            assert 5 == polyglot.__read__(t, 4)
+            # edit - [1,20,3,4,5]
+            polyglot.__write__(t, 1, 20)
+            assert 5 == polyglot.__get_size__(t)
+            assert 20 == polyglot.__read__(t, 1)
