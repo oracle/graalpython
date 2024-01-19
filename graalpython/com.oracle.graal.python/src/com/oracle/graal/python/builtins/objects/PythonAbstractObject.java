@@ -279,6 +279,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
+                    @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                     @Cached PySequenceCheckNode sequenceCheck,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -288,7 +290,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
             } else {
-                return sequenceCheck.execute(inliningTarget, this);
+                return sequenceCheck.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
             }
         } finally {
             gil.release(mustRelease);
