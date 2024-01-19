@@ -12,8 +12,7 @@
 /* In the process of breaking reference cycles mbuf_release() can be
    called before memory_release(). */
 #define BASE_INACCESSIBLE(mv) \
-    (((PyMemoryViewObject *)mv)->flags&_Py_MEMORYVIEW_RELEASED || \
-     ((PyMemoryViewObject *)mv)->mbuf->flags&_Py_MANAGED_BUFFER_RELEASED)
+    (((PyMemoryViewObject *)mv)->flags&_Py_MEMORYVIEW_RELEASED)
 
 #define CHECK_RELEASED(mv) \
     if (BASE_INACCESSIBLE(mv)) {                                  \
