@@ -160,7 +160,6 @@
 #define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
 #define HAVE_FCNTL_H
-#define HAVE_PTHREAD_H
 
 #define HAVE_STDARG_PROTOTYPES
 
@@ -169,7 +168,9 @@
 #define WITH_THREAD 1
 
 #ifndef MS_WINDOWS
+#define HAVE_PTHREAD_H
 #define HAVE_SYS_WAIT_H
+#define HAVE_SYS_TIME_H
 #define TIME_WITH_SYS_TIME 1
 #else
 #define HAVE_COPYSIGN 1

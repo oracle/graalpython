@@ -195,6 +195,7 @@ set(SQLITE3_SRC
     "${SRC_DIR}/modules/_sqlite/util.c"
 )
 native_module("_sqlite3" TRUE "${SQLITE3_SRC}")
+target_include_directories("_sqlite3" PUBLIC "${SRC_DIR}/modules/_sqlite/sqlite")
 
 if(NOT WIN32)
     native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")

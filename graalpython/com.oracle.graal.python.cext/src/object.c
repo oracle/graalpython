@@ -689,9 +689,7 @@ Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
 }
 
 void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return IMMORTAL_REFCNT;
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     PyObject *dest;
     if (points_to_py_handle_space(obj))
     {
