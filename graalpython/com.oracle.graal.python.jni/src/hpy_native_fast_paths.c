@@ -98,6 +98,8 @@ static HPy (*original_Type)(HPyContext *ctx, HPy obj);
 static HPy (*original_Add)(HPyContext *ctx, HPy h1, HPy h2);
 static HPy (*original_Subtract)(HPyContext *ctx, HPy h1, HPy h2);
 static HPy (*original_Multiply)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_FloorDivide)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_TrueDivide)(HPyContext *ctx, HPy h1, HPy h2);
 static HPy (*original_RichCompare)(HPyContext *ctx, HPy v, HPy w, int op);
 static int (*original_RichCompareBool)(HPyContext *ctx, HPy v, HPy w, int op);
 
@@ -394,6 +396,14 @@ HPy augment_Type(HPyContext *ctx, HPy obj) {
             int64_t i1 = (int64_t) unboxInt(bits1); \
             int64_t i2 = (int64_t) unboxInt(bits2); \
             return augment_Long_FromInt64_t(ctx, i1 OP i2); \
+        } else if (isBoxedInt(bits1) && isBoxedDouble(bits2)) { \
+            int32_t i1 = unboxInt(bits1); \
+            double f2 = unboxDouble(bits2); \
+            return augment_Float_FromDouble(ctx, i1 OP f2); \
+        } else if (isBoxedDouble(bits1) && isBoxedInt(bits2)) { \
+            double f1 = unboxDouble(bits1); \
+            int32_t i2 = unboxInt(bits2); \
+            return augment_Float_FromDouble(ctx, f1 OP i2); \
         } else if (isBoxedDouble(bits1) && isBoxedDouble(bits2)) { \
             double f1 = unboxDouble(bits1); \
             double f2 = unboxDouble(bits2); \
@@ -405,6 +415,59 @@ HPy augment_Type(HPyContext *ctx, HPy obj) {
 GENERATE_AUGMENTED_BINOP(Add, +)
 GENERATE_AUGMENTED_BINOP(Subtract, -)
 GENERATE_AUGMENTED_BINOP(Multiply, *)
+
+static HPy augment_FloorDivide(HPyContext *ctx, HPy h1, HPy h2) {
+    uint64_t bits1 = toBits(h1);
+    uint64_t bits2 = toBits(h2);
+    if (isBoxedInt(bits1) && isBoxedInt(bits2)) {
+        int32_t i1 = unboxInt(bits1);
+        int32_t i2 = unboxInt(bits2);
+        if (i2 == 0) {
+            HPyErr_SetString(ctx, ctx->h_ZeroDivisionError, "division by zero");
+            return HPy_NULL;
+        }
+        return augment_Long_FromInt64_t(ctx, i1 / i2);
+    }
+    return original_FloorDivide(ctx, h1, h2);
+}
+
+static HPy augment_TrueDivide(HPyContext *ctx, HPy h1, HPy h2) {
+    uint64_t bits1 = toBits(h1);
+    uint64_t bits2 = toBits(h2);
+    if (isBoxedInt(bits1) && isBoxedInt(bits2)) {
+        int32_t i2 = unboxInt(bits2);
+        if (i2 == 0) {
+            goto div_by_zero;
+        }
+        double f1 = (double) unboxInt(bits1);
+        return augment_Float_FromDouble(ctx, f1 / i2);
+    } else if (isBoxedInt(bits1) && isBoxedDouble(bits2)) {
+        int32_t i1 = unboxInt(bits1);
+        double f2 = unboxDouble(bits2);
+        if (f2 == 0.0) {
+            goto div_by_zero;
+        }
+        return augment_Float_FromDouble(ctx, i1 / f2);
+    } else if (isBoxedDouble(bits1) && isBoxedInt(bits2)) {
+        double f1 = unboxDouble(bits1);
+        int32_t i2 = unboxInt(bits2);
+        if (i2 == 0) {
+            goto div_by_zero;
+        }
+        return augment_Float_FromDouble(ctx, f1 / i2);
+    } else if (isBoxedDouble(bits1) && isBoxedDouble(bits2)) {
+        double f1 = unboxDouble(bits1);
+        double f2 = unboxDouble(bits2);
+        if (f2 == 0.0) {
+            goto div_by_zero;
+        }
+        return augment_Float_FromDouble(ctx, f1 / f2);
+    }
+    return original_TrueDivide(ctx, h1, h2);
+div_by_zero:
+    HPyErr_SetString(ctx, ctx->h_ZeroDivisionError, "division by zero");
+    return HPy_NULL;
+}
 
 #define HPy_RETURN_RICHCOMPARE_BOOL(ctx, val1, val2, op)                \
     do {                                                                \
@@ -520,6 +583,8 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(Add);
     AUGMENT(Subtract);
     AUGMENT(Multiply);
+    AUGMENT(FloorDivide);
+    AUGMENT(TrueDivide);
 
     AUGMENT(RichCompare);
     AUGMENT(RichCompareBool);
