@@ -741,19 +741,19 @@ public abstract class ExternalFunctionNodes {
     public abstract static class ExternalFunctionInvokeNode extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
 
-        public static CheckFunctionResultNode createCheckResultNode(PExternalFunctionWrapper provider) {
+        static CheckFunctionResultNode createCheckResultNode(PExternalFunctionWrapper provider) {
             CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
             return node != null ? node : DefaultCheckFunctionResultNodeGen.create();
         }
 
-        public static CheckFunctionResultNode getUncachedCheckResultNode(PExternalFunctionWrapper provider) {
+        static CheckFunctionResultNode getUncachedCheckResultNode(PExternalFunctionWrapper provider) {
             CheckFunctionResultNode node = provider.getUncachedCheckFunctionResultNode();
             return node != null ? node : DefaultCheckFunctionResultNodeGen.getUncached();
         }
 
         @Specialization(guards = {"provider == cachedProvider"}, limit = "1")
         static Object invoke(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @Cached("provider") PExternalFunctionWrapper cachedProvider,
                         @Cached(value = "createCheckResultNode(provider)", uncached = "getUncachedCheckResultNode(provider)") CheckFunctionResultNode checkResultNode,
                         @Cached(value = "provider.createConvertRetNode()", uncached = "provider.getUncachedConvertRetNode()") CExtToJavaNode convertReturnValue,
@@ -761,7 +761,6 @@ public abstract class ExternalFunctionNodes {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached GilNode gilNode,
                         @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
-                        @Cached PRaiseNode.Lazy raiseNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
@@ -780,10 +779,10 @@ public abstract class ExternalFunctionNodes {
                 return fromForeign.executeConvert(result);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 CApiTiming.exit(timing);
                 /*
