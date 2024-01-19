@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SITE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -491,13 +490,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         boolean run(TruffleString name,
                         @Cached TruffleString.EqualNode equalNode) {
-            // if PYTHONPATH is set, it is prepended to the sys.path on startup and thus might
-            // override the site module from the stdlib
-            if (!getContext().getOption(PythonOptions.PythonPath).isEmpty() && equalNode.execute(name, T_SITE, TS_ENCODING)) {
-                return false;
-            } else {
-                return findFrozen(getContext(), name, equalNode).status == FROZEN_OKAY;
-            }
+            return findFrozen(getContext(), name, equalNode).status == FROZEN_OKAY;
         }
     }
 
@@ -582,7 +575,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // Will be public part of CPython from 3.11 (already merged into main)
     @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, isPublic = false, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
                     "--\n" +
                     "\n" +
