@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,28 +57,28 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 
 /**
- * Lookup a suitable slot function. When the slot is found to be inherited from a native
- * superclass, this returns the same function pointer, so behaves just like CPython would. For
- * inheriting managed slots we differ, however. CPython installs some slot functions in
- * PyHeapTypeObjects that do a lookup of the method in the type's dict and call it. We avoid this
- * and instead return a function pointer that directly calls the correct method (see {@link
- * #wrapManagedMethod}). However, there are two caveats:
+ * Lookup a suitable slot function. When the slot is found to be inherited from a native superclass,
+ * this returns the same function pointer, so behaves just like CPython would. For inheriting
+ * managed slots we differ, however. CPython installs some slot functions in PyHeapTypeObjects that
+ * do a lookup of the method in the type's dict and call it. We avoid this and instead return a
+ * function pointer that directly calls the correct method (see {@link #wrapManagedMethod}).
+ * However, there are two caveats:
  *
- *  1) In CPython, were a PyHeapTypeObject supertype to change a magic method in its dict after
- *  a subclass inherited from it, the slot lookup will (correctly) go to the new method. In our
- *  case it will not, since we have created a closure over the method at the time of
- *  inheritance. So far this has not been an issue, so we ignore it.
+ * 1) In CPython, were a PyHeapTypeObject supertype to change a magic method in its dict after a
+ * subclass inherited from it, the slot lookup will (correctly) go to the new method. In our case it
+ * will not, since we have created a closure over the method at the time of inheritance. So far this
+ * has not been an issue, so we ignore it.
  *
- *  2) Some slots that map to the same Python method cannot be treated in this way. Consider what
- *  happens if we inherit from a managed type with a __len__ method and a native type with
- *  tp_as_mapping->mp_length. We would copy the mp_length slot from the native type, and create a
- *  closure to call the managed __len__ method for tp_as_sequence->sq_length. This is not what
- *  CPython does. In CPython, the sq_length slot would be set to a C function that does a dynamic
- *  lookup and call of __len__! So it depends on the MRO order if we end up in the managed __len__
- *  or in fact bounce back into native to invoke the mp_length function when calling
- *  tp_as_sequence->sq_length on the subtype! As for 1), we ignore the potential of later __dict__
- *  updates along the MRO chain and return the pointer to the native slot, if that should take
- *  precedence.
+ * 2) Some slots that map to the same Python method cannot be treated in this way. Consider what
+ * happens if we inherit from a managed type with a __len__ method and a native type with
+ * tp_as_mapping->mp_length. We would copy the mp_length slot from the native type, and create a
+ * closure to call the managed __len__ method for tp_as_sequence->sq_length. This is not what
+ * CPython does. In CPython, the sq_length slot would be set to a C function that does a dynamic
+ * lookup and call of __len__! So it depends on the MRO order if we end up in the managed __len__ or
+ * in fact bounce back into native to invoke the mp_length function when calling
+ * tp_as_sequence->sq_length on the subtype! As for 1), we ignore the potential of later __dict__
+ * updates along the MRO chain and return the pointer to the native slot, if that should take
+ * precedence.
  */
 public abstract class LookupNativeSlotNode extends PNodeWithContext {
     private LookupNativeSlotNode() {

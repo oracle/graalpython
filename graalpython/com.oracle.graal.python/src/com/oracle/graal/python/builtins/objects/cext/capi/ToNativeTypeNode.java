@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -159,7 +159,8 @@ public abstract class ToNativeTypeNode {
         Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_length, getSlot(obj, SlotMethodDef.SQ_LENGTH));
-        // TODO: Heap types defining __add__/__mul__ have sq_concat/sq_repeat == NULL in CPython, so this may have unintended effects
+        // TODO: Heap types defining __add__/__mul__ have sq_concat/sq_repeat == NULL in CPython, so
+        // this may have unintended effects
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_concat, getSlot(obj, SlotMethodDef.SQ_CONCAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_repeat, getSlot(obj, SlotMethodDef.SQ_REPEAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_item, getSlot(obj, SlotMethodDef.SQ_ITEM));
@@ -251,7 +252,8 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number,
                         IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, (hasSlot(clazz, SlotMethodDef.SQ_LENGTH) || hasSlot(clazz, SlotMethodDef.SQ_ITEM)) ? allocatePySequenceMethods(clazz, nullValue) : nullValue);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence,
+                        (hasSlot(clazz, SlotMethodDef.SQ_LENGTH) || hasSlot(clazz, SlotMethodDef.SQ_ITEM)) ? allocatePySequenceMethods(clazz, nullValue) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocatePyMappingMethods(clazz) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
