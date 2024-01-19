@@ -943,7 +943,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_AsUTF32String", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_AsWideCharString", ret = WCHAR_T_PTR, args = {PyObject, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_BuildEncodingMap", ret = PyObject, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyUnicode_CompareWithASCIIString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_CopyCharacters", ret = Py_ssize_t, args = {PyObject, Py_ssize_t, PyObject, Py_ssize_t, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_DecodeCharmap", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_DecodeLocale", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)

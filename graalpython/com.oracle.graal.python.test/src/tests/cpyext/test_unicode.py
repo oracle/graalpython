@@ -804,6 +804,20 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_CompareWithASCIIString = CPyExtFunction(
+        _reference_compare,
+        lambda: (
+            ("a", "a"),
+            ("a", "b"),
+            ("a", "ab"),
+            ("ab", "a"),
+        ),
+        resultspec="i",
+        argspec='Os',
+        arguments=["PyObject* left", "const char* right"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyUnicode_Tailmatch = CPyExtFunction(
         _reference_tailmatch,
         lambda: (

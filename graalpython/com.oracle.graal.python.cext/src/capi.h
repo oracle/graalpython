@@ -416,6 +416,7 @@ typedef struct {
     BUILTIN(PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Compare, int, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_CompareWithASCIIString, int, PyObject*, const char*) \
     BUILTIN(PyUnicode_Concat, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Contains, int, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Count, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \

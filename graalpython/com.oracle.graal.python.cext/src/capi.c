@@ -2998,7 +2998,7 @@ PyAPI_FUNC(int) PyUnicode_Compare(PyObject* a, PyObject* b) {
 }
 #undef PyUnicode_CompareWithASCIIString
 PyAPI_FUNC(int) PyUnicode_CompareWithASCIIString(PyObject* a, const char* b) {
-    FUNC_NOT_IMPLEMENTED
+    return GraalPyUnicode_CompareWithASCIIString(a, b);
 }
 #undef PyUnicode_Concat
 PyAPI_FUNC(PyObject*) PyUnicode_Concat(PyObject* a, PyObject* b) {
