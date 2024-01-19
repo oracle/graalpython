@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FinishArgNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
@@ -51,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
@@ -63,42 +64,12 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
-    PyObject(
-                    "POINTER",
-                    "J",
-                    "jlong",
-                    "long",
-                    PythonToNativeNodeGen::create,
-                    NativeToPythonNodeGen::create,
-                    NativeToPythonNodeGen.getUncached(),
-                    PythonToNativeNewRefNodeGen::create,
-                    NativeToPythonStealingNodeGen::create,
-                    NativeToPythonStealingNodeGen.getUncached(),
-                    null),
+    PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, NativeToPythonNodeGen.getUncached(), PythonToNativeNewRefNodeGen::create, NativeToPythonStealingNodeGen::create, NativeToPythonStealingNodeGen.getUncached(), null),
     PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, NativeToPythonNodeGen.getUncached(), null, null, null, null),
-    PyObjectAsTruffleString(
-                    "POINTER",
-                    "J",
-                    "jlong",
-                    "long",
-                    null,
-                    ExternalFunctionNodesFactory.ToPythonStringNodeGen::create,
-                    ExternalFunctionNodesFactory.ToPythonStringNodeGen.getUncached(),
-                    null,
-                    null,
-                    null,
-                    null),
+    PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNodeGen::create, ToPythonStringNodeGen.getUncached(), null, null, null, null),
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, ToPythonWrapperNodeGen.getUncached(), null, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null, null),
-    WrappedPointer(
-                    "POINTER",
-                    "J",
-                    "jlong",
-                    "long",
-                    null,
-                    ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen::create,
-                    ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen.getUncached(),
-                    null),
+    WrappedPointer("POINTER","J","jlong","long",null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached(),null),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, CharPtrToPythonNodeGen.getUncached(), null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null, null),
