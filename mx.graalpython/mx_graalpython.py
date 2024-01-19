@@ -51,6 +51,8 @@ import tempfile
 import urllib.request as urllib_request
 from argparse import ArgumentParser
 from dataclasses import dataclass
+import stat
+from zipfile import ZipFile
 
 import mx
 import mx_benchmark
@@ -1496,6 +1498,11 @@ def graalpython_gate_runner(args, tasks):
             ])
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+            
+            # setup JBang executable
+            jbang_url = mx_urlrewrites.rewriteurl("https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.114.0.zip")
+            env["JBANG_CMD"] = _prepare_jbang(jbang_url)
+            
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
             full_env = extend_os_env(**env)
@@ -1693,7 +1700,26 @@ class ArchiveProject(mx.ArchivableProject):
                         results.append(path)
             return results
 
+def _prepare_jbang(url):
+    oldpwd = os.getcwd()
+    work_dir = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
+    os.chdir(work_dir)
+    try:
+        command = ["curl", "-L", "-o", "jbang.zip", url]
+        print(mx.colorize('Download jbang from %s' % (url), color='magenta', bright=True, stream=sys.stdout))
+        mx.run(command)        
 
+        with ZipFile("jbang.zip", "r") as zip_ref:
+            zip_ref.extractall(work_dir)
+            
+        os.remove("jbang.zip")
+        folders = os.listdir(work_dir)
+        jbang_executable = os.path.join(work_dir, folders[0], "bin", "jbang")
+        os.chmod(jbang_executable, stat.S_IRWXU)
+        return jbang_executable
+    finally:
+        os.chdir(oldpwd)
+            
 def deploy_binary_if_main(args):
     """if the active branch is the main branch, deploy binaries for the primary suite to remote maven repository."""
     active_branch = mx.VC.get_vc(SUITE.dir).active_branch(SUITE.dir)

@@ -40,33 +40,18 @@
 import json
 import os
 import shutil
-import stat
 import subprocess
 import tempfile
 import unittest
-from zipfile import ZipFile
 
 is_enabled = 'ENABLE_JBANG_INTEGRATION_UNITTESTS' in os.environ and os.environ['ENABLE_JBANG_INTEGRATION_UNITTESTS'] == "true"
-MAVEN_REPO = os.environ.get("MAVEN_REPO_OVERRIDE")
+MAVEN_REPO_LOCAL_URL = os.environ.get('org.graalvm.maven.downloader.repository')
+GRAAL_VERSION = os.environ.get('org.graalvm.maven.downloader.version')
 CATALOG_ALIAS = "tested_catalog"
 
 # whole folder will be deleted after the tests finished
 WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
-
-if is_enabled:
-    def download_latest_jbang():
-        github_url = "https://github.com/jbangdev/jbang/releases/latest/download/jbang.zip"
-        download_path = os.path.join(WORK_DIR, 'jbang.zip')
-        command = ["curl", "-L", "-o", download_path, github_url]
-        subprocess.run(command, check=True)
-        with ZipFile(download_path, "r") as zip_ref:
-            zip_ref.extractall(WORK_DIR)
-
-        jbang_executable = os.path.join(WORK_DIR, "jbang", "bin", "jbang")
-        os.chmod(jbang_executable, stat.S_IRWXU)
-        return jbang_executable
-
-    JBANG_CMD = download_latest_jbang()
+JBANG_CMD = os.environ.get('JBANG_CMD')
 
 
 class TestJBangIntegration(unittest.TestCase):
@@ -108,10 +93,8 @@ class TestJBangIntegration(unittest.TestCase):
             os.environ['JAVA_TOOL_OPTIONS'] = java_tools
 
     def ensureLocalMavenRepo(self):
-        maven_repo = os.environ.get("MAVEN_REPO_OVERRIDE")
-        if maven_repo is None:
-            self.fail("MAVEN_REPO_OVERRIDE is not defined")
-        self.maven_repo_path = maven_repo.split(",")[0]
+        if MAVEN_REPO_LOCAL_URL is None:
+            self.fail("'org.graalvm.maven.downloader.repository' is not defined")
     
     def getCatalogFile(self): 
         catalog_dir = os.path.dirname(os.path.abspath(__file__))
@@ -143,7 +126,7 @@ class TestJBangIntegration(unittest.TestCase):
             # TODO can we relay on that in MAVEN_REPO the first one is the local repo?
             local_repo = [
                 f'//REPOS mc=https://repo1.maven.org/maven2/',
-                f'//REPOS local=file://{self.maven_repo_path}'
+                f'//REPOS local={MAVEN_REPO_LOCAL_URL}'
             ]
             content.insert(deps_index, '\n'.join(local_repo) + '\n')
 
@@ -181,6 +164,29 @@ class TestJBangIntegration(unittest.TestCase):
                 file_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), file_ref))
                 self.assertTrue(os.path.isfile(file_path), f"The path definied in catalog is not found: {file_path}")
     
+    @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
+    def test_graal_version(self):
+        json_data = self.getCatalogData(self.catalog_file)
+        for alias in json_data.get("aliases", {}).values():
+            script_ref = alias.get("script-ref")
+            script_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), script_ref))
+            with open(script_path, 'r') as script_file:
+                content = script_file.read()
+            self.assertIn (f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION} was not foudn in {script_path}")
+            self.assertIn (f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION} was not foudn in {script_path}")
+            self.assertIn (f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION} was not foudn in {script_path}")
+            self.assertIn (f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION} was not foudn in {script_path}")
+            
+        for template in json_data.get("templates", {}).values():
+            for file_ref in template.get("file-refs", {}).values():
+                file_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), file_ref))
+                with open(script_path, 'r') as script_file:
+                    content = script_file.read()
+                self.assertIn (f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION} was not foudn in {script_path}")
+                self.assertIn (f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION} was not foudn in {script_path}")
+                self.assertIn (f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION} was not foudn in {script_path}")
+                self.assertIn (f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION} was not foudn in {script_path}")
+                
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graalpy_template(self):
         template_name = "graalpy"
@@ -233,7 +239,7 @@ class TestJBangIntegration(unittest.TestCase):
         work_dir = self.tmpdir
         os.chdir(work_dir)
         
-        command = [JBANG_CMD, "init", f"--template={template_name}@{CATALOG_ALIAS}", f"-Dpath_to_local_repo={self.maven_repo_path}", test_file]
+        command = [JBANG_CMD, "init", f"--template={template_name}@{CATALOG_ALIAS}", f"-Dpath_to_local_repo={MAVEN_REPO_LOCAL_URL}", test_file]
         result = subprocess.run(command, capture_output=True, text=True)
         self.assertTrue(result != 0, f"Creating template {template_name} failed")
         test_file_path = os.path.join(work_dir, test_file)
