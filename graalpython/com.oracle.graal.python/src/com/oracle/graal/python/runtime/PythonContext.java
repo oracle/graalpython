@@ -1517,7 +1517,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public void addSysPath0() {
-        if (!getOption(PythonOptions.IsolateFlag)) {
+        if (!getOption(PythonOptions.SafePathFlag)) {
             TruffleString path0 = computeSysPath0();
             if (path0 != null) {
                 PythonModule sys = lookupBuiltinModule(T_SYS);

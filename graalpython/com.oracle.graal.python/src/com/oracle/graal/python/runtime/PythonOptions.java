@@ -195,6 +195,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -I flag. Isolate from the users environment by not adding the cwd to the path", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -P flag. Don't prepend a potentially unsafe path to sys.path", usageSyntax = "true|false", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> SafePathFlag = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -X warn_default_encoding flag. Enable opt-in EncodingWarning for 'encoding=None'", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> WarnDefaultEncodingFlag = new OptionKey<>(false);
 

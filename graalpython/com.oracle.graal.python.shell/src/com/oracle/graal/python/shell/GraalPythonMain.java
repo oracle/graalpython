@@ -95,6 +95,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private String inputFile = null;
     private boolean isolateFlag = false;
     private boolean ignoreEnv = false;
+    private boolean safePath = false;
     private boolean inspectFlag = false;
     private boolean verboseFlag = false;
     private boolean quietFlag = false;
@@ -305,6 +306,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             noUserSite = true;
                             ignoreEnv = true;
                             isolateFlag = true;
+                            safePath = true;
+                            break;
+                        case 'P':
+                            safePath = true;
                             break;
                         case 'm':
                             programArgs.add("-m");
@@ -507,7 +512,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
          */
         if (programPath.getNameCount() < 2) {
             // Resolve the program name with respect to the PATH variable.
-            String path = System.getenv("PATH");
+            String path = getEnv("PATH");
             if (path != null) {
                 int last = 0;
                 for (int i = path.indexOf(File.pathSeparatorChar); i != -1; i = path.indexOf(File.pathSeparatorChar, last)) {
@@ -548,8 +553,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
             exec_list.add(sb.toString());
-            String javaOptions = System.getenv("_JAVA_OPTIONS");
-            String javaToolOptions = System.getenv("JAVA_TOOL_OPTIONS");
+            String javaOptions = getEnv("_JAVA_OPTIONS");
+            String javaToolOptions = getEnv("JAVA_TOOL_OPTIONS");
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.matches("(-Xrunjdwp:|-agentlib:jdwp=).*suspend=y.*")) {
                     arg = arg.replace("suspend=y", "suspend=n");
@@ -604,25 +609,27 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.out(new FileOutputStream(FileDescriptor.out));
         contextBuilder.err(new FileOutputStream(FileDescriptor.err));
         if (!ignoreEnv) {
-            String pythonpath = System.getenv("PYTHONPATH");
+            String pythonpath = getEnv("PYTHONPATH");
             if (pythonpath != null) {
                 contextBuilder.option("python.PythonPath", pythonpath);
             }
-            inspectFlag = inspectFlag || System.getenv("PYTHONINSPECT") != null;
-            noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
-            verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
-            unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
-            dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
-            if (intMaxStrDigits < 0 && System.getenv("PYTHONINTMAXSTRDIGITS") != null) {
-                intMaxStrDigits = validateIntMaxStrDigits(System.getenv("PYTHONINTMAXSTRDIGITS"), "PYTHONINTMAXSTRDIGITS");
+            inspectFlag = inspectFlag || getBoolEnv("PYTHONINSPECT");
+            noUserSite = noUserSite || getBoolEnv("PYTHONNOUSERSITE");
+            safePath = safePath || getBoolEnv("PYTHONSAFEPATH");
+            verboseFlag = verboseFlag || getBoolEnv("PYTHONVERBOSE");
+            unbufferedIO = unbufferedIO || getBoolEnv("PYTHONUNBUFFERED");
+            dontWriteBytecode = dontWriteBytecode || getBoolEnv("PYTHONDONTWRITEBYTECODE");
+            String maxStrDigitsEnv = getEnv("PYTHONINTMAXSTRDIGITS");
+            if (intMaxStrDigits < 0 && maxStrDigitsEnv != null) {
+                intMaxStrDigits = validateIntMaxStrDigits(maxStrDigitsEnv, "PYTHONINTMAXSTRDIGITS");
             }
 
-            String hashSeed = System.getenv("PYTHONHASHSEED");
+            String hashSeed = getEnv("PYTHONHASHSEED");
             if (hashSeed != null) {
                 contextBuilder.option("python.HashSeed", hashSeed);
             }
 
-            String envWarnOptions = System.getenv("PYTHONWARNINGS");
+            String envWarnOptions = getEnv("PYTHONWARNINGS");
             if (envWarnOptions != null && !envWarnOptions.isEmpty()) {
                 if (warnOptions == null) {
                     warnOptions = envWarnOptions;
@@ -630,9 +637,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     warnOptions = envWarnOptions + "," + warnOptions;
                 }
             }
-            cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
+            cachePrefix = getEnv("PYTHONPYCACHEPREFIX");
 
-            String encoding = System.getenv("PYTHONIOENCODING");
+            String encoding = getEnv("PYTHONIOENCODING");
             if (encoding != null) {
                 contextBuilder.option("python.StandardStreamEncoding", encoding);
             }
@@ -657,7 +664,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             // launcher script that passes those options explicitly without relying on pyvenv.cfg
             boolean tryVenvCfg = !hasContextOptionSetViaCommandLine("SysPrefix") &&
                             !hasContextOptionSetViaCommandLine("PythonHome") &&
-                            System.getenv("GRAAL_PYTHONHOME") == null;
+                            getEnv("GRAAL_PYTHONHOME") == null;
             if (tryVenvCfg) {
                 findAndApplyVenvCfg(contextBuilder, executable);
             }
@@ -689,6 +696,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
+        contextBuilder.option("python.SafePathFlag", Boolean.toString(safePath));
         contextBuilder.option("python.WarnOptions", warnOptions);
         contextBuilder.option("python.WarnDefaultEncodingFlag", Boolean.toString(warnDefaultEncoding));
         if (intMaxStrDigits > 0) {
@@ -776,6 +784,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             consoleHandler.setContext(null);
         }
         System.exit(rc);
+    }
+
+    private static boolean getBoolEnv(String var) {
+        return getEnv(var) != null;
+    }
+
+    private static String getEnv(String var) {
+        String value = System.getenv(var);
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        return value;
     }
 
     private int validateIntMaxStrDigits(String input, String name) {
@@ -963,18 +983,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
                         "-OO    : remove doc-strings in addition to the -O optimizations;\n" +
                         "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
+                        "-P     : don't prepend a potentially unsafe path to sys.path; also PYTHONSAFEPATH" +
                         "-R     : on CPython, this enables the use of a pseudo-random salt to make\n" +
                         "         hash()values of various types be unpredictable between separate\n" +
                         "         invocations of the interpreter, as a defense against denial-of-service\n" +
                         "         attacks; GraalPython always enables this and the flag has no effect.\n" +
-                        // "-Q arg : division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew\n"
-                        // +
                         "-q     : don't print version and copyright messages on interactive startup\n" +
                         "-I     : don't add user site and script directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-s     : don't add user site directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-S     : don't imply 'import site' on initialization\n" +
-                        // "-t : issue warnings about inconsistent tab usage (-tt: issue errors)\n"
-                        // +
                         "-u     : unbuffered binary stdout and stderr; also PYTHONUNBUFFERED=x\n" +
                         "-v     : verbose (trace import statements); also PYTHONVERBOSE=x\n" +
                         "         can be supplied multiple times to increase verbosity\n" +
@@ -983,10 +1000,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-X opt : CPython implementation-specific options. warn_default_encoding and int_max_str_digits are supported on GraalPy\n" +
                         "-W arg : warning control; arg is action:message:category:module:lineno\n" +
                         "         also PYTHONWARNINGS=arg\n" +
-                        // "-x : skip first line of source, allowing use of non-Unix forms of
-                        // #!cmd\n" +
-                        // "-3 : warn about Python 3.x incompatibilities that 2to3 cannot trivially
-                        // fix\n" +
                         "file   : program read from script file\n" +
                         "-      : program read from stdin\n" +
                         "arg ...: arguments passed to program in sys.argv[1:]\n" +
@@ -1352,7 +1365,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
         }
         String uuid = UUID.randomUUID().toString();
-        String envArgsOpt = System.getenv("GRAAL_PYTHON_ARGS");
+        String envArgsOpt = getEnv("GRAAL_PYTHON_ARGS");
         ArrayList<String> envArgs = new ArrayList<>();
         if (envArgsOpt != null) {
             State s = State.NORMAL;
