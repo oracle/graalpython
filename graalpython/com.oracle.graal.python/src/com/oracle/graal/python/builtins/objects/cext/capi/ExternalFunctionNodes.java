@@ -214,6 +214,15 @@ public abstract class ExternalFunctionNodes {
             assert CApiTransitions.isBackendPointerObject(value);
             return value;
         }
+
+        @NeverDefault
+        public static FromLongNode create() {
+            return ExternalFunctionNodesFactory.FromLongNodeGen.create();
+        }
+
+        public static FromLongNode getUncached() {
+            return ExternalFunctionNodesFactory.FromLongNodeGen.getUncached();
+        }
     }
 
     @GenerateInline(false)
@@ -229,6 +238,15 @@ public abstract class ExternalFunctionNodes {
         static int doLong(long value) {
             assert value < (1L << 32);
             return (int) value;
+        }
+
+        @NeverDefault
+        public static FromUInt32Node create() {
+            return ExternalFunctionNodesFactory.FromUInt32NodeGen.create();
+        }
+
+        public static FromUInt32Node getUncached() {
+            return ExternalFunctionNodesFactory.FromUInt32NodeGen.getUncached();
         }
     }
 
@@ -250,6 +268,11 @@ public abstract class ExternalFunctionNodes {
             assert CApiTransitions.isBackendPointerObject(value);
             return value;
         }
+
+        @NeverDefault
+        public static ToInt64Node create() {
+            return ExternalFunctionNodesFactory.ToInt64NodeGen.create();
+        }
     }
 
     @GenerateInline(false)
@@ -258,6 +281,11 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         static int doInt(int value) {
             return value;
+        }
+
+        @NeverDefault
+        public static ToInt32Node create() {
+            return ExternalFunctionNodesFactory.ToInt32NodeGen.create();
         }
     }
 
@@ -291,18 +319,28 @@ public abstract class ExternalFunctionNodes {
     public abstract static class ToPythonStringNode extends CExtToJavaNode {
         @Specialization
         static Object doIt(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached NativeToPythonNode nativeToPythonNode) {
             Object result = nativeToPythonNode.execute(object);
             if (result instanceof TruffleString) {
                 return result;
             } else if (result instanceof PString) {
-                return castToStringNode.executeCached(result);
+                return castToStringNode.execute(inliningTarget, result);
             } else if (result == PNone.NO_VALUE) {
                 return result;
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @NeverDefault
+        public static ToPythonStringNode create() {
+            return ExternalFunctionNodesFactory.ToPythonStringNodeGen.create();
+        }
+
+        public static ToPythonStringNode getUncached() {
+            return ExternalFunctionNodesFactory.ToPythonStringNodeGen.getUncached();
         }
     }
 

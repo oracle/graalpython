@@ -99,6 +99,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -705,6 +706,15 @@ public abstract class CApiTransitions {
             }
             return logResult(fromCharPointerNode.execute(profiledValue));
         }
+
+        @NeverDefault
+        public static CharPtrToPythonNode create() {
+            return CApiTransitionsFactory.CharPtrToPythonNodeGen.create();
+        }
+
+        public static CharPtrToPythonNode getUncached() {
+            return CApiTransitionsFactory.CharPtrToPythonNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
@@ -789,6 +799,15 @@ public abstract class CApiTransitions {
             assert wrapper != null;
             return wrapper;
         }
+
+        @NeverDefault
+        public static PythonToNativeNode create() {
+            return PythonToNativeNodeGen.create();
+        }
+
+        public static PythonToNativeNode getUncached() {
+            return PythonToNativeNodeGen.getUncached();
+        }
     }
 
     /**
@@ -836,6 +855,15 @@ public abstract class CApiTransitions {
         @Override
         protected final boolean needsTransfer() {
             return true;
+        }
+
+        @NeverDefault
+        public static PythonToNativeNewRefNode create() {
+            return PythonToNativeNewRefNodeGen.create();
+        }
+
+        public static PythonToNativeNewRefNode getUncached() {
+            return PythonToNativeNewRefNodeGen.getUncached();
         }
     }
 
@@ -991,6 +1019,15 @@ public abstract class CApiTransitions {
             }
             return result;
         }
+
+        @NeverDefault
+        public static NativeToPythonNode create() {
+            return NativeToPythonNodeGen.create();
+        }
+
+        public static NativeToPythonNode getUncached() {
+            return NativeToPythonNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
@@ -1011,6 +1048,15 @@ public abstract class CApiTransitions {
         @Override
         protected final boolean needsTransfer() {
             return true;
+        }
+
+        @NeverDefault
+        public static NativeToPythonStealingNode create() {
+            return NativeToPythonStealingNodeGen.create();
+        }
+
+        public static NativeToPythonStealingNode getUncached() {
+            return NativeToPythonStealingNodeGen.getUncached();
         }
     }
 
@@ -1217,6 +1263,15 @@ public abstract class CApiTransitions {
         @Specialization
         static PythonNativeWrapper doWrapper(PythonNativeWrapper wrapper, @SuppressWarnings("unused") boolean strict) {
             return wrapper;
+        }
+
+        @NeverDefault
+        public static ToPythonWrapperNode create() {
+            return CApiTransitionsFactory.ToPythonWrapperNodeGen.create();
+        }
+
+        public static ToPythonWrapperNode getUncached() {
+            return CApiTransitionsFactory.ToPythonWrapperNodeGen.getUncached();
         }
     }
 

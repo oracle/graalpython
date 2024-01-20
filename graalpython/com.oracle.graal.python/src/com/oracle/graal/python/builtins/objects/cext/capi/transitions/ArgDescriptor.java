@@ -41,42 +41,53 @@
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FinishArgNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromUInt32Node;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToInt32Node;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToInt64Node;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.ToPythonWrapperNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
-    PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, NativeToPythonNodeGen.getUncached(), PythonToNativeNewRefNodeGen::create, NativeToPythonStealingNodeGen::create, NativeToPythonStealingNodeGen.getUncached(), null),
-    PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, NativeToPythonNodeGen.getUncached(), null, null, null, null),
-    PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNodeGen::create, ToPythonStringNodeGen.getUncached(), null, null, null, null),
-    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNodeGen::create, ToPythonWrapperNodeGen.getUncached(), null, null, null, null),
+    PyObject(
+                    "POINTER",
+                    "J",
+                    "jlong",
+                    "long",
+                    PythonToNativeNode::create,
+                    NativeToPythonNode::create,
+                    NativeToPythonNode.getUncached(),
+                    PythonToNativeNewRefNode::create,
+                    NativeToPythonStealingNode::create,
+                    NativeToPythonStealingNode.getUncached(),
+                    null),
+    PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null, null),
+    PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null, null),
+    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::create, ToPythonWrapperNode.getUncached(), null, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null, null),
-    WrappedPointer("POINTER","J","jlong","long",null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached(),null),
-    TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, CharPtrToPythonNodeGen.getUncached(), null),
+    WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached(), null),
+    TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached(), null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null, null),
-    Int32("SINT32", "I", "jint", "int", ToInt32NodeGen::create, null, null, null),
-    UInt32("UINT32", "I", "jint", "int", ToInt32NodeGen::create, FromUInt32NodeGen::create, FromUInt32NodeGen.getUncached(), null),
-    Int64("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, null, null, null),
-    Long("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, FromLongNodeGen::create, FromLongNodeGen.getUncached(), null),
+    Int32("SINT32", "I", "jint", "int", ToInt32Node::create, null, null, null),
+    UInt32("UINT32", "I", "jint", "int", ToInt32Node::create, FromUInt32Node::create, FromUInt32Node.getUncached(), null),
+    Int64("SINT64", "J", "jlong", "long", ToInt64Node::create, null, null, null),
+    Long("SINT64", "J", "jlong", "long", ToInt64Node::create, FromLongNode::create, FromLongNode.getUncached(), null),
     Float32("FLOAT", "F", "jfloat", "float", null, null, null, null),
     Float64("DOUBLE", "D", "jdouble", "double", null, null, null, null),
     Void("VOID", "V", "void", "void", null, null, null, null),
