@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -558,7 +558,7 @@ def CPyExtType(name, code='', **kwargs):
 
     static PySequenceMethods {name}_sequence_methods = {{
         {sq_length},        /* sq_length */
-        0,                  /* sq_concat */
+        {sq_concat},        /* sq_concat */
         0,                  /* sq_repeat */
         {sq_item},          /* sq_item */
     }};

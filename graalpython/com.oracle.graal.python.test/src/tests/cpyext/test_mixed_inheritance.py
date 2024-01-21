@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ class TestMixedInheritanceDict:
                              PyObject* obj;
                              _AObject* typedObj;
                              obj = PyBaseObject_Type.tp_new(cls, a, b);
-                             
+
                              typedObj = ((_AObject*)obj);
                              typedObj->a = 1;
                              Py_INCREF(Py_None);
@@ -91,3 +91,105 @@ class TestMixedInheritanceDict:
             pass
         else:
             raise Exception("AttributeError not raised")
+
+    def test_mixed_inheritance_with_length(self):
+        TestMixedMpSqLen = CPyExtType("TestMixedMpSqLen",
+                                     """
+                                     Py_ssize_t test_mp_length(PyObject* a) {
+                                         return 11;
+                                     }
+                                     PyObject* callSqSize(PyObject* self, PyObject* arg) {
+                                         Py_ssize_t res = PySequence_Size(arg);
+                                         if (PyErr_Occurred()) {
+                                             return NULL;
+                                         }
+                                         return PyLong_FromSsize_t(res);
+                                     }
+                                     PyObject* callMpSize(PyObject* self, PyObject* arg) {
+                                         Py_ssize_t res = PyMapping_Size(arg);
+                                         if (PyErr_Occurred()) {
+                                             return NULL;
+                                         }
+                                         return PyLong_FromSsize_t(res);
+                                     }
+                                     """,
+                                     tp_methods='''
+                                     {"callSqSize", (PyCFunction)callSqSize, METH_O, ""},
+                                     {"callMpSize", (PyCFunction)callMpSize, METH_O, ""}
+                                     ''',
+                                     mp_length="&test_mp_length",
+        )
+        tester = TestMixedMpSqLen()
+        try:
+            tester.callSqSize(tester)
+        except TypeError as e:
+            assert "not a sequence" in repr(e)
+        else:
+            assert False
+
+        class B:
+            pass
+
+        class B2:
+            def __len__(self) -> int: ...
+
+        class C(TestMixedMpSqLen, B):
+            pass
+
+        assert tester.callSqSize(C()) == 11
+
+        class C(TestMixedMpSqLen, B2):
+            pass
+
+        assert tester.callSqSize(C()) == 11
+
+        class B3:
+            def __len__(self):
+                return 128
+
+        class C(B3, TestMixedMpSqLen):
+            pass
+
+        assert tester.callSqSize(C()) == 128
+        assert tester.callMpSize(C()) == 128
+
+    def test_mixed_inheritance_with_concat(self):
+        CTypeWithConcat = CPyExtType("CTypeWithConcat",
+                                     """
+                                     PyObject* test_concat_function(PyObject* a, PyObject* b) {
+                                         Py_INCREF(b);
+                                         return b;
+                                     }
+                                     Py_ssize_t test_sq_length_function(PyObject* a) {
+                                         return 11;
+                                     }
+                                     PyObject* callNbAdd(PyObject* self, PyObject* arg) {
+                                         if (Py_TYPE(self)->tp_as_number && Py_TYPE(self)->tp_as_number->nb_add) {
+                                             return Py_TYPE(self)->tp_as_number->nb_add(self, arg);
+                                         }
+                                         Py_RETURN_NONE;
+                                     }
+                                     PyObject* callSqConcat(PyObject* self, PyObject* arg) {
+                                         if (Py_TYPE(self)->tp_as_sequence && Py_TYPE(self)->tp_as_sequence->sq_concat) {
+                                             return Py_TYPE(self)->tp_as_sequence->sq_concat(self, arg);
+                                         }
+                                         Py_RETURN_NONE;
+                                     }
+                                     """,
+                                     tp_methods='''
+                                     {"callNbAdd", (PyCFunction)callNbAdd, METH_O, ""},
+                                     {"callSqConcat", (PyCFunction)callSqConcat, METH_O, ""}
+                                     ''',
+                                     sq_length="&test_sq_length_function",
+                                     sq_concat="&test_concat_function",
+        )
+
+        class M(CTypeWithConcat):
+            pass
+
+        native = CTypeWithConcat()
+        managed = M()
+        assert native.callNbAdd(native) is None
+        assert native.callSqConcat(native) is native
+        assert managed.callNbAdd(native) is None
+        assert managed.callSqConcat(native) is native
