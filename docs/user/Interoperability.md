@@ -269,11 +269,12 @@ An example in this sense are the `numpy` numeric types (e.g., `numpy.int32`) whi
 
 ### The API 
 
-| function                        | Description                                                                                                                                                                   |
-|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective Truffle Interop messages. Not All interop messages are supported. |
-| get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended Truffle Interop messages for the given type.                                                      |
-| @interop_behavior               | Class decorator, takes the receiver **type** as only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).            |
+| Function / Type                 | Description                                                                                                                                                                                     |
+|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective Truffle Interop messages. Not All interop messages are supported.                   |
+| get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended Truffle Interop messages for the given type.                                                                        |
+| @interop_behavior               | Class decorator, takes the receiver **type** as only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).                              |
+| UnsupportedMessage              | builtin exception to be raised by the user as dictated by the Truffle Interop Protocol. Typically, if a `is_X` method returns False the corresponding `as_X` method raises `UnsupportedMessage` |
 
 #### Supported messages 
 
