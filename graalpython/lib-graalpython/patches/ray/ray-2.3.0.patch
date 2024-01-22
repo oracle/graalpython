@@ -26,6 +26,16 @@ index 63f67a9..e870de8 100644
      )
  
      auto_http_archive(
+diff --git a/dashboard/optional_deps.py b/dashboard/optional_deps.py
+index cd792190df..e97df51df0 100644
+--- a/dashboard/optional_deps.py
++++ b/dashboard/optional_deps.py
+@@ -15,4 +15,4 @@ import aiohttp_cors  # noqa: F401
+ from aiohttp import hdrs  # noqa: F401
+ from aiohttp.typedefs import PathLike  # noqa: F401
+ from aiohttp.web import RouteDef  # noqa: F401
+-import pydantic  # noqa: F401
++# import pydantic  # noqa: F401
 diff --git a/pyproject.toml b/pyproject.toml
 new file mode 100644
 index 0000000..de2b7ad

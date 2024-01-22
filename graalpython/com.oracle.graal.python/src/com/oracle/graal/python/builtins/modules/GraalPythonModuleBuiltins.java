@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,12 +43,14 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
@@ -746,6 +748,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         TruffleString posixModuleBackend(
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.getBackend(getPosixSupport());
+        }
+    }
+
+    @Builtin(name = "sha3_module_backend", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class Sha3ModuleBackendNode extends PythonBuiltinNode {
+        @Specialization
+        TruffleString sha3ModuleBackend() {
+            return getContext().lookupBuiltinModule(T_SHA3) == null ? T_NATIVE : T_JAVA;
         }
     }
 

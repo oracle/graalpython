@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -239,6 +239,9 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
+
+    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the Sha3 module.", usageSyntax = "java|native", stability = OptionStability.STABLE) //
+    public static final OptionKey<TruffleString> Sha3ModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);

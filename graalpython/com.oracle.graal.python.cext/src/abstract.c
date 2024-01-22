@@ -503,3 +503,20 @@ PyObject* _PySequence_ITEM(PyObject* obj, Py_ssize_t index) {
 	return methods->sq_item(obj, index);
 }
 
+PySendResult
+PyIter_Send(PyObject *iter, PyObject *arg, PyObject **result)
+{
+    assert(arg != NULL);
+    assert(result != NULL);
+    if (Py_TYPE(iter)->tp_as_async && Py_TYPE(iter)->tp_as_async->am_send) {
+        PySendResult res = Py_TYPE(iter)->tp_as_async->am_send(iter, arg, result);
+        // assert(_Py_CheckSlotResult(iter, "am_send", res != PYGEN_ERROR));
+        return res;
+    }
+    *result = GraalPyTruffleIter_Send(iter, arg);
+    if (*result != NULL) {
+        return PYGEN_NEXT;
+    } else {
+        return PYGEN_RETURN;
+    }
+}

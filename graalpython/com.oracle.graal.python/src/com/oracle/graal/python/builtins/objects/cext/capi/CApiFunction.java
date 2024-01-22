@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -694,6 +694,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_dg_infinity", ret = Double, args = {Int}, call = CImpl)
     @CApiBuiltin(name = "_Py_dg_stdnan", ret = Double, args = {Int}, call = CImpl)
     @CApiBuiltin(name = "_Py_dg_strtod", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = CImpl)
+    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
 
     /*
      * Functions that are not implemented at the moment:
@@ -859,7 +861,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_Rshift", ret = PyObject, args = {PyObject, SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Size_t_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedInt_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedLongLong_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedShort_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyMem_GetCurrentAllocatorName", ret = ConstCharPtrAsTruffleString, args = {}, call = NotImplemented)
@@ -1170,7 +1171,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_New", ret = PyInterpreterState, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_Next", ret = PyInterpreterState, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_ThreadHead", ret = PyThreadState, args = {PyInterpreterState}, call = NotImplemented)
-    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_InitAddressRange", ret = Void, args = {ConstCharPtr, Py_ssize_t, Int, PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_NextAddressRange", ret = Int, args = {PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_PreviousAddressRange", ret = Int, args = {PyCodeAddressRange}, call = NotImplemented)

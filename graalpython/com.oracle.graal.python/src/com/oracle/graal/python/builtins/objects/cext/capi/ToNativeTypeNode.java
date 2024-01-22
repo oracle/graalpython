@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -102,6 +103,20 @@ public abstract class ToNativeTypeNode {
 
     private static Object getSlot(PythonManagedClass obj, SlotMethodDef slot) {
         return LookupNativeSlotNode.executeUncached(obj, slot);
+    }
+
+    private static boolean hasAsyncMethods(PythonManagedClass obj) {
+        return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) > 0;
+    }
+
+    private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
+        Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyAsyncMethods);
+        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_await, getSlot(obj, SlotMethodDef.AM_AWAIT));
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_aiter, getSlot(obj, SlotMethodDef.AM_AITER));
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_anext, getSlot(obj, SlotMethodDef.AM_ANEXT));
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_send, nullValue /*- getValue(obj, SlotMethodDef.AM_SEND) */);
+        return mem;
     }
 
     private static Object allocatePyMappingMethods(PythonManagedClass obj) {
@@ -248,7 +263,7 @@ public abstract class ToNativeTypeNode {
         writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, TypeBuiltins.TYPE_VECTORCALL_OFFSET));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_setattr, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, nullValue);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number,
                         IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue));

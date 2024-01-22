@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,13 +61,16 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuat
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -99,6 +102,7 @@ public final class PythonCextStructSeqBuiltins {
         static int doGeneric(Object klass, Object fields, int nInSequence,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CStructAccess.ReadPointerNode readNode,
+                        @Cached CStructAccess.WriteLongNode setNativeFlags,
                         @Cached FromCharPointerNode fromCharPtr,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
 
@@ -122,6 +126,9 @@ public final class PythonCextStructSeqBuiltins {
             TruffleString[] fieldNames = names.toArray(TruffleString[]::new);
             TruffleString[] fieldDocs = docs.toArray(TruffleString[]::new);
 
+            if (klass instanceof PythonAbstractNativeObject c) {
+                setNativeFlags.writeToObject(c, CFields.PyTypeObject__tp_flags, TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
+            }
             clearNewNode.execute(klass, T___NEW__, PNone.NO_VALUE);
             StructSequence.Descriptor d = new StructSequence.Descriptor(null, nInSequence, fieldNames, fieldDocs);
             StructSequence.initType(PythonLanguage.get(readNode), klass, d);

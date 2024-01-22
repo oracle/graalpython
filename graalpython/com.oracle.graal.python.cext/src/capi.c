@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -363,6 +363,16 @@ PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
 		COMPUTE_FLAGS(mp_length, MP_LENGTH)
 		COMPUTE_FLAGS(mp_subscript, MP_SUBSCRIPT)
 		COMPUTE_FLAGS(mp_ass_subscript, MP_ASS_SUBSCRIPT)
+#undef COMPUTE_FLAGS
+    }
+
+    PyAsyncMethods *async = cls->tp_as_async;
+    if (async != NULL) {
+#define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((async->NAME != NULL) * BIT_IDX);
+		COMPUTE_FLAGS(am_await, AM_AWAIT)
+		COMPUTE_FLAGS(am_aiter, AM_AITER)
+		COMPUTE_FLAGS(am_anext, AM_ANEXT)
+		COMPUTE_FLAGS(am_send, AM_SEND)
 #undef COMPUTE_FLAGS
     }
     return flags;
@@ -1820,10 +1830,6 @@ PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
     return GraalPyIter_Next(a);
 }
-#undef PyIter_Send
-PyAPI_FUNC(PySendResult) PyIter_Send(PyObject* a, PyObject* b, PyObject** c) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyLineTable_InitAddressRange
 PyAPI_FUNC(void) PyLineTable_InitAddressRange(const char* a, Py_ssize_t b, int c, PyCodeAddressRange* d) {
     FUNC_NOT_IMPLEMENTED
@@ -2775,6 +2781,10 @@ PyAPI_FUNC(int) PyTruffleGILState_Ensure() {
 #undef PyTruffleGILState_Release
 PyAPI_FUNC(void) PyTruffleGILState_Release() {
     GraalPyTruffleGILState_Release();
+}
+#undef PyTruffleIter_Send
+PyAPI_FUNC(PyObject*) PyTruffleIter_Send(PyObject* a, PyObject* b) {
+    return GraalPyTruffleIter_Send(a, b);
 }
 #undef PyTruffle_Debug
 PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
@@ -3930,10 +3940,6 @@ PyAPI_FUNC(int) _PyLong_UnsignedInt_Converter(PyObject* a, void* b) {
 }
 #undef _PyLong_UnsignedLongLong_Converter
 PyAPI_FUNC(int) _PyLong_UnsignedLongLong_Converter(PyObject* a, void* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyLong_UnsignedLong_Converter
-PyAPI_FUNC(int) _PyLong_UnsignedLong_Converter(PyObject* a, void* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyLong_UnsignedShort_Converter

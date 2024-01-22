@@ -24,6 +24,14 @@ from test.support import threading_helper
 from test.support import warnings_helper
 from http.client import HTTPException
 
+try:
+    __graalpython__.posix_module_backend()
+except:
+    class GP:
+        def posix_module_backend(self):
+            return 'cpython'
+    __graalpython__ = GP()
+
 # Were we compiled --with-pydebug or with #define Py_DEBUG?
 COMPILED_WITH_PYDEBUG = hasattr(sys, 'gettotalrefcount')
 
@@ -452,6 +460,8 @@ class HashLibTestCase(unittest.TestCase):
             self.assertEqual(m._rate_bits, rate)
             self.assertEqual(m._suffix, suffix)
 
+    @unittest.skipUnless(__graalpython__.sha3_module_backend() != 'java',
+                         'The java backend does not support _capacity_bits.')
     @requires_sha3
     def test_extra_sha3(self):
         self.check_sha3('sha3_224', 448, 1152, b'\x06')

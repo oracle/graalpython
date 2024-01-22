@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -323,6 +323,7 @@ typedef struct {
     BUILTIN(PyTruffleGILState_Ensure, int) \
     BUILTIN(PyTruffleGILState_Release, void) \
     BUILTIN(PyTruffleHash_InitSecret, void, int8_t*) \
+    BUILTIN(PyTruffleIter_Send, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
     BUILTIN(PyTruffleLong_FromString, PyObject*, PyObject*, int, int) \
     BUILTIN(PyTruffleLong_One, PyObject*) \
@@ -670,6 +671,10 @@ typedef struct {
 #define MP_LENGTH 1125899906842624
 #define MP_SUBSCRIPT 2251799813685248
 #define MP_ASS_SUBSCRIPT 4503599627370496
+#define AM_AWAIT 18014398509481984
+#define AM_AITER 36028797018963968
+#define AM_ANEXT 72057594037927936
+#define AM_SEND 144115188075855872
 // {{end CAPI_BUILTINS}}
 
 
@@ -903,6 +908,7 @@ PY_TRUFFLE_TYPE(PyCStructType_Type, 	"PyCStructType",			&PyType_Type, sizeof(PyO
 PY_TRUFFLE_TYPE(UnionType_Type, 		"_ctypes.UnionType",		&PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCPointerType_Type,	"PyCPointerType", 		    &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCArrayType_Type,		"PyCArrayType", 			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCoro_Type, 			"coroutine", 				&PyType_Type, sizeof(PyCoroObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAIterWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenASend_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenAThrow_Type) \
@@ -927,7 +933,6 @@ PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyCmpWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContext_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContextToken_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContextVar_Type) \
-PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyCoro_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictItems_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictIterItem_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictIterKey_Type) \

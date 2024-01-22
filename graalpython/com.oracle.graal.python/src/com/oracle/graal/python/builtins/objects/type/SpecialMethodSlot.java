@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITER;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_BOOL;
@@ -220,13 +223,13 @@ public enum SpecialMethodSlot {
 
     Iter(T___ITER__),
     Next(T___NEXT__),
-    Await(T___AWAIT__),
+    Await(T___AWAIT__, AM_AWAIT),
 
     AEnter(T___AENTER__),
     AExit(T___AEXIT__),
 
-    AIter(T___AITER__),
-    ANext(T___ANEXT__),
+    AIter(T___AITER__, AM_AITER),
+    ANext(T___ANEXT__, AM_ANEXT),
 
     New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
     Init(T___INIT__, NO_BUILTIN_DESCRIPTORS),
