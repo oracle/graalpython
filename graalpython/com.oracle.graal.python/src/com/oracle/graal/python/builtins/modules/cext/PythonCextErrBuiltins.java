@@ -165,16 +165,36 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    /*
-     * TODO: this ignores the current exception, behaving exactly like PyErr_Restore
-     */
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class _PyErr_ChainExceptions extends CApiTernaryBuiltinNode {
         @Specialization
-        Object run(Object typ, Object val, Object tb,
-                        @Cached PyErr_Restore restore) {
-            restore.execute(typ, val, tb);
-            return PNone.NONE;
+        static Object run(Object typ, Object val, Object tb,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached PrepareExceptionNode prepareExceptionNode,
+                        @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
+                        @Cached ExceptionNodes.SetContextNode setContextNode) {
+            if (typ != PNone.NO_VALUE) {
+                PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
+                Object exception;
+                try {
+                    exception = prepareExceptionNode.execute(null, typ, val);
+                } catch (PException e) {
+                    threadState.setCurrentException(e);
+                    return PNone.NO_VALUE;
+                }
+                if (threadState.getCurrentException() != null) {
+                    if (tb != PNone.NO_VALUE) {
+                        setTracebackNode.execute(inliningTarget, exception, tb);
+                    }
+                    Object currentException = threadState.getCurrentException().getEscapedException();
+                    setContextNode.execute(inliningTarget, currentException, exception);
+                } else {
+                    PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget)));
+                    threadState.setCurrentException(e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
+                }
+            }
+            return PNone.NO_VALUE;
         }
     }
 
@@ -194,7 +214,10 @@ public final class PythonCextErrBuiltins {
                 result = getNativeNull();
             } else {
                 Object exception = currentException.getEscapedException();
-                Object traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
+                Object traceback = null;
+                if (threadState.getCurrentTraceback() != null) {
+                    traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
+                }
                 if (traceback == null) {
                     traceback = getNativeNull();
                 }
@@ -471,36 +494,22 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
     abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
         @Specialization
-        Object write(Object msg, Object obj,
+        static Object write(Object msg, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyTruffleErr_Fetch fetchNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached WriteUnraisableNode writeUnraisableNode,
-                        @Cached InlinedBranchProfile noValProfile) {
-            Object val = null;
-            Object tb = null;
-            Object fetched = fetchNode.execute(null);
-            if (fetched != getNativeNull()) {
-                PTuple fetchedTuple = (PTuple) fetched;
-                val = getItemNode.execute(null, fetchedTuple, 1);
-                tb = getItemNode.execute(null, fetchedTuple, 2);
-            }
-            if (!(val instanceof PBaseException)) {
-                noValProfile.enter(inliningTarget);
+                        @Cached WriteUnraisableNode writeUnraisableNode) {
+            PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
+            if (threadState.getCurrentException() == null) {
                 // This means an invalid call, but this function is not supposed to raise exceptions
                 return PNone.NONE;
             }
-            if (tb == getNativeNull()) {
-                tb = PNone.NONE;
-            }
+            threadState.syncTracebackToException();
+            Object exc = threadState.getCurrentException().getEscapedException();
             TruffleString m = null;
             if (msg instanceof TruffleString) {
                 m = (TruffleString) msg;
             }
-            writeAttrNode.execute(val, T___TRACEBACK__, tb);
-            writeUnraisableNode.execute((PBaseException) val, m, (obj instanceof PNone) ? PNone.NONE : obj);
+            writeUnraisableNode.execute(exc, m, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
             getThreadStateNode.execute(inliningTarget).setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }

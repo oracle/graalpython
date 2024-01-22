@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -141,6 +142,8 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNod
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -388,7 +391,12 @@ public final class PythonContext extends Python3Core {
 
         public void setCurrentException(PException currentException) {
             this.currentException = currentException;
-            this.currentTraceback = currentException.getEscapedException() instanceof PBaseException pythonException ? pythonException.getTraceback() : null;
+            if (currentException.getEscapedException() instanceof PBaseException pythonException)
+                this.currentTraceback = pythonException.getTraceback();
+            else {
+                Object tb = ExceptionNodes.GetTracebackNode.executeUncached(currentException.getEscapedException());
+                this.currentTraceback = tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null;
+            }
         }
 
         public void setCurrentException(PException currentException, LazyTraceback currentTraceback) {
@@ -397,12 +405,19 @@ public final class PythonContext extends Python3Core {
         }
 
         public PException reraiseCurrentException() {
-            if (currentException.getUnreifiedException() instanceof PBaseException pythonException) {
-                pythonException.setTraceback(currentTraceback);
-            }
+            syncTracebackToException();
             PException exception = currentException.getExceptionForReraise(false);
             clearCurrentException();
             throw exception;
+        }
+
+        public void syncTracebackToException() {
+            if (currentException.getUnreifiedException() instanceof PBaseException pythonException) {
+                pythonException.setTraceback(currentTraceback);
+            } else {
+                PTraceback materialized = MaterializeLazyTracebackNode.executeUncached(currentTraceback);
+                ExceptionNodes.SetTracebackNode.executeUncached(currentException.getUnreifiedException(), materialized != null ? materialized : PNone.NONE);
+            }
         }
 
         public LazyTraceback getCurrentTraceback() {
