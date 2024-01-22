@@ -666,27 +666,27 @@ static void
 _PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
                          PyObject *kwnames);
 
-inline int is_single_arg(const char* fmt) {
-	if (fmt[0] == 0) {
-		return 0;
-	}
-	if (fmt[1] == 0) {
-		return 1;
-	}
-	if (fmt[2] != 0) {
-		return 0;
-	}
-	switch (fmt[1]) {
-		case '#':
-		case '&':
-		case ',':
-		case ':':
-		case ' ':
-		case '\t':
-			return 1;
-		default:
-			return 0;
-	}
+static inline int is_single_arg(const char *fmt) {
+    if (fmt[0] == 0) {
+        return 0;
+    }
+    if (fmt[1] == 0) {
+        return 1;
+    }
+    if (fmt[2] != 0) {
+        return 0;
+    }
+    switch (fmt[1]) {
+    case '#':
+    case '&':
+    case ',':
+    case ':':
+    case ' ':
+    case '\t':
+        return 1;
+    default:
+        return 0;
+    }
 }
 
 PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
