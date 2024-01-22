@@ -1700,7 +1700,7 @@ class ArchiveProject(mx.ArchivableProject):
             return results
 
 def _prepare_jbang():
-    JBANG_URL = "https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.1145.0.zip"
+    JBANG_URL = "https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.114.0.zip"
     jbang_urls = (mx_urlrewrites.rewriteurl(JBANG_URL), JBANG_URL)
     
     oldpwd = os.getcwd()
