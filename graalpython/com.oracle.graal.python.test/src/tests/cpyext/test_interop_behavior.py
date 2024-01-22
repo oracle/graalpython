@@ -127,14 +127,14 @@ if sys.implementation.name == "graalpy":
                 assert False
 
         def test_native_sequence_interop(self):
-            MyNativeType = CPyExtType("MyNativeType",
+            MySequenceNativeType = CPyExtType("MySequenceNativeType",
                                 """
                                 static PyObject* mymativetype_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
                                      PyObject* obj;
-                                     MyNativeTypeObject* typedObj;
+                                     MySequenceNativeTypeObject* typedObj;
                                      obj = PyBaseObject_Type.tp_new(cls, a, b);
                                      
-                                     typedObj = ((MyNativeTypeObject*)obj);
+                                     typedObj = ((MySequenceNativeTypeObject*)obj);
                                      // data = [0,1,2,3,4]
                                      typedObj->data = PyList_New(5);
                                      PyList_SetItem(typedObj->data, 0, PyLong_FromLong(0));
@@ -147,26 +147,26 @@ if sys.implementation.name == "graalpy":
                                 }
                             
                                 static Py_ssize_t mymativetype_sq_length(PyObject* obj) {
-                                    MyNativeTypeObject* typedObj;
-                                    typedObj = ((MyNativeTypeObject*)obj);
+                                    MySequenceNativeTypeObject* typedObj;
+                                    typedObj = ((MySequenceNativeTypeObject*)obj);
                                     
                                     return PyList_Size(typedObj->data);
                                 }
                                 
                                 static PyObject* get_data(PyObject* obj) {
-                                    return ((MyNativeTypeObject*)obj)->data;
+                                    return ((MySequenceNativeTypeObject*)obj)->data;
                                 }
                                 
                                 static PyObject* mymativetype_sq_item(PyObject *obj, Py_ssize_t i) {
-                                    MyNativeTypeObject* typedObj;
-                                    typedObj = ((MyNativeTypeObject*)obj);
+                                    MySequenceNativeTypeObject* typedObj;
+                                    typedObj = ((MySequenceNativeTypeObject*)obj);
                                     
                                     return PyList_GetItem(typedObj->data, i);
                                 }
                                 
                                 static int mymativetype_sq_ass_item(PyObject *obj, Py_ssize_t i, PyObject *v) {
-                                    MyNativeTypeObject* typedObj;
-                                    typedObj = ((MyNativeTypeObject*)obj);
+                                    MySequenceNativeTypeObject* typedObj;
+                                    typedObj = ((MySequenceNativeTypeObject*)obj);
                                     
                                     Py_ssize_t len = PyList_Size(typedObj->data);
                                     if (i == len) {
@@ -187,7 +187,7 @@ if sys.implementation.name == "graalpy":
                                 sq_item="mymativetype_sq_item",
                                 tp_methods='{"get_data", (PyCFunction)get_data, METH_NOARGS, ""}')
 
-            t = MyNativeType()
+            t = MySequenceNativeType()
             import polyglot
 
             assert polyglot.__has_size__(t)
