@@ -112,9 +112,9 @@ public abstract class ToNativeTypeNode {
     private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyAsyncMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_await, getValue(obj, SlotMethodDef.AM_AWAIT));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_aiter, getValue(obj, SlotMethodDef.AM_AITER));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_anext, getValue(obj, SlotMethodDef.AM_ANEXT));
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_await, getSlot(obj, SlotMethodDef.AM_AWAIT));
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_aiter, getSlot(obj, SlotMethodDef.AM_AITER));
+        writePointerNode.write(mem, CFields.PyAsyncMethods__am_anext, getSlot(obj, SlotMethodDef.AM_ANEXT));
         writePointerNode.write(mem, CFields.PyAsyncMethods__am_send, nullValue /*- getValue(obj, SlotMethodDef.AM_SEND) */);
         return mem;
     }
