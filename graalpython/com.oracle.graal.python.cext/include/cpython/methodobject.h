@@ -69,3 +69,11 @@ static inline PyTypeObject* PyCFunction_GET_CLASS(PyObject *func_obj) {
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyCFunction_GET_CLASS(func) PyCFunction_GET_CLASS(_PyObject_CAST(func))
 #endif
+
+/*
+ * XXX These functions are GraalPy-only. We need them to replace field access in our patches.
+ * Currently used by (at least) cffi patch.
+ */
+PyAPI_FUNC(PyObject*) _PyCFunction_GetModule(PyObject* a);
+PyAPI_FUNC(PyMethodDef*) _PyCFunction_GetMethodDef(PyObject* a);
+
