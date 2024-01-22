@@ -61,7 +61,7 @@ public abstract class GraalHPyCAccess {
         /**
          * Use this method to compute the address of a struct field where the struct is one element
          * in an array. For example:
-         * 
+         *
          * <pre>
          *     HPyType_SpecParam params[] = {
          *         {HPyType_SpecParam_Base, ctx->h_LongType},
@@ -69,20 +69,19 @@ public abstract class GraalHPyCAccess {
          *         {0}
          *     }
          * </pre>
-         * 
+         *
          * Assume you want to read the field {@code object} (the second field of type {@code HPy})
          * of the second array element. The address is then computed by:
          *
          * <pre>
          *     long arrElemOffset = getElementPtr(1, GraalHPyCStruct.HPyType_SpecParam.getSize(), GraalHPyCField.HPyType_SpecParam_object)
          * </pre>
-         * 
+         *
          * You may later read the value using {@code ReadHPyNode.execute(ctx, base, arrElemOffset)}.
          *
          * @param idx Index of the element (e.g. a struct type).
          * @param elementSize Size of each element.
          * @param field Field of the element (e.g. a struct field).
-         * @return
          */
         public static long getElementPtr(GraalHPyContext ctx, long idx, long elementSize, GraalHPyCField field) {
             return idx * elementSize + ctx.getCFieldOffset(field);
@@ -176,6 +175,7 @@ public abstract class GraalHPyCAccess {
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return true;
         }
@@ -229,6 +229,7 @@ public abstract class GraalHPyCAccess {
 
         protected abstract byte[] execute(GraalHPyContext ctx, Object pointer, long offset, long n);
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return false;
         }
@@ -247,6 +248,7 @@ public abstract class GraalHPyCAccess {
 
         protected abstract Object execute(GraalHPyContext ctx, Object pointer, long offset, boolean close);
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return false;
         }
@@ -290,6 +292,7 @@ public abstract class GraalHPyCAccess {
 
         protected abstract Object execute(GraalHPyContext ctx, PythonObject owner, Object pointer, long offset, boolean close);
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return false;
         }
@@ -321,6 +324,7 @@ public abstract class GraalHPyCAccess {
 
         protected abstract Object[] execute(GraalHPyContext ctx, Object pointer, long offset, long n);
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return false;
         }
@@ -350,6 +354,7 @@ public abstract class GraalHPyCAccess {
             return execute(ctx, pointer, ctx.getCFieldOffset(field)) & 0xFFFFFFFFL;
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc.jniType == int.class;
         }
@@ -382,6 +387,7 @@ public abstract class GraalHPyCAccess {
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc.jniType == long.class;
         }
@@ -409,6 +415,7 @@ public abstract class GraalHPyCAccess {
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc.jniType == double.class;
         }
@@ -437,6 +444,7 @@ public abstract class GraalHPyCAccess {
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc.jniType == double.class;
         }
@@ -465,6 +473,7 @@ public abstract class GraalHPyCAccess {
             return execute(ctx, pointer, ctx.getCFieldOffset(field));
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return "POINTER".equals(desc.nfiType);
         }
@@ -501,6 +510,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, pointer, element * Double.BYTES, value);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc == HPyContextSignatureType.CDouble;
         }
@@ -529,6 +539,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, pointer, 0, value);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc.jniType == int.class;
         }
@@ -561,6 +572,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, pointer, 0, value);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc.jniType == long.class;
         }
@@ -581,6 +593,7 @@ public abstract class GraalHPyCAccess {
 
         protected abstract void execute(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType type, long value);
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return true;
         }
@@ -609,6 +622,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, pointer, 0, value);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc == HPyContextSignatureType.HPy;
         }
@@ -637,6 +651,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, owner, pointer, 0, value);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc == HPyContextSignatureType.HPyField;
         }
@@ -665,6 +680,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, basePointer, 0, valuePointer);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return "POINTER".equals(desc.nfiType);
         }
@@ -693,6 +709,7 @@ public abstract class GraalHPyCAccess {
             execute(ctx, basePointer, 0, value);
         }
 
+        @Override
         public final boolean accepts(HPyContextSignatureType desc) {
             return desc == HPyContextSignatureType.Size_t || desc == HPyContextSignatureType.HPy_ssize_t;
         }

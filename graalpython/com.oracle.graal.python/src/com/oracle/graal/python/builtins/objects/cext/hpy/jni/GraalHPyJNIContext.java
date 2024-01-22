@@ -351,10 +351,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, moduleDefPtr);
     }
 
+    @Override
     protected HPyUpcall[] getUpcalls() {
         return HPyJNIUpcall.VALUES;
     }
 
+    @Override
     protected int[] getUpcallCounts() {
         return counts;
     }

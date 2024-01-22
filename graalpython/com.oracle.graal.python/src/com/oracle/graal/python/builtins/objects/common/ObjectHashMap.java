@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -335,6 +336,89 @@ public final class ObjectHashMap {
 
     public int size() {
         return size;
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PopNode extends Node {
+        public abstract Object[] execute(Node inliningTarget, ObjectHashMap map);
+
+        @Specialization
+        public static Object[] doPopWithRestart(Node inliningTarget, ObjectHashMap map,
+                        @Cached InlinedConditionProfile emptyMapProfile,
+                        @Cached InlinedCountingConditionProfile hasValueProfile,
+                        @Cached InlinedCountingConditionProfile hasCollisionProfile,
+                        @Cached InlinedBranchProfile lookupRestart) {
+            while (true) {
+                try {
+                    return doPop(inliningTarget, map, map.indices, emptyMapProfile, hasValueProfile, hasCollisionProfile);
+                } catch (RestartLookupException ignore) {
+                    lookupRestart.enter(inliningTarget);
+                }
+            }
+        }
+
+        private static boolean isIndex(int indexInIndices, int indexToFind) {
+            return indexInIndices != DUMMY_INDEX && indexInIndices != EMPTY_INDEX && indexToFind == unwrapIndex(indexInIndices);
+        }
+
+        private static Object[] doPop(Node inliningTarget, ObjectHashMap map, int[] indices,
+                        @Cached InlinedConditionProfile emptyMapProfile,
+                        @Cached InlinedCountingConditionProfile hasValueProfile,
+                        @Cached InlinedCountingConditionProfile hasCollisionProfile) throws RestartLookupException {
+            if (emptyMapProfile.profile(inliningTarget, map.size() == 0)) {
+                return null;
+            }
+            Object[] localKeysAndValues = map.keysAndValues;
+            int usedHashes = map.usedHashes;
+            for (int i = usedHashes - 1; i >= 0; i--) {
+                if (indices != map.indices) {
+                    // restart, can happen after Truffle safepoint on backedge
+                    throw RestartLookupException.INSTANCE;
+                }
+                Object value = getValue(i, localKeysAndValues);
+                if (hasValueProfile.profile(inliningTarget, value != null)) {
+                    // We can remove the item from the compact arrays
+                    var result = new Object[]{map.getKey(i), value};
+                    // We need to find the slot in the sparse indices array
+                    long hash = map.hashes[i];
+                    int compactIndex = getIndex(indices.length, hash);
+                    int index = indices[compactIndex];
+                    if (hasCollisionProfile.profile(inliningTarget, isIndex(index, i))) {
+                        indices[compactIndex] = DUMMY_INDEX;
+                    } else {
+                        removeBucketWithIndex(map, indices, hash, compactIndex, i);
+                    }
+                    // Only remove the slot now, removeBucketWithIndex can restart the search
+                    map.setValue(i, null);
+                    map.setKey(i, null);
+                    map.size--;
+                    return result;
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private static void removeBucketWithIndex(ObjectHashMap map, int[] indices, long hash, int initialCompactIndex, int indexToFind) throws RestartLookupException {
+            int searchLimit = getBucketsCount(map.indices) + PERTURB_SHIFTS_COUT;
+            long perturb = hash;
+            int compactIndex = initialCompactIndex;
+            for (int i = 0; i < searchLimit; i++) {
+                if (indices != map.indices) {
+                    // guards against things happening in the safepoint on the backedge
+                    throw RestartLookupException.INSTANCE;
+                }
+                perturb >>>= PERTURB_SHIFT;
+                compactIndex = nextIndex(indices.length, compactIndex, perturb);
+                int index = indices[compactIndex];
+                if (isIndex(index, indexToFind)) {
+                    indices[compactIndex] = DUMMY_INDEX;
+                    return;
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @GenerateUncached

@@ -273,18 +273,6 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class WrappedPointerToPythonNode extends CExtToJavaNode {
-
-        @Override
-        public Object execute(Object object) {
-            if (object instanceof PythonNativeWrapper) {
-                return ((PythonNativeWrapper) object).getDelegate();
-            } else {
-                return object;
-            }
-        }
-    }
-
     public static final class ToPythonStringNode extends CExtToJavaNode {
         @Child private CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.create();
         @Child private NativeToPythonNode nativeToPythonNode = NativeToPythonNodeGen.create();

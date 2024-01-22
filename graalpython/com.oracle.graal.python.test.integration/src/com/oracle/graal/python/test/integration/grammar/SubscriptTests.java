@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,67 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.compiler;
+package com.oracle.graal.python.test.integration.grammar;
 
-import java.util.List;
+import static com.oracle.graal.python.test.integration.PythonTests.assertLastLineErrorContains;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import org.junit.Test;
 
-final class Instruction {
+public class SubscriptTests {
 
-    final OpCodes opcode;
-    int arg;
-    final byte[] followingArgs;
-    final Block target;
-    final SourceRange location;
-
-    /**
-     * Bytecode index of the start of the instruction in the instruction stream including possible
-     * extended args
-     */
-    public int bci = -1;
-    public byte quickenOutput;
-    public List<Instruction> quickeningGeneralizeList;
-
-    Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {
-        this.opcode = opcode;
-        this.arg = arg;
-        this.followingArgs = followingArgs;
-        this.target = target;
-        this.location = location;
-        assert opcode.argLength < 2 || followingArgs.length == opcode.argLength - 1;
-    }
-
-    @Override
-    public String toString() {
-        if (target != null) {
-            return String.format("%s %s", opcode, target);
-        }
-        if (opcode.hasArg()) {
-            return String.format("%s %s", opcode, arg);
-        }
-        return opcode.toString();
-    }
-
-    public int bodyBci() {
-        assert bci != -1;
-        // 2 bytes for EXTENDED_ARG opcode and the arg itself
-        return bci + 2 * extensions();
-    }
-
-    public int extensions() {
-        if (arg <= 0xFF) {
-            return 0;
-        } else if (arg <= 0xFFFF) {
-            return 1;
-        } else if (arg <= 0xFFFFFF) {
-            return 2;
-        } else {
-            return 3;
-        }
-    }
-
-    public int extendedLength() {
-        return opcode.length() + extensions() * 2;
+    @Test
+    // Regression test for GR-51403
+    public void testNoQuickeningForCollection() {
+        String source = "1[1]\n";
+        assertLastLineErrorContains("TypeError: 'int' object is not subscriptable", source);
     }
 }

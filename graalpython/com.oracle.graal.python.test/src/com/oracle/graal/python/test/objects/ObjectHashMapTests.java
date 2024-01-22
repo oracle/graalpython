@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PopNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool.Comparison;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
 public class ObjectHashMapTests {
@@ -206,6 +208,24 @@ public class ObjectHashMapTests {
         putValues(map, expected, rand, 300);
         removeValues(map, expected, rand, 10);
         overrideValues(map, expected, rand, 10);
+
+        putValues(map, expected, rand, 50);
+        popValues(map, expected, 30);
+        putValues(map, expected, rand, 20);
+        popValues(map, expected, 40);
+    }
+
+    private static void popValues(ObjectHashMap map, LinkedHashMap<Long, Object> expected, int count) {
+        var keys = expected.keySet().stream().toList().reversed().stream().limit(count).toArray(Long[]::new);
+        for (int i = 0; i < keys.length; i++) {
+            Long key = keys[i];
+            Object[] popped = PopNode.doPopWithRestart(null, map, InlinedConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(),
+                            InlinedBranchProfile.getUncached());
+            Assert.assertEquals(Integer.toString(i), key, popped[0]);
+            Assert.assertEquals(Integer.toString(i), expected.get(key), popped[1]);
+            expected.remove(key);
+            assertEqual(i, expected, map);
+        }
     }
 
     private static void removeAll(ObjectHashMap map) {

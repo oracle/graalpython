@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -618,28 +618,28 @@ def test_bin_ops_side_effects():
     #
     # TODO: intersection, intersection_update
 
-# GR-41996
-# def test_pop_side_effects():
-#     class TrackingKey:
-#         def __init__(self):
-#             self.hash_calls = 0
-#             self.eq_calls = 0
-#         def __hash__(self):
-#             self.hash_calls += 1
-#             return 42
-#         def __eq__(self, other):
-#             self.eq_calls += 1
-#             return True
-#
-#     key = TrackingKey()
-#     s = {key, 'other_key'}
-#     assert key.hash_calls == 1
-#     assert key.eq_calls == 0, "first"
-#
-#     val = s.pop()
-#     assert key.hash_calls == 1
-#     assert key.eq_calls == 0
-#     assert val == key
+
+def test_pop_side_effects():
+    class TrackingKey:
+        def __init__(self):
+            self.hash_calls = 0
+            self.eq_calls = 0
+        def __hash__(self):
+            self.hash_calls += 1
+            return 42
+        def __eq__(self, other):
+            self.eq_calls += 1
+            return True
+
+    key = TrackingKey()
+    s = {key, 'other_key'}
+    assert key.hash_calls == 1
+    assert key.eq_calls == 0, "first"
+
+    val = s.pop()
+    assert key.hash_calls == 1
+    assert key.eq_calls == 0
+    assert val == key
 
 
 def test_set_iterator_reduce():

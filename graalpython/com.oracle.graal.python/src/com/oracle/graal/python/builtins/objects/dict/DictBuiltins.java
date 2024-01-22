@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -66,14 +66,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetReverseIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStoragePop;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.GetNextNode;
@@ -214,24 +210,16 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object popItem(VirtualFrame frame, PDict dict,
+        static Object popItem(PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageDelItem delItem,
-                        @Cached HashingStorageGetReverseIterator getReverseIterator,
-                        @Cached HashingStorageIteratorNext iterNext,
-                        @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageIteratorValue iterValue,
+                        @Cached HashingStoragePop popNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            HashingStorage storage = dict.getDictStorage();
-            HashingStorageIterator it = getReverseIterator.execute(inliningTarget, storage);
-            while (iterNext.execute(inliningTarget, storage, it)) {
-                Object key = iterKey.execute(inliningTarget, storage, it);
-                PTuple result = factory.createTuple(new Object[]{key, iterValue.execute(inliningTarget, storage, it)});
-                delItem.execute(frame, inliningTarget, storage, key, dict);
-                return result;
+            Object[] result = popNode.execute(inliningTarget, dict.getDictStorage(), dict);
+            if (result == null) {
+                throw raiseNode.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
             }
-            throw raiseNode.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
+            return factory.createTuple(result);
         }
     }
 

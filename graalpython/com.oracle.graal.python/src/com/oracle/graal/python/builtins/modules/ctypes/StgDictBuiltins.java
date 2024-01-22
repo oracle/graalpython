@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -85,9 +86,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -167,6 +171,12 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         abstract void execute(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory);
 
+        @TruffleBoundary
+        private void executeBoundary(Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory) {
+            // recursive calls are done as boundary calls to avoid too many deopts
+            execute(null, type, descr, index, offset, factory);
+        }
+
         /*
          * descr is the descriptor for a field marked as anonymous. Get all the _fields_ descriptors
          * from descr.proto, create new descriptors with offset and index adjusted, and stuff them
@@ -183,6 +193,8 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetItem getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString,
+                        @Cached MakeFieldsNode recursiveNode,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
             if (!sequenceCheckNode.execute(inliningTarget, fields)) {
@@ -203,9 +215,13 @@ public final class StgDictBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(TypeError, UNEXPECTED_TYPE);
                 }
                 if (fdescr.anonymous != 0) {
-                    MakeFields(frame, type, fdescr, index + fdescr.index, offset + fdescr.offset, factory,
-                                    inliningTarget, getClassNode, getAttributeNode, setAttributeNode,
-                                    sequenceCheckNode, sizeNode, getItemNode, getArray, getAttrString, raiseNode);
+                    PythonLanguage language = PythonLanguage.get(inliningTarget);
+                    Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+                    try {
+                        recursiveNode.executeBoundary(type, fdescr, index + fdescr.index, offset + fdescr.offset, context.factory());
+                    } finally {
+                        IndirectCallContext.exit(frame, language, context, state);
+                    }
                     continue;
                 }
                 CFieldObject new_descr = factory.createCFieldObject(CField);
