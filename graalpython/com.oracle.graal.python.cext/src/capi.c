@@ -717,8 +717,6 @@ PyAPI_FUNC(int) WritePySSizeT(void* object, Py_ssize_t offset, Py_ssize_t value)
     return 0;
 }
 
-PyObject* wrapped_null;
-
 #undef ReadMember
 #undef WriteMember
 
