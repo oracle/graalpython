@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
@@ -138,9 +139,9 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Direct, inlined = true)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Ignored, inlined = true)
     @ImportStatic(PythonOptions.class)
-    abstract static class PyType_IsSubtype extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffleType_IsSubtype extends CApiBinaryBuiltinNode {
 
         @Specialization
         static int doGeneric(Object a, Object b,

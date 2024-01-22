@@ -758,7 +758,7 @@ type_ready_inherit(PyTypeObject *type)
 static int
 type_ready_add_subclasses(PyTypeObject *type)
 {
-    /* Initialize this classes' tp_subclasses dict. 
+    /* Initialize this classes' tp_subclasses dict.
        This is necessary because our managed classes won't do. */
     type->tp_subclasses = PyDict_New();
 
@@ -927,7 +927,7 @@ int type_ready_graalpy_process_inherited_slots(PyTypeObject* cls) {
     // dynamic slots from a managed Python class. Since the managed Python class may be created
     // when the C API is not loaded, we need to do that later.
     GraalPyTruffle_AddInheritedSlots(cls);
-    
+
     return 0;
 }
 
@@ -1508,4 +1508,31 @@ PyType_GetModuleState(PyTypeObject *type)
         return NULL;
     }
     return _PyModule_GetState(m);
+}
+
+int
+PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b)
+{
+    if (a == b) {
+        return 1;
+    } else if (b == &PyType_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_TYPE_SUBCLASS);
+    } else if (b == &PyLong_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_LONG_SUBCLASS);
+    } else if (b == &PyList_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_LIST_SUBCLASS);
+    } else if (b == &PyTuple_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_TUPLE_SUBCLASS);
+    } else if (b == &PyBytes_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_BYTES_SUBCLASS);
+    } else if (b == &PyUnicode_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_UNICODE_SUBCLASS);
+    } else if (b == &PyDict_Type) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_DICT_SUBCLASS);
+    } else if (b == PyExc_BaseException) {
+        return PyType_FastSubclass(a, Py_TPFLAGS_BASE_EXC_SUBCLASS);
+    } else if (is_builtin_type(a) && !is_builtin_type(b)) {
+        return 0;
+    }
+    return GraalPyTruffleType_IsSubtype(a, b);
 }

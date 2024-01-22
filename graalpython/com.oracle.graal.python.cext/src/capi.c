@@ -296,6 +296,14 @@ static void initialize_bufferprocs() {
     GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
 }
 
+int is_builtin_type(PyTypeObject *tp) {
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
+#define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
+    return PY_TYPE_OBJECTS 0;
+#undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
+}
+
 PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
     if (cls == NULL) {
         return 0;
@@ -2845,10 +2853,6 @@ PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
 #undef PyType_ClearCache
 PyAPI_FUNC(unsigned int) PyType_ClearCache() {
     FUNC_NOT_IMPLEMENTED
-}
-#undef PyType_IsSubtype
-PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return GraalPyType_IsSubtype(a, b);
 }
 #undef PyUnicodeDecodeError_Create
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
