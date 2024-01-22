@@ -337,7 +337,7 @@ class PolyglotAppTest(unittest.TestCase):
             self.purge_local_repo(target_dir)
 
             try:
-                cmd = MVN_CMD + ["-X", "process-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "-m venv" in out
                 assert "-m ensurepip" in out
@@ -379,7 +379,7 @@ class PolyglotAppTest(unittest.TestCase):
             self.purge_local_repo(target_dir)
 
             try:
-                cmd = MVN_CMD + ["-X", "process-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 
                 # check fileslist.txt
