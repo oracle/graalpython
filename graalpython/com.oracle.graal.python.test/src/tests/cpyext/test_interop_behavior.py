@@ -48,7 +48,7 @@ if sys.implementation.name == "graalpy":
 
     class TestPyStructNumericSequenceTypes(object):
 
-        @skipIf(True, "not supported in native mode")
+        @skipIf(is_native, "not supported in native mode")
         def test_interop_assertions(self):
             class MyType(object):
                 data = 100000000000
@@ -80,7 +80,7 @@ if sys.implementation.name == "graalpy":
                 assert False
 
         @skipIf(is_native, "not supported in native mode")
-        def test_host_interop_extension(self):
+        def test_native_object_interop_behavior_extension(self):
             MyNativeType = CPyExtType("MyNativeType",
                                  '''static PyObject* mymativetype_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
                                      PyObject* obj;
@@ -126,8 +126,7 @@ if sys.implementation.name == "graalpy":
                 # print("Error : ", e)
                 assert False
 
-        @skipIf(is_native, "not supported in native mode")
-        def test_host_interop_extension(self):
+        def test_native_sequence_interop(self):
             MyNativeType = CPyExtType("MyNativeType",
                                 """
                                 static PyObject* mymativetype_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
