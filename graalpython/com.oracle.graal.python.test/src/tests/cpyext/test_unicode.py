@@ -157,6 +157,17 @@ def _reference_find(args):
         return s.rfind(sub, start, end)
 
 
+def _reference_data(args):
+    s = args[0]
+    max_cp = max(map(ord, s))
+    if max_cp <= 0xFF:
+        return s.encode('latin-1')
+    elif max_cp <= 0xFFFF:
+        return s.encode('utf-16-le' if sys.byteorder == 'little' else 'utf-16-be')
+    else:
+        return s.encode('utf-32-le' if sys.byteorder == 'little' else 'utf-32-be')
+
+
 def _decoder_for_utf16(byteorder):
     if byteorder == 0:
         return codecs.utf_16_decode
@@ -1042,6 +1053,28 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='OOnn',
         arguments=["PyObject* string", "PyObject* sub", "Py_ssize_t start", "Py_ssize_t end"],
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DATA = CPyExtFunction(
+        _reference_data,
+        lambda: (
+            ("asdf",),
+            ("ššš",),
+            ("すごい",),
+            ("😂",),
+        ),
+        code='''
+        PyObject* wrap_PyUnicode_DATA(PyObject* string) {
+            const char* data = (const char*)PyUnicode_DATA(string);
+            Py_ssize_t size = PyUnicode_GET_LENGTH(string) * (Py_ssize_t)PyUnicode_KIND(string);
+            return PyBytes_FromStringAndSize(data, size);
+        }
+        ''',
+        callfunction='wrap_PyUnicode_DATA',
+        resultspec='O',
+        argspec='O',
+        arguments=["PyObject* string"],
+        cmpfunc=unhandled_error_compare,
     )
 
 

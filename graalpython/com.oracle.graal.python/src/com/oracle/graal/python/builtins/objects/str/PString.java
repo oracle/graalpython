@@ -108,6 +108,10 @@ public final class PString extends PSequence {
         return nativeCharSequence;
     }
 
+    public void setNativeCharSequence(NativeCharSequence nativeCharSequence) {
+        this.nativeCharSequence = nativeCharSequence;
+    }
+
     @Override
     public String toString() {
         return isMaterialized() ? materializedValue.toJavaStringUncached() : nativeCharSequence.toString();
