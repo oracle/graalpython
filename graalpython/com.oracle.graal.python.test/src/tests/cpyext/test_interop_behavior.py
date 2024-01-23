@@ -82,7 +82,7 @@ if sys.implementation.name == "graalpy":
         @skipIf(is_native, "not supported in native mode")
         def test_native_object_interop_behavior_extension(self):
             MyNativeType = CPyExtType("MyNativeType",
-                                 '''static PyObject* mymativetype_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 '''static PyObject* mynative_type_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
                                      PyObject* obj;
                                      MyNativeTypeObject* typedObj;
                                      obj = PyBaseObject_Type.tp_new(cls, a, b);
@@ -98,7 +98,7 @@ if sys.implementation.name == "graalpy":
                                 }
                                 ''',
                                 cmembers="PyObject* data;",
-                                tp_new="mymativetype_new",
+                                tp_new="mynative_type_new",
                                 tp_methods='{"get_data", (PyCFunction)get_data, METH_NOARGS, ""}')
 
             instance = MyNativeType()
@@ -129,7 +129,7 @@ if sys.implementation.name == "graalpy":
         def test_native_sequence_interop(self):
             MySequenceNativeType = CPyExtType("MySequenceNativeType",
                                 """
-                                static PyObject* mymativetype_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                static PyObject* mynative_seq_type_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
                                      PyObject* obj;
                                      MySequenceNativeTypeObject* typedObj;
                                      obj = PyBaseObject_Type.tp_new(cls, a, b);
@@ -137,6 +137,7 @@ if sys.implementation.name == "graalpy":
                                      typedObj = ((MySequenceNativeTypeObject*)obj);
                                      // data = [0,1,2,3,4]
                                      typedObj->data = PyList_New(5);
+                                     Py_XINCREF(typedObj->data);
                                      PyList_SetItem(typedObj->data, 0, PyLong_FromLong(0));
                                      PyList_SetItem(typedObj->data, 1, PyLong_FromLong(1));
                                      PyList_SetItem(typedObj->data, 2, PyLong_FromLong(2));
@@ -146,7 +147,7 @@ if sys.implementation.name == "graalpy":
                                      return obj;
                                 }
                             
-                                static Py_ssize_t mymativetype_sq_length(PyObject* obj) {
+                                static Py_ssize_t mynative_seq_type_sq_length(PyObject* obj) {
                                     MySequenceNativeTypeObject* typedObj;
                                     typedObj = ((MySequenceNativeTypeObject*)obj);
                                     
@@ -157,14 +158,16 @@ if sys.implementation.name == "graalpy":
                                     return ((MySequenceNativeTypeObject*)obj)->data;
                                 }
                                 
-                                static PyObject* mymativetype_sq_item(PyObject *obj, Py_ssize_t i) {
+                                static PyObject* mynative_seq_type_sq_item(PyObject *obj, Py_ssize_t i) {
                                     MySequenceNativeTypeObject* typedObj;
                                     typedObj = ((MySequenceNativeTypeObject*)obj);
                                     
-                                    return PyList_GetItem(typedObj->data, i);
+                                    PyObject* item = PyList_GetItem(typedObj->data, i);
+                                    Py_INCREF(item);
+                                    return item;
                                 }
                                 
-                                static int mymativetype_sq_ass_item(PyObject *obj, Py_ssize_t i, PyObject *v) {
+                                static int mynative_seq_type_sq_ass_item(PyObject *obj, Py_ssize_t i, PyObject *v) {
                                     MySequenceNativeTypeObject* typedObj;
                                     typedObj = ((MySequenceNativeTypeObject*)obj);
                                     
@@ -181,10 +184,10 @@ if sys.implementation.name == "graalpy":
                                 }
                                 """,
                                 cmembers="PyObject* data;",
-                                tp_new="mymativetype_new",
-                                sq_length="mymativetype_sq_length",
-                                sq_ass_item="mymativetype_sq_ass_item",
-                                sq_item="mymativetype_sq_item",
+                                tp_new="mynative_seq_type_new",
+                                sq_length="mynative_seq_type_sq_length",
+                                sq_ass_item="mynative_seq_type_sq_ass_item",
+                                sq_item="mynative_seq_type_sq_item",
                                 tp_methods='{"get_data", (PyCFunction)get_data, METH_NOARGS, ""}')
 
             t = MySequenceNativeType()
