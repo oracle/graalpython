@@ -907,9 +907,12 @@ public class Tokenizer {
                         oneBack();
 
                         String tokenString = new String(codePointsInput, tokenStart, nextCharIndex - tokenStart);
-                        String errMsg = null;
-                        if (nonascii && ((errMsg = verifyIdentifier(tokenString)) != null)) {
-                            return createToken(Token.Kind.ERRORTOKEN, errMsg);
+                        if (nonascii) {
+                            String errMsg = verifyIdentifier(tokenString);
+                            if (errMsg != null) {
+                                done = StatusCode.SYNTAX_ERROR;
+                                return createToken(Token.Kind.ERRORTOKEN, errMsg);
+                            }
                         }
                         if (!asyncHacks || insideAsyncDef) {
                             if (tokenString.equals("async")) {

@@ -1029,6 +1029,7 @@ if 1:
         the_dict = "{" + ",".join(f"{x}:{x}" for x in range(dict_size)) + "}"
         self.assertEqual(len(eval(the_dict)), dict_size)
 
+    @impl_detail("CPython bytecode", graalpy=False)
     def test_redundant_jump_in_if_else_break(self):
         # Check if bytecode containing jumps that simply point to the next line
         # is generated around if-else-break style structures. See bpo-42615.

@@ -497,12 +497,14 @@ def requires_lzma(reason='requires lzma'):
     return unittest.skipUnless(lzma, reason)
 
 def has_no_debug_ranges():
-    try:
-        import _testinternalcapi
-    except ImportError:
-        raise unittest.SkipTest("_testinternalcapi required")
-    config = _testinternalcapi.get_config()
-    return not bool(config['code_debug_ranges'])
+    # GraalPy change: we don't have this config, so assume we only run the tests with debug ranges enabled
+    return False
+    # try:
+    #     import _testinternalcapi
+    # except ImportError:
+    #     raise unittest.SkipTest("_testinternalcapi required")
+    # config = _testinternalcapi.get_config()
+    # return not bool(config['code_debug_ranges'])
 
 def requires_debug_ranges(reason='requires co_positions / debug_ranges'):
     return unittest.skipIf(has_no_debug_ranges(), reason)
