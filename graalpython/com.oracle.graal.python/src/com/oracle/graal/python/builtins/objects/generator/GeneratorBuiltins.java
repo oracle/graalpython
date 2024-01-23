@@ -192,7 +192,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 int bci = self.getBci();
-                frame.setLasti(bci);
+                frame.setBci(bci);
                 frame.setLine(info.getRootNode().bciToLine(bci));
                 return frame;
             }

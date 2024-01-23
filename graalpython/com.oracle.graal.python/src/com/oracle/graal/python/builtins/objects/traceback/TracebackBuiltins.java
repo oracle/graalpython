@@ -136,13 +136,13 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
-                        next = factory.createTraceback(pFrame, pFrame.getLine(), pFrame.getLasti(), next);
+                        next = factory.createTraceback(pFrame, pFrame.getLine(), pFrame.getBci(), next);
                         pyIndex++;
                     }
                 }
             }
             if (lazyTraceback.catchingFrameWantedForTraceback()) {
-                tb.setLasti(pException.getCatchBci());
+                tb.setBci(pException.getCatchBci());
                 tb.setLineno(pException.getCatchRootNode().bciToLine(pException.getCatchBci()));
                 tb.setNext(next);
             } else {
@@ -309,11 +309,13 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
-        Object get(PTraceback self,
+        Object get(VirtualFrame frame, PTraceback self,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetTracebackFrameNode getTracebackFrameNode,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             materializeTruffleStacktraceNode.execute(inliningTarget, self);
-            return self.getLasti();
+            PFrame pFrame = getTracebackFrameNode.execute(frame, self);
+            return pFrame.bciToLasti(self.getBci());
         }
     }
 

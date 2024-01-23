@@ -55,7 +55,7 @@ public final class PTraceback extends PythonBuiltinObject {
     private PFrame frame;
     private PFrame.Reference frameInfo;
     private int lineno = UNKNOWN_LINE_NUMBER;
-    private int lasti;
+    private int bci;
     private PTraceback next;
     private LazyTraceback lazyTraceback;
 
@@ -63,11 +63,11 @@ public final class PTraceback extends PythonBuiltinObject {
         this(lang, frame, lineno, -1, next);
     }
 
-    public PTraceback(PythonLanguage lang, PFrame frame, int lineno, int lasti, PTraceback next) {
+    public PTraceback(PythonLanguage lang, PFrame frame, int lineno, int bci, PTraceback next) {
         super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape(lang));
         this.frame = frame;
         this.lineno = lineno;
-        this.lasti = lasti;
+        this.bci = bci;
         this.next = next;
     }
 
@@ -104,12 +104,12 @@ public final class PTraceback extends PythonBuiltinObject {
         return lineno;
     }
 
-    public int getLasti() {
-        return lasti;
+    public int getBci() {
+        return bci;
     }
 
-    public void setLasti(int lasti) {
-        this.lasti = lasti;
+    public void setBci(int bci) {
+        this.bci = bci;
     }
 
     public LazyTraceback getLazyTraceback() {

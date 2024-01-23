@@ -361,10 +361,7 @@ def _get_code_position(code, instruction_index):
     if instruction_index < 0:
         return (None, None, None, None)
     positions_gen = code.co_positions()
-    # GraalPy change: our instructions are not fixed size
-    # return next(itertools.islice(positions_gen, instruction_index // 2, None))
-    number = __graalpython__.bci_to_instruction_number(code, instruction_index)
-    return next(itertools.islice(positions_gen, number, None))
+    return next(itertools.islice(positions_gen, instruction_index // 2, None))
 
 
 _RECURSIVE_CUTOFF = 3 # Also hardcoded in traceback.c.
