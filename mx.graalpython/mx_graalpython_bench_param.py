@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -54,6 +54,7 @@ ITER_20 = ['-i', '20']
 ITER_15 = ['-i', '15']
 ITER_10 = ['-i', '10']
 ITER_6 = ['-i', '6']
+ITER_5 = ['-i', '5']
 WARMUP_2 = ['-w', '2']
 
 MICRO_BENCHMARKS = {
@@ -181,18 +182,18 @@ def _pickling_benchmarks(module='pickle'):
 
 
 MICRO_NATIVE_BENCHMARKS = {
-    'c-member-access': ITER_10 + ['10000'],
-    'c-list-iterating-obj': ITER_10 + ['50000000'],
-    'c-magic-bool': ITER_10 + ['100000000'],
-    'c-magic-iter': ITER_10 + ['50000000'],
-    'c-arith-binop': ITER_15 + ['1000'],
-    'c-arith-binop2': ITER_15 + ['100'],
-    'c-call-classmethod': ITER_10 + ['50000000'],
-    'c-issubtype-polymorphic-forced-to-native': ITER_10 + ['50000000'],
-    'c-issubtype-polymorphic': ITER_10 + ['50000000'],
-    'c-issubtype-monorphic': ITER_10 + ['50000000'],
-    'c-call-method': ITER_15 + ['5000000'],
-    'c-instantiate-large': ITER_15 + ['1000'],
+    'c-member-access': ITER_5 + ['10000'],
+    'c-list-iterating-obj': ITER_5 + ['50000000'],
+    'c-magic-bool': ITER_5 + ['100000000'],
+    'c-magic-iter': ITER_5 + ['50000000'],
+    'c-arith-binop': ITER_5 + ['1000'],
+    'c-arith-binop2': ITER_5 + ['100'],
+    'c-call-classmethod': ITER_5 + ['50000000'],
+    'c-issubtype-polymorphic-forced-to-native': ITER_5 + ['50000000'],
+    'c-issubtype-polymorphic': ITER_5 + ['50000000'],
+    'c-issubtype-monorphic': ITER_5 + ['50000000'],
+    'c-call-method': ITER_5 + ['5000000'],
+    'c-instantiate-large': ITER_5 + ['1000'],
 }
 
 
