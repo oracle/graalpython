@@ -14,7 +14,7 @@ typedef struct {
 
 // Macro version of PyFloat_AsDouble() trading safety for speed.
 // It doesn't check if op is a double object.
-#define PyFloat_AS_DOUBLE(op) (((PyFloatObject *)(op))->ob_fval)
+#define PyFloat_AS_DOUBLE(op) PyFloat_AsDouble((PyObject*)(op))
 
 
 PyAPI_FUNC(int) PyFloat_Pack2(double x, char *p, int le);
