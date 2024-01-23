@@ -163,6 +163,9 @@ public abstract class SpecialAttributeNames {
     public static final String J___PARAMETERS__ = "__parameters__";
     public static final TruffleString T___PARAMETERS__ = tsLiteral(J___PARAMETERS__);
 
+    public static final String J___UNPACKED__ = "__unpacked__";
+    public static final TruffleString T___UNPACKED__ = tsLiteral(J___UNPACKED__);
+
     public static final String J___ORIG_CLASS__ = "__orig_class__";
     public static final TruffleString T___ORIG_CLASS__ = tsLiteral(J___ORIG_CLASS__);
 

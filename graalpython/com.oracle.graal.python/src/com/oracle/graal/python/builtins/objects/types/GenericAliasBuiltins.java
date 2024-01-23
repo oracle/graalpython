@@ -44,10 +44,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___UNPACKED__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ARGS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIG_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PARAMETERS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___UNPACKED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -118,7 +121,18 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenericAlias)
 public final class GenericAliasBuiltins extends PythonBuiltins {
-    private static final TruffleString[] ATTR_EXCEPTIONS = {T___ORIGIN__, T___ARGS__, T___PARAMETERS__, T___MRO_ENTRIES__, T___REDUCE_EX__, T___REDUCE__, T___COPY__, T___DEEPCOPY__};
+    private static final TruffleString[] ATTR_EXCEPTIONS = {
+                    T___CLASS__,
+                    T___ORIGIN__,
+                    T___ARGS__,
+                    T___UNPACKED__,
+                    T___PARAMETERS__,
+                    T___MRO_ENTRIES__,
+                    T___REDUCE_EX__,
+                    T___REDUCE__,
+                    T___COPY__,
+                    T___DEEPCOPY__,
+    };
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -154,6 +168,16 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                 self.setParameters(factory.get(inliningTarget).createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
             }
             return self.getParameters();
+        }
+    }
+
+    @Builtin(name = J___UNPACKED__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class UnpackedNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object unpacked(PGenericAlias self) {
+            // GR-51574 implement properly
+            return false;
         }
     }
 
