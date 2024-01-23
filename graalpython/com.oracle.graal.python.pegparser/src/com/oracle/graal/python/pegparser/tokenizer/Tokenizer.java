@@ -548,7 +548,7 @@ public class Tokenizer {
             parserWarn(String.format("invalid %s literal", kind));
             nextChar();
         } else { /* In future releases, only error will remain. */
-            if (isPotentialIdentifierChar(c)) {
+            if (c < 128 && isPotentialIdentifierChar(c)) {
                 oneBack();
                 return syntaxError(String.format("invalid %s literal", kind));
             }
