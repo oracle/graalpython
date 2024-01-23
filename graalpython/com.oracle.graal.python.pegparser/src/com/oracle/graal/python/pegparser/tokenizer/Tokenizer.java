@@ -15,6 +15,7 @@ import java.util.EnumSet;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 
@@ -492,7 +493,7 @@ public class Tokenizer {
     }
 
     private void parserWarn(String warning) {
-        errorCallback.onWarning(WarningType.Deprecation, getCurrentTokenRange(false), warning);
+        errorCallback.onWarning(WarningType.Syntax, getCurrentTokenRange(false), warning);
     }
 
     /**
