@@ -1700,20 +1700,15 @@ class ArchiveProject(mx.ArchivableProject):
             return results
 
 def _prepare_jbang():
-    JBANG_URL = "https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.114.0.zip"
-    jbang_urls = (mx_urlrewrites.rewriteurl(JBANG_URL), JBANG_URL)
+    zip_path = mx.library('JBANG', True).get_path(resolve = True)
     
     oldpwd = os.getcwd()
     work_dir = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
     os.chdir(work_dir)
-    zipJBangFile = os.path.join(work_dir, "jbang.zip")
     try:
-        mx.download(zipJBangFile, jbang_urls)
-
-        with ZipFile(zipJBangFile, "r") as zip_ref:
+        with ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(work_dir)
             
-        os.remove(zipJBangFile)
         folders = os.listdir(work_dir)
         jbang_executable = os.path.join(work_dir, folders[0], "bin", "jbang")
         os.chmod(jbang_executable, stat.S_IRWXU)
