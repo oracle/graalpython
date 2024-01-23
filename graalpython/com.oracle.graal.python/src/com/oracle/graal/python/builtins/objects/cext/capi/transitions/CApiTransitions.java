@@ -526,7 +526,7 @@ public abstract class CApiTransitions {
                 writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
                 if (isVarObject) {
-                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, ((PTuple)delegate).getSequenceStorage().length());
+                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, ((PTuple) delegate).getSequenceStorage().length());
                 }
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
