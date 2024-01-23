@@ -522,8 +522,7 @@ type_ready_set_new(PyTypeObject *type, PyObject *dict)
     }
     else {
         // Py_TPFLAGS_DISALLOW_INSTANTIATION sets tp_new to NULL
-        // not supported yet
-        // type->tp_new = NULL;
+        type->tp_new = NULL;
     }
     return 0;
 }
