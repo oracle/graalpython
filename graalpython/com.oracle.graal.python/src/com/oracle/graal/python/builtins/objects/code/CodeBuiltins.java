@@ -340,9 +340,11 @@ public final class CodeBuiltins extends PythonBuiltins {
                 SourceMap map = co.getSourceMap();
                 List<PTuple> lines = new ArrayList<>();
                 if (map != null && map.startLineMap.length > 0) {
-                    co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
-                        lines.add(factory.createTuple(new int[]{map.startLineMap[bci], map.endLineMap[bci], map.startColumnMap[bci], map.endColumnMap[bci]}));
-                    });
+                    byte[] bytecode = co.code;
+                    for (int i = 0; i < bytecode.length;) {
+                        lines.add(factory.createTuple(new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
+                        i += OpCodes.fromOpCode(bytecode[i]).length();
+                    }
                 }
                 tuple = factory.createTuple(lines.toArray());
             } else {
