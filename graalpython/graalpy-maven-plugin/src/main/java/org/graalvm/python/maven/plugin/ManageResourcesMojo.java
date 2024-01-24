@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,8 +48,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -62,6 +64,13 @@ import org.graalvm.python.embedding.utils.GraalPyRunner;
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
                 requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ManageResourcesMojo extends AbstractMojo {
+
+    private static final String PYTHON_LANGUAGE = "python-language";
+    private static final String PYTHON_RESOURCES = "python-resources";
+    private static final String PYTHON_LAUNCHER = "python-launcher";
+    private static final String GRAALPY_GROUP = "org.graalvm.python";
+
+    private static final String GRAALPY_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain";
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
@@ -101,7 +110,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             return;
         }
         var tag = homeDirectory.resolve("tagfile");
-        var graalPyVersion = ExecGraalPyMojo.getGraalPyVersion(project);
+        var graalPyVersion = getGraalPyVersion(project);
 
         List<String> pythonHomeIncludes = toSortedArrayList(pythonHome.includes);
         List<String> pythonHomeExcludes = toSortedArrayList(pythonHome.excludes);
@@ -127,7 +136,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         try {
             if (!Files.exists(homeDirectory)) {
                 Files.createDirectories(homeDirectory.getParent());
-                VFSUtils.copyGraalPyHome(ExecGraalPyMojo.calculateClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
+                VFSUtils.copyGraalPyHome(calculateClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
             }
             Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             write(tag, pythonHomeIncludes, INCLUDE_PREFIX);
@@ -201,7 +210,7 @@ public class ManageResourcesMojo extends AbstractMojo {
 
         var tag = venvDirectory.resolve("contents");
         List installedPackages = new ArrayList<String>();
-        var graalPyVersion = ExecGraalPyMojo.getGraalPyVersion(project);
+        var graalPyVersion = getGraalPyVersion(project);
 
         if (Files.isReadable(tag)) {
             List<String> lines = null;
@@ -252,12 +261,13 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private void deleteUnwantedPackages(Path venvDirectory, List<String> installedPackages) throws MojoExecutionException {
-        var pkgsToRemove = new HashSet<String>(installedPackages);
-        pkgsToRemove.removeAll(packages);
-        if (pkgsToRemove.isEmpty()) {
+        List<String> args = new ArrayList<String>(installedPackages);
+        args.removeAll(packages);
+        if (args.isEmpty()) {
             return;
         }
-        runPip(venvDirectory, "uninstall", pkgsToRemove.toArray(new String[pkgsToRemove.size()]));
+        args.add(0, "-y");
+        runPip(venvDirectory, "uninstall", args.toArray(new String[args.size()]));
     }
 
     private Path getLauncherPath() {
@@ -268,12 +278,19 @@ public class ManageResourcesMojo extends AbstractMojo {
         getLog().info("Generating GraalPy launchers");
         var launcher = getLauncherPath();
         if (!Files.exists(launcher)) {
+            var java = Paths.get(System.getProperty("java.home"), "bin", "java");
+            var classpath = calculateClasspath(project);
             if (!IS_WINDOWS) {
-                // just write our bash launcher
-                var is = ManageResourcesMojo.class.getResourceAsStream("/" + LAUNCHER);
+                var script = String.format("""
+                                #!/usr/bin/env bash
+                                %s -classpath %s %s --python.Executable="$0" "$@"
+                                """,
+                        java,
+                        String.join(File.pathSeparator, classpath),
+                        GRAALPY_MAIN_CLASS);
                 try {
                     Files.createDirectories(launcher.getParent());
-                    Files.copy(is, launcher);
+                    Files.writeString(launcher, script);
                     var perms = Files.getPosixFilePermissions(launcher);
                     perms.addAll(List.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
                     Files.setPosixFilePermissions(launcher, perms);
@@ -281,7 +298,6 @@ public class ManageResourcesMojo extends AbstractMojo {
                     throw new MojoExecutionException(String.format("failed to create launcher %s", launcher), e);
                 }
             } else {
-                String projectPath = project.getBuild().getDirectory();
                 // on windows, generate a venv launcher that executes our mvn target
                 var script = String.format("""
                                 import os, shutil, struct, venv
@@ -290,15 +306,16 @@ public class ManageResourcesMojo extends AbstractMojo {
                                 tl = os.path.join(r'%s')
                                 os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
                                 shutil.copy(vl, tl)
-                                cmd = r'mvn.cmd -f "%s" graalpy:exec "-Dexec.workingdir=%s"'
+                                cmd = r'%s -classpath "%s" %s'
                                 pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
                                 with open(pyvenvcfg, 'w', encoding='utf-8') as f:
                                     f.write('venvlauncher_command = ')
                                     f.write(cmd)
                                 """,
                                 launcher,
-                                Paths.get(projectPath, "..", "pom.xml").toString(),
-                                projectPath);
+                                java,
+                                String.join(File.pathSeparator, classpath),
+                                GRAALPY_MAIN_CLASS);
                 File tmp;
                 try {
                     tmp = File.createTempFile("create_launcher", ".py");
@@ -311,7 +328,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                 } catch (IOException e) {
                     throw new MojoExecutionException(String.format("failed to write tmp launcher %s", tmp), e);
                 }
-                ExecGraalPyMojo.runGraalPy(project, getLog(), tmp.getAbsolutePath());
+                runGraalPy(project, getLog(), tmp.getAbsolutePath());
             }
         }
     }
@@ -338,5 +355,43 @@ public class ManageResourcesMojo extends AbstractMojo {
         } catch(IOException | InterruptedException e) {
             throw new MojoExecutionException(String.format("failed to execute venv", args), e);
         }
+    }
+
+    private static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
+        var classpath = calculateClasspath(project);
+        try {
+            GraalPyRunner.run(classpath, new MavenDelegateLog(log), args);
+        } catch (IOException | InterruptedException e) {
+            throw new MojoExecutionException(String.format("failed to run Graalpy launcher"), e);
+        }
+    }
+
+    private static String getGraalPyVersion(MavenProject project) throws MojoExecutionException {
+        return getGraalPyArtifact(project, PYTHON_LANGUAGE).getVersion();
+    }
+
+    private static Artifact getGraalPyArtifact(MavenProject project, String aid) throws MojoExecutionException {
+        var projectArtifacts = resolveProjectDependencies(project);
+        for (var a : projectArtifacts) {
+            if (a.getGroupId().equals(GRAALPY_GROUP) && a.getArtifactId().equals(aid)) {
+                return a;
+            }
+        }
+        throw new MojoExecutionException(String.format("Missing GraalPy dependency %s:%s. Please add it to your pom", GRAALPY_GROUP, aid));
+    }
+
+    private static Collection<Artifact> resolveProjectDependencies(MavenProject project) {
+        return project.getArtifacts()
+                .stream()
+                .filter(a -> !"test".equals(a.getScope()))
+                .collect(Collectors.toList());
+    }
+
+    private static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
+        var classpath = new HashSet<String>();
+        for (var r : resolveProjectDependencies(project)) {
+            classpath.add(r.getFile().getAbsolutePath());
+        }
+        return classpath;
     }
 }
