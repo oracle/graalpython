@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseExcep
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_bases;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
@@ -730,6 +731,39 @@ public abstract class TypeNodes {
         @NeverDefault
         public static GetNameNode create() {
             return GetNameNodeGen.create();
+        }
+    }
+
+    // Equivalent of PyType_GetQualName
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class GetQualNameNode extends Node {
+        public abstract TruffleString execute(Node inliningTarget, Object type);
+
+        @Specialization
+        static TruffleString getQualName(PythonManagedClass clazz) {
+            return clazz.getQualName();
+        }
+
+        @Specialization
+        static TruffleString getQualName(Node inliningTarget, PythonAbstractNativeObject clazz,
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObjectNode,
+                        @Cached(inline = false) CStructAccess.ReadCharPtrNode readCharPtrNode,
+                        @Cached CastToTruffleStringNode cast) {
+            assert IsTypeNode.executeUncached(clazz);
+            long flags = getTypeFlagsNode.execute(clazz);
+            if ((flags & HEAPTYPE) != 0) {
+                Object qualname = readObjectNode.read(clazz, PyHeapTypeObject__ht_qualname);
+                try {
+                    return cast.execute(inliningTarget, qualname);
+                } catch (CannotCastException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot cast ht_qualname to string");
+                }
+            } else {
+                return readCharPtrNode.read(clazz, PyTypeObject__tp_name);
+            }
         }
     }
 

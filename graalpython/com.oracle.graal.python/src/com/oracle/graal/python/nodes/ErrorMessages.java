@@ -598,12 +598,10 @@ public abstract class ErrorMessages {
     public static final TruffleString READ_WRITE_BYTELIKE_OBJ = tsLiteral("read-write bytes-like object");
     public static final TruffleString READONLY_ATTRIBUTE = tsLiteral("readonly attribute");
     public static final TruffleString ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE = tsLiteral("attribute '%s' of '%p' objects is not writable");
-    public static final TruffleString UNREADABLE_ATTRIBUTE = tsLiteral("unreadable attribute");
-    public static final TruffleString UNREADABLE_ATTRIBUTE_S = tsLiteral("unreadable attribute %s");
+    public static final TruffleString PROPERTY_S_OF_S_OBJECT_HAS_NO_S = tsLiteral("property %s of '%s' object has no %s");
+    public static final TruffleString PROPERTY_OF_S_OBJECT_HAS_NO_S = tsLiteral("property of '%s' object has no %s");
     public static final TruffleString CANT_DELETE_ATTRIBUTE = tsLiteral("can't delete attribute");
-    public static final TruffleString CANT_DELETE_ATTRIBUTE_S = tsLiteral("can't delete attribute %s");
     public static final TruffleString CANT_SET_ATTRIBUTE = tsLiteral("can't set attribute");
-    public static final TruffleString CANT_SET_ATTRIBUTE_S = tsLiteral("can't set attribute %s");
     public static final TruffleString RECURSION_DEPTH_EXCEEDED = tsLiteral("Recursion depth exceeded");
     public static final TruffleString REPLACEMENT_INDEX_S_OUT_OF_RANGE = tsLiteral("Replacement index %s out of range for positional args tuple");
     public static final TruffleString REQUIRES_CODE_OBJ = tsLiteral("%s() requires a code object with %d free vars, not %d");

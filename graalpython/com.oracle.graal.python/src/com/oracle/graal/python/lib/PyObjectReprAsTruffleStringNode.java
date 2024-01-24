@@ -69,11 +69,6 @@ public abstract class PyObjectReprAsTruffleStringNode extends PNodeWithContext {
         return PyObjectReprAsTruffleStringNodeGen.getUncached().execute(null, null, object);
     }
 
-    // TODO: calling this with VirtualFrame that may not be null is likely a bug, review the usages
-    public static TruffleString executeUncached(Frame frame, Object object) {
-        return PyObjectReprAsTruffleStringNodeGen.getUncached().execute(frame, null, object);
-    }
-
     public final TruffleString executeCached(Frame frame, Object object) {
         return execute(frame, this, object);
     }
