@@ -94,7 +94,11 @@ if sys.implementation.name == "graalpy":
                                 }
                                 
                                 static PyObject* get_data(PyObject* self) {
-                                    return ((MyNativeTypeObject*)self)->data;
+                                    MyNativeTypeObject* typedObj;
+                                    typedObj = ((MyNativeTypeObject*)self);
+                                    
+                                    Py_INCREF(typedObj->data);
+                                    return typedObj->data;
                                 }
                                 ''',
                                 cmembers="PyObject* data;",
@@ -137,7 +141,7 @@ if sys.implementation.name == "graalpy":
                                      typedObj = ((MySequenceNativeTypeObject*)obj);
                                      // data = [0,1,2,3,4]
                                      typedObj->data = PyList_New(5);
-                                     Py_XINCREF(typedObj->data);
+                                     Py_INCREF(typedObj->data);
                                      PyList_SetItem(typedObj->data, 0, PyLong_FromLong(0));
                                      PyList_SetItem(typedObj->data, 1, PyLong_FromLong(1));
                                      PyList_SetItem(typedObj->data, 2, PyLong_FromLong(2));
@@ -154,22 +158,26 @@ if sys.implementation.name == "graalpy":
                                     return PyList_Size(typedObj->data);
                                 }
                                 
-                                static PyObject* get_data(PyObject* obj) {
-                                    return ((MySequenceNativeTypeObject*)obj)->data;
+                                static PyObject* get_data(PyObject* self) {
+                                    MySequenceNativeTypeObject* typedObj;
+                                    typedObj = ((MySequenceNativeTypeObject*)self);
+                                    
+                                    Py_INCREF(typedObj->data);
+                                    return typedObj->data;
                                 }
                                 
-                                static PyObject* mynative_seq_type_sq_item(PyObject *obj, Py_ssize_t i) {
+                                static PyObject* mynative_seq_type_sq_item(PyObject *self, Py_ssize_t i) {
                                     MySequenceNativeTypeObject* typedObj;
-                                    typedObj = ((MySequenceNativeTypeObject*)obj);
+                                    typedObj = ((MySequenceNativeTypeObject*)self);
                                     
                                     PyObject* item = PyList_GetItem(typedObj->data, i);
                                     Py_INCREF(item);
                                     return item;
                                 }
                                 
-                                static int mynative_seq_type_sq_ass_item(PyObject *obj, Py_ssize_t i, PyObject *v) {
+                                static int mynative_seq_type_sq_ass_item(PyObject *self, Py_ssize_t i, PyObject *v) {
                                     MySequenceNativeTypeObject* typedObj;
-                                    typedObj = ((MySequenceNativeTypeObject*)obj);
+                                    typedObj = ((MySequenceNativeTypeObject*)self);
                                     
                                     Py_ssize_t len = PyList_Size(typedObj->data);
                                     if (i == len) {
