@@ -155,6 +155,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES = tsLiteral("encoder %s returned %s instead of bytes; use codecs.encode() to encode to arbitrary types");
     public static final TruffleString DECODER_S_RETURNED_P_INSTEAD_OF_STR = tsLiteral("'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types");
     public static final TruffleString EXPECTED_D_ARGS = tsLiteral("expected %d arguments");
+    public static final TruffleString S_EXPECTED_D_ARGS = tsLiteral("%s expected %d arguments");
     public static final TruffleString CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = tsLiteral("can only assign %s to %s.%s, not %p");
     public static final TruffleString CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = tsLiteral("can only assign %s to %p.%s, not %p");
     public static final TruffleString CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P = tsLiteral("can only assign non-empty tuple to %p.__bases__, not ()");
