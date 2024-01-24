@@ -153,7 +153,6 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -266,7 +265,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = BuiltinNames.J_BUILTINS, isEager = true)
@@ -1835,13 +1833,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
 
         @Child private SplitArgsNode splitArgsNode;
-        @Child private LookupCallableSlotInMRONode lookupInit;
-        @Child private LookupCallableSlotInMRONode lookupNew;
         @Child private ReportAbstractClassNode reportAbstractClassNode;
-        @CompilationFinal private ValueProfile profileInit;
-        @CompilationFinal private ValueProfile profileNew;
-        @CompilationFinal private ValueProfile profileInitFactory;
-        @CompilationFinal private ValueProfile profileNewFactory;
 
         @GenerateInline(false) // Used lazily
         abstract static class ReportAbstractClassNode extends PNodeWithContext {
@@ -1865,6 +1857,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
+        @GenerateInline
+        @GenerateCached(false)
+        @ImportStatic(SpecialMethodSlot.class)
+        abstract static class CheckExcessArgsNode extends Node {
+            abstract void execute(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs);
+
+            @Specialization(guards = {"args.length == 0", "kwargs.length == 0"})
+            @SuppressWarnings("unused")
+            static void doNothing(Object type, Object[] args, PKeyword[] kwargs) {
+            }
+
+            @Fallback
+            @SuppressWarnings("unused")
+            static void check(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs,
+                            @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookupInit,
+                            @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupNew,
+                            @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
+                            @Cached PRaiseNode.Lazy raiseNode) {
+                if (!checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructors.ObjectNode.class)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
+                }
+                if (checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltins.InitNode.class)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
+                }
+            }
+        }
+
         @Override
         public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (splitArgsNode == null) {
@@ -1876,8 +1895,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!self.needsNativeAllocation()"})
         Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            checkExcessArgs(self, varargs, kwargs);
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
             if (self.isAbstractClass()) {
                 throw reportAbstractClass(frame, self);
             }
@@ -1885,10 +1906,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
+        static Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            checkExcessArgs(self, varargs, kwargs);
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
             return factory.createPythonObject(self);
         }
 
@@ -1897,8 +1919,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @InliningCutoff
         Object doNativeObjectIndirect(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached CallNativeGenericNewNode callNativeGenericNewNode) {
-            checkExcessArgs(self, varargs, kwargs);
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
             if (self.isAbstractClass()) {
                 throw reportAbstractClass(frame, self);
             }
@@ -1910,9 +1933,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @InliningCutoff
         Object doNativeObjectDirect(VirtualFrame frame, Object self, Object[] varargs, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Exclusive @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                         @Shared @Cached CallNativeGenericNewNode callNativeGenericNewNode) {
-            checkExcessArgs(self, varargs, kwargs);
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
             if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
                 throw reportAbstractClass(frame, self);
             }
@@ -1937,41 +1961,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         Object fallback(Object o, Object[] varargs, PKeyword[] kwargs) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
-        }
-
-        private void checkExcessArgs(Object type, Object[] varargs, PKeyword[] kwargs) {
-            if (varargs.length != 0 || kwargs.length != 0) {
-                if (lookupNew == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupNew = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.New));
-                }
-                if (lookupInit == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupInit = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Init));
-                }
-                if (profileNew == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileNew = createValueIdentityProfile();
-                }
-                if (profileInit == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileInit = createValueIdentityProfile();
-                }
-                if (profileNewFactory == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileNewFactory = ValueProfile.createClassProfile();
-                }
-                if (profileInitFactory == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileInitFactory = ValueProfile.createClassProfile();
-                }
-                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
-                    throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
-                }
-                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class)) {
-                    throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
-                }
-            }
         }
 
         @InliningCutoff

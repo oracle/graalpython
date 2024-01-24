@@ -163,17 +163,8 @@ public abstract class BuiltinMethodDescriptor {
         this.minNumOfPositionalArgs = builtinAnnotation.minNumOfPositionalArgs();
     }
 
-    protected final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
+    public final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
         return factory;
-    }
-
-    public final <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean isSameFactory(Class<T> builtinNodeFactoryClass) {
-        // The assertion is possibly not strictly necessary, but this situation should get an
-        // attention: it can be dangerous to rely only on factory identity for reverse operations,
-        // because the factory cannot be used to create a functional node, we may also need to swap
-        // the arguments.
-        assert !getBuiltinAnnotation().reverseOperation() : this;
-        return builtinNodeFactoryClass.isInstance(getFactory());
     }
 
     public final boolean isDescriptorOf(PBuiltinFunction fun) {

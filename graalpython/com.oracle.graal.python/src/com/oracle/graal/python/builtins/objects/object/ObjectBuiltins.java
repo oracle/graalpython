@@ -68,21 +68,18 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrDeleteNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrGetNode;
@@ -158,7 +155,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonObject)
@@ -245,56 +241,25 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "initNoArgs")
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        PNone init(Object self, Object[] arguments, PKeyword[] keywords,
+        @SuppressWarnings("unused")
+        static PNone init(Object self, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached InlinedConditionProfile overridesNew,
-                        @Cached InlinedConditionProfile overridesInit,
-                        @Cached("create(Init)") LookupCallableSlotInMRONode lookupInit,
-                        @Cached(value = "createLookupProfile(getClassNode)", inline = false) ValueProfile profileInit,
-                        @Cached(value = "createClassProfile()", inline = false) ValueProfile profileInitFactory,
-                        @Cached("create(New)") LookupCallableSlotInMRONode lookupNew,
-                        @Cached(value = "createLookupProfile(getClassNode)", inline = false) ValueProfile profileNew,
-                        @Cached(value = "createClassProfile()", inline = false) ValueProfile profileNewFactory) {
+                        @Cached(parameters = "Init") LookupCallableSlotInMRONode lookupInit,
+                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
+                        @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
-                if (overridesNew.profile(inliningTarget, overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {
-                    throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
+                if (!checkSlotIs.execute(inliningTarget, lookupInit.execute(type), InitNode.class)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
 
-                if (overridesInit.profile(inliningTarget, !overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
-                    throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
+                if (checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructors.ObjectNode.class)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
             }
             return PNone.NONE;
-        }
-
-        protected static ValueProfile createLookupProfile(Node node) {
-            if (PythonLanguage.get(node).isSingleContext()) {
-                return ValueProfile.createIdentityProfile();
-            } else {
-                return ValueProfile.createClassProfile();
-            }
-        }
-
-        /**
-         * Simple utility method to check if a method was overridden. The {@code profile} parameter
-         * must {@emph not} be an identity profile when AST sharing is enabled.
-         */
-        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupCallableSlotInMRONode lookup,
-                        ValueProfile factoryProfile, Class<T> builtinNodeFactoryClass) {
-            Object method = profile.profile(lookup.execute(type));
-            if (method instanceof PBuiltinFunction) {
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
-                return !builtinNodeFactoryClass.isInstance(factory);
-            } else if (method instanceof PBuiltinMethod) {
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinMethod) method).getBuiltinFunction().getBuiltinNodeFactory());
-                return !builtinNodeFactoryClass.isInstance(factory);
-            } else if (method instanceof BuiltinMethodDescriptor) {
-                return !((BuiltinMethodDescriptor) method).isSameFactory(builtinNodeFactoryClass);
-            }
-            return true;
         }
     }
 

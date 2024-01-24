@@ -144,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -152,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
@@ -199,6 +201,7 @@ import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToL
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -233,6 +236,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -2732,6 +2736,73 @@ public abstract class TypeNodes {
                 }
             }
             return leftResolved == rightResolved;
+        }
+    }
+
+    /**
+     * Check whether a given function, method or slot descriptor is a specific builtin function.
+     * Used in cases where CPython compares slot for referential equality with a C function to check
+     * for overriding, for example {@code type->tp_init == object_init}. For object {@code __init__}
+     * in particular, there is a shortcut node {@link HasObjectInitNode}.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class CheckCallableIsSpecificBuiltinNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object methodOrDescriptor, Class<? extends PythonBuiltinBaseNode> nodeClass);
+
+        public static boolean executeUncached(Object methodOrDescriptor, Class<? extends PythonBuiltinBaseNode> nodeClass) {
+            return TypeNodesFactory.CheckCallableIsSpecificBuiltinNodeGen.getUncached().execute(null, methodOrDescriptor, nodeClass);
+        }
+
+        @Specialization
+        static boolean check(PBuiltinFunction function, Class<? extends PythonBuiltinBaseNode> nodeClass) {
+            return check(function.getBuiltinNodeFactory(), nodeClass);
+        }
+
+        @Specialization
+        static boolean check(PBuiltinMethod method, Class<? extends PythonBuiltinBaseNode> nodeClass) {
+            return check(method.getBuiltinFunction().getBuiltinNodeFactory(), nodeClass);
+        }
+
+        @Specialization
+        static boolean check(BuiltinMethodDescriptor descriptor, Class<? extends PythonBuiltinBaseNode> nodeClass) {
+            return check(descriptor.getFactory(), nodeClass);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean check(Object descriptor, Class<? extends PythonBuiltinBaseNode> nodeClass) {
+            return false;
+        }
+
+        private static boolean check(NodeFactory<? extends PythonBuiltinBaseNode> factory, Class<? extends PythonBuiltinBaseNode> nodeClass) {
+            if (factory != null) {
+                return factory.getNodeClass() == nodeClass;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Check whether given type didn't override default object {@code __init__}. Equivalent of
+     * CPython's {@code type->tp_init == object_init} check.
+     */
+    @GenerateInline(inlineByDefault = true)
+    @ImportStatic(SpecialMethodSlot.class)
+    public abstract static class HasObjectInitNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object type);
+
+        public final boolean executeCached(Object type) {
+            return execute(this, type);
+        }
+
+        @Specialization
+        static boolean check(Node inliningTarget, Object type,
+                        @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookup,
+                        @Cached CheckCallableIsSpecificBuiltinNode check) {
+            Object slot = lookup.execute(type);
+            return check.execute(inliningTarget, slot, ObjectBuiltins.InitNode.class);
         }
     }
 }
