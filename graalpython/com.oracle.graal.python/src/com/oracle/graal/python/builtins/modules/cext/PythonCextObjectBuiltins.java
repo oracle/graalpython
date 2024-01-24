@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -412,41 +412,41 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = CImpl)
-    abstract static class PyObject_RichCompare extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Ignored)
+    abstract static class PyTruffleObject_RichCompare extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "op == 0")
-        Object op0(Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op0(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.LtNode compNode) {
             return compNode.executeObject(null, a, b);
         }
 
         @Specialization(guards = "op == 1")
-        Object op1(Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op1(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.LeNode compNode) {
             return compNode.executeObject(null, a, b);
         }
 
         @Specialization(guards = "op == 2")
-        Object op2(Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op2(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.EqNode compNode) {
             return compNode.executeObject(null, a, b);
         }
 
         @Specialization(guards = "op == 3")
-        Object op3(Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op3(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.NeNode compNode) {
             return compNode.executeObject(null, a, b);
         }
 
         @Specialization(guards = "op == 4")
-        Object op4(Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op4(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.GtNode compNode) {
             return compNode.executeObject(null, a, b);
         }
 
         @Specialization(guards = "op == 5")
-        Object op5(Object a, Object b, @SuppressWarnings("unused") int op,
+        static Object op5(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.GeNode compNode) {
             return compNode.executeObject(null, a, b);
         }

@@ -234,7 +234,7 @@ do_richcompare(PyObject *v, PyObject *w, int op)
     if (!Py_IS_TYPE(v, Py_TYPE(w))) {
         // GraalPy change: we upcall right now, since MRO iteration from native
         // involves multiple up/downcalls for us
-        return GraalPyObject_RichCompare(v, w, op);
+        return GraalPyTruffleObject_RichCompare(v, w, op);
         /* CPython code:
         PyType_IsSubtype(Py_TYPE(w), Py_TYPE(v)) &&
         (f = Py_TYPE(w)->tp_richcompare) != NULL) {

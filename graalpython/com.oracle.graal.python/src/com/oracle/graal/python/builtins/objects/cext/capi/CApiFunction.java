@@ -470,6 +470,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_GetAttr", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_SetAttr", ret = Int, args = {PyObject, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Not", ret = Int, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_RichCompare", ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyObject_RichCompareBool", ret = Int, args = {PyObject, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_NextNotImplemented", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "Py_NewRef", ret = PyObject, args = {PyObject}, call = CImpl)
