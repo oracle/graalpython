@@ -3182,12 +3182,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MapNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static PMap doit(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        static PMap doit(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PyObjectGetIter getIter,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "map()");
+            }
             if (args.length < 2) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MAP_MUST_HAVE_AT_LEAST_TWO_ARGUMENTS);
             }
