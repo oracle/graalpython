@@ -385,7 +385,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doNoneOrBound(SuperObject self, Object obj, Object type,
+        static Object doNoneOrBound(SuperObject self, Object obj, Object type,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile,
                         @Cached GetObjectNode getObject,
