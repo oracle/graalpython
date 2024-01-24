@@ -265,6 +265,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -3192,9 +3193,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MapNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static PMap doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createMap(self);
+        static PMap doit(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (args.length < 2) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MAP_MUST_HAVE_AT_LEAST_TWO_ARGUMENTS);
+            }
+            PMap map = factory.createMap(cls);
+            map.setFunction(args[0]);
+            Object[] iterators = new Object[args.length - 1];
+            loopProfile.profileCounted(inliningTarget, iterators.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < iterators.length); i++) {
+                iterators[i] = getIter.execute(frame, inliningTarget, args[i + 1]);
+            }
+            map.setIterators(iterators);
+            return map;
         }
     }
 
