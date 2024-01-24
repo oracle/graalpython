@@ -412,46 +412,6 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Ignored)
-    abstract static class PyTruffleObject_RichCompare extends CApiTernaryBuiltinNode {
-
-        @Specialization(guards = "op == 0")
-        static Object op0(Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.LtNode compNode) {
-            return compNode.executeObject(null, a, b);
-        }
-
-        @Specialization(guards = "op == 1")
-        static Object op1(Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.LeNode compNode) {
-            return compNode.executeObject(null, a, b);
-        }
-
-        @Specialization(guards = "op == 2")
-        static Object op2(Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.EqNode compNode) {
-            return compNode.executeObject(null, a, b);
-        }
-
-        @Specialization(guards = "op == 3")
-        static Object op3(Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.NeNode compNode) {
-            return compNode.executeObject(null, a, b);
-        }
-
-        @Specialization(guards = "op == 4")
-        static Object op4(Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.GtNode compNode) {
-            return compNode.executeObject(null, a, b);
-        }
-
-        @Specialization(guards = "op == 5")
-        static Object op5(Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.GeNode compNode) {
-            return compNode.executeObject(null, a, b);
-        }
-    }
-
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
     abstract static class PyObject_AsFileDescriptor extends CApiUnaryBuiltinNode {
         @Specialization

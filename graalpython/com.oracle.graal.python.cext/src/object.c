@@ -231,27 +231,26 @@ do_richcompare(PyObject *v, PyObject *w, int op)
     PyObject *res;
     int checked_reverse_op = 0;
 
-    if (!Py_IS_TYPE(v, Py_TYPE(w))) {
-        // GraalPy change: we upcall right now, since MRO iteration from native
-        // involves multiple up/downcalls for us
-        return GraalPyTruffleObject_RichCompare(v, w, op);
-        /* CPython code:
-        PyType_IsSubtype(Py_TYPE(w), Py_TYPE(v)) &&
-        (f = Py_TYPE(w)->tp_richcompare) != NULL) {
+    /* GraalPy change: in the following, we replaced any 'Py_TYPE(v)' by
+       'v_type' and any 'Py_TYPE(w)' by 'w_type' to save some calls. */
+    const PyTypeObject *v_type = Py_TYPE(v);
+    const PyTypeObject *w_type = Py_TYPE(w);
+    if (v_type != w_type &&
+        PyType_IsSubtype(w_type, v_type) &&
+        (f = w_type->tp_richcompare) != NULL) {
         checked_reverse_op = 1;
         res = (*f)(w, v, _Py_SwappedOp[op]);
         if (res != Py_NotImplemented)
             return res;
         Py_DECREF(res);
-        */
     }
-    if ((f = Py_TYPE(v)->tp_richcompare) != NULL) {
+    if ((f = v_type->tp_richcompare) != NULL) {
         res = (*f)(v, w, op);
         if (res != Py_NotImplemented)
             return res;
         Py_DECREF(res);
     }
-    if (!checked_reverse_op && (f = Py_TYPE(w)->tp_richcompare) != NULL) {
+    if (!checked_reverse_op && (f = w_type->tp_richcompare) != NULL) {
         res = (*f)(w, v, _Py_SwappedOp[op]);
         if (res != Py_NotImplemented)
             return res;
@@ -270,8 +269,8 @@ do_richcompare(PyObject *v, PyObject *w, int op)
         PyErr_Format(PyExc_TypeError,
                       "'%s' not supported between instances of '%.100s' and '%.100s'",
                       opstrings[op],
-                      Py_TYPE(v)->tp_name,
-                      Py_TYPE(w)->tp_name);
+                      v_type->tp_name,
+                      w_type->tp_name);
         return NULL;
     }
     Py_INCREF(res);
