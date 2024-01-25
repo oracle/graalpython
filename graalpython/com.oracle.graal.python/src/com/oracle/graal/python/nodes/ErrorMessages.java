@@ -1300,7 +1300,6 @@ public abstract class ErrorMessages {
     public static final TruffleString LARGER_THAN_FIELD_SIZE_LIMIT = tsLiteral("field larger than field limit (%d)");
     public static final TruffleString UNEXPECTED_END_OF_DATA = tsLiteral("unexpected end of data");
     public static final TruffleString WRONG_ITERATOR_RETURN_TYPE = tsLiteral("iterator should return strings, not %.200s (the file should be opened in text mode)");
-    public static final TruffleString LINE_CONTAINS_NULL_BYTE = tsLiteral("line contains NUL");
     public static final TruffleString EXPECTED_ITERABLE_NOT_S = tsLiteral("iterable expected, not %.200s");
     public static final TruffleString EMPTY_FIELD_RECORD_MUST_BE_QUOTED = tsLiteral("single empty field record must be quoted");
     public static final TruffleString ESCAPE_WITHOUT_ESCAPECHAR = tsLiteral("need to escape, but no escapechar set");

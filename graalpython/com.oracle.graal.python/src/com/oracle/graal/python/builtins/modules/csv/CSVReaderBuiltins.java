@@ -166,15 +166,6 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(inliningTarget, lineObj));
                 }
 
-                // TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of
-                // bytes?
-                // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and
-                // line.index(0) >=0:
-                // raise Error("line contains NULL byte")
-                if (byteIndexOfCodePointNode.execute(line, 0, 0, line.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.LINE_CONTAINS_NULL_BYTE);
-                }
-
                 self.lineNum++;
                 TruffleStringIterator tsi = createCodePointIteratorNode.execute(line, TS_ENCODING);
                 while (tsi.hasNext()) {
