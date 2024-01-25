@@ -481,6 +481,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyType_GetModuleByDef", ret = PyObject, args = {PyTypeObject, PYMODULEDEF_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyType_GetModuleState", ret = Pointer, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_GetSlot", ret = Pointer, args = {PyTypeObject, Int}, call = CImpl)
+    @CApiBuiltin(name = "PyType_IsSubtype", ret = Int, args = {PyTypeObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_Modified", ret = Void, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_Ready", ret = Int, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_Append", ret = Void, args = {PyObjectPtr, PyObject}, call = CImpl)
@@ -639,6 +640,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_gitversion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "_Py_parse_inf_or_nan", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = CImpl)
     @CApiBuiltin(name = "_Py_string_to_number_with_underscores", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PyObject, Pointer, func_objcharsizevoidptr}, call = CImpl)
+    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
 
     /*
      * Functions that are not implemented at the moment:
@@ -786,7 +789,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_New", ret = PyInterpreterState, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_Next", ret = PyInterpreterState, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_ThreadHead", ret = PyThreadState, args = {PyInterpreterState}, call = NotImplemented)
-    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyMapping_HasKey", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyMapping_HasKeyString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
@@ -1103,7 +1105,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_Size_t_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedInt_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedLongLong_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedShort_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyMem_GetCurrentAllocatorName", ret = ConstCharPtrAsTruffleString, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyMem_RawStrdup", ret = CHAR_PTR, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)

@@ -172,6 +172,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         programArgs = new ArrayList<>();
         origArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
+        boolean sha3BackendSpecified = false;
         boolean installSignalHandlersSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
@@ -249,11 +250,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                             matchesPythonOption(arg, "CoreHome") ||
                                             matchesPythonOption(arg, "StdLibHome") ||
                                             matchesPythonOption(arg, "CAPI") ||
-                                            matchesPythonOption(arg, "PosixModuleBackend")) {
+                                            matchesPythonOption(arg, "PosixModuleBackend") ||
+                                            matchesPythonOption(arg, "Sha3ModuleBackend")) {
                                 addRelaunchArg(arg);
                             }
                             if (matchesPythonOption(arg, "PosixModuleBackend")) {
                                 posixBackendSpecified = true;
+                            }
+                            if (matchesPythonOption(arg, "Sha3ModuleBackend")) {
+                                sha3BackendSpecified = true;
                             }
                             if (matchesPythonOption(arg, "InstallSignalHandlers")) {
                                 installSignalHandlersSpecified = true;
@@ -407,6 +412,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!posixBackendSpecified) {
             polyglotOptions.put("python.PosixModuleBackend", "native");
+        }
+        if (!sha3BackendSpecified) {
+            polyglotOptions.put("python.Sha3ModuleBackend", "native");
         }
         if (!installSignalHandlersSpecified) {
             polyglotOptions.put("python.InstallSignalHandlers", "true");

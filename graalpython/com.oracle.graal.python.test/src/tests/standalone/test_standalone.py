@@ -302,27 +302,6 @@ class PolyglotAppTest(unittest.TestCase):
                 self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-    def test_graalpy_exec(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            target_name = "graalpy_exec_test"
-            target_dir = os.path.join(str(tmpdir), target_name)
-            self.generate_app(tmpdir, target_dir, target_name)
-            self.purge_local_repo(target_dir)
-
-            try:
-                cmd = MVN_CMD + ["graalpy:exec", "-Dexec.argc=2", "-Dexec.arg1=-c", "-Dexec.arg2=print(42, 'from python')"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "42 from python" in out
-
-                self.env["GRAAL_PYTHON_ARGS"] = "\013-c\013print(42, 'from python via GRAAL_PYTHON_ARGS env var')"
-                cmd = MVN_CMD + ["graalpy:exec"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "from python via GRAAL_PYTHON_ARGS env var" in out
-            finally:
-                del self.env["GRAAL_PYTHON_ARGS"]
-                self.purge_local_repo(target_dir, False)
-
-    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "fail_without_graalpy_dep_test"
@@ -336,15 +315,19 @@ class PolyglotAppTest(unittest.TestCase):
                 cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
                 run_cmd(cmd, self.env, cwd=target_dir)
             try:
-                cmd = MVN_CMD + ["-X", "process-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
-
+                if sys.platform != 'win32':
+                    assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
+                else: 
+                    # different error message on windows due to generate launcher python script executed 
+                    # before the actuall process-resources goal
+                    assert "Could not find or load main class com.oracle.graal.python.shell.GraalPythonMain" in out
+                    
             finally:
                 self.purge_local_repo(target_dir, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-    @unittest.skipUnless(sys.platform != 'win32', "ujson install fails on windows")
     def test_gen_launcher_and_venv(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "gen_launcher_and_venv_test"
@@ -354,7 +337,7 @@ class PolyglotAppTest(unittest.TestCase):
             self.purge_local_repo(target_dir)
 
             try:
-                cmd = MVN_CMD + ["-X", "process-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "-m venv" in out
                 assert "-m ensurepip" in out
@@ -362,13 +345,27 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "termcolor" in out
 
                 # run again and assert that we do not regenerate the venv
-                cmd = MVN_CMD + ["generate-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "-m venv" not in out
                 assert "-m ensurepip" not in out
                 assert "ujson" not in out
                 assert "termcolor" not in out
-
+                
+                # remove ujson pkg from plugin config and check if unistalled
+                with open(os.path.join(target_dir, "pom.xml"), "r") as f:
+                    contents = f.read()
+                
+                with open(os.path.join(target_dir, "pom.xml"), "w") as f:
+                    f.write(contents.replace("<package>ujson</package>", ""))               
+                
+                cmd = MVN_CMD + ["process-resources"]
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                assert "-m venv" not in out
+                assert "-m ensurepip" not in out
+                assert "Uninstalling ujson" in out
+                assert "termcolor" not in out
+                
             finally:
                 self.purge_local_repo(target_dir, False)
 
@@ -382,7 +379,7 @@ class PolyglotAppTest(unittest.TestCase):
             self.purge_local_repo(target_dir)
 
             try:
-                cmd = MVN_CMD + ["-X", "process-resources"]
+                cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 
                 # check fileslist.txt

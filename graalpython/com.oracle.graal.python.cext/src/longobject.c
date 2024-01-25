@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -252,3 +252,19 @@ unsigned char _PyLong_DigitValue[256] = {
     37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
 };
 
+int
+_PyLong_UnsignedLong_Converter(PyObject *obj, void *ptr)
+{
+    unsigned long uval;
+
+    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+        PyErr_SetString(PyExc_ValueError, "value must be positive");
+        return 0;
+    }
+    uval = PyLong_AsUnsignedLong(obj);
+    if (uval == (unsigned long)-1 && PyErr_Occurred())
+        return 0;
+
+    *(unsigned long *)ptr = uval;
+    return 1;
+}

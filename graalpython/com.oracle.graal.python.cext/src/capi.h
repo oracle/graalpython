@@ -324,6 +324,7 @@ typedef struct {
     BUILTIN(PyTruffleGILState_Ensure, int) \
     BUILTIN(PyTruffleGILState_Release, void) \
     BUILTIN(PyTruffleHash_InitSecret, void, int8_t*) \
+    BUILTIN(PyTruffleIter_Send, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
     BUILTIN(PyTruffleLong_FromString, PyObject*, PyObject*, int, int) \
@@ -348,6 +349,7 @@ typedef struct {
     BUILTIN(PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, const char*, void*) \
     BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, const char*) \
     BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, const char*) \
+    BUILTIN(PyTruffleType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
     BUILTIN(PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyTruffleUnicode_DecodeUTF16Stateful, PyObject*, void*, Py_ssize_t, const char*, int, int) \
     BUILTIN(PyTruffleUnicode_DecodeUTF32Stateful, PyObject*, void*, Py_ssize_t, const char*, int, int) \
@@ -411,7 +413,6 @@ typedef struct {
     BUILTIN(PyTuple_New, PyObject*, Py_ssize_t) \
     BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
     BUILTIN(PyUnicodeDecodeError_Create, PyObject*, const char*, const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t, const char*) \
     BUILTIN(PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
@@ -673,6 +674,10 @@ typedef struct {
 #define MP_LENGTH 1125899906842624
 #define MP_SUBSCRIPT 2251799813685248
 #define MP_ASS_SUBSCRIPT 4503599627370496
+#define AM_AWAIT 18014398509481984
+#define AM_AITER 36028797018963968
+#define AM_ANEXT 72057594037927936
+#define AM_SEND 144115188075855872
 // {{end CAPI_BUILTINS}}
 
 
@@ -728,6 +733,8 @@ static void PyTruffle_Log(int level, const char* format, ... ) {
 		va_end(args);
 	}
 }
+
+Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 
 
 #define JWRAPPER_DIRECT                      1
@@ -906,6 +913,7 @@ PY_TRUFFLE_TYPE(PyCStructType_Type, 	"PyCStructType",			&PyType_Type, sizeof(PyO
 PY_TRUFFLE_TYPE(UnionType_Type, 		"_ctypes.UnionType",		&PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCPointerType_Type,	"PyCPointerType", 		    &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCArrayType_Type,		"PyCArrayType", 			&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(PyCoro_Type, 			"coroutine", 				&PyType_Type, sizeof(PyCoroObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAIterWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenASend_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenAThrow_Type) \
@@ -930,7 +938,6 @@ PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyCmpWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContext_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContextToken_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyContextVar_Type) \
-PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyCoro_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictItems_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictIterItem_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyDictIterKey_Type) \

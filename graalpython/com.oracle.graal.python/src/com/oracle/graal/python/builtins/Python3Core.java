@@ -877,6 +877,7 @@ public abstract class Python3Core {
         objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter(), context.getLanguage());
         initializeJavaCore();
         initializeImportlib();
+        context.applyModuleOptions();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;

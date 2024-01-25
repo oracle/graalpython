@@ -134,6 +134,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
     "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
+    "graalpython/com.oracle.graal.python.cext/modules/_sha3": CopyFrom("Modules/_sha3"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),

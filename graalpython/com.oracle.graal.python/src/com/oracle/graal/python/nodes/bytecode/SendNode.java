@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -61,11 +61,9 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline(false) // used in BCI root node
 public abstract class SendNode extends PNodeWithContext {
-    private static final TruffleString T_SEND = tsLiteral("send");
 
     // Returns true when the generator finished
     public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Object iter, Object arg);

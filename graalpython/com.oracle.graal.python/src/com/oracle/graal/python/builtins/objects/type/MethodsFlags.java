@@ -127,6 +127,13 @@ public abstract class MethodsFlags {
     public static final long MP_SUBSCRIPT = 1L << 51;
     public static final long MP_ASS_SUBSCRIPT = 1L << 52;
 
+    public static final long AM_AWAIT = 1L << 54;
+    public static final long AM_AITER = 1L << 55;
+    public static final long AM_ANEXT = 1L << 56;
+    public static final long AM_SEND = 1L << 57;
+
+    public static final long ASYNC_METHODS = AM_AWAIT | AM_AITER | AM_ANEXT | AM_SEND;
+
     static {
         // CapiCodeGen
         CAPI_METHODS_FLAGS_DEFINES.add("#define NB_ADD " + NB_ADD);
@@ -175,6 +182,10 @@ public abstract class MethodsFlags {
         CAPI_METHODS_FLAGS_DEFINES.add("#define MP_LENGTH " + MP_LENGTH);
         CAPI_METHODS_FLAGS_DEFINES.add("#define MP_SUBSCRIPT " + MP_SUBSCRIPT);
         CAPI_METHODS_FLAGS_DEFINES.add("#define MP_ASS_SUBSCRIPT " + MP_ASS_SUBSCRIPT);
+        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_AWAIT " + AM_AWAIT);
+        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_AITER " + AM_AITER);
+        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_ANEXT " + AM_ANEXT);
+        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_SEND " + AM_SEND);
     }
 
     // builtins methods flags
@@ -236,6 +247,12 @@ public abstract class MethodsFlags {
     public static final long UNION_TYPE_M_FLAGS = NB_OR | MP_SUBSCRIPT;
 
     public static final long CONTEXT_M_FLAGS = SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
+
+    public static final long GENERATOR_M_FLAGS = AM_SEND;
+    public static final long COROUTINE_M_FLAGS = AM_AWAIT | AM_SEND;
+    public static final long ASYNC_GENERATOR_M_FLAGS = AM_AITER | AM_ANEXT | AM_SEND;
+    public static final long ASYNC_GENERATOR_ASEND_M_FLAGS = AM_AWAIT;
+    public static final long ASYNC_GENERATOR_ATHROW_M_FLAGS = AM_AWAIT;
 
     // _ctypes
     public static final long PYCFUNCPTRTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;

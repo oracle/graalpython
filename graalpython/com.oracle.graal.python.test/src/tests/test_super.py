@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,27 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-source="${BASH_SOURCE[0]}"
-while [ -h "$source" ] ; do
-    prev_source="$source"
-    source="$(readlink "$source")";
-    if [[ "$source" != /* ]]; then
-        # if the link was relative, it was relative to where it came from
-        dir="$( cd -P "$( dirname "$prev_source" )" && pwd )"
-        source="$dir/$source"
-    fi
-done
-location="$( cd -P "$( dirname "$source" )" && pwd )"
 
-if [ -z "$MVN" ]; then
-    MVN=mvn
-fi
+def test_super():
+    class A:
+        def m(self): return ["A"]
+    class B(A):
+        def m(self): return ["B"] + self.my_super.m()
+    B.my_super = super(B)
+    B.my_super = B.my_super
 
-args="$(printf "\v")--python.Executable=$0"
-for var in "$@"; do
-    args="${args}$(printf "\v")${var}"
-done
-
-curdir=`pwd`
-export GRAAL_PYTHON_ARGS="${args}$(printf "\v")"
-$MVN -f "${location}/../pom.xml" graalpy:exec -Dexec.workingdir="${curdir}"
+    assert B().m() == ["B", "A"]

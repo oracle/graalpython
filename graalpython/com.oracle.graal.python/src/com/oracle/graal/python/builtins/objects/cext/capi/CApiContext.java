@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetClassNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -128,6 +128,11 @@ import sun.misc.Unsafe;
 public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
+
+    /**
+     * NFI source for Python module init functions (i.e. {@code "PyInit_modname"}).
+     */
+    private static final Source MODINIT_SRC = Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "modinit").build();
 
     /**
      * The default C-level call recursion limit like {@code Py_DEFAULT_RECURSION_LIMIT}.
@@ -690,9 +695,8 @@ public final class CApiContext extends CExtContext {
         try {
             nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
         } catch (UnsupportedMessageException e) {
-            Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
-            Object bound = SignatureLibrary.getUncached().bind(signature, pyinitFunc);
-            nativeResult = InteropLibrary.getUncached().execute(bound);
+            Object signature = context.getEnv().parseInternal(MODINIT_SRC).call();
+            nativeResult = SignatureLibrary.getUncached().call(signature, pyinitFunc);
         } catch (ArityException e) {
             // In case of multi-phase init, the init function may take more than one argument.
             // However, CPython gracefully ignores that. So, we pass just NULL pointers.
@@ -714,7 +718,7 @@ public final class CApiContext extends CExtContext {
              * init function did this initialization by calling 'PyModuleDef_Init' on it. So, we
              * must do it here because 'CreateModuleNode' should just ignore this case.
              */
-            Object clazz = GetClassNodeGen.getUncached().execute(null, result);
+            Object clazz = GetClassNode.executeUncached(result);
             if (clazz == PNone.NO_VALUE) {
                 throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }

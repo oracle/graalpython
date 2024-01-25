@@ -864,11 +864,18 @@ public final class PythonCextBuiltins {
         /**
          * The Java code of this builtin can be called without any intermediate C code - a call stub
          * will be generated.
+         * <p>
+         * In particular, assume there is a C API builtin called {@code PyObject_Str}. This will
+         * generate the native symbol {@code GraalPyObject_Str} which is a variable with the
+         * function pointer of the native closure and it will generate the native call stub (a C
+         * function) {@code PyObject_Str} that calls {@code GraalPyObject_Str}.
+         * </p>
          */
         Direct,
         /**
          * This builtin has an explicit C implementation that can be executed both from native and
-         * from Sulong - no automatic stub will be generated.
+         * from Sulong - no automatic stub will be generated. Further, there *MUST NOT* be a C API
+         * builtin that would implement the function in Java.
          */
         CImpl,
         /**
@@ -877,6 +884,16 @@ public final class PythonCextBuiltins {
         NotImplemented,
         /**
          * This builtin is not part of the Python C API, no call stub is generated.
+         * <p>
+         * This call path should be used if the builtin is basically implemented in Java but some
+         * cases can already be covered in a C implementation. The convention is that if there is a
+         * C API function {@code Py<namespace>_<function>} (e.g. {@code PyBytes_FromStringAndSize}),
+         * then the Java builtin should be named {@code PyTruffle<namespace>_<function>} (e.g.
+         * {@code PyTruffleBytes_FromStringAndSize}). The corresponding C function must be
+         * implemented manually and can then call the Java builtin using generated native symbol
+         * {@code GraalPy<namespace>_<function>} (e.g.
+         * {@code GraalPyTruffleBytes_FromStringAndSize}).
+         * </p>
          */
         Ignored,
     }

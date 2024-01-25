@@ -65,7 +65,6 @@ SOFTWARE.
         </executions>
         <configuration>
           <packages>
-            <package>psutil</package>
             <package>termcolor</package>
           </packages>
         </configuration>

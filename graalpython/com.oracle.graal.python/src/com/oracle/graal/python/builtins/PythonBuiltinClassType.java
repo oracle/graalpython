@@ -26,11 +26,15 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.ARRAY_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.ASYNC_GENERATOR_ASEND_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.ASYNC_GENERATOR_ATHROW_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.ASYNC_GENERATOR_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.BOOLEAN_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.BYTES_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.BYTE_ARRAY_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.COMPLEX_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.CONTEXT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.COROUTINE_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DEFAULTDICT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DEFAULT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DEQUE_M_FLAGS;
@@ -41,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICT_M_
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FLOAT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FOREIGNOBJECT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FROZENSET_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.GENERATOR_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.GENERIC_ALIAS_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.INT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.LIST_M_FLAGS;
@@ -175,16 +180,16 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PFrame("frame", Flags.PRIVATE_DERIVED_WODICT),
     PFrozenSet("frozenset", J_BUILTINS, FROZENSET_M_FLAGS),
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT),
-    PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT),
-    PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT),
+    PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT, GENERATOR_M_FLAGS),
+    PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT, COROUTINE_M_FLAGS),
     PCoroutineWrapper("coroutine_wrapper", Flags.PRIVATE_DERIVED_WODICT),
-    PAsyncGenerator("async_generator", Flags.PRIVATE_DERIVED_WODICT),
+    PAsyncGenerator("async_generator", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_M_FLAGS),
     PInt("int", J_BUILTINS, INT_M_FLAGS),
     PList("list", J_BUILTINS, LIST_M_FLAGS),
     PMappingproxy("mappingproxy", Flags.PRIVATE_DERIVED_WODICT, MAPPINGPROXY_M_FLAGS),
     PMemoryView("memoryview", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, MEMORYVIEW_M_FLAGS),
-    PAsyncGenASend("async_generator_asend", Flags.PRIVATE_DERIVED_WODICT),
-    PAsyncGenAThrow("async_generator_athrow", Flags.PRIVATE_DERIVED_WODICT),
+    PAsyncGenASend("async_generator_asend", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ASEND_M_FLAGS),
+    PAsyncGenAThrow("async_generator_athrow", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ATHROW_M_FLAGS),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", Flags.PRIVATE_DERIVED_WODICT),
     PMethod("method", Flags.PRIVATE_DERIVED_WODICT),
     PMMap("mmap", "mmap", MMAP_M_FLAGS),

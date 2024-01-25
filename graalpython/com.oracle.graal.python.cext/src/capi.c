@@ -296,6 +296,14 @@ static void initialize_bufferprocs() {
     GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
 }
 
+int is_builtin_type(PyTypeObject *tp) {
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
+#define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
+    return PY_TYPE_OBJECTS 0;
+#undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
+}
+
 PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
     if (cls == NULL) {
         return 0;
@@ -363,6 +371,16 @@ PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
 		COMPUTE_FLAGS(mp_length, MP_LENGTH)
 		COMPUTE_FLAGS(mp_subscript, MP_SUBSCRIPT)
 		COMPUTE_FLAGS(mp_ass_subscript, MP_ASS_SUBSCRIPT)
+#undef COMPUTE_FLAGS
+    }
+
+    PyAsyncMethods *async = cls->tp_as_async;
+    if (async != NULL) {
+#define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((async->NAME != NULL) * BIT_IDX);
+		COMPUTE_FLAGS(am_await, AM_AWAIT)
+		COMPUTE_FLAGS(am_aiter, AM_AITER)
+		COMPUTE_FLAGS(am_anext, AM_ANEXT)
+		COMPUTE_FLAGS(am_send, AM_SEND)
 #undef COMPUTE_FLAGS
     }
     return flags;
@@ -698,8 +716,6 @@ PyAPI_FUNC(int) WritePySSizeT(void* object, Py_ssize_t offset, Py_ssize_t value)
     WriteMember(object, offset, value, Py_ssize_t);
     return 0;
 }
-
-PyObject* wrapped_null;
 
 #undef ReadMember
 #undef WriteMember
@@ -1844,10 +1860,6 @@ PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
     return GraalPyIter_Next(a);
 }
-#undef PyIter_Send
-PyAPI_FUNC(PySendResult) PyIter_Send(PyObject* a, PyObject* b, PyObject** c) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyList_Append
 PyAPI_FUNC(int) PyList_Append(PyObject* a, PyObject* b) {
     return GraalPyList_Append(a, b);
@@ -2764,6 +2776,10 @@ PyAPI_FUNC(int) PyTruffleGILState_Ensure() {
 PyAPI_FUNC(void) PyTruffleGILState_Release() {
     GraalPyTruffleGILState_Release();
 }
+#undef PyTruffleIter_Send
+PyAPI_FUNC(PyObject*) PyTruffleIter_Send(PyObject* a, PyObject* b) {
+    return GraalPyTruffleIter_Send(a, b);
+}
 #undef PyTruffleList_SET_ITEM
 PyAPI_FUNC(void) PyTruffleList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
     GraalPyTruffleList_SET_ITEM(a, b, c);
@@ -2839,10 +2855,6 @@ PyAPI_FUNC(PyObject*) PyType_GetName(PyTypeObject* a) {
 #undef PyType_GetQualName
 PyAPI_FUNC(PyObject*) PyType_GetQualName(PyTypeObject* a) {
     FUNC_NOT_IMPLEMENTED
-}
-#undef PyType_IsSubtype
-PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return GraalPyType_IsSubtype(a, b);
 }
 #undef PyType_SUPPORTS_WEAKREFS
 PyAPI_FUNC(int) PyType_SUPPORTS_WEAKREFS(PyTypeObject* a) {
@@ -3790,10 +3802,6 @@ PyAPI_FUNC(int) _PyLong_UnsignedInt_Converter(PyObject* a, void* b) {
 }
 #undef _PyLong_UnsignedLongLong_Converter
 PyAPI_FUNC(int) _PyLong_UnsignedLongLong_Converter(PyObject* a, void* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyLong_UnsignedLong_Converter
-PyAPI_FUNC(int) _PyLong_UnsignedLong_Converter(PyObject* a, void* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyLong_UnsignedShort_Converter

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,11 +75,15 @@ static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
 static int32_t (*original_Long_AsInt32_t)(HPyContext *ctx, HPy h);
 static int64_t (*original_Long_AsInt64_t)(HPyContext *ctx, HPy h);
 static uint32_t (*original_Long_AsUInt32_t)(HPyContext *ctx, HPy h);
+static size_t (*original_Long_AsSize_t)(HPyContext *ctx, HPy h);
+static HPy_ssize_t (*original_Long_AsSsize_t)(HPyContext *ctx, HPy h);
 static double (*original_Long_AsDouble)(HPyContext *ctx, HPy h);
 static HPy (*original_Long_FromInt32_t)(HPyContext *ctx, int32_t l);
 static HPy (*original_Long_FromUInt32_t)(HPyContext *ctx, uint32_t l);
 static HPy (*original_Long_FromInt64_t)(HPyContext *ctx, int64_t l);
 static HPy (*original_Long_FromUInt64_t)(HPyContext *ctx, uint64_t l);
+static HPy (*original_Long_FromSsize_t)(HPyContext *ctx, HPy_ssize_t l);
+static HPy (*original_Long_FromSize_t)(HPyContext *ctx, size_t l);
 static int (*original_List_Check)(HPyContext *ctx, HPy h);
 static int (*original_Number_Check)(HPyContext *ctx, HPy h);
 static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
@@ -89,7 +93,15 @@ static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+static int (*original_IsTrue)(HPyContext *ctx, HPy h);
 static HPy (*original_Type)(HPyContext *ctx, HPy obj);
+static HPy (*original_Add)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_Subtract)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_Multiply)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_FloorDivide)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_TrueDivide)(HPyContext *ctx, HPy h1, HPy h2);
+static HPy (*original_RichCompare)(HPyContext *ctx, HPy v, HPy w, int op);
+static int (*original_RichCompareBool)(HPyContext *ctx, HPy v, HPy w, int op);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     uint64_t bitsA = toBits(a);
@@ -116,6 +128,18 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     } else {
         return 0;
     }
+}
+
+static int augment_IsTrue(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return unboxInt(bits) != 0;
+    } else if (isBoxedDouble(bits)) {
+        return unboxDouble(bits) != 0.0;
+    } else if (augment_Is(ctx, ctx->h_None, h)) {
+        return 0;
+    }
+    return original_IsTrue(ctx, h);
 }
 
 static void *augment_AsStruct_Object(HPyContext *ctx, HPy h) {
@@ -182,6 +206,28 @@ static uint32_t augment_Long_AsUInt32_t(HPyContext *ctx, HPy h) {
     return original_Long_AsUInt32_t(ctx, h);
 }
 
+static HPy_ssize_t augment_Long_AsSsize_t(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        int32_t unboxed = unboxInt(bits);
+        if (unboxed >= 0) {
+            return unboxed;
+        }
+    }
+    return original_Long_AsSsize_t(ctx, h);
+}
+
+static size_t augment_Long_AsSize_t(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        int32_t unboxed = unboxInt(bits);
+        if (unboxed >= 0) {
+            return unboxed;
+        }
+    }
+    return original_Long_AsSize_t(ctx, h);
+}
+
 static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
@@ -216,6 +262,22 @@ static HPy augment_Long_FromUInt64_t(HPyContext *ctx, uint64_t l) {
         return toPtr(boxInt((int32_t) l));
     } else {
         return original_Long_FromUInt64_t(ctx, l);
+    }
+}
+
+static HPy augment_Long_FromSsize_t(HPyContext *ctx, HPy_ssize_t l) {
+    if (isBoxableInt(l)) {
+        return toPtr(boxInt((int32_t) l));
+    } else {
+        return original_Long_FromSsize_t(ctx, l);
+    }
+}
+
+static HPy augment_Long_FromSize_t(HPyContext *ctx, size_t l) {
+    if (isBoxableUnsignedInt(l)) {
+        return toPtr(boxInt((int32_t) l));
+    } else {
+        return original_Long_FromSize_t(ctx, l);
     }
 }
 
@@ -326,6 +388,144 @@ HPy augment_Type(HPyContext *ctx, HPy obj) {
     }
 }
 
+#define GENERATE_AUGMENTED_BINOP(NAME, OP) \
+    static HPy augment_##NAME(HPyContext *ctx, HPy h1, HPy h2) { \
+        uint64_t bits1 = toBits(h1); \
+        uint64_t bits2 = toBits(h2); \
+        if (isBoxedInt(bits1) && isBoxedInt(bits2)) { \
+            int64_t i1 = (int64_t) unboxInt(bits1); \
+            int64_t i2 = (int64_t) unboxInt(bits2); \
+            return augment_Long_FromInt64_t(ctx, i1 OP i2); \
+        } else if (isBoxedInt(bits1) && isBoxedDouble(bits2)) { \
+            int32_t i1 = unboxInt(bits1); \
+            double f2 = unboxDouble(bits2); \
+            return augment_Float_FromDouble(ctx, i1 OP f2); \
+        } else if (isBoxedDouble(bits1) && isBoxedInt(bits2)) { \
+            double f1 = unboxDouble(bits1); \
+            int32_t i2 = unboxInt(bits2); \
+            return augment_Float_FromDouble(ctx, f1 OP i2); \
+        } else if (isBoxedDouble(bits1) && isBoxedDouble(bits2)) { \
+            double f1 = unboxDouble(bits1); \
+            double f2 = unboxDouble(bits2); \
+            return augment_Float_FromDouble(ctx, f1 OP f2); \
+        } \
+        return original_##NAME(ctx, h1, h2); \
+    }
+
+GENERATE_AUGMENTED_BINOP(Add, +)
+GENERATE_AUGMENTED_BINOP(Subtract, -)
+GENERATE_AUGMENTED_BINOP(Multiply, *)
+
+static HPy augment_FloorDivide(HPyContext *ctx, HPy h1, HPy h2) {
+    uint64_t bits1 = toBits(h1);
+    uint64_t bits2 = toBits(h2);
+    if (isBoxedInt(bits1) && isBoxedInt(bits2)) {
+        int32_t i1 = unboxInt(bits1);
+        int32_t i2 = unboxInt(bits2);
+        if (i2 == 0) {
+            HPyErr_SetString(ctx, ctx->h_ZeroDivisionError, "division by zero");
+            return HPy_NULL;
+        }
+        return augment_Long_FromInt64_t(ctx, i1 / i2);
+    }
+    return original_FloorDivide(ctx, h1, h2);
+}
+
+static HPy augment_TrueDivide(HPyContext *ctx, HPy h1, HPy h2) {
+    uint64_t bits1 = toBits(h1);
+    uint64_t bits2 = toBits(h2);
+    if (isBoxedInt(bits1) && isBoxedInt(bits2)) {
+        int32_t i2 = unboxInt(bits2);
+        if (i2 == 0) {
+            goto div_by_zero;
+        }
+        double f1 = (double) unboxInt(bits1);
+        return augment_Float_FromDouble(ctx, f1 / i2);
+    } else if (isBoxedInt(bits1) && isBoxedDouble(bits2)) {
+        int32_t i1 = unboxInt(bits1);
+        double f2 = unboxDouble(bits2);
+        if (f2 == 0.0) {
+            goto div_by_zero;
+        }
+        return augment_Float_FromDouble(ctx, i1 / f2);
+    } else if (isBoxedDouble(bits1) && isBoxedInt(bits2)) {
+        double f1 = unboxDouble(bits1);
+        int32_t i2 = unboxInt(bits2);
+        if (i2 == 0) {
+            goto div_by_zero;
+        }
+        return augment_Float_FromDouble(ctx, f1 / i2);
+    } else if (isBoxedDouble(bits1) && isBoxedDouble(bits2)) {
+        double f1 = unboxDouble(bits1);
+        double f2 = unboxDouble(bits2);
+        if (f2 == 0.0) {
+            goto div_by_zero;
+        }
+        return augment_Float_FromDouble(ctx, f1 / f2);
+    }
+    return original_TrueDivide(ctx, h1, h2);
+div_by_zero:
+    HPyErr_SetString(ctx, ctx->h_ZeroDivisionError, "division by zero");
+    return HPy_NULL;
+}
+
+#define HPy_RETURN_RICHCOMPARE_BOOL(ctx, val1, val2, op)                \
+    do {                                                                \
+        int result;                                                     \
+        switch (op) {                                                   \
+        case HPy_EQ: result = ((val1) == (val2)); break;                \
+        case HPy_NE: result = ((val1) != (val2)); break;                \
+        case HPy_LT: result = ((val1) <  (val2)); break;                \
+        case HPy_GT: result = ((val1) >  (val2)); break;                \
+        case HPy_LE: result = ((val1) <= (val2)); break;                \
+        case HPy_GE: result = ((val1) >= (val2)); break;                \
+        default:                                                        \
+            HPy_FatalError(ctx, "Invalid value for HPy_RichCmpOp");     \
+        }                                                               \
+        return result;                                                  \
+    } while (0)
+
+static inline int richcompare_boxed_values(HPyContext *ctx, uint64_t vbits, uint64_t wbits, int op) {
+    if (isBoxedInt(vbits)) {
+        if (isBoxedInt(wbits)) {
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxInt(vbits), unboxInt(wbits), op);
+        } else {
+            assert(isBoxedDouble(wbits));
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxInt(vbits), unboxDouble(wbits), op);
+        }
+    } else {
+        assert(isBoxedDouble(vbits));
+        if (isBoxedInt(wbits)) {
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxDouble(vbits), unboxInt(wbits), op);
+        } else {
+            assert(isBoxedDouble(wbits));
+            HPy_RETURN_RICHCOMPARE_BOOL(ctx, unboxDouble(vbits), unboxDouble(wbits), op);
+        }
+    }
+}
+
+static HPy augment_RichCompare(HPyContext *ctx, HPy v, HPy w, int op) {
+    uint64_t vbits = toBits(v);
+    uint64_t wbits = toBits(w);
+    int result;
+    if (!isBoxedHandle(vbits) && !isBoxedHandle(wbits)) {
+        result = richcompare_boxed_values(ctx, vbits, wbits, op);
+        if (result)
+            return HPy_Dup(ctx, ctx->h_True);
+        return HPy_Dup(ctx, ctx->h_False);
+    }
+    return original_RichCompare(ctx, v, w, op);
+}
+
+static int augment_RichCompareBool(HPyContext *ctx, HPy v, HPy w, int op) {
+    uint64_t vbits = toBits(v);
+    uint64_t wbits = toBits(w);
+    if (!isBoxedHandle(vbits) && !isBoxedHandle(wbits)) {
+        return richcompare_boxed_values(ctx, vbits, wbits, op);
+    }
+    return original_RichCompareBool(ctx, v, w, op);
+}
+
 void init_native_fast_paths(HPyContext *context) {
     LOG("%p", context);
 
@@ -333,32 +533,27 @@ void init_native_fast_paths(HPyContext *context) {
     original_ ## name = context->ctx_ ## name;  \
     context->ctx_ ## name = augment_ ## name;
 
-    AUGMENT(Long);
-
     AUGMENT(Float_FromDouble);
-
     AUGMENT(Float_AsDouble);
 
+    AUGMENT(Long);
     AUGMENT(Long_AsInt32_t);
-
     AUGMENT(Long_AsInt64_t);
-
     AUGMENT(Long_AsUInt32_t);
-
     AUGMENT(Long_AsDouble);
-
+    AUGMENT(Long_AsSsize_t);
+    AUGMENT(Long_AsSize_t);
     AUGMENT(Long_FromInt32_t);
-
     AUGMENT(Long_FromUInt32_t);
-
     AUGMENT(Long_FromInt64_t);
-
     AUGMENT(Long_FromUInt64_t);
+    AUGMENT(Long_FromSsize_t);
+    AUGMENT(Long_FromSize_t);
 
+    AUGMENT(Dup);
     AUGMENT(Close);
 
     AUGMENT(AsStruct_Object);
-
     context->ctx_AsStruct_Legacy = augment_AsStruct_Object;
     context->ctx_AsStruct_Float = augment_AsStruct_Object;
     context->ctx_AsStruct_List = augment_AsStruct_Object;
@@ -367,7 +562,6 @@ void init_native_fast_paths(HPyContext *context) {
     context->ctx_AsStruct_Unicode = augment_AsStruct_Object;
     context->ctx_AsStruct_Tuple = augment_AsStruct_Object;
 
-    AUGMENT(Dup);
 
     AUGMENT(Number_Check);
 
@@ -376,16 +570,24 @@ void init_native_fast_paths(HPyContext *context) {
     AUGMENT(List_Check);
 
     AUGMENT(Global_Load);
-
     AUGMENT(Global_Store);
 
     AUGMENT(Field_Load);
-
     AUGMENT(Field_Store);
 
     AUGMENT(Is);
+    AUGMENT(IsTrue);
 
     AUGMENT(Type);
+
+    AUGMENT(Add);
+    AUGMENT(Subtract);
+    AUGMENT(Multiply);
+    AUGMENT(FloorDivide);
+    AUGMENT(TrueDivide);
+
+    AUGMENT(RichCompare);
+    AUGMENT(RichCompareBool);
 
 #undef AUGMENT
 }

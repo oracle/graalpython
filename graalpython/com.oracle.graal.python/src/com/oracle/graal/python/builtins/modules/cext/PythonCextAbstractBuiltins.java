@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
@@ -102,11 +103,14 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -958,6 +962,31 @@ public final class PythonCextAbstractBuiltins {
                         @Cached IsBuiltinObjectProfile isClassProfile) {
             try {
                 return nextNode.execute(null, object, PNone.NO_VALUE);
+            } catch (PException e) {
+                if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
+                    return getNativeNull();
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyTruffleIter_Send extends CApiBinaryBuiltinNode {
+        @Specialization
+        Object send(Object iter, Object arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyIterCheckNode pyiterCheck,
+                        @Cached PyObjectCallMethodObjArgs callMethodNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinObjectProfile isClassProfile) {
+            try {
+                if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
+                    return getNextNode.execute(iter);
+                } else {
+                    return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);
+                }
             } catch (PException e) {
                 if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
                     return getNativeNull();
