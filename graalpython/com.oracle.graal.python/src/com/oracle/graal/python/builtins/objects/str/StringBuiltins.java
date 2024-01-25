@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,6 +37,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STARTSWITH;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILL_CHAR_MUST_BE_UNICODE_CHAR_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -145,6 +146,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -163,6 +165,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.IntPredicate;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -500,6 +503,27 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
             return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r >= 0);
+        }
+    }
+
+    @Builtin(name = J_RICHCMP, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @ImportStatic(ComparisonOp.class)
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "isEqualityOpCode(opCode)")
+        static Object doEqNeOp(Object left, Object right, int opCode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
+            return stringEqOpHelperNode.execute(inliningTarget, left, right, opCode == ComparisonOp.NE.opCode);
+        }
+
+        @Specialization(guards = {"opCode == cachedOp.opCode", "!isEqualityOpCode(opCode)"}, limit = "4")
+        static Object doRelOp(Object left, Object right, @SuppressWarnings("unused") int opCode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
+                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            return stringCmpOpHelperNode.execute(inliningTarget, left, right, cachedOp.intPredicate);
         }
     }
 
