@@ -40,6 +40,7 @@
 import json
 import os
 import shutil
+import sys
 import subprocess
 import tempfile
 import unittest
@@ -52,8 +53,20 @@ CATALOG_ALIAS = "tested_catalog"
 # whole folder will be deleted after the tests finished
 WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
 JBANG_CMD = os.environ.get('JBANG_CMD')
+ENV = os.environ.copy()
+USE_SHELL = 'win' in sys.platform 
 
-
+def run_cmd(cmd, env=ENV, cwd=None):
+    print(f"\nExecuting: {cmd=}")
+    process = subprocess.Popen(cmd, env=env, cwd=cwd, shell=USE_SHELL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
+    out = []
+    print("============== output =============")
+    for line in iter(process.stdout.readline, ""):
+        print(line, end="")
+        out.append(line)
+    print("========== end of output ==========")
+    return "".join(out), process.wait()
+    
 class TestJBangIntegration(unittest.TestCase):
 
     def setUpClass(self):
@@ -140,16 +153,16 @@ class TestJBangIntegration(unittest.TestCase):
         os.chdir(WORK_DIR)
         # find if the catalog is not registered
         command = [JBANG_CMD, "catalog", "list"]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode == 0:
-            if CATALOG_ALIAS not in result.stdout:
+        out, result = run_cmd(command)
+        if result == 0:
+            if CATALOG_ALIAS not in out:
                 # registering our catalog
                 command = [JBANG_CMD, "catalog", "add", "--name", CATALOG_ALIAS, catalog_file]
-                result = subprocess.run(command)
-                if result.returncode != 0:                
-                    self.fail(f"Problem during registering catalog: {result.stderr}")
+                out, result = run_cmd(command)
+                if result != 0:                
+                    self.fail(f"Problem during registering catalog: {out}")
         else:
-            self.fail(f"Problem during registering catalog: {result.stderr}")
+            self.fail(f"Problem during registering catalog: {out}")
             
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_catalog(self):       
@@ -194,9 +207,11 @@ class TestJBangIntegration(unittest.TestCase):
         work_dir = self.tmpdir
         os.chdir(work_dir)
         
-        command = [JBANG_CMD, "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
-        result = subprocess.run(command, capture_output=True, text=True)
-        self.assertTrue(result != 0, f"Creating template {template_name} failed")
+        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
+        out, result = run_cmd(command)
+        print(f"{result=}")
+        print(f"{out=}")
+        self.assertTrue(result == 0, f"Creating template {template_name} failed")
         
         # add local maven repo to the deps
         test_file_path = os.path.join(work_dir, test_file)
@@ -204,11 +219,11 @@ class TestJBangIntegration(unittest.TestCase):
         
         tested_code = "print (f\'This is test text and result is {123456789 * 1000}\')"
         expected_text = "This is test text and result is 123456789000"
-        command = [JBANG_CMD, test_file_path, tested_code]
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        command = [JBANG_CMD, "--verbose",  test_file_path, tested_code]
+        out, result = run_cmd(command)
         
-        self.assertTrue(result.returncode == 0, f"Execution failed with code {result.returncode}\n    command: {command}\n    stdout: {result.stdout}\n    stderr: {result.stderr}")
-        self.assertTrue(expected_text in result.stdout, f"Expected text:\n{expected_text}\nbut in stdout was:\n{result.stdout}")
+        self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}\n")
+        self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
         
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graalpy_template_native(self):
@@ -217,19 +232,19 @@ class TestJBangIntegration(unittest.TestCase):
         work_dir = self.tmpdir
         os.chdir(work_dir)
         
-        command = [JBANG_CMD, "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
-        result = subprocess.run(command, capture_output=True, text=True)
-        self.assertTrue(result != 0, f"Creating template {template_name} failed")
+        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
+        out, result = run_cmd(command)
+        self.assertTrue(result == 0, f"Creating template {template_name} failed")
         
         test_file_path = os.path.join(work_dir, test_file)
         self.addLocalMavenRepo(test_file_path)
         tested_code = "print (f\'This is test text and result is {147258369 * 1000}\')"
         expected_text = "This is test text and result is 147258369000"
-        command = [JBANG_CMD, "--native", test_file_path, tested_code]
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        command = [JBANG_CMD, "--verbose", "--native", test_file_path, tested_code]
+        out, result = run_cmd(command)
         
-        self.assertTrue(result.returncode == 0, f"Execution failed with code {result.returncode}\n    command: {command}\n    stdout: {result.stdout}\n    stderr: {result.stderr}")
-        self.assertTrue(expected_text in result.stdout, f"Expected text:\n{expected_text}\nbut in stdout was:\n{result.stdout}")
+        self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
+        self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
             
     
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
@@ -239,17 +254,16 @@ class TestJBangIntegration(unittest.TestCase):
         work_dir = self.tmpdir
         os.chdir(work_dir)
         
-        command = [JBANG_CMD, "init", f"--template={template_name}@{CATALOG_ALIAS}", f"-Dpath_to_local_repo={MAVEN_REPO_LOCAL_URL}", test_file]
-        result = subprocess.run(command, capture_output=True, text=True)
-        self.assertTrue(result != 0, f"Creating template {template_name} failed")
+        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}", f"-Dpath_to_local_repo={MAVEN_REPO_LOCAL_URL}", test_file]
+        out, result = run_cmd(command)
+        self.assertTrue(result == 0, f"Creating template {template_name} failed")
+        
         test_file_path = os.path.join(work_dir, test_file)
         tested_code = "print (f\'This is test text and result is {987654321 * 1000}\')"
         expected_text = "This is test text and result is 987654321000"
-        command = [JBANG_CMD, test_file_path, tested_code]
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        command = [JBANG_CMD, "--verbose", test_file_path, tested_code]
+        out, result = run_cmd(command)
         
-        self.assertTrue(result.returncode == 0, f"Execution failed with code {result.returncode}\n    command: {command}\n    stdout: {result.stdout}\n    stderr: {result.stderr}")
+        self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
+        self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
         
-        self.assertTrue(expected_text in result.stdout, f"Expected text:\n{expected_text}\nbut in stdout was:\n{result.stdout}")
-        
-            
