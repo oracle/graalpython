@@ -259,6 +259,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("__version__", "1.1.0");
         addBuiltinConstant("CFuncPtr", core.lookupType(PyCFuncPtr));
         addBuiltinConstant("ArgumentError", core.lookupType(ArgError));
+        addBuiltinConstant("CTYPES_MAX_ARGCOUNT", 1024);
     }
 
     @Override
