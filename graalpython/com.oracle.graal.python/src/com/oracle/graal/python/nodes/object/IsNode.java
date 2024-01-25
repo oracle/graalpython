@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.Python3Core;
@@ -60,6 +59,7 @@ import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -209,8 +209,9 @@ public abstract class IsNode extends Node implements BinaryOp {
     // native objects
     @Specialization
     static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                    @Cached CExtNodes.PointerCompareNode isNode) {
-        return isNode.execute(T___EQ__, left, right);
+                    @Bind("this") Node inliningTarget,
+                    @Cached CExtNodes.PointerCompareNode pointerCompareNode) {
+        return pointerCompareNode.execute(inliningTarget, ComparisonOp.EQ, left, right);
     }
 
     // code

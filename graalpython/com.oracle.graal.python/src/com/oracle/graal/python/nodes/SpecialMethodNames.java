@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SpecialMethodNames {
@@ -471,18 +469,4 @@ public abstract class SpecialMethodNames {
 
     public static final String J_SHUTDOWN = "_shutdown";
     public static final TruffleString T_SHUTDOWN = tsLiteral(J_SHUTDOWN);
-
-    // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
-    // in various places
-    @CompilationFinal(dimensions = 1) private static final TruffleString[] COMPARE_OPSTRINGS = tsArray("<", "<=", "==", "!=", ">", ">=");
-    @CompilationFinal(dimensions = 1) private static final TruffleString[] COMPARE_OPNAMES = new TruffleString[]{T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__};
-    public static final int COMPARE_OP_COUNT = COMPARE_OPNAMES.length;
-
-    public static TruffleString getCompareOpString(int op) {
-        return COMPARE_OPSTRINGS[op];
-    }
-
-    public static TruffleString getCompareName(int op) {
-        return COMPARE_OPNAMES[op];
-    }
 }
