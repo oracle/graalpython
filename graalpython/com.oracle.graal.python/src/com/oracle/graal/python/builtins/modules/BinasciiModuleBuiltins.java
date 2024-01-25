@@ -183,17 +183,18 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"})
+    @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"}, keywordOnlyNames = {"strict_mode"})
     @ArgumentClinic(name = "data", conversionClass = AsciiBufferConverter.class)
+    @ArgumentClinic(name = "strict_mode", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
-    abstract static class A2bBase64Node extends PythonUnaryClinicBuiltinNode {
+    abstract static class A2bBase64Node extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        PBytes doConvert(VirtualFrame frame, Object buffer,
+        PBytes doConvert(VirtualFrame frame, Object buffer, boolean strictMode,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
             try {
-                ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), strictMode);
                 return factory.createBytes(storage);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
@@ -201,7 +202,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private ByteSequenceStorage b64decode(byte[] data, int dataLen) {
+        private ByteSequenceStorage b64decode(byte[] data, int dataLen, boolean strictMode) {
             try {
                 /*
                  * The JDK decoder behaves differently in some corner cases. It is more restrictive
@@ -219,9 +220,10 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                         lastBase64Char = i;
                         base64chars++;
                         padding = 0;
-                    }
-                    if (c == '=') {
+                    } else if (c == '=') {
                         padding++;
+                    } else if (strictMode) {
+                        throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ONLY_BASE64_DATA_IS_ALLOWED);
                     }
                 }
                 int expectedPadding = 0;
@@ -244,9 +246,17 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                         decodeLen = i + 1;
                     }
                 }
-                // Using MIME decoder because that one skips over anything that is not the alphabet,
-                // just like CPython does
-                ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, decodeLen));
+                Base64.Decoder decoder;
+                if (strictMode) {
+                    decoder = Base64.getDecoder();
+                } else {
+                    /*
+                     * Using MIME decoder because that one skips over anything that is not the
+                     * alphabet, just like CPython does
+                     */
+                    decoder = Base64.getMimeDecoder();
+                }
+                ByteBuffer result = decoder.decode(ByteBuffer.wrap(data, 0, decodeLen));
                 return new ByteSequenceStorage(result.array(), result.limit());
             } catch (IllegalArgumentException e) {
                 throw PRaiseNode.raiseUncached(this, BinasciiError, e);

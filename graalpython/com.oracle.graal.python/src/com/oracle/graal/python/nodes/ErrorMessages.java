@@ -363,6 +363,7 @@ public abstract class ErrorMessages {
     public static final TruffleString IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT = tsLiteral("if you give only one argument to maketrans it must be a dict");
     public static final TruffleString INVALID_INDEXING_OF_0_DIM_MEMORY = tsLiteral("invalid indexing of 0-dim memory");
     public static final TruffleString INVALID_BASE64_ENCODED_STRING = tsLiteral("Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4");
+    public static final TruffleString ONLY_BASE64_DATA_IS_ALLOWED = tsLiteral("Only base64 data is allowed");
     public static final TruffleString ILLEGAL_ENVIRONMENT_VARIABLE_NAME = tsLiteral("illegal environment variable name");
     public static final TruffleString ILLEGAL_SOCKET_ADDR_ARG = tsLiteral("%s: illegal sockaddr argument");
     public static final TruffleString S_ILLEGAL_TIME_TUPLE_ARG = tsLiteral("%s: illegal time tuple argument");
