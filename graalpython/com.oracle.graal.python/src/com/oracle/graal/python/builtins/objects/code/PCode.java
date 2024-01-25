@@ -101,7 +101,6 @@ public final class PCode extends PythonBuiltinObject {
     public static final int CO_VARKEYWORDS = 0x8;
     public static final int CO_NESTED = 0x10;
     public static final int CO_GENERATOR = 0x20;
-    public static final int CO_NOFREE = 0x40;
     public static final int CO_COROUTINE = 0x80;
     public static final int CO_ITERABLE_COROUTINE = 0x100;
     public static final int CO_ASYNC_GENERATOR = 0x200;
