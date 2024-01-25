@@ -228,9 +228,13 @@ abstract class FormattingBuffer implements CharSequence {
         }
 
         public FormattingBuffer append(byte[] bytes) {
-            ensureCapacity(size, bytes.length);
-            System.arraycopy(bytes, 0, data, size, bytes.length);
-            size += bytes.length;
+            return append(bytes, 0, bytes.length);
+        }
+
+        public FormattingBuffer append(byte[] bytes, int offset, int len) {
+            ensureCapacity(size, len);
+            System.arraycopy(bytes, offset, data, size, len);
+            size += len;
             return this;
         }
 

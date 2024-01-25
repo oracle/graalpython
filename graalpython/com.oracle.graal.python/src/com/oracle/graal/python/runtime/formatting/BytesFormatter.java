@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import java.nio.charset.StandardCharsets;
+
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.nodes.Node;
@@ -51,7 +53,12 @@ public class BytesFormatter extends InternalFormat.Formatter {
     }
 
     BytesFormatter format(byte[] b) {
-        ((BytesFormattingBuffer) result).append(b);
+        BytesFormattingBuffer buffer = (BytesFormattingBuffer) result;
+        if (Spec.specified(spec.precision) && spec.precision < b.length) {
+            buffer.append(b, 0, spec.precision);
+        } else {
+            buffer.append(b);
+        }
         return this;
     }
 
@@ -61,7 +68,6 @@ public class BytesFormatter extends InternalFormat.Formatter {
     }
 
     BytesFormatter formatAsciiString(String asciiString) {
-        result.append(asciiString);
-        return this;
+        return format(asciiString.getBytes(StandardCharsets.US_ASCII));
     }
 }
