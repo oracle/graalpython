@@ -339,7 +339,6 @@ public abstract class ErrorMessages {
     public static final TruffleString GENERATOR_IGNORED_EXIT = tsLiteral("generator ignored GeneratorExit");
     public static final TruffleString GENERATOR_RAISED_STOPITER = tsLiteral("generator raised StopIteration");
     public static final TruffleString GENERATOR_ALREADY_EXECUTING = tsLiteral("generator already executing");
-    public static final TruffleString GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING = tsLiteral("getattr(): attribute name must be string");
     public static final TruffleString GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = tsLiteral("getting the source is not supported for '%p'");
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
