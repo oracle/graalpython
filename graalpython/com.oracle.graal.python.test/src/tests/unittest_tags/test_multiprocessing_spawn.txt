@@ -16,7 +16,6 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestPoolNotLeakOnFailure.test_release_unused_processes
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_reused
-*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_sigkill
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_too_long_name_resource
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestSimpleQueue.test_close
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestSimpleQueue.test_closed

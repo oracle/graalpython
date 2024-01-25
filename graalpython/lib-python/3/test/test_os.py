@@ -1665,6 +1665,7 @@ class ChownFileTests(unittest.TestCase):
         self.assertIsNone(os.chown(os_helper.TESTFN, -1, -1))
 
     @unittest.skipUnless(hasattr(os, 'getgroups'), 'need os.getgroups')
+    @unittest.skipIf(sys.platform == 'darwin', 'transiently fails on darwin: GR-49675')
     def test_chown_gid(self):
         groups = os.getgroups()
         if len(groups) < 2:
