@@ -495,11 +495,12 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.compress(data, level=-1)
-    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"data", "level"})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data", "level", "wbits"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "level", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.Z_DEFAULT_COMPRESSION", useDefaultForNone = true)
+    @ArgumentClinic(name = "level", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.Z_DEFAULT_COMPRESSION", useDefaultForNone = true)
+    @ArgumentClinic(name = "wbits", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
     @GenerateNodeFactory
-    public abstract static class CompressNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class CompressNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -507,7 +508,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PBytes compress(VirtualFrame frame, Object buffer, int level,
+        static PBytes compress(VirtualFrame frame, Object buffer, int level, int wbits,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -516,7 +517,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
-                byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, level);
+                byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, level, wbits);
                 return factory.createBytes(resultArray);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
@@ -526,7 +527,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @GenerateInline
         @GenerateCached(false)
         abstract static class CompressInnerNode extends Node {
-            abstract byte[] execute(Node inliningTarget, byte[] bytes, int length, int level);
+            abstract byte[] execute(Node inliningTarget, byte[] bytes, int length, int level, int wbits);
 
             @NonIdempotent
             protected boolean useNative() {
@@ -534,15 +535,15 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = "useNative()")
-            static byte[] doNative(Node inliningTarget, byte[] bytes, int length, int level,
+            static byte[] doNative(Node inliningTarget, byte[] bytes, int length, int level, int wbits,
                             @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
-                return nativeCompress.execute(inliningTarget, bytes, length, level, PythonContext.get(inliningTarget));
+                return nativeCompress.execute(inliningTarget, bytes, length, level, wbits);
             }
 
             @Specialization(guards = "!useNative()")
             @TruffleBoundary
-            static byte[] doJava(byte[] bytes, int length, int level) {
-                Deflater compresser = new Deflater(level);
+            static byte[] doJava(byte[] bytes, int length, int level, int wbits) {
+                Deflater compresser = new Deflater(level, wbits < 0 || wbits > (MAX_WBITS + 9));
                 compresser.setInput(bytes, 0, length);
                 compresser.finish();
                 byte[] resultArray = new byte[DEF_BUF_SIZE];
@@ -558,10 +559,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.decompress(data, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"data", "wbits", "bufsize"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data", "wbits", "bufsize"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "wbits", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
-    @ArgumentClinic(name = "bufsize", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.DEF_BUF_SIZE", useDefaultForNone = true)
+    @ArgumentClinic(name = "wbits", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
+    @ArgumentClinic(name = "bufsize", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "ZLibModuleBuiltins.DEF_BUF_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryClinicBuiltinNode {
 

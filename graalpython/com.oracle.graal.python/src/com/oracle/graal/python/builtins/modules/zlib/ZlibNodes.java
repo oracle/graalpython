@@ -146,19 +146,20 @@ public class ZlibNodes {
     @GenerateCached(false)
     public abstract static class ZlibNativeCompress extends PNodeWithContext {
 
-        public abstract byte[] execute(Node inliningTarget, byte[] bytes, int len, int level, PythonContext context);
+        public abstract byte[] execute(Node inliningTarget, byte[] bytes, int len, int level, int wbits);
 
         @Specialization
-        static byte[] nativeCompress(Node inliningTarget, byte[] bytes, int len, int level, PythonContext context,
+        static byte[] nativeCompress(Node inliningTarget, byte[] bytes, int len, int level, int wbits,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction createStream,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction deflateOffHeap,
                         @Cached GetNativeBufferNode getBuffer,
                         @Cached ZlibNativeErrorHandling errorHandling) {
+            PythonContext context = PythonContext.get(inliningTarget);
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object in = context.getEnv().asGuestValue(bytes);
             Object zst = zlibSupport.createStream(createStream);
-            int err = zlibSupport.deflateOffHeap(zst, in, len, DEF_BUF_SIZE, level, deflateOffHeap);
+            int err = zlibSupport.deflateOffHeap(zst, in, len, DEF_BUF_SIZE, level, wbits, deflateOffHeap);
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }

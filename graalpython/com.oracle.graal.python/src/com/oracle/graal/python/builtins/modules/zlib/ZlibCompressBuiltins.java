@@ -96,7 +96,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         return ZlibCompressBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "compress", minNumOfPositionalArgs = 2, parameterNames = {"$self", "data"})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "data"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     abstract static class CompressNode extends PythonBinaryClinicBuiltinNode {

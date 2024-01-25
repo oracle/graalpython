@@ -178,7 +178,7 @@ public class NFIZlibSupport {
           nfi_function: name('deflateOffHeap') map('zlib_stream*', 'POINTER')
           int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int level)
         */
-        zlib_deflate_off_heap("(POINTER, [UINT8], SINT64, SINT64, SINT32): SINT32"),
+        zlib_deflate_off_heap("(POINTER, [UINT8], SINT64, SINT64, SINT32, SINT32): SINT32"),
 
         /*-
           nfi_function: name('inflateOffHeap') map('zlib_stream*', 'POINTER')
@@ -513,11 +513,12 @@ public class NFIZlibSupport {
      * @param in_len ssize_t in_len
      * @param buf_size ssize_t buf_size
      * @param level int level
+     * @param wbits int window bits
      * @return int
      */
-    public int deflateOffHeap(Object zst, Object in, long in_len, long buf_size, int level,
+    public int deflateOffHeap(Object zst, Object in, long in_len, long buf_size, int level, int wbits,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_deflate_off_heap, zst, in, in_len, buf_size, level);
+        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_deflate_off_heap, zst, in, in_len, buf_size, level, wbits);
     }
 
     /**

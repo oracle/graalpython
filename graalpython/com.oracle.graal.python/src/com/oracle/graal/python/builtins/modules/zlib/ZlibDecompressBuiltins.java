@@ -97,9 +97,9 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         return ZlibDecompressBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"$self", "data", "max_length"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "data", "max_length"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "max_length", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "max_length", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class DecompressNode extends PythonTernaryClinicBuiltinNode {
 
@@ -230,7 +230,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "flush", minNumOfPositionalArgs = 1, parameterNames = {"$self", "length"})
-    @ArgumentClinic(name = "length", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.DEF_BUF_SIZE", useDefaultForNone = true)
+    @ArgumentClinic(name = "length", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "ZLibModuleBuiltins.DEF_BUF_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonBinaryClinicBuiltinNode {
 
