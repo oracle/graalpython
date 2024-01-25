@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
@@ -158,6 +159,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -2589,6 +2592,65 @@ public final class IntBuiltins extends PythonBuiltins {
         @Fallback
         static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class RichCompareHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object left, Object right, ComparisonOp op);
+
+        @Specialization
+        static boolean doII(int left, int right, ComparisonOp op) {
+            return op.cmpResultToBool(Integer.compare(left, right));
+        }
+
+        @Specialization
+        static boolean doLL(long left, long right, ComparisonOp op) {
+            return op.cmpResultToBool(Long.compare(left, right));
+        }
+
+        @Specialization
+        static boolean doLP(long left, PInt right, ComparisonOp op) {
+            return op.cmpResultToBool(PInt.compareTo(left, right));
+        }
+
+        @Specialization
+        static boolean doPL(PInt left, long right, ComparisonOp op) {
+            return op.cmpResultToBool(left.compareTo(right));
+        }
+
+        @Specialization
+        static boolean doPP(PInt left, PInt right, ComparisonOp op) {
+            return op.cmpResultToBool(left.compareTo(right));
+        }
+
+        @Specialization
+        static boolean doVoidPtr(Node inliningTarget, PythonNativeVoidPtr x, long y, ComparisonOp op,
+                        @Cached CExtNodes.PointerCompareNode ltNode) {
+            return ltNode.execute(inliningTarget, op, x, y);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        static PNotImplemented doGeneric(Object a, Object b, ComparisonOp op) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = J_RICHCMP, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @ImportStatic(ComparisonOp.class)
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
+        static Object doCached(Object left, Object right, @SuppressWarnings("unused") int opCode,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
+                        @Cached RichCompareHelperNode cmpNode) {
+            return cmpNode.execute(inliningTarget, left, right, cachedOp);
         }
     }
 

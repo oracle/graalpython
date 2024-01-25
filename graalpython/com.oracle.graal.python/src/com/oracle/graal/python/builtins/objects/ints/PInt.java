@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.ints;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
+import java.util.Objects;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -336,6 +337,16 @@ public final class PInt extends PythonBuiltinObject {
     @TruffleBoundary
     private static int compareTo(BigInteger left, long right) {
         return left.compareTo(longToBigInteger(right));
+    }
+
+    @TruffleBoundary
+    public static int compareTo(long left, PInt right) {
+        if (Objects.equals(right.value, BigInteger.ZERO)) {
+            return Long.compare(left, 0);
+        } else if (Objects.equals(right.value, BigInteger.ONE)) {
+            return Long.compare(left, 1);
+        }
+        return longToBigInteger(left).compareTo(right.value);
     }
 
     @Override
