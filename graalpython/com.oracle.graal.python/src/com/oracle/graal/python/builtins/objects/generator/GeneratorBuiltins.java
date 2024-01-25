@@ -209,6 +209,15 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "gi_suspended", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetSuspendedNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean suspended(PGenerator self) {
+            return self.isStarted() && !self.isRunning() && !self.isFinished();
+        }
+    }
+
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {

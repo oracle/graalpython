@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -107,7 +109,16 @@ public final class CoroutineBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__await__", minNumOfPositionalArgs = 1)
+    @Builtin(name = "cr_suspended", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetSuspendedNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean suspended(PGenerator self) {
+            return self.isStarted() && !self.isRunning() && !self.isFinished();
+        }
+    }
+
+    @Builtin(name = J___AWAIT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AwaitNode extends PythonUnaryBuiltinNode {
         @Specialization
