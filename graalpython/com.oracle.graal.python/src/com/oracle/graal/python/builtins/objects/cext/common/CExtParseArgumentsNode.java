@@ -53,6 +53,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PyDict_GetItem;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTuple_GetItem;
@@ -785,7 +786,16 @@ public abstract class CExtParseArgumentsNode {
             }
             int i = intValue((Number) rc);
             if (i == -1) {
-                throw converterr(raiseNode.get(inliningTarget), readOnly ? ErrorMessages.READ_ONLY_BYTELIKE_OBJ : ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
+                if (readOnly) {
+                    /*
+                     * CPython forgot a PyErr_Clear() on this particular branch. And they added a
+                     * test for that, so let's be bug-to-bug compatible.
+                     */
+                    PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
+                    throw threadState.reraiseCurrentException();
+                } else {
+                    throw converterr(raiseNode.get(inliningTarget), ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
+                }
             } else if (i == -2) {
                 throw converterr(raiseNode.get(inliningTarget), ErrorMessages.CONTIGUOUS_BUFFER, arg);
             }

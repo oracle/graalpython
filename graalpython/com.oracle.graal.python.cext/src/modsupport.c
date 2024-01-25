@@ -81,6 +81,7 @@ int get_buffer_r(PyObject *arg, Py_buffer *view) {
 
 int get_buffer_rw(PyObject *arg, Py_buffer *view) {
     if (PyObject_GetBuffer(arg, view, PyBUF_WRITABLE) != 0) {
+        PyErr_Clear();
         return -1;
     }
     if (!PyBuffer_IsContiguous(view, 'C')) {
