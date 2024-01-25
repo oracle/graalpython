@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -108,9 +107,6 @@ public abstract class CExtContext {
         return LOGGER;
     }
 
-    protected static final String J_HPY_INIT = "HPyInit_";
-    protected static final String J_HPY_MAJOR_VER_FUN = "get_required_hpy_major_version_";
-    protected static final String J_HPY_MINOR_VER_FUN = "get_required_hpy_minor_version_";
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
     private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
 
@@ -323,7 +319,6 @@ public abstract class CExtContext {
         InteropLibrary interopLib;
 
         if (cApiContext.useNativeBackend) {
-            GraalHPyJNIContext.loadJNIBackend();
             TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
             getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, realPath));
             String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), realPath);

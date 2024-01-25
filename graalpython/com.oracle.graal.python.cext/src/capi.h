@@ -346,6 +346,7 @@ typedef struct {
     BUILTIN(PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, const char*, void*) \
     BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, const char*) \
     BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, const char*) \
+    BUILTIN(PyTruffleType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
     BUILTIN(PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyTruffleUnicode_DecodeUTF16Stateful, PyObject*, void*, Py_ssize_t, const char*, int, int) \
     BUILTIN(PyTruffleUnicode_DecodeUTF32Stateful, PyObject*, void*, Py_ssize_t, const char*, int, int) \
@@ -409,7 +410,6 @@ typedef struct {
     BUILTIN(PyTuple_New, PyObject*, Py_ssize_t) \
     BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
     BUILTIN(PyUnicodeDecodeError_Create, PyObject*, const char*, const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t, const char*) \
     BUILTIN(PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
@@ -730,6 +730,8 @@ static void PyTruffle_Log(int level, const char* format, ... ) {
 		va_end(args);
 	}
 }
+
+Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 
 
 #define JWRAPPER_DIRECT                      1

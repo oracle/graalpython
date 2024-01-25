@@ -607,6 +607,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyType_GetModuleState", ret = Pointer, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_GetSlot", ret = Pointer, args = {PyTypeObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyType_GetModuleByDef", ret = PyObject, args = {PyTypeObject, PYMODULEDEF_PTR}, call = CImpl)
+    @CApiBuiltin(name = "PyType_IsSubtype", ret = Int, args = {PyTypeObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "_PyType_Name", ret = ConstCharPtrAsTruffleString, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_GenericAlloc", ret = PyObject, args = {PyTypeObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyType_GenericNew", ret = PyObject, args = {PyTypeObject, PyObject, PyObject}, call = CImpl)

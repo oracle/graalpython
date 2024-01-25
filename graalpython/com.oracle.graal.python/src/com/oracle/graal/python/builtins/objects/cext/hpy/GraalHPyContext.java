@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -128,6 +128,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public static final String HPY_ABI_TAG = "hpy0";
     // {{end autogen}}
 
+    private static final String J_HPY_INIT = "HPyInit_";
+    private static final String J_HPY_MAJOR_VER_FUN = "get_required_hpy_major_version_";
+    private static final String J_HPY_MINOR_VER_FUN = "get_required_hpy_minor_version_";
     private static final String LOGGER_HPY_NAME = "hpy";
     private static final String HPY_EXT = ".hpy";
     private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyContext.class);

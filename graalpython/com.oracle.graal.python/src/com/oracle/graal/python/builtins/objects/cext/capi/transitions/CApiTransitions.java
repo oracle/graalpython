@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -503,6 +504,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
+                        @Cached InlinedConditionProfile isVarObjectProfile,
                         @Cached InlinedExactClassProfile wrapperProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode) {
@@ -515,12 +517,17 @@ public abstract class CApiTransitions {
 
                 long initialRefCount = immortal ? IMMORTAL_REFCNT : PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 
-                Object type = getClassNode.execute(inliningTarget, NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper));
+                Object delegate = NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper);
+                Object type = getClassNode.execute(inliningTarget, delegate);
 
                 // allocate a native stub object (C type: PyObject)
-                Object nativeObjectStub = allocateNode.alloc(CStructs.PyObject);
+                boolean isVarObject = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
+                Object nativeObjectStub = allocateNode.alloc(isVarObject ? CStructs.PyVarObject : CStructs.PyObject);
                 writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
+                if (isVarObject) {
+                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, ((PTuple) delegate).getSequenceStorage().length());
+                }
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
                 long stubPointer = HandlePointerConverter.stubToPointer(pointer);

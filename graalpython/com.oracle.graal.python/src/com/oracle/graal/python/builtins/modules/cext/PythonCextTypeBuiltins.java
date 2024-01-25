@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -138,9 +138,9 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Direct, inlined = true)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Ignored, inlined = true)
     @ImportStatic(PythonOptions.class)
-    abstract static class PyType_IsSubtype extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffleType_IsSubtype extends CApiBinaryBuiltinNode {
 
         @Specialization
         static int doGeneric(Object a, Object b,
