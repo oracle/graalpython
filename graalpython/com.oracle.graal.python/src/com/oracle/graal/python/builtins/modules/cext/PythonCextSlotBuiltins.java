@@ -251,9 +251,9 @@ public final class PythonCextSlotBuiltins {
             }
             TruffleString string = object.getMaterialized();
             TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
-            if (range == TruffleString.CodeRange.LATIN_1) {
+            if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
                 return 1;
-            } else if (range == TruffleString.CodeRange.BMP) {
+            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
                 return 2;
             } else {
                 return 4;
@@ -811,10 +811,10 @@ public final class PythonCextSlotBuiltins {
                 isAscii = true;
                 charSize = 1;
                 encoding = TruffleString.Encoding.US_ASCII;
-            } else if (range == TruffleString.CodeRange.LATIN_1) {
+            } else if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
                 charSize = 1;
                 encoding = TruffleString.Encoding.ISO_8859_1;
-            } else if (range == TruffleString.CodeRange.BMP) {
+            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
                 charSize = 2;
                 encoding = TruffleString.Encoding.UTF_16;
             } else {
