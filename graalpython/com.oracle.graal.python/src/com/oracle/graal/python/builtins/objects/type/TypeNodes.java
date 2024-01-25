@@ -158,7 +158,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -180,6 +179,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFla
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1300,11 +1300,11 @@ public abstract class TypeNodes {
         // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
         // NOT the same like the unsorted __slots__ attribute.
         for (int i = 0; i < aArray.length; ++i) {
-            if (aArray[i] instanceof TruffleString) {
-                aArray[i] = ((TruffleString) aArray[i]).toJavaStringUncached();
-            }
-            if (bArray[i] instanceof TruffleString) {
-                bArray[i] = ((TruffleString) bArray[i]).toJavaStringUncached();
+            try {
+                aArray[i] = CastToTruffleStringNode.executeUncached(aArray[i]).toJavaStringUncached();
+                bArray[i] = CastToTruffleStringNode.executeUncached(bArray[i]).toJavaStringUncached();
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("slots are not strings");
             }
         }
         Arrays.sort(bArray);
@@ -2055,6 +2055,7 @@ public abstract class TypeNodes {
                         @Cached GetObjectArrayNode getObjectArray,
                         @Cached PythonObjectFactory factory,
                         @Cached CastToListNode castToListNode,
+                        @Cached PyUnicodeCheckNode stringCheck,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
@@ -2105,7 +2106,7 @@ public abstract class TypeNodes {
             // 2.) copy the dictionary slots
             copyDictSlots(frame, inliningTarget, ctx, pythonClass, namespace, setHashingStorageItem,
                             getHashingStorageIterator, hashingStorageItNext, hashingStorageItKey, hashingStorageItKeyHash, hashingStorageItValue,
-                            constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode, getOrCreateDictNode, castToStringNode);
+                            constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode, getOrCreateDictNode, stringCheck, castToStringNode);
             if (!ctx.qualnameSet) {
                 pythonClass.setQualName(name);
             }
@@ -2142,8 +2143,8 @@ public abstract class TypeNodes {
                 // Make it into a list
                 SequenceStorage slotsStorage;
                 Object slotsObject = ctx.slotsObject;
-                if (ctx.slotsObject instanceof TruffleString) {
-                    slotsStorage = new ObjectSequenceStorage(new Object[]{ctx.slotsObject});
+                if (stringCheck.execute(inliningTarget, ctx.slotsObject)) {
+                    slotsStorage = new ObjectSequenceStorage(new Object[]{castToStringNode.execute(inliningTarget, ctx.slotsObject)});
                 } else if (ctx.slotsObject instanceof PTuple slotsTuple) {
                     slotsStorage = slotsTuple.getSequenceStorage();
                 } else if (ctx.slotsObject instanceof PList slotsList) {
@@ -2163,8 +2164,8 @@ public abstract class TypeNodes {
                     TruffleString slotName;
                     Object element = getItemNode.execute(inliningTarget, slotsStorage, i);
                     // Check valid slot name
-                    if (element instanceof TruffleString) {
-                        slotName = (TruffleString) element;
+                    if (stringCheck.execute(inliningTarget, element)) {
+                        slotName = castToStringNode.execute(inliningTarget, element);
                         if (!(boolean) isIdentifier.execute(frame, slotName)) {
                             throw raise.raise(TypeError, ErrorMessages.SLOTS_MUST_BE_IDENTIFIERS);
                         }
@@ -2317,7 +2318,7 @@ public abstract class TypeNodes {
          * <li>We need to set tp_dictoffset and tp_weaklistoffset and adjust the basicsize
          * accordingly</li>
          * </ol>
-         *
+         * <p>
          * Mostly based on type_new_descriptors
          */
         @TruffleBoundary
@@ -2368,7 +2369,8 @@ public abstract class TypeNodes {
                         HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageItNext, HashingStorageIteratorKey hashingStorageItKey,
                         HashingStorageIteratorKeyHash hashingStorageItKeyHash, HashingStorageIteratorValue hashingStorageItValue,
                         PConstructAndRaiseNode.Lazy constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
-                        EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode, CastToTruffleStringNode castToStringNode) {
+                        EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode, PyUnicodeCheckNode stringCheck,
+                        CastToTruffleStringNode castToStringNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2377,7 +2379,8 @@ public abstract class TypeNodes {
             while (hashingStorageItNext.execute(inliningTarget, namespaceStorage, it)) {
                 Object keyObj = hashingStorageItKey.execute(inliningTarget, namespaceStorage, it);
                 Object value = hashingStorageItValue.execute(inliningTarget, namespaceStorage, it);
-                if (keyObj instanceof TruffleString key) {
+                if (stringCheck.execute(inliningTarget, keyObj)) {
+                    TruffleString key = castToStringNode.execute(inliningTarget, keyObj);
                     if (equalNode.execute(T___SLOTS__, key, TS_ENCODING)) {
                         ctx.slotsObject = value;
                         continue;
@@ -2406,17 +2409,14 @@ public abstract class TypeNodes {
                         // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
                         // forcibly encodes the string as UTF-8, and raises an error if that is not
                         // possible.
-                        TruffleString doc = null;
-                        if (value instanceof TruffleString) {
-                            doc = (TruffleString) value;
-                        } else if (value instanceof PString) {
-                            doc = ((PString) value).getValueUncached();
-                        }
-                        if (doc != null) {
+                        try {
+                            TruffleString doc = castToStringNode.execute(inliningTarget, value);
                             if (!isValidNode.execute(doc, TS_ENCODING)) {
                                 throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", doc, 0, codePointLengthNode.execute(doc, TS_ENCODING),
                                                 "can't encode docstring");
                             }
+                        } catch (CannotCastException e) {
+                            // ignore
                         }
                         pythonClass.setAttribute(key, value);
                         continue;
@@ -2458,7 +2458,7 @@ public abstract class TypeNodes {
                 // the cast is ensured by the previous loop
                 // n.b.: passing the null frame here is fine, since the storage and index are known
                 // types
-                TruffleString slotName = (TruffleString) GetItemScalarNode.executeUncached(slotList, i);
+                TruffleString slotName = CastToTruffleStringNode.executeUncached(GetItemScalarNode.executeUncached(slotList, i));
                 if ((ctx.addDict && T___DICT__.equalsUncached(slotName, TS_ENCODING)) || (ctx.addWeak && T___WEAKREF__.equalsUncached(slotName, TS_ENCODING))) {
                     continue;
                 }
