@@ -1011,6 +1011,9 @@ public abstract class ErrorMessages {
     public static final TruffleString UNABLE_TO_SELECT_ON_SOCKET = tsLiteral("unable to select on socket");
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL = tsLiteral("'%N' object does not support the context manager protocol");
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL_EXIT = tsLiteral("'%N' object does not support the context manager protocol (missed __exit__ method)");
+    public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL = tsLiteral("'%N' object does not support the asynchronous context manager protocol");
+    public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT = tsLiteral(
+                    "'%N' object does not support the asynchronous context manager protocol (missed __aexit__ method)");
 
     // mmap
     public static final TruffleString MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = tsLiteral("memory mapped length must be positive");
