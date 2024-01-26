@@ -116,6 +116,8 @@ public enum CFields {
 
     PyVarObject__ob_size(Py_ssize_t),
 
+    GraalPyVarObject__ob_item(PyObjectPtr),
+
     PyModuleDef__m_name(ConstCharPtr),
     PyModuleDef__m_doc(ConstCharPtr),
     PyModuleDef__m_size(Py_ssize_t),

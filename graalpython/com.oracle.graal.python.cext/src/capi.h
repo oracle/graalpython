@@ -95,6 +95,10 @@ typedef struct {
     int getter_doc;
 } propertyobject;
 
+typedef struct {
+    PyObject_VAR_HEAD
+    PyObject **ob_item;
+} GraalPyVarObject;
 
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
