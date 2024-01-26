@@ -633,6 +633,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static NativeSequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadByteNode readNode,
                         @Shared @Cached StorageToNativeNode storageToNativeNode) {
 
@@ -640,11 +641,12 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readNode.readArrayElement(storage.getPtr(), i);
             }
-            return storageToNativeNode.execute(newArray, length);
+            return storageToNativeNode.execute(inliningTarget, newArray, length);
         }
 
         @Specialization
         protected static NativeSequenceStorage doNativeObject(NativeObjectSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadPointerNode readNode,
                         @Shared @Cached StorageToNativeNode storageToNativeNode,
                         @Cached NativeToPythonNode toJavaNode) {
@@ -652,7 +654,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = toJavaNode.execute(readNode.readArrayElement(storage.getPtr(), i));
             }
-            return storageToNativeNode.execute(newArray, length);
+            return storageToNativeNode.execute(inliningTarget, newArray, length);
         }
 
         @NeverDefault
@@ -1429,15 +1431,18 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class StorageToNativeNode extends Node {
 
-        public abstract NativeSequenceStorage execute(Object obj, int length);
+        public abstract NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length);
+
+        public abstract NativeSequenceStorage execute(Node inliningTarget, Object obj, int length);
 
         @Specialization
         static NativeSequenceStorage doByte(byte[] arr, int length,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Cached CStructAccess.WriteByteNode write) {
+                        @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Cached(inline = false) CStructAccess.WriteByteNode write) {
             Object mem = alloc.alloc(arr.length + 1);
             write.writeByteArray(mem, arr);
             return NativeByteSequenceStorage.create(mem, length, arr.length, true);
@@ -1445,15 +1450,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static NativeSequenceStorage doObject(Object[] arr, int length,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Cached CStructAccess.WriteObjectNewRefNode write) {
+                        @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode write) {
             Object mem = alloc.alloc((arr.length + 1) * CStructAccess.POINTER_SIZE);
             write.writeArray(mem, arr);
             return NativeObjectSequenceStorage.create(mem, length, arr.length, true);
-        }
-
-        public static StorageToNativeNode getUncached() {
-            return StorageToNativeNodeGen.getUncached();
         }
     }
 

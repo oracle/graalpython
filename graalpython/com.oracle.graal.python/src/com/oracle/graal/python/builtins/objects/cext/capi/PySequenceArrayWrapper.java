@@ -81,7 +81,7 @@ public final class PySequenceArrayWrapper {
         @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)"})
         static NativeSequenceStorage doManaged(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
                         @Cached InlinedConditionProfile isObjectArrayProfile,
-                        @Shared("storageToNativeNode") @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
             Object array = getInternalArrayNode.execute(inliningTarget, s);
             if (isBytesLike) {
@@ -89,7 +89,7 @@ public final class PySequenceArrayWrapper {
             } else if (!isObjectArrayProfile.profile(inliningTarget, array instanceof Object[])) {
                 array = generalize(s);
             }
-            return storageToNativeNode.execute(array, s.length());
+            return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
 
         @TruffleBoundary
@@ -103,10 +103,10 @@ public final class PySequenceArrayWrapper {
         }
 
         @Specialization
-        static NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
-                        @Shared("storageToNativeNode") @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+        static NativeSequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
+                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
-            return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY, 0);
+            return storageToNativeNode.execute(inliningTarget, PythonUtils.EMPTY_BYTE_ARRAY, 0);
         }
 
         protected static boolean isNative(SequenceStorage s) {

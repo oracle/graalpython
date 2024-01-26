@@ -662,7 +662,7 @@ public abstract class PointerNodes {
         @Specialization
         static long doMemoryView(Node inliningTarget, MemoryBlock memory, MemoryViewStorage storage, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+                        @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             PMemoryView mv = storage.memoryView;
             Object ptr = null;
             if (mv.getBufferPointer() != null) {
@@ -672,7 +672,7 @@ public abstract class PointerNodes {
                     ptr = nativeSequenceStorage.getPtr();
                 }
                 if (bytes.getSequenceStorage() instanceof ByteSequenceStorage byteSequenceStorage) {
-                    NativeSequenceStorage nativeStorage = storageToNativeNode.execute(byteSequenceStorage.getInternalByteArray(), byteSequenceStorage.length());
+                    NativeSequenceStorage nativeStorage = storageToNativeNode.execute(inliningTarget, byteSequenceStorage.getInternalByteArray(), byteSequenceStorage.length());
                     bytes.setSequenceStorage(nativeStorage);
                     ptr = nativeStorage.getPtr();
                 }
