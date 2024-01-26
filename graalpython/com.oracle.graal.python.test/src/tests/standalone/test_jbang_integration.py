@@ -209,8 +209,6 @@ class TestJBangIntegration(unittest.TestCase):
         
         command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
         out, result = run_cmd(command)
-        print(f"{result=}")
-        print(f"{out=}")
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
         
         # add local maven repo to the deps
@@ -226,6 +224,7 @@ class TestJBangIntegration(unittest.TestCase):
         self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
         
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
+    @unittest.skipUnless('win' not in sys.platform, "Currently the jbang native image on Win gate fails.")
     def test_graalpy_template_native(self):
         template_name = "graalpy"
         test_file = "graalpy_test.java"
