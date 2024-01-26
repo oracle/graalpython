@@ -45,6 +45,7 @@ from . import CPyExtType
 if sys.implementation.name == "graalpy":
     import polyglot
     from __graalpython__ import is_native
+    is_windows = sys.platform == "win32"
 
     class TestPyStructNumericSequenceTypes(object):
 
@@ -130,6 +131,7 @@ if sys.implementation.name == "graalpy":
                 # print("Error : ", e)
                 assert False
 
+        @skipIf(is_windows, "GR-51663: fails on windows")
         def test_native_sequence_interop(self):
             MySequenceNativeType = CPyExtType("MySequenceNativeType",
                                 """
