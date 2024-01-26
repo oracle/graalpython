@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -504,6 +505,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
                         @Cached InlinedConditionProfile isVarObjectProfile,
                         @Cached InlinedExactClassProfile wrapperProfile,
@@ -522,12 +524,16 @@ public abstract class CApiTransitions {
                 Object type = getClassNode.execute(inliningTarget, delegate);
 
                 // allocate a native stub object (C type: PyObject)
-                boolean isVarObject = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
-                Object nativeObjectStub = allocateNode.alloc(isVarObject ? CStructs.PyVarObject : CStructs.PyObject);
+                boolean isTuple = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
+                Object nativeObjectStub = allocateNode.alloc(isTuple ? CStructs.PyVarObject : CStructs.PyObject);
                 writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
-                if (isVarObject) {
-                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, ((PTuple) delegate).getSequenceStorage().length());
+                if (isTuple) {
+                    SequenceStorage sequenceStorage = ((PTuple) delegate).getSequenceStorage();
+                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, sequenceStorage.length());
+                    if (sequenceStorage instanceof NativeSequenceStorage nativeSequenceStorage) {
+                        writePointerNode.write(nativeObjectStub, CFields.GraalPyVarObject__ob_item, nativeSequenceStorage.getPtr());
+                    }
                 }
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
