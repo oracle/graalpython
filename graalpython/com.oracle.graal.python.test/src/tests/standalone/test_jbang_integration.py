@@ -80,14 +80,20 @@ class TestJBangIntegration(unittest.TestCase):
     def tearDownClass(self):
         if not is_enabled:
             return
-        shutil.rmtree(WORK_DIR)
-        
+        try: 
+            shutil.rmtree(WORK_DIR)
+        except Exception as e:
+            print(f"The test run correctly but problem during removing workdir: {e}")
+            
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
       
     def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-        
+        try:
+            shutil.rmtree(self.tmpdir)
+        except Exception as e:
+            print(f"The test run correctly but problem during removing workdir: {e}")
+            
     def ensureProxy(self):
         java_tools = os.environ.get('JAVA_TOOL_OPTIONS')
         if java_tools is None:
