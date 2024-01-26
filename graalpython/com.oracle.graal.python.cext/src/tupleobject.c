@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -86,4 +86,35 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
         }
     }
     Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+PyObject*
+PyTuple_GetItem(PyObject* a, Py_ssize_t b) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPyTruffleTuple_GetItem(a, b);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    if (!PyTuple_Check(a)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    PyObject *res;
+    PyObject **ob_item;
+    if (points_to_py_handle_space(a)) {
+        const PyObject *ptr = pointer_to_stub((PyObject *) a);
+        ob_item = ((GraalPyVarObject *) ptr)->ob_item;
+        if (ob_item == NULL) {
+            // native data ptr not set; do upcall
+            return GraalPyTruffleTuple_GetItem(a, b);
+        }
+    } else {
+        ob_item = ((PyTupleObject *) a)->ob_item;
+    }
+    // do index check since directly accessing the items array
+    if (b < 0 || b >= Py_SIZE(a)) {
+        PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+        return NULL;
+    }
+    assert(ob_item != NULL);
+    return ob_item[b];
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
