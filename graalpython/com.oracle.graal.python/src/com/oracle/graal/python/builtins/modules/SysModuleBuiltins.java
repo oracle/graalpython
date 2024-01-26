@@ -592,6 +592,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         // tarballs, not git
         addBuiltinConstant("_git", factory.createTuple(new Object[]{T_GRAALPYTHON_ID, T_EMPTY_STRING, T_EMPTY_STRING}));
 
+        if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
+            addBuiltinConstant("_vpath", "");
+        }
+
         super.initialize(core);
 
         // we need these during core initialization, they are re-set in postInitialize
