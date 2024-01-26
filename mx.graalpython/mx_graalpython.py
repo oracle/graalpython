@@ -387,7 +387,7 @@ def punittest(ars, report=False):
 
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
-    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test']
+    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.utils.test']
     configs += [
         TestConfig(vm_args + graalpy_tests + args, True),
         TestConfig(vm_args + graalpy_tests + args, False),
@@ -397,7 +397,7 @@ def punittest(ars, report=False):
     ]
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
-        configs.append(TestConfig(vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
+        configs.append(TestConfig(vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.utils.test'] + async_regex + args, True, False))
 
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")

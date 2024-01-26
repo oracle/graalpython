@@ -321,17 +321,6 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
-        "org.graalvm.python.embedding.test": {
-            "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "testProject": True,
-            "javaCompliance": "17+",
-            "dependencies": [
-                "org.graalvm.python.embedding",
-                "mx:JUNIT",
-            ],
-        },
-
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -476,6 +465,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
+                "GRAALPYTHON_EMBEDDING",
                 "mx:JUNIT",
                 "sdk:GRAAL_SDK",
             ],
@@ -1150,6 +1140,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON_RESOURCES",
+                "GRAALPYTHON_EMBEDDING",
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "sdk:GRAAL_SDK",
             ],
