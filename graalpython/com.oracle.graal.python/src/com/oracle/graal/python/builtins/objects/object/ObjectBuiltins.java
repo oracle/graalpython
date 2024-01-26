@@ -74,7 +74,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -251,11 +251,11 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
-                if (!checkSlotIs.execute(inliningTarget, lookupInit.execute(type), InitNode.class)) {
+                if (!checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
 
-                if (checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructors.ObjectNode.class)) {
+                if (checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
             }

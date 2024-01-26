@@ -152,7 +152,7 @@ import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -1875,10 +1875,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupNew,
                             @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                             @Cached PRaiseNode.Lazy raiseNode) {
-                if (!checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructors.ObjectNode.class)) {
+                if (!checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
-                if (checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltins.InitNode.class)) {
+                if (checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }

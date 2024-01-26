@@ -156,6 +156,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
@@ -2749,37 +2750,30 @@ public abstract class TypeNodes {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class CheckCallableIsSpecificBuiltinNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object methodOrDescriptor, Class<? extends PythonBuiltinBaseNode> nodeClass);
+        public abstract boolean execute(Node inliningTarget, Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory);
 
-        public static boolean executeUncached(Object methodOrDescriptor, Class<? extends PythonBuiltinBaseNode> nodeClass) {
-            return TypeNodesFactory.CheckCallableIsSpecificBuiltinNodeGen.getUncached().execute(null, methodOrDescriptor, nodeClass);
+        public static boolean executeUncached(Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return TypeNodesFactory.CheckCallableIsSpecificBuiltinNodeGen.getUncached().execute(null, methodOrDescriptor, nodeFactory);
         }
 
         @Specialization
-        static boolean check(PBuiltinFunction function, Class<? extends PythonBuiltinBaseNode> nodeClass) {
-            return check(function.getBuiltinNodeFactory(), nodeClass);
+        static boolean check(PBuiltinFunction function, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return function.getBuiltinNodeFactory() == nodeFactory;
         }
 
         @Specialization
-        static boolean check(PBuiltinMethod method, Class<? extends PythonBuiltinBaseNode> nodeClass) {
-            return check(method.getBuiltinFunction().getBuiltinNodeFactory(), nodeClass);
+        static boolean check(PBuiltinMethod method, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return method.getBuiltinFunction().getBuiltinNodeFactory() == nodeFactory;
         }
 
         @Specialization
-        static boolean check(BuiltinMethodDescriptor descriptor, Class<? extends PythonBuiltinBaseNode> nodeClass) {
-            return check(descriptor.getFactory(), nodeClass);
+        static boolean check(BuiltinMethodDescriptor descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return descriptor.getFactory() == nodeFactory;
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static boolean check(Object descriptor, Class<? extends PythonBuiltinBaseNode> nodeClass) {
-            return false;
-        }
-
-        private static boolean check(NodeFactory<? extends PythonBuiltinBaseNode> factory, Class<? extends PythonBuiltinBaseNode> nodeClass) {
-            if (factory != null) {
-                return factory.getNodeClass() == nodeClass;
-            }
+        static boolean check(Object descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
             return false;
         }
     }
@@ -2802,7 +2796,7 @@ public abstract class TypeNodes {
                         @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookup,
                         @Cached CheckCallableIsSpecificBuiltinNode check) {
             Object slot = lookup.execute(type);
-            return check.execute(inliningTarget, slot, ObjectBuiltins.InitNode.class);
+            return check.execute(inliningTarget, slot, ObjectBuiltinsFactory.InitNodeFactory.getInstance());
         }
     }
 }

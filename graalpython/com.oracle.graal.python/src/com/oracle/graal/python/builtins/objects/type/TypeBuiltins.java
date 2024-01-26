@@ -88,7 +88,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -109,7 +109,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -1556,11 +1556,11 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
             /* Best effort at getting at least something */
             Object newSlot = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.New).execute(type);
-            if (!TypeNodes.CheckCallableIsSpecificBuiltinNode.executeUncached(newSlot, BuiltinConstructors.ObjectNode.class)) {
+            if (!TypeNodes.CheckCallableIsSpecificBuiltinNode.executeUncached(newSlot, BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
                 return fromMethod(LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T___NEW__));
             }
             Object initSlot = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Init).execute(type);
-            if (!TypeNodes.CheckCallableIsSpecificBuiltinNode.executeUncached(initSlot, ObjectBuiltins.InitNode.class)) {
+            if (!TypeNodes.CheckCallableIsSpecificBuiltinNode.executeUncached(initSlot, ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
                 return fromMethod(LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T___INIT__));
             }
             // object() signature
