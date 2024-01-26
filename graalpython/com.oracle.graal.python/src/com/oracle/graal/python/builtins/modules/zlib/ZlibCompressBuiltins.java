@@ -76,6 +76,7 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -135,6 +136,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
             }
 
             @Specialization
+            @TruffleBoundary
             static byte[] doJava(ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int length) {
                 self.setDeflaterInput(bytes, length);
                 return JavaCompressNode.execute(self, Z_NO_FLUSH);
