@@ -2106,6 +2106,7 @@ def _python_checkpatchfiles():
             'pymongo.patch',
             # Empty license field. It's ASL 2.0
             'tokenizers-0.13.3.patch',
+            'tokenizers-0.15.0.patch',
             # Empty license field. It's Apache 2
             'safetensors-0.3.3.patch',
             'tensorflow-io-0.34.0.patch',
