@@ -703,6 +703,12 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_many_processes',
         # Transiently ends up with 2 processes
         'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
+        # Transient lists differ error GR-49936
+        'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim',
+        'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_redundant_suboffsets',
+        'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_multidim',
+        # Transient failure to delete semaphore on process death
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_sigkill',
     ]
 
     result_tags = linux_tags & darwin_tags
@@ -2099,6 +2105,7 @@ def _python_checkpatchfiles():
             'pymongo.patch',
             # Empty license field. It's ASL 2.0
             'tokenizers-0.13.3.patch',
+            'tokenizers-0.15.0.patch',
             # Empty license field. It's Apache 2
             'safetensors-0.3.3.patch',
             'tensorflow-io-0.34.0.patch',

@@ -1,3 +1,7 @@
 [[rules]]
 version = '== 0.13.3'
 patch = 'tokenizers-0.13.3.patch'
+
+[[rules]]
+version = '== 0.15.0'
+patch = 'tokenizers-0.15.0.patch'

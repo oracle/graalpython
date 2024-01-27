@@ -7,6 +7,7 @@ from weakref import proxy
 import io
 import _pyio as pyio
 
+from test import support
 from test.support import gc_collect
 from test.support.os_helper import TESTFN
 from test.support import os_helper
@@ -24,6 +25,7 @@ class AutoFileTests:
             self.f.close()
         os_helper.unlink(TESTFN)
 
+    @support.impl_detail("weakref nondeterministic GR-44850", graalpy=False)
     def testWeakRefs(self):
         # verify weak references
         p = proxy(self.f)

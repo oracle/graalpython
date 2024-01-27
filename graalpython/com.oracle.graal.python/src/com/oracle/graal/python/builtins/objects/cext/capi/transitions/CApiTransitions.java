@@ -413,7 +413,7 @@ public abstract class CApiTransitions {
         } else if (++GCALotCounter >= GCALot) {
             LOGGER.info("GC A Lot - calling System.gc (opportunities=" + GCALotTotalCounter + ")");
             GCALotCounter = 0;
-            System.gc();
+            PythonUtils.forceFullGC();
             pollReferenceQueue();
         }
     }
