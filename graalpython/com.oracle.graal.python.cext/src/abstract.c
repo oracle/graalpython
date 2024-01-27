@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -278,6 +278,58 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_PySequence_Size(PyObject *s) {
     }
     PyErr_Format(PyExc_TypeError, "PyTruffle_PySequence_Size(): object of type '%s' has no len()", Py_TYPE(s)->tp_name);
     return -1;    
+}
+
+// downcall for native python objects
+// partially taken from CPython "Objects/abstract.c/Py_Sequence_SetItem
+PyAPI_FUNC(int) PyTruffle_PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o)
+{
+    PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
+    if (m && m->sq_ass_item) {
+        if (i < 0) {
+            if (m->sq_length) {
+                Py_ssize_t l = (*m->sq_length)(s);
+                assert(_Py_CheckSlotResult(s, "__len__", l >= 0));
+                if (l < 0) {
+                    return -1;
+                }
+                i += l;
+            }
+        }
+        int res = m->sq_ass_item(s, i, o);
+        return res;
+    }
+
+    if (Py_TYPE(s)->tp_as_mapping && Py_TYPE(s)->tp_as_mapping->mp_ass_subscript) {
+        return PyErr_Format(PyExc_TypeError, "%.200s is not a sequence", Py_TYPE(s)->tp_name);
+    }
+    return PyErr_Format(PyExc_TypeError, "'%.200s' object does not support item assignment", Py_TYPE(s)->tp_name);
+}
+
+// downcall for native python objects
+// partially taken from CPython "Objects/abstract.c/Py_Sequence_SetItem
+PyAPI_FUNC(int) PyTruffle_PySequence_DelItem(PyObject *s, Py_ssize_t i)
+{
+    PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
+    if (m && m->sq_ass_item) {
+        if (i < 0) {
+            if (m->sq_length) {
+                Py_ssize_t l = (*m->sq_length)(s);
+                assert(_Py_CheckSlotResult(s, "__len__", l >= 0));
+                if (l < 0) {
+                    return -1;
+                }
+                i += l;
+            }
+        }
+        int res = m->sq_ass_item(s, i, (PyObject *)NULL);
+        return res;
+    }
+
+    if (Py_TYPE(s)->tp_as_mapping && Py_TYPE(s)->tp_as_mapping->mp_ass_subscript) {
+        return PyErr_Format(PyExc_TypeError, "%.200s is not a sequence", Py_TYPE(s)->tp_name);
+    }
+    return PyErr_Format(PyExc_TypeError, "'%.200s' object doesn't support item deletion", Py_TYPE(s)->tp_name);
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {

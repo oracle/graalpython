@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -300,6 +300,68 @@ public class HostInteropTest extends PythonTests {
         assertEquals(2, t.getArrayElement(1).asInt());
         // append - [1,2,3,4,5]
         t.setArrayElement(100, 5);
+        assertEquals(5, t.getArraySize());
+        assertEquals(5, t.getArrayElement(4).asInt());
+        // edit - [1,20,3,4,5]
+        t.setArrayElement(1, 20);
+        assertEquals(5, t.getArraySize());
+        assertEquals(20, t.getArrayElement(1).asInt());
+    }
+
+    @Test
+    public void testSequences() {
+        Value t;
+        // builtin sequences
+        t = context.eval("python", """
+                        [0,1,2,3,4]
+                        """);
+        assertTrue(t.hasArrayElements());
+        assertEquals(5, t.getArraySize());
+        assertEquals(1, t.getArrayElement(1).asInt());
+        // remove - [1,2,3,4]
+        t.removeArrayElement(0);
+        assertEquals(4, t.getArraySize());
+        assertEquals(2, t.getArrayElement(1).asInt());
+        // append - [1,2,3,4,5]
+        t.setArrayElement(4, 5);
+        assertEquals(5, t.getArraySize());
+        assertEquals(5, t.getArrayElement(4).asInt());
+        // edit - [1,20,3,4,5]
+        t.setArrayElement(1, 20);
+        assertEquals(5, t.getArraySize());
+        assertEquals(20, t.getArrayElement(1).asInt());
+
+        // emulated
+        t = context.eval("python", """
+                        class MyType:
+                            data = [0,1,2,3,4]
+
+                            def __len__(self):
+                                return len(self.data)
+
+                            def __getitem__(self, i):
+                                return self.data[i]
+
+                            def __setitem__(self, i, v):
+                                if i >= len(self.data):
+                                    self.data.insert(i, v)
+                                else:
+                                    self.data[i] = v
+
+                            def __delitem__(self, i):
+                                del self.data[i]
+
+                        MyType()
+                        """);
+        assertTrue(t.hasArrayElements());
+        assertEquals(5, t.getArraySize());
+        assertEquals(1, t.getArrayElement(1).asInt());
+        // remove - [1,2,3,4]
+        t.removeArrayElement(0);
+        assertEquals(4, t.getArraySize());
+        assertEquals(2, t.getArrayElement(1).asInt());
+        // append - [1,2,3,4,5]
+        t.setArrayElement(4, 5);
         assertEquals(5, t.getArraySize());
         assertEquals(5, t.getArrayElement(4).asInt());
         // edit - [1,20,3,4,5]

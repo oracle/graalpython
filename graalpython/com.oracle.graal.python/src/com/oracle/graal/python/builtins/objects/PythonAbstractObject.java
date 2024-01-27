@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,7 +73,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -88,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -109,8 +109,11 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PySequenceDelItemNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
+import com.oracle.graal.python.lib.PySequenceSetItemNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -149,6 +152,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -275,9 +279,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Cached PySequenceCheckNode check,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
+                    @Cached PySequenceCheckNode sequenceCheck,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -286,7 +290,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
             } else {
-                return check.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
+                return sequenceCheck.execute(inliningTarget, this) && lookupLen.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
             }
         } finally {
             gil.release(mustRelease);
@@ -299,8 +303,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Cached PySequenceGetItemNode sequenceGetItem,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -309,14 +312,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.execute(inliningTarget, behavior, method, this, key);
             } else {
-                if (interopLib.hasArrayElements(this)) {
-                    try {
-                        return getItemNode.execute(this, key);
-                    } catch (PException e) {
-                        throw InvalidArrayIndexException.create(key);
-                    }
+                try {
+                    return sequenceGetItem.execute(this, PInt.intValueExact(key));
+                } catch (OverflowException cce) {
+                    throw InvalidArrayIndexException.create(key);
                 }
-                throw UnsupportedMessageException.create();
             }
         } finally {
             gil.release(mustRelease);
@@ -329,8 +329,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Cached PySequenceSetItemNode sequenceSetItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -339,14 +338,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 getValue.execute(inliningTarget, behavior, method, this, key, value);
             } else {
-                if (interopLib.hasArrayElements(this)) {
-                    try {
-                        setItemNode.execute(this, key, value);
-                    } catch (PException e) {
-                        throw InvalidArrayIndexException.create(key);
-                    }
+                try {
+                    sequenceSetItemNode.execute(this, PInt.intValueExact(key), value);
+                } catch (OverflowException cce) {
+                    throw InvalidArrayIndexException.create(key);
                 }
-                throw UnsupportedMessageException.create();
             }
         } finally {
             gil.release(mustRelease);
@@ -359,8 +355,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
+                    @Cached PySequenceDelItemNode sequenceDelItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -369,14 +364,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 getValue.execute(inliningTarget, behavior, method, this, key);
             } else {
-                if (interopLib.hasArrayElements(this)) {
-                    try {
-                        deleteItemNode.execute(inliningTarget, this, key);
-                    } catch (PException e) {
-                        throw InvalidArrayIndexException.create(key);
-                    }
-                } else {
-                    throw UnsupportedMessageException.create();
+                try {
+                    sequenceDelItemNode.execute(this, PInt.intValueExact(key));
+                } catch (OverflowException cce) {
+                    throw InvalidArrayIndexException.create(key);
                 }
             }
         } finally {
@@ -387,53 +378,51 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getArraySize(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_array_size;
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
-                // todo: cbasca - once we remove the default behavior, we should probably use a cast
-                // to long node
-                return getValue.executeInt(inliningTarget, behavior, method, toIntNode, raiseNode, this);
+                return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
+                try {
+                    return sequenceSizeNode.execute(this);
+                } catch (PException pe) {
                     throw UnsupportedMessageException.create();
                 }
-                long len = sizeNode.execute(null, inliningTarget, this);
-                if (len >= 0) {
-                    return len;
-                }
-                CompilerDirectives.transferToInterpreter();
-                throw UnsupportedMessageException.create();
             }
         } finally {
             gil.release(mustRelease);
         }
     }
 
+    private boolean isInBounds(long idx, PySequenceSizeNode sequenceSizeNode) {
+        try {
+            long length = sequenceSizeNode.execute(this);
+            return 0 <= idx && idx < length;
+        } catch (PException pe) {
+            return false;
+        }
+    }
+
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementReadable(long idx,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -444,10 +433,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
@@ -457,15 +443,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementModifiable(long idx,
-                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached GilNode gil) {
@@ -476,10 +459,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
@@ -489,17 +469,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementInsertable(long idx,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -508,10 +485,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return !isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
@@ -521,17 +495,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementRemovable(long idx,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("sequenceSizeNode") @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -540,26 +511,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                if (!interopLib.hasArrayElements(this)) {
-                    return false;
-                }
-                return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, inliningTarget, this), getItemNode, idx);
+                return isInBounds(idx, sequenceSizeNode);
             }
         } finally {
             gil.release(mustRelease);
-        }
-    }
-
-    private boolean isInBounds(int len, PInteropSubscriptNode getItemNode, long idx) {
-        if (0 <= idx && idx < len) {
-            try {
-                getItemNode.execute(this, idx);
-                return true;
-            } catch (PException e) {
-                return false;
-            }
-        } else {
-            return false;
         }
     }
 
@@ -718,7 +673,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,

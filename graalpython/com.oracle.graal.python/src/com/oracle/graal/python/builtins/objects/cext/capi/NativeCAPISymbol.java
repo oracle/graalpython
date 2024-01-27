@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -151,6 +151,8 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK("PyTruffle_PySequence_Check", Int, PyObject),
     FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE("PyTruffle_PySequence_Size", Py_ssize_t, PyObject),
     FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM("PyTruffle_PySequence_GetItem", PyObject, PyObject, Py_ssize_t),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_SET_ITEM("PyTruffle_PySequence_SetItem", Int, PyObject, Py_ssize_t, PyObject),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_DEL_ITEM("PyTruffle_PySequence_DelItem", Int, PyObject, Py_ssize_t),
     FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new", PyObject, PyTypeObject, PyObject),
     FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new", PyObject, PyTypeObject, Pointer, Py_ssize_t),
     FUN_FLOAT_SUBTYPE_NEW("float_subtype_new", PyObject, PyTypeObject, ArgDescriptor.Double),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public abstract class PRange extends PythonBuiltinObject {
 
     public PRange(PythonLanguage lang) {
@@ -65,5 +71,43 @@ public abstract class PRange extends PythonBuiltinObject {
         } else {
             return String.format("range(%s, %s)", getStart(), getStop());
         }
+    }
+
+    @ExportMessage
+    public boolean hasArrayElements() {
+        return true;
+    }
+
+    @ExportMessage
+    public long getArraySize(
+                    @Shared @Cached RangeBuiltins.LenNode lenNode) {
+        return lenNode.execute(this);
+    }
+
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Cached RangeBuiltins.GetItemNode getItemNode) {
+        return getItemNode.execute(this, index);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementReadable(long idx,
+                    @Shared @Cached RangeBuiltins.LenNode lenNode) {
+        return 0 <= idx && idx < lenNode.execute(this);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx) {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx) {
+        return false;
+    }
+
+    @ExportMessage
+    public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx) {
+        return false;
     }
 }

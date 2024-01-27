@@ -34,6 +34,8 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -139,5 +141,17 @@ public final class PTuple extends PSequence {
     @SuppressWarnings("unused")
     public static boolean isArrayElementRemovable(PTuple self, long index) {
         return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static void writeArrayElement(PTuple self, long key, Object value) throws UnsupportedMessageException, InvalidArrayIndexException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static void removeArrayElement(PTuple self, long key) throws UnsupportedMessageException, InvalidArrayIndexException {
+        throw UnsupportedMessageException.create();
     }
 }

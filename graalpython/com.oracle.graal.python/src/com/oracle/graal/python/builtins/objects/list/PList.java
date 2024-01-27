@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -188,11 +188,17 @@ public final class PList extends PSequence {
                     @Bind("$node") Node inliningTarget,
                     @Cached PForeignToPTypeNode convert,
                     @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Cached SequenceStorageNodes.AppendNode appendNode,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
+            final int len = store.length();
             try {
-                setItem.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
+                if (index == len) {
+                    appendNode.execute(inliningTarget, store, convert.executeConvert(value), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                } else {
+                    setItem.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
+                }
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);

@@ -491,36 +491,38 @@ class TestPyObject(CPyExtTestCase):
         cmpfunc=lambda x, y: type(x) == staticmethod
     )
 
-    test_method_def_memcpy = CPyExtFunction(
-        lambda args: args[0].__name__,
-        lambda: (
-            (bin,),
-        ),
-        code="""
-        #include <string.h>
-
-        // CPython and other don't have this function; so define it
-        #ifndef GRAALVM_PYTHON
-        #define _PyCFunction_GetMethodDef(OBJ) (((PyCFunctionObject*) (OBJ))->m_ml)
-        #endif
-
-        static PyObject* wrap_PyCFunction_GetMethodDef(PyObject* func) {
-            PyMethodDef *src;
-            PyMethodDef dst;
-            if (PyCFunction_Check(func)) {
-                src = _PyCFunction_GetMethodDef(func);
-                dst = *src;
-                return PyUnicode_FromString(dst.ml_name);
+    if sys.implementation.name != "graalpy" or __graalpython__.get_platform_id() != 'managed':
+        # TODO: fa GR-51580
+        test_method_def_memcpy = CPyExtFunction(
+            lambda args: args[0].__name__,
+            lambda: (
+                (bin,),
+            ),
+            code="""
+            #include <string.h>
+    
+            // CPython and other don't have this function; so define it
+            #ifndef GRAALVM_PYTHON
+            #define _PyCFunction_GetMethodDef(OBJ) (((PyCFunctionObject*) (OBJ))->m_ml)
+            #endif
+    
+            static PyObject* wrap_PyCFunction_GetMethodDef(PyObject* func) {
+                PyMethodDef *src;
+                PyMethodDef dst;
+                if (PyCFunction_Check(func)) {
+                    src = _PyCFunction_GetMethodDef(func);
+                    dst = *src;
+                    return PyUnicode_FromString(dst.ml_name);
+                }
+                PyErr_Format(PyExc_TypeError, "Unexpected test arg. Expected %s but got %s",
+                        PyCFunction_Type.tp_name,
+                        Py_TYPE(func)->tp_name);
+                return NULL;
             }
-            PyErr_Format(PyExc_TypeError, "Unexpected test arg. Expected %s but got %s",
-                    PyCFunction_Type.tp_name,
-                    Py_TYPE(func)->tp_name);
-            return NULL;
-        }
-        """,
-        resultspec="O",
-        argspec="O",
-        arguments=["PyObject* func"],
-        callfunction="wrap_PyCFunction_GetMethodDef",
-        cmpfunc=unhandled_error_compare
-    )
+            """,
+            resultspec="O",
+            argspec="O",
+            arguments=["PyObject* func"],
+            callfunction="wrap_PyCFunction_GetMethodDef",
+            cmpfunc=unhandled_error_compare
+        )

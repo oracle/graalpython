@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -172,7 +172,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     public Object readArrayElement(long index,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                    @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -187,4 +187,98 @@ public abstract class PSequence extends PythonBuiltinObject {
         }
     }
 
+    @ExportMessage
+    public void writeArrayElement(long index, Object value,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            try {
+                setItem.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, this), PInt.intValueExact(index), value);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public void removeArrayElement(long index,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            try {
+                delItem.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, this), PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    private boolean isInBounds(long idx, Node inliningTarget, SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
+        int length = getSequenceStorageNode.execute(inliningTarget, this).length();
+        return 0 <= idx && idx < length;
+    }
+
+    @ExportMessage
+    public boolean isArrayElementReadable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean isArrayElementModifiable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean isArrayElementInsertable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return !isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean isArrayElementRemovable(long idx,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
 }
