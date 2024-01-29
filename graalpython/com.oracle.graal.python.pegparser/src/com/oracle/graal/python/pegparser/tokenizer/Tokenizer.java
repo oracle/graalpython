@@ -580,7 +580,7 @@ public class Tokenizer {
         if (invalid < len) {
             int codePoint = tokenString.codePointAt(invalid);
             String printString = new String(new int[]{codePoint}, 0, 1);
-            return String.format("invalid character '%s' (U+%x)", printString, codePoint);
+            return String.format("invalid character '%s' (U+%04X)", printString, codePoint);
         }
         return null;
     }
