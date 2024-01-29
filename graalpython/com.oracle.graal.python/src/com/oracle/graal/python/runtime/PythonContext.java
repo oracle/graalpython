@@ -392,9 +392,9 @@ public final class PythonContext extends Python3Core {
 
         public void setCurrentException(PException currentException) {
             this.currentException = currentException;
-            if (currentException.getEscapedException() instanceof PBaseException pythonException)
+            if (currentException.getEscapedException() instanceof PBaseException pythonException) {
                 this.currentTraceback = pythonException.getTraceback();
-            else {
+            } else {
                 Object tb = ExceptionNodes.GetTracebackNode.executeUncached(currentException.getEscapedException());
                 this.currentTraceback = tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null;
             }

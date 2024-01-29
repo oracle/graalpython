@@ -788,7 +788,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
     abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
-        private final static HiddenKey DATA_NATIVE_STORAGE = new HiddenKey("native_storage");
+        private static final HiddenKey DATA_NATIVE_STORAGE = new HiddenKey("native_storage");
 
         @Specialization
         static Object get(PString object,
