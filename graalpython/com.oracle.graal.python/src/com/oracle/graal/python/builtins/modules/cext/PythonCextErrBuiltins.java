@@ -510,7 +510,7 @@ public final class PythonCextErrBuiltins {
                 m = (TruffleString) msg;
             }
             writeUnraisableNode.execute(exc, m, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
-            getThreadStateNode.execute(inliningTarget).setCaughtException(PException.NO_EXCEPTION);
+            threadState.clearCurrentException();
             return PNone.NONE;
         }
     }

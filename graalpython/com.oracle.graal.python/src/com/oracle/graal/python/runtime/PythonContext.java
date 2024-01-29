@@ -416,7 +416,7 @@ public final class PythonContext extends Python3Core {
             if (currentException.getUnreifiedException() instanceof PBaseException pythonException) {
                 pythonException.setTraceback(currentTraceback);
             } else {
-                PTraceback materialized = MaterializeLazyTracebackNode.executeUncached(currentTraceback);
+                PTraceback materialized = currentTraceback != null ? MaterializeLazyTracebackNode.executeUncached(currentTraceback) : null;
                 ExceptionNodes.SetTracebackNode.executeUncached(currentException.getUnreifiedException(), materialized != null ? materialized : PNone.NONE);
             }
         }
