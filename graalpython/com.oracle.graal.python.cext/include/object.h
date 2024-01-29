@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -56,6 +56,8 @@ type and back.
 A standard interface exists for objects that contain an array of items
 whose size is determined when the object is allocated.
 */
+
+#include "graalpy/handles.h"
 
 /* Py_DEBUG implies Py_REF_DEBUG. */
 #if defined(Py_DEBUG) && !defined(Py_REF_DEBUG)
@@ -135,10 +137,14 @@ PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
 PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(const PyObject *ob);
 #define Py_REFCNT(ob) _Py_REFCNT(_PyObject_CAST_CONST(ob))
 
-
 PyAPI_FUNC(PyTypeObject*) _Py_TYPE(const PyObject *ob);
+
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
+#if defined(GRAALVM_PYTHON_LLVM_MANAGED) || !defined(NDEBUG)
 #define Py_TYPE(ob)             _Py_TYPE(_PyObject_CAST_CONST(ob))
+#else
+#define Py_TYPE(ob)             (pointer_to_stub(ob)->ob_type)
+#endif
 
 PyAPI_FUNC(Py_ssize_t) _Py_SIZE(const PyVarObject *ob);
 // bpo-39573: The Py_SET_SIZE() function must be used to set an object size.
