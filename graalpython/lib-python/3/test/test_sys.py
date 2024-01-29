@@ -641,6 +641,9 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(len(info), 3)
         self.assertIn(info.name, ('nt', 'pthread', 'pthread-stubs', 'solaris', None))
         self.assertIn(info.lock, ('semaphore', 'mutex+cond', None))
+        # GraalPy change
+        if sys.implementation.name == 'graalpy':
+            return
         if sys.platform.startswith(("linux", "freebsd")):
             self.assertEqual(info.name, "pthread")
         elif sys.platform == "win32":

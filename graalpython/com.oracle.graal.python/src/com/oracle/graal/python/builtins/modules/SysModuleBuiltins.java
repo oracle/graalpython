@@ -309,7 +309,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "\n" +
                     "Flags provided through command line arguments or environment vars.",
                     // @formatter:on
-                    17,
+                    18,
                     new String[]{
                                     "debug",
                                     "inspect",
@@ -694,7 +694,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0, // utf8_mode
                         PInt.intValue(context.getOption(PythonOptions.WarnDefaultEncodingFlag)), // warn_default_encoding
-                        PInt.intValue(context.getOption(PythonOptions.SafePathFlag)), // safe_path
+                        context.getOption(PythonOptions.SafePathFlag), // safe_path
                         context.getOption(PythonOptions.IntMaxStrDigits) // int_max_str_digits
         ));
         sys.setAttribute(T___EXCEPTHOOK__, sys.getAttribute(T_EXCEPTHOOK));
