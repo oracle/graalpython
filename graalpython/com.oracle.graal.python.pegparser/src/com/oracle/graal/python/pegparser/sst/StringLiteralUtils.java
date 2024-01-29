@@ -814,11 +814,12 @@ public abstract class StringLiteralUtils {
          */
         private static Token createExpressionToken(ErrorCallback errorCallback, String text, SourceRange sourceRange, int start, int end) {
             assert start <= end;
-            while (start < end && Character.isWhitespace(text.charAt(start))) {
-                start++;
+            int s = start;
+            while (s < end && Character.isWhitespace(text.charAt(s))) {
+                s++;
             }
-            if (start == end) {
-                char c = text.charAt(start);
+            if (s == end) {
+                char c = text.charAt(s);
                 if (c == '!' || c == ':' || c == '=') {
                     errorCallback.onError(sourceRange, ERROR_MESSAGE_EXPRESSION_REQUIRED_BEFORE, c);
                 } else {
