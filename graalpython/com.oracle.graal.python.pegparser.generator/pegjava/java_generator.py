@@ -494,7 +494,7 @@ class TypingVisitor(GrammarVisitor):
                 typ = self.visit(item)
                 if typ:
                     types.add(typ)
-            if len(types) > 1:
+            if len(types) > 1 and node.action:
                 types.discard("Token*") # heuristic. when tokens are in there, they are usually dropped
             if len(types) == 1 and next(iter(types)) == "Token*" and len(node.items) > 1:
                 types = {'Object'}
@@ -521,10 +521,10 @@ class TypingVisitor(GrammarVisitor):
         return node.type
 
     def visit_PositiveLookahead(self, node):
-        return self.visit(node.node)
+        pass
 
     def visit_NegativeLookahead(self, node):
-        return self.visit(node.node)
+        pass
 
     def visit_Opt(self, node):
         return self.visit(node.node)
