@@ -561,6 +561,10 @@ def CPyExtType(name, code='', **kwargs):
         {sq_concat},        /* sq_concat */
         0,                  /* sq_repeat */
         {sq_item},          /* sq_item */
+        0,                  /* sq_slice */
+        {sq_ass_item},      /* sq_ass_item */
+        0,                  /* sq_ass_slice */
+        {sq_contains},      /* sq_contains */
     }};
 
     static PyMappingMethods {name}_mapping_methods = {{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,10 +96,6 @@ public abstract class IndexNodes {
             return subNode.executeLong(index, length, errorMessage);
         }
 
-        protected final TruffleString getErrorMessage() {
-            return errorMessage;
-        }
-
         @NeverDefault
         public static NormalizeIndexNode create() {
             return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, true);
@@ -133,11 +129,6 @@ public abstract class IndexNodes {
         @NeverDefault
         public static NormalizeIndexNode forTuple() {
             return create(ErrorMessages.TUPLE_OUT_OF_BOUNDS);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode forTupleAssign() {
-            return create(ErrorMessages.TUPLE_ASSIGN_OUT_OF_BOUNDS);
         }
 
         @NeverDefault

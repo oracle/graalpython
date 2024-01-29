@@ -16,7 +16,6 @@
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_cmp_contig
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_fortran
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_hash
-*graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar
@@ -25,8 +24,6 @@
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_offset
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_random_invalid
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_re_export
-*graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_multidim
-*graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_redundant_suboffsets
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_zero_shape
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides
 *graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape

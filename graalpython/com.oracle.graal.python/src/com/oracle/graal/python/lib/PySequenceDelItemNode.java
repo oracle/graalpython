@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.GETITEM;
+import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.DELITEM;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -69,15 +69,15 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PySequence_GetItem}. For native object it would only call
- * {@code sq_item} and never {@code mp_item}.
+ * Equivalent of CPython's {@code PySequence_DelItem}. For native object it would only call
+ * {@code sq_ass_item} and never {@code mp_ass_subscript}.
  */
 @ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
 @GenerateInline(false) // One lazy usage, one eager usage => not worth it
 @GenerateUncached
-public abstract class PySequenceGetItemNode extends Node {
+public abstract class PySequenceDelItemNode extends Node {
     // todo: fa [GR-51456]
-    private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM;
+    private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_DEL_ITEM;
     private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 
     public abstract Object execute(Frame frame, Object object, int index);
@@ -92,19 +92,19 @@ public abstract class PySequenceGetItemNode extends Node {
                     @Cached GetClassNode getClassNode,
                     @Cached PySequenceCheckNode sequenceCheckNode,
                     @Cached PyMappingCheckNode mappingCheckNode,
-                    @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
-                    @Cached CallBinaryMethodNode callGetItem,
+                    @Cached(parameters = "DelItem") LookupSpecialMethodSlotNode lookupDelItem,
+                    @Cached CallBinaryMethodNode callDelItem,
                     @Cached PRaiseNode.Lazy raise) {
         if (sequenceCheckNode.execute(inliningTarget, object)) {
             Object type = getClassNode.execute(inliningTarget, object);
-            Object getItem = lookupGetItem.execute(frame, type, object);
-            assert getItem != PNone.NO_VALUE;
-            return callGetItem.executeObject(frame, getItem, object, index);
+            Object delItem = lookupDelItem.execute(frame, type, object);
+            assert delItem != PNone.NO_VALUE;
+            return callDelItem.executeObject(frame, delItem, object, index);
         }
         if (mappingCheckNode.execute(inliningTarget, object)) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
         } else {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, object);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_DELETION, object);
         }
     }
 
@@ -115,6 +115,6 @@ public abstract class PySequenceGetItemNode extends Node {
                     @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
                     @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
         Object executable = importCExtSymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), SYMBOL);
-        return invokeNode.execute(frame, GETITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
+        return invokeNode.execute(frame, DELITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
     }
 }

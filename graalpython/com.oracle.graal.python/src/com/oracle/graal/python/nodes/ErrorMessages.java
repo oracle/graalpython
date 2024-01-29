@@ -558,6 +558,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an int");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_INDEXING = tsLiteral("'%p' object does not support indexing");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = tsLiteral("'%s' object does not support item assignment");
+    public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_DELETION = tsLiteral("'%s' object does not support item deletion");
     public static final TruffleString P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = tsLiteral("'%p' object does not support item assignment");
     public static final TruffleString OBJ_CANT_BE_REPEATED = tsLiteral("'%p' object can't be repeated");
     public static final TruffleString OBJ_CANT_BE_CONCATENATED = tsLiteral("'%p' object can't be concatenated");

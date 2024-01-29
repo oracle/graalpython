@@ -46,7 +46,10 @@ static int deferred_notify_cur = 0;
 static inline void
 _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
 {
-    if (points_to_py_handle_space(op) && updated_refcnt == MANAGED_REFCNT) {
+    if (points_to_py_handle_space(op) && updated_refcnt <= MANAGED_REFCNT) {
+        if (PyTruffle_Debug_CAPI() && updated_refcnt < MANAGED_REFCNT) {
+            Py_FatalError("Refcount of native stub fell below MANAGED_REFCNT");
+        }
         assert(deferred_notify_cur < DEFERRED_NOTIFY_SIZE);
         deferred_notify_ops[deferred_notify_cur++] = op;
         if (deferred_notify_cur >= DEFERRED_NOTIFY_SIZE) {
