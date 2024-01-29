@@ -2435,7 +2435,7 @@ public abstract class TypeNodes {
                         // don't populate this attribute
                         continue;
                     }
-                    if (typeDict == null) {
+                    if (typeDict == null && keyObj instanceof TruffleString) {
                         pythonClass.setAttribute(key, value);
                         continue;
                     }
