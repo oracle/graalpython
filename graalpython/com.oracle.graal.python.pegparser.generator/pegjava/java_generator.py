@@ -1035,70 +1035,67 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     def _handle_default_rule_body(self, node: Rule, rhs: Rhs, result_type: str) -> None:
         memoize = self._should_memoize(node)
 
-        with self.indent():
-            self.add_level()
-            self._check_for_errors()
-            self.print("int _mark = mark();")
-            self.print(f"Object _res = null;")
-            if memoize:
-                self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
-                with self.indent():
-                    self.print(f"_res = ({result_type})cache.getResult(_mark, {node.name.upper()}_ID);")
-                    self.add_return(f"({result_type})_res")
-                self.print("}")
-            # Java change: set up the goto target via a lambda
-            def _goto_target():
-                if memoize:
-                    self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
+        self.add_level()
+        self._check_for_errors()
+        self.print("int _mark = mark();")
+        self.print(f"Object _res = null;")
+        if memoize:
+            self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
+            with self.indent():
+                self.print(f"_res = ({result_type})cache.getResult(_mark, {node.name.upper()}_ID);")
                 self.add_return(f"({result_type})_res")
-            self.goto_targets.append(_goto_target)
-            # End goto target setup
-            if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
-                self._set_up_token_start_metadata_extraction()
-            self.visit(
-                rhs, is_loop=False, is_gather=node.is_gather(), rulename=node.name,
-            )
-            self.printDebug(f'debugMessageln("Fail at %d: {node.name}", _mark);')
-            self.print("_res = null;")
-        with self.indent():
-            # insert and pop the goto target
-            self.goto_targets.pop()()
+            self.print("}")
+        # Java change: set up the goto target via a lambda
+        def _goto_target():
+            if memoize:
+                self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
+            self.add_return(f"({result_type})_res")
+        self.goto_targets.append(_goto_target)
+        # End goto target setup
+        if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
+            self._set_up_token_start_metadata_extraction()
+        self.visit(
+            rhs, is_loop=False, is_gather=node.is_gather(), rulename=node.name,
+        )
+        self.printDebug(f'debugMessageln("Fail at %d: {node.name}", _mark);')
+        self.print("_res = null;")
+        # insert and pop the goto target
+        self.goto_targets.pop()()
 
     def _handle_loop_rule_body(self, node: Rule, rhs: Rhs) -> None:
         memoize = self._should_memoize(node)
         is_repeat1 = node.name.startswith("_loop1")
 
-        with self.indent():
-            self.add_level()
-            self._check_for_errors()
-            self.print("Object _res = null;")
-            self.print("int _mark = mark();")
-            if memoize:
-                self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
-                with self.indent():
-                    self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
-                    self.add_return(f"({self._collected_type[-1]}[])_res")
-                self.print("}")
-            self.print("int _start_mark = mark();")
-            self.print(f"List<{self._collected_type[-1]}> _children = new ArrayList<>();")
-            self.out_of_memory_return(f"!_children")
-            self.print("int _children_capacity = 1;")
-            self.print("int _n = 0;")
-            if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
-                self._set_up_token_start_metadata_extraction()
-            self.visit(
-                rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name,
-            )
-            if is_repeat1:
-                self.print("if (_children.size() == 0) {")
-                with self.indent():
-                    self.add_return("null")
-                self.print("}")
-            self.print(f"{self._collected_type[-1]}[] _seq = _children.toArray(new {self._collected_type[-1]}[_children.size()]);")
-            self.out_of_memory_return(f"!_seq", cleanup_code="PyMem_Free(_children);")
-            if node.name:
-                self.print(f"cache.putResult(_start_mark, {node.name.upper()}_ID, _seq);")
-            self.add_return("_seq")
+        self.add_level()
+        self._check_for_errors()
+        self.print("Object _res = null;")
+        self.print("int _mark = mark();")
+        if memoize:
+            self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
+            with self.indent():
+                self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
+                self.add_return(f"({self._collected_type[-1]}[])_res")
+            self.print("}")
+        self.print("int _start_mark = mark();")
+        self.print(f"List<{self._collected_type[-1]}> _children = new ArrayList<>();")
+        self.out_of_memory_return(f"!_children")
+        self.print("int _children_capacity = 1;")
+        self.print("int _n = 0;")
+        if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
+            self._set_up_token_start_metadata_extraction()
+        self.visit(
+            rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name,
+        )
+        if is_repeat1:
+            self.print("if (_children.size() == 0) {")
+            with self.indent():
+                self.add_return("null")
+            self.print("}")
+        self.print(f"{self._collected_type[-1]}[] _seq = _children.toArray(new {self._collected_type[-1]}[_children.size()]);")
+        self.out_of_memory_return(f"!_seq", cleanup_code="PyMem_Free(_children);")
+        if node.name:
+            self.print(f"cache.putResult(_start_mark, {node.name.upper()}_ID, _seq);")
+        self.add_return("_seq")
 
     def visit_Rule(self, node: Rule) -> None:
         is_loop = node.is_loop()
@@ -1126,10 +1123,27 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self._set_up_rule_memoization(node, result_type)
 
         self.print("{")
-        if is_loop:
-            self._handle_loop_rule_body(node, rhs)
-        else:
-            self._handle_default_rule_body(node, rhs, result_type)
+
+        with self.indent():
+            try:
+                if node.name.endswith("without_invalid"):
+                    self.print("boolean prevCallInvalidRules = callInvalidRules;")
+                    self.print("try {")
+                    self.level += 1
+                    self.print("callInvalidRules = false;")
+
+                if is_loop:
+                    self._handle_loop_rule_body(node, rhs)
+                else:
+                    self._handle_default_rule_body(node, rhs, result_type)
+            finally:
+                if node.name.endswith("without_invalid"):
+                    self.level -= 1
+                    self.print("} finally {")
+                    with self.indent():
+                        self.print("callInvalidRules = prevCallInvalidRules;")
+                    self.print("}")
+
         # Java type stack pop
         if is_loop or is_gather:
             self._collected_type.pop()
