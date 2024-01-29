@@ -13260,80 +13260,86 @@ public final class Parser extends AbstractParser {
     //     | lambdef
     public ExprTy expression_without_invalid_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
-        int _mark = mark();
-        Object _res = null;
-        if (cache.hasResult(_mark, EXPRESSION_WITHOUT_INVALID_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, EXPRESSION_WITHOUT_INVALID_ID);
-            return (ExprTy)_res;
-        }
-        Token startToken = getAndInitializeToken();
-        { // disjunction 'if' disjunction 'else' expression
+        boolean prevCallInvalidRules = callInvalidRules;
+        try {
+            callInvalidRules = false;
             if (errorIndicator) {
                 return null;
             }
-            Token _keyword;
-            Token _keyword_1;
-            ExprTy a;
-            ExprTy b;
-            ExprTy c;
-            if (
-                (a = disjunction_rule()) != null  // disjunction
-                &&
-                (_keyword = expect(665)) != null  // token='if'
-                &&
-                (b = disjunction_rule()) != null  // disjunction
-                &&
-                (_keyword_1 = expect(673)) != null  // token='else'
-                &&
-                (c = expression_rule()) != null  // expression
-            )
-            {
-                Token endToken = getLastNonWhitespaceToken();
-                if (endToken == null) {
+            int _mark = mark();
+            Object _res = null;
+            if (cache.hasResult(_mark, EXPRESSION_WITHOUT_INVALID_ID)) {
+                _res = (ExprTy)cache.getResult(_mark, EXPRESSION_WITHOUT_INVALID_ID);
+                return (ExprTy)_res;
+            }
+            Token startToken = getAndInitializeToken();
+            { // disjunction 'if' disjunction 'else' expression
+                if (errorIndicator) {
                     return null;
                 }
-                _res = factory.createIfExpression(b, a, c, startToken.sourceRange.withEnd(endToken.sourceRange));
-                cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
-                return (ExprTy)_res;
+                Token _keyword;
+                Token _keyword_1;
+                ExprTy a;
+                ExprTy b;
+                ExprTy c;
+                if (
+                    (a = disjunction_rule()) != null  // disjunction
+                    &&
+                    (_keyword = expect(665)) != null  // token='if'
+                    &&
+                    (b = disjunction_rule()) != null  // disjunction
+                    &&
+                    (_keyword_1 = expect(673)) != null  // token='else'
+                    &&
+                    (c = expression_rule()) != null  // expression
+                )
+                {
+                    Token endToken = getLastNonWhitespaceToken();
+                    if (endToken == null) {
+                        return null;
+                    }
+                    _res = factory.createIfExpression(b, a, c, startToken.sourceRange.withEnd(endToken.sourceRange));
+                    cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
+                    return (ExprTy)_res;
+                }
+                reset(_mark);
             }
-            reset(_mark);
+            { // disjunction
+                if (errorIndicator) {
+                    return null;
+                }
+                ExprTy disjunction_var;
+                if (
+                    (disjunction_var = disjunction_rule()) != null  // disjunction
+                )
+                {
+                    _res = disjunction_var;
+                    cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
+                    return (ExprTy)_res;
+                }
+                reset(_mark);
+            }
+            { // lambdef
+                if (errorIndicator) {
+                    return null;
+                }
+                ExprTy lambdef_var;
+                if (
+                    (lambdef_var = lambdef_rule()) != null  // lambdef
+                )
+                {
+                    _res = lambdef_var;
+                    cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
+                    return (ExprTy)_res;
+                }
+                reset(_mark);
+            }
+            _res = null;
+            cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
+            return (ExprTy)_res;
+        } finally {
+            callInvalidRules = prevCallInvalidRules;
         }
-        { // disjunction
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy disjunction_var;
-            if (
-                (disjunction_var = disjunction_rule()) != null  // disjunction
-            )
-            {
-                _res = disjunction_var;
-                cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        { // lambdef
-            if (errorIndicator) {
-                return null;
-            }
-            ExprTy lambdef_var;
-            if (
-                (lambdef_var = lambdef_rule()) != null  // lambdef
-            )
-            {
-                _res = lambdef_var;
-                cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
-                return (ExprTy)_res;
-            }
-            reset(_mark);
-        }
-        _res = null;
-        cache.putResult(_mark, EXPRESSION_WITHOUT_INVALID_ID, _res);
-        return (ExprTy)_res;
     }
 
     // invalid_legacy_expression: NAME !'(' star_expressions
