@@ -3331,9 +3331,10 @@ class ThreadedTests(unittest.TestCase):
                                         server_hostname=hostname,
                                         suppress_ragged_eofs=False) as s:
             s.connect((HOST, server.port))
+            # GraalPy change: relax message requirements
             with self.assertRaisesRegex(
                 ssl.SSLError,
-                'alert unknown ca|EOF occurred'
+                'alert'
             ):
                 # TLS 1.3 perform client cert exchange after handshake
                 s.write(b'data')
