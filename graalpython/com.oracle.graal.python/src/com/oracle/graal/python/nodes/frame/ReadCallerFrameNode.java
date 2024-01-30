@@ -73,12 +73,22 @@ public final class ReadCallerFrameNode extends Node {
             }
         },
         /**
-         * Skips any internal code frames including internal Python level frames.
+         * Skips any internal code frames including internal Python level frames of functions
+         * annotated with @builtin.
          */
         SKIP_PYTHON_INTERNAL {
             @Override
             public boolean skip(RootNode rootNode) {
                 return PRootNode.isPythonInternal(rootNode);
+            }
+        },
+        /**
+         * Skips any internal frames including Python frames from internal modules in lib-graalpy.
+         */
+        SKIP_INTERNAL {
+            @Override
+            public boolean skip(RootNode rootNode) {
+                return (rootNode != null && rootNode.isInternal()) || PRootNode.isPythonInternal(rootNode);
             }
         },
         /**
