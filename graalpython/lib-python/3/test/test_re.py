@@ -285,21 +285,22 @@ class ReTests(unittest.TestCase):
         self.checkPatternError('(?P<©>x)', "bad character in group name '©'", 4)
         self.checkPatternError('(?P=©)', "bad character in group name '©'", 4)
         self.checkPatternError('(?(©)y)', "bad character in group name '©'", 3)
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name '\\xc2\\xb5' "
-                                   r"at position 4") as w:
-            re.compile(b'(?P<\xc2\xb5>x)')
-        self.assertEqual(w.filename, __file__)
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name '\\xc2\\xb5' "
-                                   r"at position 4"):
-            self.checkPatternError(b'(?P=\xc2\xb5)',
-                                   r"unknown group name '\xc2\xb5'", 4)
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name '\\xc2\\xb5' "
-                                   r"at position 3"):
-            self.checkPatternError(b'(?(\xc2\xb5)y)',
-                                   r"unknown group name '\xc2\xb5'", 3)
+        # GraalPy change: we can't propagate warnings out of TRegex
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name '\\xc2\\xb5' "
+        #                            r"at position 4") as w:
+        #     re.compile(b'(?P<\xc2\xb5>x)')
+        # self.assertEqual(w.filename, __file__)
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name '\\xc2\\xb5' "
+        #                            r"at position 4"):
+        #     self.checkPatternError(b'(?P=\xc2\xb5)',
+        #                            r"unknown group name '\xc2\xb5'", 4)
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name '\\xc2\\xb5' "
+        #                            r"at position 3"):
+        #     self.checkPatternError(b'(?(\xc2\xb5)y)',
+        #                            r"unknown group name '\xc2\xb5'", 3)
 
     def test_symbolic_refs(self):
         self.assertEqual(re.sub('(?P<a>x)|(?P<b>y)', r'\g<b>', 'xx'), '')
@@ -626,27 +627,29 @@ class ReTests(unittest.TestCase):
         self.checkPatternError(r'(?P<a>)(?(0)a|b)', 'bad group number', 10)
         self.checkPatternError(r'()(?(-1)a|b)',
                                "bad character in group name '-1'", 5)
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name '\+1' "
-                                   r"at position 5") as w:
-            re.compile(r'()(?(+1)a|b)')
-        self.assertEqual(w.filename, __file__)
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name '1_0' "
-                                   r"at position 23"):
-            re.compile(r'()'*10 + r'(?(1_0)a|b)')
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name ' 1 ' "
-                                   r"at position 5"):
-            re.compile(r'()(?( 1 )a|b)')
+        # GraalPy change: can't propagate warnings from TRegex
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name '\+1' "
+        #                            r"at position 5") as w:
+        #     re.compile(r'()(?(+1)a|b)')
+        # self.assertEqual(w.filename, __file__)
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name '1_0' "
+        #                            r"at position 23"):
+        #     re.compile(r'()'*10 + r'(?(1_0)a|b)')
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name ' 1 ' "
+        #                            r"at position 5"):
+        #     re.compile(r'()(?( 1 )a|b)')
         self.checkPatternError(r'()(?(㊀)a|b)',
                                "bad character in group name '㊀'", 5)
         self.checkPatternError(r'()(?(¹)a|b)',
                                "bad character in group name '¹'", 5)
-        with self.assertWarnsRegex(DeprecationWarning,
-                                   r"bad character in group name '१' "
-                                   r"at position 5"):
-            re.compile(r'()(?(१)a|b)')
+        # GraalPy change: can't propagate warnings from TRegex
+        # with self.assertWarnsRegex(DeprecationWarning,
+        #                            r"bad character in group name '१' "
+        #                            r"at position 5"):
+        #     re.compile(r'()(?(१)a|b)')
         self.checkPatternError(r'()(?(1',
                                "missing ), unterminated name", 5)
         self.checkPatternError(r'()(?(1)a',
@@ -1579,15 +1582,14 @@ class ReTests(unittest.TestCase):
         self.assertTrue(re.match('(?x) (?i) ' + upper_char, lower_char))
         self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char, re.X))
 
-        # XXX GraalVM change: don't test for warnings, we don't have a good way to propagate them out of TRegex
-        return
         msg = "global flags not at the start of the expression"
         self.checkPatternError(upper_char + '(?i)', msg, 1)
 
+        # XXX GraalVM change: don't test for warnings, we don't have a good way to propagate them out of TRegex
         # bpo-30605: Compiling a bytes instance regex was throwing a BytesWarning
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', BytesWarning)
-            self.checkPatternError(b'A(?i)', msg, 1)
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter('error', BytesWarning)
+        self.checkPatternError(b'A(?i)', msg, 1)
 
         self.checkPatternError('(?s).(?i)' + upper_char, msg, 5)
         self.checkPatternError('(?i) ' + upper_char + ' (?x)', msg, 7)
