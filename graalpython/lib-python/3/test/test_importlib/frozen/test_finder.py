@@ -14,6 +14,9 @@ from test.support import import_helper, REPO_ROOT, STDLIB_DIR
 
 def resolve_stdlib_file(name, ispkg=False):
     assert name
+    # GraalPy change: test.support.STDLIB_DIR is the stdlib in source repo, we need the one in mxbuild
+    import sys
+    STDLIB_DIR = sys._stdlib_dir
     if ispkg:
         return os.path.join(STDLIB_DIR, *name.split('.'), '__init__.py')
     else:
