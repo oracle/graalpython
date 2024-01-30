@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -207,8 +207,8 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {ConstCharPtr}, call = CImpl)
-    abstract static class Py_EnterRecursiveCall extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {ConstCharPtr}, call = Ignored)
+    abstract static class PyTruffle_EnterRecursiveCall extends CApiUnaryBuiltinNode {
         @Specialization
         int doGeneric(Object where) {
             PythonLanguage language = PythonLanguage.get(this);
@@ -228,8 +228,8 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {}, call = CImpl)
-    abstract static class Py_LeaveRecursiveCall extends CApiNullaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {}, call = Ignored)
+    abstract static class PyTruffle_LeaveRecursiveCall extends CApiNullaryBuiltinNode {
         @Specialization
         Object doGeneric() {
             PythonLanguage language = PythonLanguage.get(this);

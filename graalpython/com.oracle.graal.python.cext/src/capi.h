@@ -367,6 +367,7 @@ typedef struct {
     BUILTIN(PyTruffle_Debug, int, void*) \
     BUILTIN(PyTruffle_DebugTrace, void) \
     BUILTIN(PyTruffle_Ellipsis, PyObject*) \
+    BUILTIN(PyTruffle_EnterRecursiveCall, int, const char*) \
     BUILTIN(PyTruffle_False, PyObject*) \
     BUILTIN(PyTruffle_FatalErrorFunc, void, const char*, const char*, int) \
     BUILTIN(PyTruffle_FileSystemDefaultEncoding, PyObject*) \
@@ -375,6 +376,7 @@ typedef struct {
     BUILTIN(PyTruffle_GetMaxNativeMemory, size_t) \
     BUILTIN(PyTruffle_HashConstant, long, int) \
     BUILTIN(PyTruffle_InitBuiltinTypesAndStructs, void, void*) \
+    BUILTIN(PyTruffle_LeaveRecursiveCall, void) \
     BUILTIN(PyTruffle_LogString, void, int, const char*) \
     BUILTIN(PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
     BUILTIN(PyTruffle_Native_Options, int) \
@@ -437,9 +439,7 @@ typedef struct {
     BUILTIN(Py_CompileString, PyObject*, const char*, const char*, int) \
     BUILTIN(Py_CompileStringExFlags, PyObject*, const char*, const char*, int, PyCompilerFlags*, int) \
     BUILTIN(Py_CompileStringObject, PyObject*, const char*, PyObject*, int, PyCompilerFlags*, int) \
-    BUILTIN(Py_EnterRecursiveCall, int, const char*) \
     BUILTIN(Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(Py_LeaveRecursiveCall, void) \
     BUILTIN(Py_get_PyASCIIObject_length, Py_ssize_t, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_ascii, unsigned int, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_compact, unsigned int, PyASCIIObject*) \

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,6 +94,7 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                                   kwdefs, closure);
 }
 
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 #if defined(__GNUC__)
 static __thread int _tls_recursion_depth = 0;
 #elif defined(_MSC_VER)
@@ -101,15 +102,24 @@ static __declspec(thread) int _tls_recursion_depth = 0;
 #else
 #error "don't know how to declare thread local variable"
 #endif
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 int Py_EnterRecursiveCall(const char *where) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPyTruffle_EnterRecursiveCall(where);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     if (++_tls_recursion_depth > Py_DEFAULT_RECURSION_LIMIT) {
         PyErr_SetString(PyExc_RecursionError, where);
         return -1;
     }
     return 0;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 void Py_LeaveRecursiveCall()  {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    GraalPyTruffle_LeaveRecursiveCall();
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     _tls_recursion_depth--;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }

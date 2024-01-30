@@ -449,6 +449,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_gitversion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_GetCompiler", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_GetVersion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
+    @CApiBuiltin(name = "Py_EnterRecursiveCall", ret = Int, args = {ConstCharPtr}, call = CImpl)
+    @CApiBuiltin(name = "Py_LeaveRecursiveCall", ret = Void, args = {}, call = CImpl)
 
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyObject_CallFunctionObjArgs", ret = PyObject, args = {PyObject, VARARGS}, call = CImpl)
