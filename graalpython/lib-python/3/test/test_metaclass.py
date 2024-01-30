@@ -250,7 +250,7 @@ Test failures in looking up the __prepare__ method work.
     [...]
     test.test_metaclass.ObscureException
 
-"""
+""".replace('test.test_metaclass', 'graalpython.lib-python.3.test.test_metaclass')  # GraalPy change: difference in how we run the tests
 
 import sys
 
