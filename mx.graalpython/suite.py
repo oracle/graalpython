@@ -162,6 +162,12 @@ suite = {
               "version": "RELEASE120-1",
             },
         },
+        "JBANG" : {
+            "urls" : [
+                "https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.114.0.zip"
+            ],
+            "digest": "sha256:660c7eb2eda888897f20aa5c5927ccfed924f3b86d5f2a2477a7b0235cdc94bb"
+        },
     },
 
     # --------------------------------------------------------------------------------------------------------------

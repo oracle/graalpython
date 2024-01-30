@@ -51,6 +51,8 @@ import tempfile
 import urllib.request as urllib_request
 from argparse import ArgumentParser
 from dataclasses import dataclass
+import stat
+from zipfile import ZipFile
 
 import mx
 import mx_benchmark
@@ -1492,6 +1494,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             env = {
                 'ENABLE_STANDALONE_UNITTESTS': 'true',
+                'ENABLE_JBANG_INTEGRATION_UNITTESTS': 'true',
                 'JAVA_HOME': graalvm_jdk(),
                 'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')
             }
@@ -1503,10 +1506,16 @@ def graalpython_gate_runner(args, tasks):
             ])
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+
+            # setup JBang executable
+            env["JBANG_CMD"] = _prepare_jbang()
+
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
             full_env = extend_os_env(**env)
-            mx.run([sys.executable, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=full_env)
+            mx.run([sys.executable, _graalpytest_driver(), "-v",
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=full_env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -1698,6 +1707,22 @@ class ArchiveProject(mx.ArchivableProject):
                         results.append(path)
             return results
 
+def _prepare_jbang():
+    zip_path = mx.library('JBANG', True).get_path(resolve = True)
+
+    oldpwd = os.getcwd()
+    work_dir = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
+    os.chdir(work_dir)
+    try:
+        with ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(work_dir)
+
+        folders = os.listdir(work_dir)
+        jbang_executable = os.path.join(work_dir, folders[0], "bin", "jbang")
+        os.chmod(jbang_executable, stat.S_IRWXU)
+        return jbang_executable
+    finally:
+        os.chdir(oldpwd)
 
 def deploy_binary_if_main(args):
     """if the active branch is the main branch, deploy binaries for the primary suite to remote maven repository."""
