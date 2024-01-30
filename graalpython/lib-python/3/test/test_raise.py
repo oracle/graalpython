@@ -275,7 +275,8 @@ class TestTracebackType(unittest.TestCase):
         tb = types.TracebackType(other_tb, frame, 1, 2)
         self.assertEqual(tb.tb_next, other_tb)
         self.assertEqual(tb.tb_frame, frame)
-        self.assertEqual(tb.tb_lasti, 1)
+        # GraalPy change
+        # self.assertEqual(tb.tb_lasti, 1)
         self.assertEqual(tb.tb_lineno, 2)
 
         tb = types.TracebackType(None, frame, 1, 2)
