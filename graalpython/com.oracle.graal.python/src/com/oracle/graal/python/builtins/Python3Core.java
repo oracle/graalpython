@@ -358,6 +358,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -924,7 +925,16 @@ public abstract class Python3Core {
         writeNode.execute(bootstrapExternal, T___PACKAGE__, T_IMPORTLIB);
 
         callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
-        writeNode.execute(getBuiltins(), T___IMPORT__, readNode.execute(bootstrap, T___IMPORT__));
+        Object __import__ = readNode.execute(bootstrap, T___IMPORT__);
+        writeNode.execute(getBuiltins(), T___IMPORT__, __import__);
+        importFunc = (PFunction) __import__;
+        importlib = bootstrap;
+
+        PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
+        writeNode.execute(moduleType, T___REPR__, readNode.execute(bootstrap, toTruffleStringUncached("_module_repr")));
+
+        SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
+
         // see CPython's init_importlib_external
         callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install_external_importers"));
         if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
@@ -935,24 +945,13 @@ public abstract class Python3Core {
                 LOGGER.log(Level.FINE, () -> "initializing zipimport failed");
             } else {
                 LOGGER.log(Level.FINE, () -> "# installing zipimport hook");
-                TruffleString t_zipimport = toTruffleStringUncached("zipimport");
-                PythonModule zipimport = ImpModuleBuiltins.importFrozenModuleObject(this, t_zipimport, false);
-                if (zipimport == null) {
-                    // true when the frozen module is not available
-                    zipimport = createModule(t_zipimport);
-                    try {
-                        loadFile(t_zipimport, getContext().getStdlibHome(), zipimport);
-                    } catch (PException e) {
-                        zipimport = null;
-                        removeBuiltinModule(t_zipimport);
-                    }
-                } else {
-                    setItem.execute(null, null, sysModules, t_zipimport, zipimport);
-                    LOGGER.log(Level.FINE, () -> "import 'zipimport' # <frozen>");
-                }
-                if (zipimport == null) {
+                Object zipimport = null;
+                try {
+                    zipimport = AbstractImportNode.importModule(toTruffleStringUncached("zipimport"));
+                } catch (PException e) {
                     LOGGER.log(Level.FINE, () -> "# can't import zipimport");
-                } else {
+                }
+                if (zipimport != null) {
                     writeNode.execute(zipimport, T___BUILTINS__, getBuiltins());
                     Object zipimporter = readNode.execute(zipimport, toTruffleStringUncached("zipimporter"));
                     if (zipimporter == PNone.NO_VALUE) {
@@ -965,13 +964,6 @@ public abstract class Python3Core {
                 }
             }
         }
-
-        importFunc = (PFunction) readNode.execute(bootstrap, T___IMPORT__);
-        importlib = bootstrap;
-
-        PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
-        writeNode.execute(moduleType, T___REPR__, readNode.execute(bootstrap, toTruffleStringUncached("_module_repr")));
-        SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
     }
 
     private void initializePython3Core(TruffleString coreHome) {
