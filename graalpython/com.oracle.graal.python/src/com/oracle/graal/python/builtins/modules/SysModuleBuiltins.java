@@ -636,6 +636,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute(tsLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
         TruffleString pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
         sys.setAttribute(tsLiteral("pycache_prefix"), pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
+        sys.setAttribute(tsLiteral("_stdlib_dir"), stdlibHome);
 
         TruffleString strWarnoption = context.getOption(PythonOptions.WarnOptions);
         Object[] warnoptions;
