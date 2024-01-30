@@ -5129,7 +5129,7 @@ class TestPreHandshakeClose(unittest.TestCase):
         server = self.SingleConnectionTestServerThread(
                 call_after_accept=call_after_accept,
                 name="preauth_data_to_tls_client")
-(??)
+        self.enterContext(server)  # starts it & unittest.TestCase stops it.
         # Redundant; call_after_accept sets SO_LINGER on the accepted conn.
         set_socket_so_linger_on_with_zero_timeout(server.listener)
 
