@@ -208,20 +208,20 @@ public final class FrozenModules {
         private static final PythonFrozenModule WARNINGS = new PythonFrozenModule("WARNINGS", "warnings", false);
         private static final PythonFrozenModule INSPECT = new PythonFrozenModule("INSPECT", "inspect", false);
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
-        private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
-        private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
-        private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", "graalpy.__graalpython__", false);
-        private static final PythonFrozenModule GRAALPY__INTEROP_BEHAVIOR = new PythonFrozenModule("GRAALPY__INTEROP_BEHAVIOR", "graalpy._interop_behavior", false);
-        private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", "graalpy._sre", false);
-        private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", "graalpy._struct", false);
-        private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", "graalpy._sysconfig", false);
-        private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", "graalpy._weakref", false);
-        private static final PythonFrozenModule GRAALPY_BUILTINS = new PythonFrozenModule("GRAALPY_BUILTINS", "graalpy.builtins", false);
-        private static final PythonFrozenModule GRAALPY_FUNCTION = new PythonFrozenModule("GRAALPY_FUNCTION", "graalpy.function", false);
-        private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", "graalpy.java", false);
-        private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", "graalpy.pip_hook", false);
-        private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", "graalpy.unicodedata", false);
-        private static final PythonFrozenModule GRAALPY_SULONG_SUPPORT = new PythonFrozenModule("GRAALPY_SULONG_SUPPORT", "graalpy.sulong_support", false);
+        private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", null, false);
+        private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", null, false);
+        private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
+        private static final PythonFrozenModule GRAALPY__INTEROP_BEHAVIOR = new PythonFrozenModule("GRAALPY__INTEROP_BEHAVIOR", null, false);
+        private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", null, false);
+        private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", null, false);
+        private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", null, false);
+        private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", null, false);
+        private static final PythonFrozenModule GRAALPY_BUILTINS = new PythonFrozenModule("GRAALPY_BUILTINS", null, false);
+        private static final PythonFrozenModule GRAALPY_FUNCTION = new PythonFrozenModule("GRAALPY_FUNCTION", null, false);
+        private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", null, false);
+        private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", null, false);
+        private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", null, false);
+        private static final PythonFrozenModule GRAALPY_SULONG_SUPPORT = new PythonFrozenModule("GRAALPY_SULONG_SUPPORT", null, false);
     }
 
     public static final PythonFrozenModule lookup(String name) {

@@ -718,12 +718,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             return new FrozenResult(FROZEN_NOT_FOUND);
         }
 
+        boolean isAlias = module.getOriginalName() == null || !equalNode.execute(name, module.getOriginalName(), TS_ENCODING);
         FrozenInfo info = new FrozenInfo(name,
                         module.getCode(),
                         module.getSize(),
                         module.isPackage(),
-                        module.getName(),
-                        !equalNode.execute(name, module.getName(), TS_ENCODING));
+                        module.getOriginalName(),
+                        !isAlias);
 
         if (module.getCode() == null) {
             /* It is frozen but marked as un-importable. */

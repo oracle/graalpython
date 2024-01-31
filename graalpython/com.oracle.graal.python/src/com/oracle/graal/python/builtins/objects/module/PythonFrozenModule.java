@@ -48,7 +48,7 @@ import java.io.InputStream;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFrozenModule {
-    private final TruffleString name;
+    private final TruffleString originalName;
     private final byte[] code;
     private final boolean isPackage;
 
@@ -64,12 +64,12 @@ public final class PythonFrozenModule {
         return null;
     }
 
-    public PythonFrozenModule(String symbol, String name, boolean isPackage) {
-        this(toTruffleStringUncached(name), getByteCode(symbol), isPackage);
+    public PythonFrozenModule(String symbol, String originalName, boolean isPackage) {
+        this(toTruffleStringUncached(originalName), getByteCode(symbol), isPackage);
     }
 
-    private PythonFrozenModule(TruffleString name, byte[] code, boolean isPackage) {
-        this.name = name;
+    private PythonFrozenModule(TruffleString originalName, byte[] code, boolean isPackage) {
+        this.originalName = originalName;
         this.code = code;
         this.isPackage = isPackage;
     }
@@ -78,12 +78,12 @@ public final class PythonFrozenModule {
         if (flag == isPackage) {
             return this;
         } else {
-            return new PythonFrozenModule(name, code, flag);
+            return new PythonFrozenModule(originalName, code, flag);
         }
     }
 
-    public TruffleString getName() {
-        return name;
+    public TruffleString getOriginalName() {
+        return originalName;
     }
 
     public byte[] getCode() {

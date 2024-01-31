@@ -550,8 +550,9 @@ def write_frozen_modules_map(out_file, modules):
             or not any(module.orig == m.orig for m in modules if m != module)
         ):
             ispkg = "true" if module.ispkg else "false"
+            orig = f'"{module.orig}"' if module.orig else "null"
             out_file.write(
-                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}", {ispkg});\n'
+                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", {orig}, {ispkg});\n'
             )
     out_file.write("    }\n")
 
