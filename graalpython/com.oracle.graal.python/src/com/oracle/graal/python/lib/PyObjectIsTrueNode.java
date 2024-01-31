@@ -96,6 +96,10 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
 
     protected abstract Object executeObject(Frame frame, Node inliningTarget, Object object);
 
+    public static boolean executeUncached(Object object) {
+        return getUncached().execute(null, null, object);
+    }
+
     @Specialization
     static boolean doBoolean(boolean object) {
         return object;
