@@ -222,6 +222,7 @@ import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -467,6 +468,7 @@ public abstract class Python3Core {
                         new CellBuiltins(),
                         new BoolBuiltins(),
                         new FloatBuiltins(),
+                        new BytesCommonBuiltins(),
                         new BytesBuiltins(),
                         new ByteArrayBuiltins(),
                         new ComplexBuiltins(),

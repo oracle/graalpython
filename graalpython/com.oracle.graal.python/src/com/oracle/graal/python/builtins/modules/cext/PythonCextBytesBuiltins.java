@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -149,7 +149,7 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object concat(Object original, Object newPart,
-                        @Cached BytesBuiltins.AddNode addNode) {
+                        @Cached BytesCommonBuiltins.AddNode addNode) {
             return addNode.execute(null, original, newPart);
         }
     }
@@ -158,7 +158,7 @@ public final class PythonCextBytesBuiltins {
     abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
         @Specialization
         static Object join(Object original, Object newPart,
-                        @Cached BytesBuiltins.JoinNode joinNode) {
+                        @Cached BytesCommonBuiltins.JoinNode joinNode) {
             return joinNode.execute(null, original, newPart);
         }
     }

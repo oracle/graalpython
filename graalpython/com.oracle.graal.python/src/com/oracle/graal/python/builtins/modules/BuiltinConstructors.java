@@ -372,7 +372,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PByteArray setEmpty(Object cls, @SuppressWarnings("unused") Object arg,
                         @Cached PythonObjectFactory factory) {
-            // data filled in subsequent __init__ call - see BytesBuiltins.InitNode
+            // data filled in subsequent __init__ call - see BytesCommonBuiltins.InitNode
             return factory.createByteArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
     }

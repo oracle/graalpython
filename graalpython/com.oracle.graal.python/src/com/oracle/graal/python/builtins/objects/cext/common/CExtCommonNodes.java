@@ -57,7 +57,7 @@ import java.nio.charset.StandardCharsets;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
@@ -244,8 +244,8 @@ public abstract class CExtCommonNodes {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "a string", unicodeObject);
             }
             try {
-                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);
-                return BytesBuiltins.doEncode(charset, str, action);
+                CodingErrorAction action = BytesCommonBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);
+                return BytesCommonBuiltins.doEncode(charset, str, action);
             } catch (CharacterCodingException e) {
                 throw raiseNode.get(inliningTarget).raise(UnicodeEncodeError, ErrorMessages.M, e);
             }

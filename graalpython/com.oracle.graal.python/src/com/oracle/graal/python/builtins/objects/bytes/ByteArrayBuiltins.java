@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
@@ -588,7 +587,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             byteArray.checkCanResize(inliningTarget, raiseNode);
-            appendNode.execute(inliningTarget, byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesLikeNoGeneralizationNode.SUPPLIER);
+            appendNode.execute(inliningTarget, byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesNodes.BytesLikeNoGeneralizationNode.SUPPLIER);
             return PNone.NONE;
         }
 
@@ -662,7 +661,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
         @NeverDefault
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(BytesLikeNoGeneralizationNode.SUPPLIER);
+            return SequenceStorageNodes.ExtendNode.create(BytesNodes.BytesLikeNoGeneralizationNode.SUPPLIER);
         }
     }
 
@@ -748,7 +747,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.translate(table, delete=b'')
     @Builtin(name = "translate", minNumOfPositionalArgs = 2, parameterNames = {"self", "table", "delete"})
     @GenerateNodeFactory
-    public abstract static class TranslateNode extends BytesBuiltins.BaseTranslateNode {
+    public abstract static class TranslateNode extends BytesNodes.BaseTranslateNode {
 
         @Specialization(guards = "isNoValue(delete)")
         static PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
@@ -834,7 +833,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
+    protected abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PByteArray self,

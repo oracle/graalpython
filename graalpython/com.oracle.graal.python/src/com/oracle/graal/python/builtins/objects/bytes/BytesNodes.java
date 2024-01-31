@@ -88,6 +88,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -993,4 +995,119 @@ public abstract class BytesNodes {
         return op.cmpResultToBool(compareResult);
     }
 
+    @GenerateCached(false)
+    public abstract static class BaseTranslateNode extends PythonBuiltinNode {
+
+        static void checkLengthOfTable(Node inliningTarget, byte[] table, InlinedConditionProfile isLenTable256Profile, PRaiseNode.Lazy raiseNode) {
+            if (isLenTable256Profile.profile(inliningTarget, table.length != 256)) {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
+            }
+        }
+
+        protected static class Result {
+            byte[] array;
+            // we have to know whether the result array was changed ->
+            // if not in bytes case it has to return the input bytes
+            // in bytearray case it has to return always new bytearray
+            boolean changed;
+
+            public Result(byte[] array, boolean changed) {
+                this.array = array;
+                this.changed = changed;
+            }
+        }
+
+        protected static boolean[] createDeleteTable(byte[] delete) {
+            boolean[] result = new boolean[256];
+            for (int i = 0; i < 256; i++) {
+                result[i] = false;
+            }
+            for (byte b : delete) {
+                result[b & 0xFF] = true;
+            }
+            return result;
+        }
+
+        protected static Result delete(byte[] self, byte[] table) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            int resultLen = 0;
+            boolean[] toDelete = createDeleteTable(table);
+
+            for (byte b : self) {
+                if (!toDelete[b & 0xFF]) {
+                    result[resultLen] = b;
+                    resultLen++;
+                }
+            }
+            if (resultLen == length) {
+                return new Result(result, false);
+            }
+            return new Result(Arrays.copyOf(result, resultLen), true);
+        }
+
+        protected static Result translate(byte[] self, byte[] table) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            boolean changed = false;
+            for (int i = 0; i < length; i++) {
+                int idx = self[i] & 0xFF;
+                byte b = table[idx];
+                if (!changed && b != self[i]) {
+                    changed = true;
+                }
+                result[i] = b;
+            }
+            return new Result(result, changed);
+        }
+
+        protected static Result translateAndDelete(byte[] self, byte[] table, byte[] delete) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            int resultLen = 0;
+            boolean changed = false;
+            boolean[] toDelete = createDeleteTable(delete);
+
+            for (byte value : self) {
+                int idx = value & 0xFF;
+                if (!toDelete[idx]) {
+                    byte b = table[idx];
+                    if (!changed && b != value) {
+                        changed = true;
+                    }
+                    result[resultLen] = b;
+                    resultLen++;
+                }
+            }
+            if (resultLen == length) {
+                return new Result(result, changed);
+            }
+            return new Result(Arrays.copyOf(result, resultLen), true);
+        }
+
+    }
+
+    @GenerateUncached
+    @SuppressWarnings("truffle-inlining")
+    public abstract static class BytesLikeNoGeneralizationNode extends SequenceStorageNodes.NoGeneralizationNode {
+
+        public static final SequenceStorageNodes.GenNodeSupplier SUPPLIER = new SequenceStorageNodes.GenNodeSupplier() {
+
+            @Override
+            public SequenceStorageNodes.GeneralizationNode create() {
+                return BytesNodesFactory.BytesLikeNoGeneralizationNodeGen.create();
+            }
+
+            @Override
+            public SequenceStorageNodes.GeneralizationNode getUncached() {
+                return BytesNodesFactory.BytesLikeNoGeneralizationNodeGen.getUncached();
+            }
+
+        };
+
+        @Override
+        protected final TruffleString getErrorMessage() {
+            return ErrorMessages.BYTE_MUST_BE_IN_RANGE;
+        }
+    }
 }
