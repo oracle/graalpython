@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,14 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @CompilationFinal(dimensions = 1) private final PythonAbstractClass[] values;
 
+    /**
+     * We cannot simply replace an {@code MroSequenceStorage} with a {@link NativeSequenceStorage}
+     * because we still need the <emph>managed</emph> one due to the assumptions. Therefore, if an
+     * {@code MroSequenceStorage} goes to native, we will create an additional
+     * {@link NativeSequenceStorage} and link to it.
+     */
+    private NativeSequenceStorage nativeMirror;
+
     @TruffleBoundary
     public MroSequenceStorage(TruffleString className, PythonAbstractClass[] elements) {
         this.className = className;
@@ -97,29 +105,26 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public final PythonAbstractClass getItemNormalized(int idx) {
+    public PythonAbstractClass getItemNormalized(int idx) {
         return values[idx];
     }
 
     @Override
     @SuppressWarnings("unused")
     public void setItemNormalized(int idx, Object value) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not be reached");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     @SuppressWarnings("unused")
     public void insertItem(int idx, Object value) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not be reached");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     @SuppressWarnings("unused")
     public void copyItem(int idxTo, int idxFrom) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not be reached");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
@@ -157,29 +162,26 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
-    public final PythonAbstractClass[] getInternalClassArray() {
+    public PythonAbstractClass[] getInternalClassArray() {
         return values;
     }
 
     @SuppressWarnings("unused")
     @Override
     public void increaseCapacityExactWithCopy(int newCapacity) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not be reached");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @SuppressWarnings("unused")
     @Override
     public void increaseCapacityExact(int newCapacity) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not be reached");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @SuppressWarnings("unused")
     @Override
     public void reverse() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not be reached");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
@@ -304,7 +306,19 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return getInternalArray();
     }
 
-    public final boolean hasAttributeInMROFinalAssumptions() {
+    public boolean hasAttributeInMROFinalAssumptions() {
         return hasAttributesInMROFinalAssumptions;
+    }
+
+    public NativeSequenceStorage getNativeMirror() {
+        return nativeMirror;
+    }
+
+    public void setNativeMirror(NativeSequenceStorage nativeMirror) {
+        this.nativeMirror = nativeMirror;
+    }
+
+    public boolean isNative() {
+        return nativeMirror != null;
     }
 }

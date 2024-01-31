@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapperFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -74,11 +77,7 @@ public final class PySequenceArrayWrapper {
             return ToNativeStorageNodeGen.getUncached().execute(null, object, isBytesLike);
         }
 
-        public static boolean isEmptySequenceStorage(SequenceStorage s) {
-            return s instanceof EmptySequenceStorage;
-        }
-
-        @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)"})
+        @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)", "!isMroSequenceStorage(s)"})
         static NativeSequenceStorage doManaged(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
                         @Cached InlinedConditionProfile isObjectArrayProfile,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
@@ -90,6 +89,26 @@ public final class PySequenceArrayWrapper {
                 array = generalize(s);
             }
             return storageToNativeNode.execute(inliningTarget, array, s.length());
+        }
+
+        /*
+         * This specialization uses a TruffleBoundary because we assume that there is a fixed number
+         * of types (and therefore MroSequenceStorages). If types are created on a fast path, this
+         * won't be fast anyway.
+         */
+        @Specialization
+        @TruffleBoundary
+        static NativeSequenceStorage doMroSequenceStorage(Node inliningTarget, MroSequenceStorage mro, boolean isBytesLike) {
+            if (mro.getNativeMirror() != null) {
+                return mro.getNativeMirror();
+            } else {
+                assert !isBytesLike;
+                PythonAbstractClass[] internalClassArray = mro.getInternalClassArray();
+                assert mro.length() <= internalClassArray.length;
+                NativeSequenceStorage ns = StorageToNativeNodeGen.getUncached().execute(inliningTarget, internalClassArray, mro.length());
+                mro.setNativeMirror(ns);
+                return ns;
+            }
         }
 
         @TruffleBoundary
@@ -109,19 +128,37 @@ public final class PySequenceArrayWrapper {
             return storageToNativeNode.execute(inliningTarget, PythonUtils.EMPTY_BYTE_ARRAY, 0);
         }
 
-        protected static boolean isNative(SequenceStorage s) {
+        static boolean isNative(SequenceStorage s) {
             return s instanceof NativeSequenceStorage;
+        }
+
+        static boolean isEmptySequenceStorage(SequenceStorage s) {
+            return s instanceof EmptySequenceStorage;
+        }
+
+        static boolean isMroSequenceStorage(SequenceStorage s) {
+            return s instanceof MroSequenceStorage;
         }
     }
 
     @TruffleBoundary
     public static Object ensureNativeSequence(PSequence sequence) {
+        /*
+         * MroSequenceStorages are special. We cannot simply replace them with a
+         * NativeSequenceStorage because we still need the "managed" one due to the assumptions.
+         * Hence, if an MroSequenceStorage goes to native, we will create an additional
+         * NativeSequenceStorage and link to it.
+         */
         SequenceStorage sequenceStorage = sequence.getSequenceStorage();
         if (sequenceStorage instanceof NativeSequenceStorage nativeStorage) {
             return nativeStorage.getPtr();
+        } else if (sequenceStorage instanceof MroSequenceStorage mro && mro.isNative()) {
+            return mro.getNativeMirror().getPtr();
         }
         NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(sequenceStorage, sequence instanceof PBytesLike);
-        sequence.setSequenceStorage(nativeStorage);
+        if (!(sequenceStorage instanceof MroSequenceStorage)) {
+            sequence.setSequenceStorage(nativeStorage);
+        }
         return nativeStorage.getPtr();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,7 +75,7 @@ public final class NativeByteSequenceStorage extends NativeSequenceStorage {
     @Override
     public String toString(boolean isList) {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("%sNativeByteSequenceStorage(len=%d, cap=%d) at %s%s", isList ? "[" : "(", length, capacity, getPtr(), isList ? "]" : ")");
+        return String.format("%s(len=%d, cap=%d) at %s%s", isList ? "[" : "(", length, capacity, getPtr(), isList ? "]" : ")");
     }
 
     @ExportMessage
