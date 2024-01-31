@@ -156,6 +156,7 @@ public abstract class BuiltinNames {
     public static final String J_HEX = "hex";
 
     public static final String J_NEXT = "next";
+    public static final TruffleString T_NEXT = tsLiteral(J_NEXT);
 
     public static final String J_ANY = "any";
 

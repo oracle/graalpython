@@ -215,6 +215,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
+import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -1562,6 +1563,11 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PGenericAlias createGenericAlias(Object origin, Object arguments) {
         return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments, false);
+    }
+
+    public final PGenericAliasIterator createGenericAliasIterator(PGenericAlias object) {
+        PythonBuiltinClassType type = PythonBuiltinClassType.PGenericAliasIterator;
+        return trace(new PGenericAliasIterator(type, getShape(type), object));
     }
 
     public final PUnionType createUnionType(Object[] args) {

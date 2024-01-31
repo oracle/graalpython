@@ -41,6 +41,9 @@
 package com.oracle.graal.python.builtins.objects.types;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.types.GenericTypeNodes.J___TYPING_UNPACKED_TUPLE_ARGS__;
+import static com.oracle.graal.python.builtins.objects.types.GenericTypeNodes.T___TYPING_UNPACKED_TUPLE_ARGS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NEXT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
@@ -58,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -78,14 +82,18 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -103,6 +111,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -127,6 +136,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                     T___ARGS__,
                     T___UNPACKED__,
                     T___PARAMETERS__,
+                    T___TYPING_UNPACKED_TUPLE_ARGS__,
                     T___MRO_ENTRIES__,
                     T___REDUCE_EX__,
                     T___REDUCE__,
@@ -200,6 +210,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object repr(PGenericAlias self) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            if (self.isStarred()) {
+                sb.appendCodePointUncached('*');
+            }
             reprItem(sb, self.getOrigin());
             sb.appendCodePointUncached('[');
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
@@ -299,6 +312,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqOrigin,
                         @Cached PyObjectRichCompareBool.EqNode eqArgs) {
+            if (self.isStarred() != other.isStarred()) {
+                return false;
+            }
             return eqOrigin.compare(frame, inliningTarget, self.getOrigin(), other.getOrigin()) && eqArgs.compare(frame, inliningTarget, self.getArgs(), other.getArgs());
         }
 
@@ -345,10 +361,19 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object reduce(PGenericAlias self,
+        static Object reduce(VirtualFrame frame, PGenericAlias self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyObjectGetAttr getAttr,
                         @Cached PythonObjectFactory factory) {
+            if (self.isStarred()) {
+                PGenericAlias copy = factory.createGenericAlias(self.getOrigin(), self.getArgs());
+                PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
+                Object next = getAttr.execute(frame, inliningTarget, builtins, T_NEXT);
+                Object args = factory.createTuple(new Object[]{getIter.execute(frame, inliningTarget, copy)});
+                return factory.createTuple(new Object[]{next, args});
+            }
             Object args = factory.createTuple(new Object[]{self.getOrigin(), self.getArgs()});
             return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
@@ -386,6 +411,30 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             PTuple newargsTuple = factory.createTuple(newargs);
             return factory.createGenericAlias(self.getOrigin(), newargsTuple, self.isStarred());
+        }
+    }
+
+    @Builtin(name = J___TYPING_UNPACKED_TUPLE_ARGS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class TypingUnpackedTupleArgsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(PGenericAlias self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode) {
+            if (self.isStarred() && isSameTypeNode.execute(inliningTarget, self.getOrigin(), PythonBuiltinClassType.PTuple)) {
+                return self.getArgs();
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object iter(PGenericAlias self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAliasIterator(self);
         }
     }
 }

@@ -88,10 +88,17 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class GenericTypeNodes {
 
-    private static final TruffleString T___TYPING_SUBST__ = tsLiteral("__typing_subst__");
-    private static final TruffleString T___TYPING_UNPACKED_TUPLE_ARGS__ = tsLiteral("__typing_unpacked_tuple_args__");
-    private static final TruffleString T___TYPING_IS_UNPACKED_TYPEVARTUPLE__ = tsLiteral("__typing_is_unpacked_typevartuple__");
-    private static final TruffleString T___TYPING_PREPARE_SUBST__ = tsLiteral("__typing_prepare_subst__");
+    public static final String J___TYPING_SUBST__ = "__typing_subst__";
+    public static final TruffleString T___TYPING_SUBST__ = tsLiteral(J___TYPING_SUBST__);
+
+    public static final String J___TYPING_UNPACKED_TUPLE_ARGS__ = "__typing_unpacked_tuple_args__";
+    public static final TruffleString T___TYPING_UNPACKED_TUPLE_ARGS__ = tsLiteral(J___TYPING_UNPACKED_TUPLE_ARGS__);
+
+    public static final String J___TYPING_IS_UNPACKED_TYPEVARTUPLE__ = "__typing_is_unpacked_typevartuple__";
+    public static final TruffleString T___TYPING_IS_UNPACKED_TYPEVARTUPLE__ = tsLiteral(J___TYPING_IS_UNPACKED_TYPEVARTUPLE__);
+
+    public static final String J___TYPING_PREPARE_SUBST__ = "__typing_prepare_subst__";
+    public static final TruffleString T___TYPING_PREPARE_SUBST__ = tsLiteral(J___TYPING_PREPARE_SUBST__);
 
     static void reprItem(TruffleStringBuilder sb, Object obj) {
         PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();

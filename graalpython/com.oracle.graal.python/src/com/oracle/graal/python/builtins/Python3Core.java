@@ -352,6 +352,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
+import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -549,6 +550,7 @@ public abstract class Python3Core {
                         new ContextIteratorBuiltins(),
 
                         new GenericAliasBuiltins(),
+                        new GenericAliasIteratorBuiltins(),
                         new com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
