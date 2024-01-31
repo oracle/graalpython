@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ANEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 
 import java.util.List;
 
@@ -183,6 +184,16 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
             return factory.createAsyncGeneratorAThrow(self, null, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+    }
+
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }
