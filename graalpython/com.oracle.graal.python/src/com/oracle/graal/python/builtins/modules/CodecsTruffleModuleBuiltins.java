@@ -445,9 +445,9 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 92 -> 75
-    public abstract static class GetPreferredEncoding extends PNodeWithContext {
+    public abstract static class GetEncodingNode extends PNodeWithContext {
 
-        public static final TruffleString T_GETPREFERREDENCODING = tsLiteral("getpreferredencoding");
+        public static final TruffleString T_GETENCODING = tsLiteral("getencoding");
 
         public abstract TruffleString execute(Frame frame);
 
@@ -458,7 +458,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectStrAsTruffleStringNode strNode) {
 
             Object locale = AbstractImportNode.importModule(BuiltinNames.T_LOCALE);
-            Object e = callMethodNode.execute(frame, inliningTarget, locale, T_GETPREFERREDENCODING);
+            Object e = callMethodNode.execute(frame, inliningTarget, locale, T_GETENCODING);
             return strNode.execute(frame, inliningTarget, e);
         }
     }
