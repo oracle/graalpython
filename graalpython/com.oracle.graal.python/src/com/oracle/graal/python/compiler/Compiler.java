@@ -2425,7 +2425,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         visitSequence(node.decoratorList);
 
         SourceRange startLocation = node.getSourceRange();
-        if (node.decoratorList != null) {
+        if (node.decoratorList != null && node.decoratorList.length > 0) {
             startLocation = node.decoratorList[0].getSourceRange();
         }
 
@@ -2528,7 +2528,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         visitSequence(decoratorList);
 
         SourceRange startLocation = node.getSourceRange();
-        if (decoratorList != null) {
+        if (decoratorList != null && decoratorList.length > 0) {
             startLocation = decoratorList[0].getSourceRange();
         }
 
