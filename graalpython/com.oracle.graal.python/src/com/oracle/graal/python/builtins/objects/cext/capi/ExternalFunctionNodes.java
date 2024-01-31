@@ -116,6 +116,10 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1016,6 +1020,9 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private CStructAccess.FreeNode freeNode;
+
+        private boolean seenNativeArgsTupleStorage;
 
         public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1027,6 +1034,7 @@ public abstract class ExternalFunctionNodes {
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
+            this.freeNode = CStructAccess.FreeNode.create();
         }
 
         @Override
@@ -1034,14 +1042,17 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            return new Object[]{self, createArgsTupleNode.execute(factory, args), factory.createDict(kwargs)};
+            return new Object[]{self, createArgsTupleNode.execute(factory, args, seenNativeArgsTupleStorage), factory.createDict(kwargs)};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
+            boolean freed = MethVarargsRoot.releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
+            if (!seenNativeArgsTupleStorage && freed) {
+                seenNativeArgsTupleStorage = true;
+            }
             releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
@@ -1056,6 +1067,9 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private CStructAccess.FreeNode freeNode;
+
+        private boolean seenNativeArgsTupleStorage;
 
         public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1066,20 +1080,42 @@ public abstract class ExternalFunctionNodes {
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
+            this.freeNode = CStructAccess.FreeNode.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
-            return new Object[]{self, createArgsTupleNode.execute(factory, args)};
+            return new Object[]{self, createArgsTupleNode.execute(factory, args, seenNativeArgsTupleStorage)};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
+            // releaseNativeWrapperNode.execute(cArguments[1]);
+            boolean freed = releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
+            if (!seenNativeArgsTupleStorage && freed) {
+                seenNativeArgsTupleStorage = true;
+            }
+        }
+
+        static boolean releaseArgsTuple(Object argsTupleWrapper, CStructAccess.FreeNode freeNode, boolean ownsMemory) {
+            try {
+                assert argsTupleWrapper instanceof PythonObjectNativeWrapper;
+                Object argsTuple = ((PythonObjectNativeWrapper) argsTupleWrapper).getDelegate();
+                assert argsTuple instanceof PTuple;
+                SequenceStorage s = ((PTuple) argsTuple).getSequenceStorage();
+                boolean isNativeSequenceStorage = s instanceof NativeSequenceStorage;
+                if (isNativeSequenceStorage && ownsMemory) {
+                    freeNode.free(((NativeSequenceStorage) s).getPtr());
+                }
+                return isNativeSequenceStorage;
+            } catch (ClassCastException e) {
+                // cut exception edge
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Override
@@ -1923,11 +1959,11 @@ public abstract class ExternalFunctionNodes {
      */
     @GenerateInline(false)
     abstract static class CreateArgsTupleNode extends Node {
-        public abstract PTuple execute(PythonObjectFactory factory, Object[] args);
+        public abstract PTuple execute(PythonObjectFactory factory, Object[] args, boolean eagerNative);
 
-        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 16"}, limit = "3")
+        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "!eagerNative"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static PTuple doCachedLen(PythonObjectFactory factory, Object[] args,
+        static PTuple doCachedLen(PythonObjectFactory factory, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
                         @Cached("args.length") int cachedLen,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
 
@@ -1937,14 +1973,46 @@ public abstract class ExternalFunctionNodes {
             return factory.createTuple(args);
         }
 
-        @Specialization(replaces = "doCachedLen")
-        static PTuple doGeneric(PythonObjectFactory factory, Object[] args,
-                        @Cached MaterializePrimitiveNode materializePrimitiveNode) {
+        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "eagerNative"}, limit = "1", replaces = "doCachedLen")
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+        static PTuple doCachedLenEagerNative(PythonObjectFactory factory, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
+                        @Cached("args.length") int cachedLen,
+                        @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes,
+                        @Cached("createPythonToNativeNodes(args.length)") PythonToNativeNode[] pythonToNativeNodes,
+                        @Exclusive @Cached CStructAccess.AllocateNode allocNode,
+                        @Exclusive @Cached CStructAccess.WritePointerNode writePointerNode) {
 
-            for (int i = 0; i < args.length; i++) {
+            Object mem = allocNode.alloc(cachedLen * CStructAccess.POINTER_SIZE);
+            for (int i = 0; i < cachedLen; i++) {
+                Object promotedValue = materializePrimitiveNodes[i].execute(factory, args[i]);
+                args[i] = promotedValue;
+                writePointerNode.writeArrayElement(mem, i, pythonToNativeNodes[i].execute(promotedValue));
+            }
+            return factory.createTuple(NativeObjectSequenceStorage.create(mem, cachedLen, cachedLen, false));
+        }
+
+        @Specialization(replaces = {"doCachedLen", "doCachedLenEagerNative"})
+        static PTuple doGeneric(PythonObjectFactory factory, Object[] args, boolean eagerNative,
+                        @Cached MaterializePrimitiveNode materializePrimitiveNode,
+                        @Cached PythonToNativeNode pythonToNativeNode,
+                        @Exclusive @Cached CStructAccess.AllocateNode allocNode,
+                        @Exclusive @Cached CStructAccess.WritePointerNode writePointerNode) {
+
+            int n = args.length;
+            for (int i = 0; i < n; i++) {
                 args[i] = materializePrimitiveNode.execute(factory, args[i]);
             }
-            return factory.createTuple(args);
+            SequenceStorage storage;
+            if (eagerNative) {
+                Object mem = allocNode.alloc(n * CStructAccess.POINTER_SIZE);
+                for (int i = 0; i < n; i++) {
+                    writePointerNode.writeArrayElement(mem, i, pythonToNativeNode.execute(args[i]));
+                }
+                storage = NativeObjectSequenceStorage.create(mem, n, n, false);
+            } else {
+                storage = new ObjectSequenceStorage(args);
+            }
+            return factory.createTuple(storage);
         }
 
         static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
@@ -1953,6 +2021,14 @@ public abstract class ExternalFunctionNodes {
                 materializePrimitiveNodes[i] = MaterializePrimitiveNodeGen.create();
             }
             return materializePrimitiveNodes;
+        }
+
+        static PythonToNativeNode[] createPythonToNativeNodes(int length) {
+            PythonToNativeNode[] pythonToNativeNodes = new PythonToNativeNode[length];
+            for (int i = 0; i < length; i++) {
+                pythonToNativeNodes[i] = PythonToNativeNodeGen.create();
+            }
+            return pythonToNativeNodes;
         }
     }
 

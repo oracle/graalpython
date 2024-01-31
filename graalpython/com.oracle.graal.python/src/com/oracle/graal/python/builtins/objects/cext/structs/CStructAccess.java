@@ -1129,6 +1129,10 @@ public class CStructAccess {
             return desc.isPyObjectOrPointer();
         }
 
+        public final void writeArrayElement(Object pointer, long element, Object value) {
+            execute(pointer, element * POINTER_SIZE, value);
+        }
+
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
                         @Bind("this") Node inliningTarget,
