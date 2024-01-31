@@ -1546,18 +1546,22 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, getShape(PythonBuiltinClassType.ContextVarsToken)));
     }
 
-    public final PGenericAlias createGenericAlias(Object cls, Object origin, Object arguments) {
+    public final PGenericAlias createGenericAlias(Object cls, Object origin, Object arguments, boolean starred) {
         PTuple argumentsTuple;
         if (arguments instanceof PTuple) {
             argumentsTuple = (PTuple) arguments;
         } else {
             argumentsTuple = createTuple(new Object[]{arguments});
         }
-        return trace(new PGenericAlias(cls, getShape(cls), origin, argumentsTuple));
+        return trace(new PGenericAlias(cls, getShape(cls), origin, argumentsTuple, starred));
+    }
+
+    public final PGenericAlias createGenericAlias(Object origin, Object arguments, boolean starred) {
+        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments, starred);
     }
 
     public final PGenericAlias createGenericAlias(Object origin, Object arguments) {
-        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments);
+        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments, false);
     }
 
     public final PUnionType createUnionType(Object[] args) {

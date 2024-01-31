@@ -3235,7 +3235,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         static PGenericAlias doit(Object cls, Object origin, Object arguments,
                         @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, origin, arguments);
+            return factory.createGenericAlias(cls, origin, arguments, false);
         }
     }
 }

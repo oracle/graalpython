@@ -176,8 +176,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class UnpackedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object unpacked(PGenericAlias self) {
-            // GR-51574 implement properly
-            return false;
+            return self.isStarred();
         }
     }
 
@@ -386,7 +385,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
             }
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             PTuple newargsTuple = factory.createTuple(newargs);
-            return factory.createGenericAlias(self.getOrigin(), newargsTuple);
+            return factory.createGenericAlias(self.getOrigin(), newargsTuple, self.isStarred());
         }
     }
 }
