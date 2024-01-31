@@ -33,7 +33,8 @@ static inline Py_ssize_t PyTuple_GET_SIZE(PyObject *op) {
 #  define PyTuple_GET_SIZE(op) PyTuple_GET_SIZE(_PyObject_CAST(op))
 #endif
 
-#define PyTuple_GET_ITEM(op, index) PyTuple_GetItem(_PyObject_CAST(op), (index))
+PyAPI_FUNC(PyObject *) _PyTuple_GET_ITEM(PyObject *, Py_ssize_t);
+#define PyTuple_GET_ITEM(op, i) _PyTuple_GET_ITEM(_PyObject_CAST(op), (i))
 
 /* Function *only* to be used to fill in brand new tuples */
 PyAPI_FUNC(void) PyTruffleTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value);

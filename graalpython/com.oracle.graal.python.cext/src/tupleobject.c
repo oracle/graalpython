@@ -118,3 +118,31 @@ PyTuple_GetItem(PyObject* a, Py_ssize_t b) {
     return ob_item[b];
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
+
+/*
+ * Unsafe variant of PyTuple_GetItem for implementing access macro
+ * PyTuple_GET_ITEM.
+ */
+PyObject*
+_PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPyTruffleTuple_GetItem(a, b);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    PyObject *res;
+    PyObject **ob_item;
+    if (points_to_py_handle_space(a)) {
+        GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(a);
+        ob_item = ((GraalPyVarObject *) ptr)->ob_item;
+        /* The UNLIKELY is maybe not true but the branch is costly anyway. So,
+           if we can optimize for something, it should be the path without the
+           upcall. */
+        if (UNLIKELY(ob_item == NULL)) {
+            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item(a));
+        }
+    } else {
+        ob_item = ((PyTupleObject *) a)->ob_item;
+    }
+    assert(ob_item != NULL);
+    return ob_item[b];
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+}

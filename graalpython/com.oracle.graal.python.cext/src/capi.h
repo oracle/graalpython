@@ -49,6 +49,14 @@
 #define NO_INLINE __attribute__((noinline))
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ > 2) && defined(__OPTIMIZE__)
+#  define UNLIKELY(value) __builtin_expect((value), 0)
+#  define LIKELY(value) __builtin_expect((value), 1)
+#else
+#  define UNLIKELY(value) (value)
+#  define LIKELY(value) (value)
+#endif
+
 #ifdef MS_WINDOWS
 // define the below, otherwise windows' sdk defines complex to _complex and breaks us
 #define _COMPLEX_DEFINED
