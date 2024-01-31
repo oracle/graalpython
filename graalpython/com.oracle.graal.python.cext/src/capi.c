@@ -94,6 +94,14 @@ static void object_dealloc(PyObject *self) {
     Py_TYPE(self)->tp_free(self);
 }
 
+static void capsule_dealloc(PyObject *o) {
+    PyCapsule *capsule = (PyCapsule *)o;
+    if (capsule->destructor) {
+        capsule->destructor(o);
+    }
+    PyObject_Free(o);
+}
+
 // taken from CPython "Objects/bytesobject.c"
 #define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 

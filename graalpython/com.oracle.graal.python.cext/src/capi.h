@@ -842,7 +842,7 @@ PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type, "int", 			    	&PyType_Type, offsetof
 PY_TRUFFLE_TYPE(PyBool_Type, 			"bool", 					&PyType_Type, sizeof(struct _longobject)) \
 PY_TRUFFLE_TYPE(PyByteArray_Type, 		"bytearray", 				&PyType_Type, sizeof(PyByteArrayObject)) \
 PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyBytes_Type, "bytes", 				&PyType_Type, PyBytesObject_SIZE, sizeof(char)) \
-PY_TRUFFLE_TYPE(PyCapsule_Type, 		"capsule", 			    	&PyType_Type, sizeof(PyCapsule)) \
+PY_TRUFFLE_TYPE_WITH_ALLOC(PyCapsule_Type, 		"capsule", 			    	&PyType_Type, sizeof(PyCapsule), PyType_GenericAlloc, capsule_dealloc, PyObject_Del) \
 PY_TRUFFLE_TYPE(PyCell_Type, 			"cell", 					&PyType_Type, sizeof(PyCellObject)) \
 PY_TRUFFLE_TYPE(PyCMethod_Type, 		"builtin_method", 	    	&PyCFunction_Type, sizeof(PyCFunctionObject)) \
 PY_TRUFFLE_TYPE(PyCode_Type, 			"code", 					&PyType_Type, sizeof(PyTypeObject)) \
