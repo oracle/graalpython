@@ -119,12 +119,12 @@ public abstract class ImportFromNode extends PNodeWithContext {
             pkgnameObj = PNone.NONE;
         }
         if (pkgpathObj != null && AbstractImportNode.PyModuleIsInitializing.getUncached().execute(null, module)) {
-            throw PConstructAndRaiseNode.getUncached().raiseImportError(null, pkgnameObj, pkgpathObj, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, name, pkgname, pkgpath);
+            throw PConstructAndRaiseNode.getUncached().raiseImportErrorWithModule(null, pkgnameObj, pkgpathObj, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, name, pkgname, pkgpath);
         } else {
             if (pkgpathObj == null) {
                 pkgpathObj = PNone.NONE;
             }
-            throw PConstructAndRaiseNode.getUncached().raiseImportError(null, pkgnameObj, pkgpathObj, ErrorMessages.CANNOT_IMPORT_NAME, name, pkgname, pkgpath);
+            throw PConstructAndRaiseNode.getUncached().raiseImportErrorWithModule(null, pkgnameObj, pkgpathObj, ErrorMessages.CANNOT_IMPORT_NAME, name, pkgname, pkgpath);
         }
     }
 

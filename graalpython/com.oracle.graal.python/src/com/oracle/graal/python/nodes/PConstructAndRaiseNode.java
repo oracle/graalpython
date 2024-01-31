@@ -143,7 +143,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     // ImportError helpers
-    public final PException raiseImportError(Frame frame, Object name, Object path, TruffleString format, Object... formatArgs) {
+    public final PException raiseImportErrorWithModule(Frame frame, Object name, Object path, TruffleString format, Object... formatArgs) {
         return raiseImportErrorInternal(frame, format, formatArgs, new PKeyword[]{new PKeyword(T_NAME, name), new PKeyword(T_PATH, path)});
     }
 
@@ -155,7 +155,7 @@ public abstract class PConstructAndRaiseNode extends Node {
         return execute(frame, PythonBuiltinClassType.ImportError, null, format, formatArgs, null, keywords);
     }
 
-    public final PException raiseImportErrorWithCause(Frame frame, Object cause, Object name, Object path, TruffleString format, Object... formatArgs) {
+    public final PException raiseImportErrorWithModuleAndCause(Frame frame, Object cause, Object name, Object path, TruffleString format, Object... formatArgs) {
         return execute(frame, PythonBuiltinClassType.ImportError, cause, format, formatArgs, null, new PKeyword[]{new PKeyword(T_NAME, name), new PKeyword(T_PATH, path)});
     }
 

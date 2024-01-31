@@ -114,9 +114,9 @@ public abstract class LoadCExtException extends Exception {
 
         public PException reraise(VirtualFrame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode) {
             if (cause != null) {
-                throw raiseNode.get(inliningTarget).raiseImportErrorWithCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
+                throw raiseNode.get(inliningTarget).raiseImportErrorWithModuleAndCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
             }
-            throw raiseNode.get(inliningTarget).raiseImportError(frame, name, path, formatString, formatArgs);
+            throw raiseNode.get(inliningTarget).raiseImportErrorWithModule(frame, name, path, formatString, formatArgs);
         }
     }
 }

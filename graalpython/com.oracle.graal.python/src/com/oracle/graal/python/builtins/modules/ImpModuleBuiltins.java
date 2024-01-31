@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -508,12 +507,12 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean run(TruffleString name,
-                        @Cached PRaiseNode raiseNode,
+        boolean run(VirtualFrame frame, TruffleString name,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached TruffleString.EqualNode equalNode) {
             FrozenResult result = findFrozen(getContext(), name, equalNode);
             if (result.status != FROZEN_EXCLUDED) {
-                raiseFrozenError(result.status, name, raiseNode);
+                raiseFrozenError(frame, result.status, name, constructAndRaiseNode);
             }
             return result.info.isPackage;
         }
@@ -540,6 +539,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile isCodeObjectProfile,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
@@ -550,13 +550,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 if (info.size == 0) {
                     /* Does not contain executable code. */
-                    raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
+                    raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
                 }
             } else {
                 FrozenResult result = findFrozen(PythonContext.get(inliningTarget), name, equalNode);
                 FrozenStatus status = result.status;
                 info = result.info;
-                raiseFrozenError(status, name, raiseNode.get(inliningTarget));
+                raiseFrozenError(frame, status, name, constructAndRaiseNode.get(inliningTarget));
             }
 
             Object code = null;
@@ -564,7 +564,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
             } catch (MarshalError | NumberFormatException e) {
-                raiseFrozenError(FROZEN_INVALID, name, raiseNode.get(inliningTarget));
+                raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
             }
 
             if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
@@ -601,7 +601,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, TruffleString name, boolean withData,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
             FrozenResult result = findFrozen(getContext(), name, equalNode);
             FrozenStatus status = result.status;
@@ -613,7 +613,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 case FROZEN_BAD_NAME:
                     return PNone.NONE;
                 default:
-                    raiseFrozenError(status, name, raiseNode);
+                    raiseFrozenError(frame, status, name, constructAndRaiseNode);
             }
 
             PMemoryView data = null;
@@ -678,7 +678,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 return null;
             default:
                 if (doRaise) {
-                    raiseFrozenError(status, name, PRaiseNode.getUncached());
+                    raiseFrozenError(null, status, name, PConstructAndRaiseNode.getUncached());
                 } else if (status != FROZEN_OKAY) {
                     return null;
                 }
@@ -739,24 +739,19 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         return new FrozenResult(FROZEN_OKAY, info);
     }
 
-    private static void raiseFrozenError(FrozenStatus status, TruffleString moduleName, PRaiseNode raiseNode) {
-        switch (status) {
-            case FROZEN_BAD_NAME:
-                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
-            case FROZEN_NOT_FOUND:
-                throw raiseNode.raise(ImportError, ErrorMessages.NO_SUCH_FROZEN_OBJECT, moduleName);
-            case FROZEN_DISABLED:
-                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_DISABLED, moduleName);
-            case FROZEN_EXCLUDED:
-                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_EXCLUDED, moduleName);
-            case FROZEN_INVALID:
-                throw raiseNode.raise(ImportError, ErrorMessages.FROZEN_INVALID, moduleName);
-            case FROZEN_OKAY:
-                // There was no error.
-                break;
-            default:
-                throw CompilerDirectives.shouldNotReachHere("unknown frozen status");
+    private static void raiseFrozenError(VirtualFrame frame, FrozenStatus status, TruffleString moduleName, PConstructAndRaiseNode raiseNode) {
+        if (status == FROZEN_OKAY) {
+            // There was no error.
+            return;
         }
+        TruffleString message = switch (status) {
+            case FROZEN_BAD_NAME, FROZEN_NOT_FOUND -> ErrorMessages.NO_SUCH_FROZEN_OBJECT;
+            case FROZEN_DISABLED -> ErrorMessages.FROZEN_DISABLED;
+            case FROZEN_EXCLUDED -> ErrorMessages.FROZEN_EXCLUDED;
+            case FROZEN_INVALID -> ErrorMessages.FROZEN_INVALID;
+            default -> throw CompilerDirectives.shouldNotReachHere("unknown frozen status");
+        };
+        throw raiseNode.raiseImportErrorWithModule(frame, moduleName, PNone.NONE, message, moduleName);
     }
 
     @Builtin(name = "source_hash", minNumOfPositionalArgs = 2, parameterNames = {"key", "source"})
