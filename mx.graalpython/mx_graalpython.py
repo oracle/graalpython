@@ -1065,7 +1065,7 @@ def graalpytest(args):
 
     # ensure that the test distribution is up-to-date
     if not DISABLE_REBUILD:
-        mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+        mx.command_function("build")(["--only", "com.oracle.graal.python.test"])
 
     testfiles = _list_graalpython_unittests(args.test)
     cmd_args = []
