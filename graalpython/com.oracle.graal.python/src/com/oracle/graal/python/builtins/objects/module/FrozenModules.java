@@ -207,7 +207,14 @@ public final class FrozenModules {
         private static final PythonFrozenModule CONTEXTLIB = new PythonFrozenModule("CONTEXTLIB", "contextlib", false);
         private static final PythonFrozenModule WARNINGS = new PythonFrozenModule("WARNINGS", "warnings", false);
         private static final PythonFrozenModule INSPECT = new PythonFrozenModule("INSPECT", "inspect", false);
+        private static final PythonFrozenModule IMPORTLIB_UTIL = new PythonFrozenModule("IMPORTLIB_UTIL", "importlib.util", false);
+        private static final PythonFrozenModule IMPORTLIB_MACHINERY = new PythonFrozenModule("IMPORTLIB_MACHINERY", "importlib.machinery", false);
+        private static final PythonFrozenModule RUNPY = new PythonFrozenModule("RUNPY", "runpy", false);
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
+        private static final PythonFrozenModule __PHELLO__ = new PythonFrozenModule("__PHELLO__", "__phello__", true);
+        private static final PythonFrozenModule __PHELLO___HAM = new PythonFrozenModule("__PHELLO___HAM", "__phello__.ham", true);
+        private static final PythonFrozenModule __PHELLO___HAM_EGGS = new PythonFrozenModule("__PHELLO___HAM_EGGS", "__phello__.ham.eggs", false);
+        private static final PythonFrozenModule __PHELLO___SPAM = new PythonFrozenModule("__PHELLO___SPAM", "__phello__.spam", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", null, false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", null, false);
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
@@ -558,6 +565,12 @@ public final class FrozenModules {
                 return Map.WARNINGS;
             case "inspect":
                 return Map.INSPECT;
+            case "importlib.util":
+                return Map.IMPORTLIB_UTIL;
+            case "importlib.machinery":
+                return Map.IMPORTLIB_MACHINERY;
+            case "runpy":
+                return Map.RUNPY;
             case "__hello__":
                 return Map.__HELLO__;
             case "__hello_alias__":
@@ -567,9 +580,17 @@ public final class FrozenModules {
             case "__phello_alias__.spam":
                 return Map.__HELLO__;
             case "__phello__":
-                return Map.__HELLO__.asPackage(true);
+                return Map.__PHELLO__;
+            case "__phello__.__init__":
+                return Map.__PHELLO__.asPackage(false);
+            case "__phello__.ham":
+                return Map.__PHELLO___HAM;
+            case "__phello__.ham.__init__":
+                return Map.__PHELLO___HAM.asPackage(false);
+            case "__phello__.ham.eggs":
+                return Map.__PHELLO___HAM_EGGS;
             case "__phello__.spam":
-                return Map.__HELLO__;
+                return Map.__PHELLO___SPAM;
             case "__hello_only__":
                 return Map.FROZEN_ONLY;
             case "_sysconfigdata":

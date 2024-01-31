@@ -179,11 +179,11 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py": Ignore(),
     "graalpython/com.oracle.graal.python.pegparser.generator/pegjava/java_generator.py": Ignore(),
 
+    "graalpython/com.oracle.graal.python.frozen/freeze_modules.py": CopyFrom("Tools/scripts/freeze_modules.py"),
+
     # Others
     # Test files don't need to be updated, they inline some unittest code only
     "graalpython/com.oracle.graal.python.test/src/tests": Ignore(),
-    # The following files are not copies, they just contain parts
-    "graalpython/com.oracle.graal.python.frozen/freeze_modules.py": Ignore(),
 }
 
 PYPY_SOURCES_MAPPING = {
