@@ -199,19 +199,8 @@ class BaseLocalTest:
         support.gc_collect()  # For PyPy or other GCs.
         self.assertIsNone(wr())
 
+
     @support.impl_detail("thread locals and GIL", graalpy=False)
-    def test_threading_local_clear_race(self):
-        # See https://github.com/python/cpython/issues/100892
-
-        _testcapi = import_module('_testcapi')
-        _testcapi.call_in_temporary_c_thread(lambda: None, False)
-
-        for _ in range(1000):
-            _ = threading.local()
-
-        _testcapi.join_temporary_c_thread()
-
-
     def test_threading_local_clear_race(self):
         # See https://github.com/python/cpython/issues/100892
 
