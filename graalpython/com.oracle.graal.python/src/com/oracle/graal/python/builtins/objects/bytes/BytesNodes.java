@@ -569,7 +569,7 @@ public abstract class BytesNodes {
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
         }
     }
 
