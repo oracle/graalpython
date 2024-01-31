@@ -73,6 +73,8 @@ public abstract class StringLiterals {
     public static final TruffleString T_RBRACE = tsLiteral("}");
     public static final TruffleString T_LBRACKET = tsLiteral("[");
     public static final TruffleString T_RBRACKET = tsLiteral("]");
+    public static final TruffleString T_LANGLE = tsLiteral("<");
+    public static final TruffleString T_RANGLE = tsLiteral(">");
     public static final TruffleString T_SINGLE_QUOTE = tsLiteral("'");
     public static final TruffleString T_DOUBLE_QUOTE = tsLiteral("\"");
     public static final TruffleString T_SLASH = tsLiteral("/");

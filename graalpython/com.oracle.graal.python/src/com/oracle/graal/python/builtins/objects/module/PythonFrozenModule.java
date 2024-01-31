@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_LANGLE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
@@ -78,7 +80,11 @@ public final class PythonFrozenModule {
         if (flag == isPackage) {
             return this;
         } else {
-            return new PythonFrozenModule(originalName, code, flag);
+            TruffleString origName = originalName;
+            if (isPackage) {
+                origName = T_LANGLE.concatUncached(originalName, TS_ENCODING, false);
+            }
+            return new PythonFrozenModule(origName, code, flag);
         }
     }
 
