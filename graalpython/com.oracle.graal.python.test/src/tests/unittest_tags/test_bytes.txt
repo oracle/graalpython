@@ -52,6 +52,11 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArraySubclassTest.test_init_override
 *graalpython.lib-python.3.test.test_bytes.ByteArraySubclassTest.test_join
 *graalpython.lib-python.3.test.test_bytes.ByteArraySubclassTest.test_pickle
+*graalpython.lib-python.3.test.test_bytes.ByteArraySubclassWithSlotsTest.test_basic
+*graalpython.lib-python.3.test.test_bytes.ByteArraySubclassWithSlotsTest.test_copy
+*graalpython.lib-python.3.test.test_bytes.ByteArraySubclassWithSlotsTest.test_fromhex
+*graalpython.lib-python.3.test.test_bytes.ByteArraySubclassWithSlotsTest.test_join
+*graalpython.lib-python.3.test.test_bytes.ByteArraySubclassWithSlotsTest.test_pickle
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_alloc
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_append
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_basics
@@ -198,6 +203,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesSubclassTest.test_fromhex
 *graalpython.lib-python.3.test.test_bytes.BytesSubclassTest.test_join
 *graalpython.lib-python.3.test.test_bytes.BytesSubclassTest.test_pickle
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test__bytes__
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_basics
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_buffer_is_readonly
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_bytes_blocking
