@@ -43,15 +43,12 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -60,7 +57,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -71,7 +67,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateCached(false)
 @GenerateInline
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class PySequenceCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 
@@ -91,11 +86,6 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doMappingproxy(@SuppressWarnings("unused") PMappingproxy object) {
-        return false;
-    }
-
-    @Specialization
     static boolean doNative(PythonAbstractNativeObject object,
                     @Cached(inline = false) PythonToNativeNode toSulongNode,
                     @Cached(inline = false) PCallCapiFunction callCapiFunction) {
@@ -105,12 +95,12 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "GetItem", inline = false) LookupCallableSlotInMRONode lookupGetItem,
+                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
                     @Cached LazyInteropLibrary lazyLib) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lazyLib.get(inliningTarget).hasArrayElements(object);
         }
-        return lookupGetItem.execute(type) != PNone.NO_VALUE;
+        return (getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.SQ_ITEM) != 0;
     }
 }
