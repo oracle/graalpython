@@ -1526,6 +1526,7 @@ PyType_GetModuleState(PyTypeObject *type)
 
 /* type test with subclassing support */
 
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 static inline int
 type_is_subtype_base_chain(PyTypeObject *a, PyTypeObject *b)
 {
@@ -1560,6 +1561,7 @@ type_is_subtype_mro(PyTypeObject *a, PyTypeObject *b)
         /* a is not completely initialized yet; follow tp_base */
         return type_is_subtype_base_chain(a, b);
 }
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 int
 PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b)
@@ -1585,8 +1587,9 @@ PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b)
     } else if (is_builtin_type(a) && !is_builtin_type(b)) {
         return 0;
     }
-    if (points_to_py_handle_space(a)) {
-        return GraalPyTruffleType_IsSubtype(a, b);
-    }
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPyTruffleType_IsSubtype(a, b);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     return type_is_subtype_mro(a, b);
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
