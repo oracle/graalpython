@@ -2,6 +2,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareByteArrays;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
@@ -342,6 +343,23 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode helperNode) {
             return helperNode.execute(inliningTarget, self, other, ComparisonOp.GE);
+        }
+    }
+
+    @Builtin(name = J___BYTES__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class BytesNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object bytes(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyBytesCheckExactNode check,
+                        @Cached BytesNodes.GetBytesStorage getBytesStorage,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            if (check.execute(inliningTarget, self)) {
+                return self;
+            } else {
+                return factory.get(inliningTarget).createBytes(getBytesStorage.execute(inliningTarget, self));
+            }
         }
     }
 }
