@@ -702,6 +702,7 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
+                            "bin/modules/_sha3<graalpy_ext:native>",
                         ],
                     },
                 },
@@ -720,6 +721,7 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
+                            "bin/modules/_sha3<graalpy_ext:native>",
                             "bin/modules/_testcapi<graalpy_ext:native>",
                             "bin/modules/_testbuffer<graalpy_ext:native>",
                             "bin/modules/_testmultiphase<graalpy_ext:native>",
@@ -929,13 +931,13 @@ suite = {
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
             "layout": {
-                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"]
+                "./": "dependency:graalpy-versions/graalpy_versions",
             },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
             "layout": {
-                "./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary><dev_tag:none>"],
+                "./": "dependency:graalpy-versions/graalpy_versions",
             },
         },
 

@@ -940,6 +940,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
+        LOGGER.info("PythonLanguage.initializeThread");
         context.attachThread(thread, threadState);
     }
 

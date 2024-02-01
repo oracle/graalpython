@@ -26,6 +26,13 @@ PyAPI_FUNC(void) Py_InitializeEx(int initsigs) {
     fprintf(stderr, "graal_create_isolate succeeded\n");
 
     graalpy_init_embed(graal_thread);
+
+    fprintf(stderr, "graalpy_init_embed succeeded, acquire GIL\n");
+    // accuire GIL
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    fprintf(stderr, "got GIL\n");
 }
 
 static void unimplemented(const char* name) {

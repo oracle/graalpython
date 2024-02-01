@@ -565,7 +565,7 @@ public final class CApiContext extends CExtContext {
                 } else {
                     useNative = false;
                 }
-                System.err.println("Loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
+                LOGGER.info(() -> "Loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
                 if (useNative) {
                     context.ensureNFILanguage(node, "NativeModules", "true");
                     capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
@@ -576,29 +576,32 @@ public final class CApiContext extends CExtContext {
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
-                LOGGER.config(() -> "loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
+                LOGGER.info(() -> "loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
 
                 Object capiLibrary = capiLibraryCallTarget.call();
-                System.err.println("Checking init function");
+                LOGGER.info(() -> "Checking init function");
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
                 if (!U.isExecutable(initFunction)) {
                     Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                    System.err.println("Bound & calling init function");
+                    LOGGER.info(() -> "Bound & calling init function");
                     U.execute(initFunction, new GetBuiltin());
                 } else {
-                    System.err.println("Executing init function");
+                    LOGGER.info(() -> "Executing init function");
                     U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
-                System.err.println("Checking builtins");
+                LOGGER.info(() -> "Checking builtins");
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
+                LOGGER.info(() -> "initWrapper");
                 cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
+                LOGGER.info(() -> "runCApiHooks");
                 context.runCApiHooks();
 
                 if (useNative) {
+                    LOGGER.info(() -> "registering native finalizer");
                     /*
                      * C++ libraries sometimes declare global objects that have destructors that
                      * call Py_DECREF. Those destructors are then called during native shutdown,
@@ -618,7 +621,7 @@ public final class CApiContext extends CExtContext {
                         LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
                     }
                 }
-
+                LOGGER.info(() -> "loaded CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode") + " successfully");
                 return cApiContext;
             } catch (PException e) {
                 /*

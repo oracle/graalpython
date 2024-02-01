@@ -2274,7 +2274,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER', 'sdk:MAVEN_DOWNLOADER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
-                '-H:+DetectUserDirectoriesInImageHeap',
+                '-H:-DetectUserDirectoriesInImageHeap',
                 '-H:-CopyLanguageResources',
                 '-Dpolyglot.python.PosixModuleBackend=native',
                 '-Dpolyglot.python.Sha3ModuleBackend=native',
