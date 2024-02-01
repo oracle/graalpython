@@ -208,8 +208,9 @@ def docompute(num):
 
 
 def measure(num):
+    sum_ = 0
     for run in range(num):
-        sum_ += docompute(100)
+        sum_ += docompute(100)[0]
     return sum_
 
 
