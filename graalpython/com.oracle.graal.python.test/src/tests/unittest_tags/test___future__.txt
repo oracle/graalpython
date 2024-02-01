@@ -1,2 +1,0 @@
-*graalpython.lib-python.3.test.test___future__.FutureTest.test_attributes
-*graalpython.lib-python.3.test.test___future__.FutureTest.test_names
