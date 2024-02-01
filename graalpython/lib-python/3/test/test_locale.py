@@ -526,8 +526,9 @@ class TestMiscellaneous(unittest.TestCase):
 
             os.environ['LC_CTYPE'] = 'UTF-8'
 
-            with check_warnings(('', DeprecationWarning)):
-                self.assertEqual(locale.getdefaultlocale(), (None, 'UTF-8'))
+            # GraalPy change: we disabled the deprecation for now
+            # with check_warnings(('', DeprecationWarning)):
+            #     self.assertEqual(locale.getdefaultlocale(), (None, 'UTF-8'))
 
         finally:
             for k in orig_env:
