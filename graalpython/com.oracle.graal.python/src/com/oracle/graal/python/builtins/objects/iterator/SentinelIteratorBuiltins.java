@@ -25,8 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
@@ -34,13 +36,17 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -72,7 +78,7 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
             }
             Object nextValue;
             try {
-                nextValue = callNode.execute(frame, iterator.getCallTarget());
+                nextValue = callNode.execute(frame, iterator.getCallable());
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, errorProfile);
                 iterator.markSentinelReached();
@@ -94,6 +100,26 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
         @Specialization
         static Object doPSentinelIterator(PSentinelIterator self) {
             return self;
+        }
+    }
+
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object reduce(VirtualFrame frame, PSentinelIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PythonObjectFactory factory) {
+            PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
+            Object iter = getAttr.execute(frame, inliningTarget, builtins, T_ITER);
+            Object[] args;
+            if (self.sentinelReached()) {
+                args = new Object[]{factory.createEmptyTuple()};
+            } else {
+                args = new Object[]{self.getCallable(), self.getSentinel()};
+            }
+            return factory.createTuple(new Object[]{iter, factory.createTuple(args)});
         }
     }
 }

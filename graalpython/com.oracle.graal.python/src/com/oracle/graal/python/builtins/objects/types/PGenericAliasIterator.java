@@ -4,7 +4,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public class PGenericAliasIterator extends PythonBuiltinObject {
-    private PGenericAlias obj;
+    private final PGenericAlias obj;
+    private boolean exhausted;
 
     public PGenericAliasIterator(Object cls, Shape instanceShape, PGenericAlias obj) {
         super(cls, instanceShape);
@@ -16,10 +17,10 @@ public class PGenericAliasIterator extends PythonBuiltinObject {
     }
 
     public boolean isExhausted() {
-        return obj == null;
+        return exhausted;
     }
 
     public void markExhausted() {
-        obj = null;
+        exhausted = true;
     }
 }

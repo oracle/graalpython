@@ -11,7 +11,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -60,13 +59,13 @@ public class GenericAliasIteratorBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
             Object iter = getAttr.execute(frame, inliningTarget, builtins, T_ITER);
-            PTuple args;
+            Object[] args;
             if (!self.isExhausted()) {
-                args = factory.createTuple(new Object[]{self.getObj()});
+                args = new Object[]{self.getObj()};
             } else {
-                args = factory.createEmptyTuple();
+                args = new Object[]{factory.createEmptyTuple()};
             }
-            return factory.createTuple(new Object[]{iter, args});
+            return factory.createTuple(new Object[]{iter, factory.createTuple(args)});
         }
     }
 }

@@ -46,18 +46,18 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PSentinelIterator extends PythonBuiltinObject {
 
-    private final Object callTarget;
+    private final Object callable;
     private final Object sentinel;
     private boolean sentinelReached;
 
     public PSentinelIterator(Object cls, Shape instanceShape, Object callable, Object sentinel) {
         super(cls, instanceShape);
-        this.callTarget = callable;
+        this.callable = callable;
         this.sentinel = sentinel;
     }
 
-    public Object getCallTarget() {
-        return callTarget;
+    public Object getCallable() {
+        return callable;
     }
 
     public Object getSentinel() {
