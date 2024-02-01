@@ -454,8 +454,8 @@ class TestCommandLineArgs(unittest.TestCase):
 
     def testSelectedTestNamesFunctionalTest(self):
         def run_unittest(args):
-            # Use -E to ignore PYTHONSAFEPATH env var
-            cmd = [sys.executable, '-E', '-m', 'unittest'] + args
+            # GraalPy change: remove -E, we need PYTHONPATH for finding the tests package, it's not in our stdlib
+            cmd = [sys.executable, '-m', 'unittest'] + args
             p = subprocess.Popen(cmd,
                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, cwd=os.path.dirname(__file__))
             with p:
