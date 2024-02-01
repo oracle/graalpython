@@ -2116,7 +2116,8 @@ class TestPStdev(VarianceStdevMixin, NumericTestCase):
         # Test that stdev is, in fact, the square root of variance.
         data = [random.uniform(-17, 24) for _ in range(1000)]
         expected = math.sqrt(statistics.pvariance(data))
-        self.assertEqual(self.func(data), expected)
+        # GraalPy change: add some tolerance
+        self.assertAlmostEqual(self.func(data), expected, places=12)
 
     def test_center_not_at_mean(self):
         # See issue: 40855
