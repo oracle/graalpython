@@ -133,15 +133,17 @@ class TestLiterals(unittest.TestCase):
 
         # Check that the warning is raised ony once if there are syntax errors
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=DeprecationWarning)
-            with self.assertRaises(SyntaxError) as cm:
-                eval("'\\e' $")
-            exc = cm.exception
-        self.assertEqual(len(w), 1)
-        self.assertEqual(w[0].category, DeprecationWarning)
-        self.assertRegex(str(w[0].message), 'invalid escape sequence')
-        self.assertEqual(w[0].filename, '<string>')
+        # GraalPy change: we gather warnings and report them later only if the code successfully parsed.
+        # It would be very difficult to emit warnings from failed parses
+        # with warnings.catch_warnings(record=True) as w:
+        #     warnings.simplefilter('always', category=DeprecationWarning)
+        #     with self.assertRaises(SyntaxError) as cm:
+        #         eval("'\\e' $")
+        #     exc = cm.exception
+        # self.assertEqual(len(w), 1)
+        # self.assertEqual(w[0].category, DeprecationWarning)
+        # self.assertRegex(str(w[0].message), 'invalid escape sequence')
+        # self.assertEqual(w[0].filename, '<string>')
 
     def test_eval_str_invalid_octal_escape(self):
         for i in range(0o400, 0o1000):
