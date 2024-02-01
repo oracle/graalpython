@@ -65,10 +65,6 @@ class TestLoader(unittest.TestLoader):
     def loadTestsFromModule(self, module, pattern=None):
         if module.__name__.endswith('test_decimal'):
             return self.prepare_test_decimal(module)
-        if module.__name__.endswith('test_multiprocessing_spawn'):
-            sys.path.insert(1, os.path.dirname(module.__name__.replace(".", "/")))
-            import _test_multiprocessing
-            sys.modules['__main__'] = _test_multiprocessing
         suite = super().loadTestsFromModule(module, pattern=pattern)
         test_main = getattr(module, 'test_main', None)
         if callable(test_main):
