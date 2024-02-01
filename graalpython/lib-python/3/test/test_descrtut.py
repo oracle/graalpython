@@ -100,7 +100,7 @@ just like classic classes:
     >>> print(sortdict(a.__dict__))
     {'default': -1000, 'x1': 100, 'x2': 200}
     >>>
-"""
+""".replace("test.test_descrtut", "graalpython.lib-python.3.test.test_descrtut")  # GraalPy: an artifact of how we run tests
 
 class defaultdict2(dict):
     __slots__ = ['default']
@@ -303,7 +303,7 @@ first argument, not class E. This is to be expected, since the call
 specifies the class C. But it stresses the difference between these class
 methods and methods defined in metaclasses (where an upcall to a metamethod
 would pass the target class as an explicit first argument).
-"""
+""".replace("test.test_descrtut", "graalpython.lib-python.3.test.test_descrtut")  # GraalPy: an artifact of how we run tests
 
 test_5 = """
 
