@@ -16,7 +16,6 @@
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_trace
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_abs_paths_cached_None
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_add_build_dir
-*graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_aliasing_mbcs
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_license_exists_at_url
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_no_duplicate_paths
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_setting_copyright
@@ -27,5 +26,3 @@
 *graalpython.lib-python.3.test.test_site.StartupImportTests.test_startup_interactivehook_isolated
 *graalpython.lib-python.3.test.test_site.StartupImportTests.test_startup_interactivehook_isolated_explicit
 *graalpython.lib-python.3.test.test_site._pthFileTests.test_underpth_dll_file
-*graalpython.lib-python.3.test.test_site._pthFileTests.test_underpth_file
-*graalpython.lib-python.3.test.test_site._pthFileTests.test_underpth_nosite_file
