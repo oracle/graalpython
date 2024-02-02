@@ -242,6 +242,8 @@ graalpython/com.oracle.graal.python.cext/modules/_sqlite/statement.c,pysqlite.co
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/statement.h,pysqlite.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/util.c,pysqlite.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/util.h,pysqlite.copyright
+graalpython/com.oracle.graal.python.cext/modules/_sha3/sha3.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_sha3/sha3.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sha3/sha3module.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sha3/clinic/sha3module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sha3/kcp/KeccakHash.c,python.copyright

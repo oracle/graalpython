@@ -1,3 +1,8 @@
+/* Copyright (c) 2024, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2024 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 // sha3.c
 // 19-Nov-11  Markku-Juhani O. Saarinen <mjos@iki.fi>
 
