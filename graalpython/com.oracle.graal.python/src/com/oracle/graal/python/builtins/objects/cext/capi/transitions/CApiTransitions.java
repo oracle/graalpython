@@ -531,9 +531,11 @@ public abstract class CApiTransitions {
                 if (isTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) delegate).getSequenceStorage();
                     writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, sequenceStorage.length());
+                    Object obItemPtr = 0L;
                     if (sequenceStorage instanceof NativeSequenceStorage nativeSequenceStorage) {
-                        writePointerNode.write(nativeObjectStub, CFields.GraalPyVarObject__ob_item, nativeSequenceStorage.getPtr());
+                        obItemPtr = nativeSequenceStorage.getPtr();
                     }
+                    writePointerNode.write(nativeObjectStub, CFields.GraalPyVarObject__ob_item, obItemPtr);
                 }
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
