@@ -55,6 +55,8 @@ class ExecutorTest:
 
     def test_map_timeout(self):
         results = []
+        # GraalPy change: submit some dummy work first, so the next map call doesn't time out in the worker start up
+        list(self.executor.map(time.sleep, [0]))
         try:
             for i in self.executor.map(time.sleep,
                                        [0, 0, 6],
