@@ -810,16 +810,14 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TellNode extends ClosedCheckPythonUnaryBuiltinNode {
 
-        @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.isSeekable()"})
-        static Object notSeekable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
-        }
-
-        @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.isTelling()"})
-        static Object notTelling(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(OSError, TELLING_POSITION_DISABLED_BY_NEXT_CALL);
+        @Specialization(guards = "!self.isSeekable() || !self.isTelling()")
+        static Object error(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self,
+                        @Cached PRaiseNode raiseNode) {
+            if (!self.isSeekable()) {
+                throw raiseNode.raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
+            } else {
+                throw raiseNode.raise(OSError, TELLING_POSITION_DISABLED_BY_NEXT_CALL);
+            }
         }
 
         protected static boolean hasDecoderAndSnapshot(PTextIO self) {
