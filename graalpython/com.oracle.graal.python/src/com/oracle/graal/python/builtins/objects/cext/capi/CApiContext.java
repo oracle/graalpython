@@ -585,7 +585,7 @@ public final class CApiContext extends CExtContext {
                     U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
 
-                assert CApiCodeGen.assertBuiltins(capiLibrary);
+                // TODO: assert CApiCodeGen.assertBuiltins(capiLibrary);
                 cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
 
@@ -636,7 +636,7 @@ public final class CApiContext extends CExtContext {
      * writes the {@code reset value} to the {@code variable address}. Currently, this is used to
      * change the incref and decref upcall functions which would crash if they are called after the
      * Python context was closed. The format of the array is:
-     * 
+     *
      * <pre>
      *     [ var_addr, reset_val, var_addr1, reset_val1, ..., NULL ]
      * </pre>

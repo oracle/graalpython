@@ -348,8 +348,8 @@ public enum ArgDescriptor {
     PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached()),
     PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached());
 
-    public final String cSignature;
-    public final ArgBehavior behavior;
+    private final String cSignature;
+    private final ArgBehavior behavior;
     private final boolean transfer;
     private final Supplier<CheckFunctionResultNode> checkResult;
     private final CheckFunctionResultNode uncachedCheckResult;

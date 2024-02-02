@@ -344,6 +344,7 @@ suite = {
             ],
             "requires": [
                 "java.compiler",
+                "jdk.compiler",
             ],
             "jacoco": "exclude",
             "javaCompliance": "17+",
@@ -647,12 +648,14 @@ suite = {
             "toolchain": "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
             "max_jobs": "8",
             "vpath": True,
+            "use_jdk_headers": True, # not actually, just making mx happy
             "ninja_targets": ["all"],
             "ninja_install_targets": ["install"],
             "os_arch": {
                 "windows": {
                     "<others>": {
                         "cmakeConfig": {
+                            "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
@@ -674,6 +677,7 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "cmakeConfig": {
+                            "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
@@ -700,6 +704,7 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
                 "sulong:SULONG_LEGACY",
+                "com.oracle.graal.python",
             ],
         },
 
