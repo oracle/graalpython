@@ -1121,7 +1121,8 @@ class ThreadJoinOnShutdown(BaseTestCase):
 
             main()
             """
-        rc, out, err = assert_python_ok('-c', script)
+        # GraalPy change: propagate PYTHONPATH to be able to import the test module
+        rc, out, err = assert_python_ok('-c', script, PYTHONPATH=os.environ.get('PYTHONPATH', ''))
         self.assertFalse(err)
 
     @skip_unless_reliable_fork
