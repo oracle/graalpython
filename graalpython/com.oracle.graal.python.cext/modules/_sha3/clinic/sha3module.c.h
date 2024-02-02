@@ -29,7 +29,7 @@ py_sha3_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     PyObject *data = NULL;
     int usedforsecurity = 1;
 
-    fastargs = _PyArg_UnpackKeywords(_PyTuple_CAST(args)->ob_item, nargs, kwargs, NULL, &_parser, 0, 1, 0, argsbuf);
+    fastargs = _PyArg_UnpackKeywords(PySequence_Fast_ITEMS(args), nargs, kwargs, NULL, &_parser, 0, 1, 0, argsbuf);
     if (!fastargs) {
         goto exit;
     }
