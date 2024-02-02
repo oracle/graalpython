@@ -72,7 +72,7 @@ public final class PythonCextWeakrefBuiltins {
         @Specialization
         static Object refType(Object object, Object callback,
                         @Cached ReferenceTypeNode referenceType) {
-            return referenceType.execute(null, PythonBuiltinClassType.PReferenceType, object, callback);
+            return referenceType.execute(PythonBuiltinClassType.PReferenceType, object, callback);
         }
     }
 

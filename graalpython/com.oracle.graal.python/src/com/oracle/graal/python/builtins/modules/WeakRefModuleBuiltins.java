@@ -80,7 +80,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -95,6 +94,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -400,11 +400,13 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // ReferenceType constructor
-    @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
+    @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
-    public abstract static class ReferenceTypeNode extends PythonTernaryBuiltinNode {
+    public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
         @Child private ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
         @Child private CStructAccess.ReadI64Node getTpWeaklistoffsetNode;
+
+        public abstract PReferenceType execute(Object cls, Object object, Object callback);
 
         @Specialization(guards = "!isNativeObject(object)")
         @SuppressWarnings("truffle-static-method")
@@ -512,6 +514,11 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             }
+        }
+
+        @NeverDefault
+        public static ReferenceTypeNode create() {
+            return WeakRefModuleBuiltinsFactory.ReferenceTypeNodeFactory.create(null);
         }
     }
 
