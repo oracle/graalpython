@@ -688,6 +688,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SERVICE_PROTO_NOT_FOUND = tsLiteral("service/proto not found");
     public static final TruffleString SIZE_SHOULD_NOT_BE_NEGATIVE = tsLiteral("size should not be negative");
     public static final TruffleString STRING_INDEX_OUT_OF_RANGE = tsLiteral("IndexError: string index out of range");
+    public static final TruffleString STRING_INDICES_MUST_BE_INTEGERS_NOT_P = tsLiteral("string indices must be integers, not '%p'");
     public static final TruffleString SUBSTRING_NOT_FOUND = tsLiteral("substring not found");
     public static final TruffleString SUBSECTION_NOT_FOUND = tsLiteral("subsection not found");
     public static final TruffleString SUB_VIEWS_NOT_IMPLEMENTED = tsLiteral("sub-views are not implemented");
@@ -722,7 +723,6 @@ public abstract class ErrorMessages {
     public static final TruffleString TRAILING_S_IN_STR = tsLiteral("Trailing %s in string");
     public static final TruffleString TRANS_TABLE_MUST_BE_256 = tsLiteral("translation table must be 256 characters long");
     public static final TruffleString TRAVERSE_FUNCTION_NEEDED = tsLiteral("traverse function needed for type with HAVE_GC");
-    public static final TruffleString TUPLE_ASSIGN_OUT_OF_BOUNDS = tsLiteral("tuple assignment index out of range");
     public static final TruffleString TUPLE_OUT_OF_BOUNDS = tsLiteral("tuple index out of range");
     public static final TruffleString TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = tsLiteral("Tuple or struct_time argument required");
     public static final TruffleString TYPE_DOES_NOT_PROVIDE_BASES = tsLiteral("type does not provide bases");
