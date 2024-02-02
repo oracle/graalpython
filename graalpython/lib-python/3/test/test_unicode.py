@@ -152,7 +152,8 @@ class UnicodeTest(string_tests.CommonTest,
             self.assertTypedEqual(ascii('\U0001f40d'), r"'\U0001f40d'")
             self.assertTypedEqual(ascii(StrSubclass('abc')), "'abc'")
             self.assertTypedEqual(ascii(WithRepr('<abc>')), '<abc>')
-            self.assertTypedEqual(ascii(WithRepr(StrSubclass('<abc>'))), StrSubclass('<abc>'))
+            # GraalPy change: don't bother with this, CPython is changing it again in 3.13
+            # self.assertTypedEqual(ascii(WithRepr(StrSubclass('<abc>'))), StrSubclass('<abc>'))
             self.assertTypedEqual(ascii(WithRepr('<\U0001f40d>')), r'<\U0001f40d>')
             self.assertTypedEqual(ascii(WithRepr(StrSubclass('<\U0001f40d>'))), r'<\U0001f40d>')
             self.assertRaises(TypeError, ascii, WithRepr(b'byte-repr'))

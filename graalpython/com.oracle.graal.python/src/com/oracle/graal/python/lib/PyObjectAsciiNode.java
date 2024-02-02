@@ -77,6 +77,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
     @Specialization
     static TruffleString ascii(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectReprAsTruffleStringNode reprNode,
+                    @Cached(inline = false) TruffleString.GetCodeRangeNode getCodeRangeNode,
                     @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                     @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
                     @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
@@ -84,6 +85,9 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
                     @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
         // TODO GR-37220: rewrite using TruffleStringBuilder?
         TruffleString repr = reprNode.execute(frame, inliningTarget, obj);
+        if (getCodeRangeNode.execute(repr, TS_ENCODING) == TruffleString.CodeRange.ASCII) {
+            return repr;
+        }
         byte[] bytes = new byte[codePointLengthNode.execute(repr, TS_ENCODING) * 10];
         TruffleStringIterator it = createCodePointIteratorNode.execute(repr, TS_ENCODING);
         int j = 0;
