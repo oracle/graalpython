@@ -140,10 +140,11 @@ PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(const PyObject *ob);
 PyAPI_FUNC(PyTypeObject*) _Py_TYPE(const PyObject *ob);
 
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
-#if defined(GRAALVM_PYTHON_LLVM_MANAGED) || !defined(NDEBUG)
-#define Py_TYPE(ob)             _Py_TYPE(_PyObject_CAST_CONST(ob))
-#else
+
+#if defined(GRAALVM_PYTHON) && !defined(GRAALVM_PYTHON_LLVM_MANAGED) && defined(NDEBUG)
 #define Py_TYPE(ob)             (pointer_to_stub(ob)->ob_type)
+#else
+#define Py_TYPE(ob)             _Py_TYPE(_PyObject_CAST_CONST(ob))
 #endif
 
 PyAPI_FUNC(Py_ssize_t) _Py_SIZE(const PyVarObject *ob);
