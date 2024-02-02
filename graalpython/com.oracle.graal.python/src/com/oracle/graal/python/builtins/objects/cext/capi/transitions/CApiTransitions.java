@@ -525,7 +525,7 @@ public abstract class CApiTransitions {
 
                 // allocate a native stub object (C type: PyObject)
                 boolean isTuple = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
-                Object nativeObjectStub = allocateNode.alloc(isTuple ? CStructs.PyVarObject : CStructs.PyObject);
+                Object nativeObjectStub = allocateNode.alloc(isTuple ? CStructs.GraalPyVarObject : CStructs.PyObject);
                 writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
                 if (isTuple) {
