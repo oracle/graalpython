@@ -601,7 +601,8 @@ def fd_count():
     if hasattr(os, 'sysconf'):
         try:
             MAXFD = os.sysconf("SC_OPEN_MAX")
-        except OSError:
+        # GraalPy change: catch ValueError, we don't have SC_OPEN_MAX at the moment
+        except (OSError, ValueError):
             pass
 
     old_modes = None
