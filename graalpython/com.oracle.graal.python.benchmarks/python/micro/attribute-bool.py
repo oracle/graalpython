@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -67,10 +67,11 @@ def do_stuff():
 
 def measure(num):
     for i in range(num):
-        result = do_stuff()
+        if do_stuff():
+            return False # doesn't happen at runtime
 
-    print(result)
+    return True
 
 
 def __benchmark__(num=3000):
-    measure(num)
+    return measure(num)

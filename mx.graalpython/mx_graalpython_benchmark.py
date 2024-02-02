@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -759,6 +759,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
         if self._checkup:
             vm_options += ['--engine.TraceCompilation', '--vm.XX:+PrintGC']
+            remaining += ['--live-results']
 
         return vm_options, remaining
 

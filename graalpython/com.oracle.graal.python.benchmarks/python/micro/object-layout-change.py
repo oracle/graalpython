@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -44,11 +44,12 @@ def do_change(n):
 def main(n):
     for i in range(n):
         res = do_change(100)
+    return res
 
 
 def measure(n):
-    main(n)
+    return main(n)
     
 
 def __benchmark__(num=1000000):
-    measure(num)
+    return measure(num)

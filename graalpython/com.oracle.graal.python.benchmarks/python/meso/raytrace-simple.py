@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -254,7 +254,7 @@ class Scene(object):
         for y in range(canvas.height):
             currentfraction = float(y) / canvas.height
             if currentfraction - previousfraction > 0.25:
-                print('%d%% complete' % (currentfraction * 100))
+                # print('%d%% complete' % (currentfraction * 100))
                 previousfraction = currentfraction
             for x in range(canvas.width):
                 xcomp = vpRight.scale(x * pixelWidth - halfWidth)
@@ -364,9 +364,10 @@ def _main(width=400, height=400):
                     SimpleSurface(baseColour = (y / 6.0, 1 - y / 6.0, 0.5)))
     s.addObject(Halfspace(Point(0,0,0), Vector.UP), CheckerboardSurface())
     s.render(c)
+    return c
 
 def __benchmark__(*args):
-    _main(*args)
+    return _main(*args)
 
 def java_embedded_bench_entrypoint(width=400, height=400):
-    _main(int(width), int(height))
+    return _main(int(width), int(height))

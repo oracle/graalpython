@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -117,7 +117,7 @@ default_size = 32
 
 
 def measure(matrix_dim=default_size):
-    print("Starting...")
+    # print("Starting...")
     lud(data.m, matrix_dim)
 
 
@@ -126,14 +126,14 @@ def __benchmark__(matrix_dim=32):
 
 
 def __setup__(matrix_dim=default_size):
-    print("Creating matrix internally size=%d" % matrix_dim)
+    # print("Creating matrix internally size=%d" % matrix_dim)
     data.m = create_matrix(matrix_dim)
     data.mm = [data.m[i] for i in range(matrix_dim * matrix_dim)]
     data.tmp = [0.0 for i in range(matrix_dim * matrix_dim)]
 
 
 def __cleanup__(matrix_dim=default_size):
-    print("Verify...")
+    # print("Verify...")
     lud_verify(data.mm, data.m, data.tmp, matrix_dim)
     # clean up written data
     for i in range(matrix_dim * matrix_dim):

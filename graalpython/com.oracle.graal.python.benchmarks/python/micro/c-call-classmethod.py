@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -138,8 +138,8 @@ def count(num):
 
 def measure(num):
     result = count(num)
-    print("result = " + str(result))
+    return result
 
 
 def __benchmark__(num=1000000):
-    measure(num)
+    return measure(num)

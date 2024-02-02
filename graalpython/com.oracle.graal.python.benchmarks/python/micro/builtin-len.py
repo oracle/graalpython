@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -37,9 +37,9 @@ def measure(num=500000000):
     ll = [x * 2 for x in range(1000)]
     length = call_len(num, ll)  # 1000000000
 
-    print("Final length ", length)
+    return length
 
 
 
 def __benchmark__(*args):
-    measure(*args)
+    return measure(*args)

@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -76,7 +76,7 @@ default_rows = 100
 
 
 def measure(iteration, cols=default_cols, rows=default_rows):
-    print("Starting...")
+    #print("Starting...")
     for i in range(iteration):
         pathfinder(data.wall, data.src, rows, cols, data.result)
 
@@ -86,7 +86,7 @@ def __benchmark__(iteration=10):
 
 
 def __setup__(iteration, cols=default_cols, rows=default_rows):
-    print("Initializing...")
+    #print("Initializing...")
     random.seed(M_SEED)
     data.wall = [random.randint(0, 10) for j in range(cols * rows)]
     data.result = [data.wall[j] for j in range(cols)]

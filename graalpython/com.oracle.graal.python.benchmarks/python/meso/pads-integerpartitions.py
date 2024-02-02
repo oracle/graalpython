@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -252,16 +252,17 @@ def conjugate(p):
     
 
 def main(n):
+    ret = 0
     for p in binary_partitions(n):
-        ret = len(p)
+        ret |= len(p)
 
     return ret
 
 
 def measure(num):
     result = main(num)
-    print(result)
+    return result
     
 
 def __benchmark__(num=700):
-    measure(num)
+    return measure(num)

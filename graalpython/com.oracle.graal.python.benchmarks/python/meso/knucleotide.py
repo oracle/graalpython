@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -65,36 +65,44 @@ def sort_seq(seq, length, frequencies):
 
     l = sorted(list(frequencies.items()), reverse=True, key=lambda item: item)
 
-    print('\n'.join("%s %.3f" % (st, 100.0*fr/n) for st,fr in l))
+    return '\n'.join("%s %.3f" % (st, 100.0*fr/n) for st,fr in l)
 
 
 def find_seq(seq, s, frequencies):
     n,t = gen_freq(seq, len(s), frequencies)
-    print("%d\t%s" % (t.get(s, 0), s))
+    return "%d\t%s" % (t.get(s, 0), s)
 
+input_seq = None
 
 def main():
     frequencies = defaultdict(int)
-    with open(os.path.join(os.path.dirname(__file__), "knucleotide-input.txt")) as f:
-        for line in f:
-            if line[0] == ">":
-                if line[1:3] == "TH":
-                    break
-
-        seq = []
-        seq_append = seq.append
-        for line in f:
-            if line[0] in ">;":
+    lines = iter(input_seq)
+    for line in lines:
+        if line[0] == ">":
+            if line[1:3] == "TH":
                 break
-            seq_append(line)
+
+    seq = []
+    seq_append = seq.append
+    for line in lines:
+        if line[0] in ">;":
+            break
+        seq_append(line)
     sequence = "".join(seq).replace('\n','').upper()
 
+    result = ''
     for nl in 1,2:
-        sort_seq(sequence, nl, frequencies)
+        result += sort_seq(sequence, nl, frequencies)
 
     for se in "GGT GGTA GGTATT GGTATTTTAATT GGTATTTTAATTTATAGT".split():
-        find_seq(sequence, se, frequencies)
+        result += find_seq(sequence, se, frequencies)
 
 
 def __benchmark__(*args):
     main()
+
+def __setup__(*args, **kwargs):
+    global input_seq
+    import os
+    with open(os.path.join(os.path.dirname(__file__), "knucleotide-input.txt")) as f:
+        input_seq = [l for l in f.read().splitlines() if not l == '']

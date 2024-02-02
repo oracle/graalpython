@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,7 @@ def __benchmark__(iteration=10):
 
 
 def __setup__(iteration, cols=default_size, rows=default_size):
+    random.seed(1)
     data.A = [[random.random() for j in range(cols)] for i in range(rows)]
     data.B = [[random.random() for j in range(cols)] for i in range(rows)]
     data.C = [[0.0 for j in range(cols)] for i in range(rows)]

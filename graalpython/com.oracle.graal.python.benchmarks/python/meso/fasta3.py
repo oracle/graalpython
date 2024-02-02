@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -101,12 +101,13 @@ def repeatFasta(src, n):
     width = 60
     r = len(src)
     s = src + src + src[:n % r]
+    line_buffer = []
     for j in range(n // width):
         i = j*width % r
-        #print(s[i:i+width])
+        line_buffer.append(s[i:i+width])
     if n % width:
-        #print(s[-(n % width):])
-        s[-(n % width):]
+        line_buffer.append(s[-(n % width):])
+    return line_buffer
 
 
 def randomFasta(table, n):
@@ -134,6 +135,7 @@ def randomFasta(table, n):
         #print(''.join(line_buffer))
     
     randomGenState = rgs
+    return line_buffer
 
 
 def main(n):
@@ -142,17 +144,19 @@ def main(n):
     makeRandomLUT()
 
     #print('>ONE Homo sapiens alu')
-    repeatFasta(alu, n*2)
+    a = repeatFasta(alu, n*2)
 
     #print('>TWO IUB ambiguity codes')
-    randomFasta(iub, n*3)
+    b = randomFasta(iub, n*3)
 
     #print('>THREE Homo sapiens frequency')
-    randomFasta(homosapiens, n*5)
+    c = randomFasta(homosapiens, n*5)
+
+    return (a, b, c)
 
 
 def measure(num):
-    main(num)
+    return main(num)
     
 
 def reset():
@@ -163,4 +167,4 @@ def reset():
 
 def __benchmark__(num=25000000):
     reset()
-    measure(num)
+    return measure(num)
