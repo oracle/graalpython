@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -2545,7 +2545,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
                         @Cached CallTernaryMethodNode callRichcmp) {
-            Object richcmp = lookupRichcmp.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T_RICHCMP, receiver);
+            Object richcmp = lookupRichcmp.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__, receiver);
             return callRichcmp.execute(null, richcmp, receiver, arg1, arg2);
         }
     }

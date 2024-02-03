@@ -99,7 +99,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_richcompare;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_setattro;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_str;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -149,6 +148,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryFuncWrapper;
@@ -177,7 +177,7 @@ public enum SlotMethodDef {
     TP_ITER(PyTypeObject__tp_iter, T___ITER__, UnaryFuncWrapper::new),
     TP_ITERNEXT(PyTypeObject__tp_iternext, T___NEXT__, UnaryFuncWrapper::new),
     TP_REPR(PyTypeObject__tp_repr, T___REPR__, UnaryFuncWrapper::new),
-    TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T_RICHCMP, RichcmpFunctionWrapper::new),
+    TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T___TRUFFLE_RICHCOMPARE__, RichcmpFunctionWrapper::new),
     TP_SETATTRO(PyTypeObject__tp_setattro, T___SETATTR__, SetAttrWrapper::new),
     TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncWrapper::new),
     TP_DESCR_GET(PyTypeObject__tp_descr_get, T___GET__, DescrGetFunctionWrapper::new),

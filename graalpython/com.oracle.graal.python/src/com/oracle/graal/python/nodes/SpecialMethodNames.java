@@ -462,8 +462,8 @@ public abstract class SpecialMethodNames {
 
     public static final TruffleString T_UPDATE = tsLiteral("update");
 
-    public static final String J_RICHCMP = "__truffle_richcompare__";
-    public static final TruffleString T_RICHCMP = tsLiteral(J_RICHCMP);
+    public static final String J___TRUFFLE_RICHCOMPARE__ = "__truffle_richcompare__";
+    public static final TruffleString T___TRUFFLE_RICHCOMPARE__ = tsLiteral(J___TRUFFLE_RICHCOMPARE__);
 
     public static final String J_TRUFFLE_SOURCE = "__truffle_source__";
 
