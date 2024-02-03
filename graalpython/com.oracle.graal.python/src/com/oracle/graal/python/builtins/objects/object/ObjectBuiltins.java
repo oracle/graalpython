@@ -76,8 +76,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -134,7 +132,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -332,33 +329,19 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
 
-        @Child private LookupAndCallBinaryNode eqNode;
-        @Child private CoerceToBooleanNode ifFalseNode;
-
         @Specialization
-        static boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
+        static Object doGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached CExtNodes.PointerCompareNode nativeNeNode) {
-            return nativeNeNode.execute(inliningTarget, ComparisonOp.NE, self, other);
-        }
-
-        @Fallback
-        Object ne(VirtualFrame frame, Object self, Object other) {
-            if (eqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.Eq));
-            }
+                        @Cached(parameters = "Eq") LookupAndCallBinaryNode eqNode,
+                        @Cached("createIfFalseNode()") CoerceToBooleanNode ifFalseNode) {
             Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-            if (ifFalseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                ifFalseNode = insert(CoerceToBooleanNode.createIfFalseNode());
-            }
-            return ifFalseNode.executeBooleanCached(frame, result);
+            return ifFalseNode.executeBoolean(frame, inliningTarget, result);
         }
     }
 
