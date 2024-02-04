@@ -630,6 +630,65 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
+    /**
+     * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
+     * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
+     * implementation, and all others need to be present.
+     */
+    private void generateCApiAsserts(List<CApiBuiltinDesc> allBuiltins) throws IOException {
+        ArrayList<String> lines = new ArrayList<>();
+        lines.add("// @formatter:off");
+        lines.add("// Checkstyle: stop");
+        lines.add("package com.oracle.graal.python.builtins.modules.cext;");
+        lines.add("");
+        lines.add("import com.oracle.truffle.api.CompilerDirectives;");
+        lines.add("import com.oracle.truffle.api.interop.InteropLibrary;");
+        lines.add("import com.oracle.truffle.api.interop.UnknownIdentifierException;");
+        lines.add("");
+        lines.add("public abstract class PythonCApiAssertions {");
+        lines.add("");
+        lines.add("    private PythonCApiAssertions() {");
+        lines.add("        // no instances");
+        lines.add("    }");
+        lines.add("");
+        lines.add("    public static boolean reallyHasMember(Object capiLibrary, String name) {");
+        lines.add("        try {");
+        lines.add("            InteropLibrary.getUncached().readMember(capiLibrary, name);");
+        lines.add("        } catch (UnsupportedMessageException e) {");
+        lines.add("            throw CompilerDirectives.shouldNotReachHere(e);");
+        lines.add("        } catch (UnknownIdentifierException e) {");
+        lines.add("            return false;");
+        lines.add("        }");
+        lines.add("        return true;");
+        lines.add("    }");
+        lines.add("");
+        lines.add("    public static boolean assertBuiltins(Object capiLibrary) {");
+        lines.add("        boolean hasMember = false;");
+        lines.add("        TreeSet<String> messages = new TreeSet<>();");
+
+        for (var builtin : allBuiltins) {
+            lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
+            if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
+                lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
+            } else if (builtin.call.equals("Ignored")) {
+                lines.add("        if (hasMember) messages.add(\"unexpected C impl: " + builtin.name + "\");");
+            } else {
+                lines.add("        messages.add(hasMember ? \"unexpected C impl: " + builtin.name + "\" : \"missing implementation: " + builtin.name + "\");");
+            }
+        }
+        lines.add("    ");
+        lines.add("        messages.forEach(System.out::println);");
+        lines.add("        return messages.isEmpty();");
+        lines.add("    }");
+        lines.add("}");
+
+        var origins = allBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
+        var file = processingEnv.getFiler().createSourceFile("com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions", origins);
+        try (var w = file.openWriter()) {
+            w.append(String.join(System.lineSeparator(), lines));
+        }
+    }
+
     @Override
     @SuppressWarnings({"try", "unused"})
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment re) {
@@ -705,6 +764,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             generateCApiSource(allBuiltins, constants, fields, structs);
             generateCApiHeader(javaBuiltins, methodFlags);
             generateBuiltinRegistry(javaBuiltins);
+            generateCApiAsserts(allBuiltins);
         } catch (IOException e) {
             processingEnv.getMessager().printError(e.getMessage());
         }

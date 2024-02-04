@@ -66,6 +66,7 @@ import org.graalvm.collections.Pair;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
+import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -585,7 +586,7 @@ public final class CApiContext extends CExtContext {
                     U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
                 }
 
-                // TODO: assert CApiCodeGen.assertBuiltins(capiLibrary);
+                assert PythonCApiAssertions.assertBuiltins(capiLibrary);
                 cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
 
