@@ -746,7 +746,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         if (result.toFile().exists()) {
             return result;
         }
-        throw new RuntimeException("not found: " + path);
+        return null;
     }
 
     /**
@@ -796,7 +796,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * suggests the appropriate @CApiBuiltin specification.
      */
     private void checkImports(List<CApiBuiltinDesc> builtins) throws IOException {
-        List<String> lines = Files.readAllLines(resolvePath(Path.of("com.oracle.graal.python.cext", "CAPIFunctions.txt")));
+        var path = resolvePath(Path.of("com.oracle.graal.python.cext", "CAPIFunctions.txt"));
+        if (path == null) {
+            return;
+        }
+        List<String> lines = Files.readAllLines(path);
 
         TreeSet<String> newBuiltins = new TreeSet<>();
         TreeSet<String> names = new TreeSet<>();
