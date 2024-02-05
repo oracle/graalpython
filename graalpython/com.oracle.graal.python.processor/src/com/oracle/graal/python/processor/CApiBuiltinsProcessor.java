@@ -521,9 +521,20 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("}");
 
         var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
-        var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h", origins);
-        try (var w = file.openWriter()) {
-            w.append(String.join(System.lineSeparator(), lines));
+        String oldContents = "";
+        String newContents = String.join(System.lineSeparator(), lines);
+        try {
+            oldContents = processingEnv.getFiler().getResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h").getCharContent(true).toString();
+        } catch (IOException e) {
+            // pass to regenerate
+        }
+        if (!oldContents.equals(newContents)) {
+            var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h", origins);
+            try (var w = file.openWriter()) {
+                w.append(newContents);
+            }
+        } else {
+            processingEnv.getMessager().printNote("Python capi.gen.c.h is up to date");
         }
     }
 
@@ -585,9 +596,20 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
 
         var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
-        var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.h", origins);
-        try (var w = file.openWriter()) {
-            w.append(String.join(System.lineSeparator(), lines));
+        String oldContents = "";
+        String newContents = String.join(System.lineSeparator(), lines);
+        try {
+            oldContents = processingEnv.getFiler().getResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h").getCharContent(true).toString();
+        } catch (IOException e) {
+            // pass to regenerate
+        }
+        if (!oldContents.equals(newContents)) {
+            var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.h", origins);
+            try (var w = file.openWriter()) {
+                w.append(String.join(System.lineSeparator(), lines));
+            }
+        } else {
+            processingEnv.getMessager().printNote("Python capi.gen.h is up to date");
         }
     }
 
