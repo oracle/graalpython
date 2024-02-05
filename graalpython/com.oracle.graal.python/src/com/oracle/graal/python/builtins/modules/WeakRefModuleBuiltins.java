@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -291,7 +292,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             case PIOBase, // _io._IOBase
                     PRawIOBase, // _io._RawIOBase
                     PBufferedIOBase, // _io._BufferedIOBase
-                    PTextIOBase // _io._TextIOBase
+                    PTextIOBase, // _io._TextIOBase
+                    PLock // _thread.LockType
                     -> 24;
             case PBytesIO, // _io.BytesIO
                     PPartial // functools.partial
@@ -302,6 +304,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     PBufferedRandom, // _io.BufferedRandom
                     PLruCacheWrapper
                     -> 144;
+            case PickleBuffer -> 96; // _pickle.PickleBuffer
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
 
             default -> -1; // unknown or not implemented
@@ -413,6 +416,10 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             boolean allowed = true;
             if (clazz instanceof PythonBuiltinClassType type) {
+                if (type.getWeaklistoffset() < 0) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw shouldNotReachHere("Unknown weaklistoffset of " + type);
+                }
                 allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {
