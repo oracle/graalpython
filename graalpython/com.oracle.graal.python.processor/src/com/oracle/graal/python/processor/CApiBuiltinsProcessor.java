@@ -80,39 +80,36 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
 
 public class CApiBuiltinsProcessor extends AbstractProcessor {
-    private static class CodeAnalyzerTreeScanner extends TreePathScanner<Object, Trees> {
-        private String fieldName;
-        private String fieldInitializer;
-
-        public void setFieldName(String fieldName) {
-            this.fieldName = fieldName;
-        }
-
-        public String getFieldInitializer() {
-            return this.fieldInitializer;
-        }
+    private static class ArgDescriptorsTreeScanner extends TreePathScanner<Object, Trees> {
+        private Map<String, String> initializerMap;
 
         @Override
         public Object visitVariable(VariableTree variableTree, Trees trees) {
-            if (variableTree.getName().toString().equals(this.fieldName)) {
-                this.fieldInitializer = variableTree.getInitializer().toString();
+            var initializer = variableTree.getInitializer();
+            if (initializer != null) {
+                initializerMap.put(variableTree.getName().toString(), initializer.toString());
             }
             return super.visitVariable(variableTree, trees);
         }
     }
 
-    private Map<String, String> argDescriptors = new HashMap<>();
+    private Map<String, String> signatureToArgDescriptor = new HashMap<>();
+    private Map<String, String> argDescriptorToInitializer = new HashMap<>();
     private Trees trees;
 
     private String getFieldInitializer(VariableElement theField) {
-        // assuming theClass is a javax.lang.model.element.Element reference
-        // assuming theField is a javax.lang.model.element.VariableElement reference
-        var fieldName = theField.getSimpleName().toString();
-        var codeScanner = new CodeAnalyzerTreeScanner();
-        var tp = trees.getPath(theField.getEnclosingElement());
-        codeScanner.setFieldName(fieldName);
-        codeScanner.scan(tp, this.trees);
-        return codeScanner.getFieldInitializer();
+        if (argDescriptorToInitializer.isEmpty()) {
+            // lazily initialize all arg descriptors in a single scan
+            var codeScanner = new ArgDescriptorsTreeScanner();
+            var tp = trees.getPath(theField.getEnclosingElement());
+            codeScanner.initializerMap = argDescriptorToInitializer;
+            codeScanner.scan(tp, this.trees);
+            for (var e : argDescriptorToInitializer.entrySet()) {
+                var signature = getCSignature(e.getValue());
+                signatureToArgDescriptor.putIfAbsent(signature, e.getKey());
+            }
+        }
+        return argDescriptorToInitializer.get(name(theField));
     }
 
     @Override
@@ -122,12 +119,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private String getCSignature(VariableElement obj) {
-        // assumes that the C signature is the first literal string
-        var initializer = getFieldInitializer(obj);
-        var signature = initializer.split("\"")[1];
-        // cache known arg descriptors
-        argDescriptors.putIfAbsent(signature, name(obj));
-        return signature;
+        return getCSignature(getFieldInitializer(obj));
+    }
+
+    private static String getCSignature(String initializer) {
+        // assumes that the C signature is the first literal string in the initializer
+        var parts = initializer.split("\"");
+        if (parts.length < 2) {
+            return "";
+        } else {
+            return initializer.split("\"")[1];
+        }
     }
 
     private static boolean isVarArgs(VariableElement obj) {
@@ -771,9 +773,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "struct PyConfig*":
                 return "PYCONFIG_PTR";
         }
-        var knownDescriptor = argDescriptors.get(sig);
+        var knownDescriptor = signatureToArgDescriptor.get(sig);
         if (knownDescriptor == null) {
-            // processingEnv.getMessager().printWarning("unknown C signature: " + sig);
+            processingEnv.getMessager().printWarning("unknown C signature: " + sig);
             return "'%s'".formatted(sig);
         } else {
             return knownDescriptor;
