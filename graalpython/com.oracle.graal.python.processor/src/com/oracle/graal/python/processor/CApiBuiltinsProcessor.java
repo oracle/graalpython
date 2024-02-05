@@ -419,7 +419,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      */
     private boolean isSimilarType(String t1, String t2) {
         return t1.equals(t2) || t1.equals("struct " + t2) || ("struct " + t1).equals(t2) ||
-            t1.equals(resolveTypeAlias(t2)) || resolveTypeAlias(t1).equals(t2);
+                        t1.equals(resolveTypeAlias(t2)) || resolveTypeAlias(t1).equals(t2);
     }
 
     private void compareFunction(String name, VariableElement ret1, VariableElement ret2, VariableElement[] args1, VariableElement[] args2) {
@@ -689,47 +689,47 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         var file = processingEnv.getFiler().createSourceFile("com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions", origins);
         try (var w = file.openWriter()) {
             w.append("""
-                     // @formatter:off
-                     // Checkstyle: stop
-                     package com.oracle.graal.python.builtins.modules.cext;
+                            // @formatter:off
+                            // Checkstyle: stop
+                            package com.oracle.graal.python.builtins.modules.cext;
 
-                     import java.util.TreeSet;
-                     import com.oracle.truffle.api.CompilerDirectives;
-                     import com.oracle.truffle.api.interop.InteropLibrary;
-                     import com.oracle.truffle.api.interop.UnknownIdentifierException;
-                     import com.oracle.truffle.api.interop.UnsupportedMessageException;
+                            import java.util.TreeSet;
+                            import com.oracle.truffle.api.CompilerDirectives;
+                            import com.oracle.truffle.api.interop.InteropLibrary;
+                            import com.oracle.truffle.api.interop.UnknownIdentifierException;
+                            import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
-                     public abstract class PythonCApiAssertions {
+                            public abstract class PythonCApiAssertions {
 
-                         private PythonCApiAssertions() {
-                             // no instances
-                         }
+                                private PythonCApiAssertions() {
+                                    // no instances
+                                }
 
-                         public static boolean reallyHasMember(Object capiLibrary, String name) {
-                             try {
-                                 InteropLibrary.getUncached().readMember(capiLibrary, name);
-                             } catch (UnsupportedMessageException e) {
-                                 throw CompilerDirectives.shouldNotReachHere(e);
-                             } catch (UnknownIdentifierException e) {
-                                 return false;
-                             }
-                             return true;
-                         }
+                                public static boolean reallyHasMember(Object capiLibrary, String name) {
+                                    try {
+                                        InteropLibrary.getUncached().readMember(capiLibrary, name);
+                                    } catch (UnsupportedMessageException e) {
+                                        throw CompilerDirectives.shouldNotReachHere(e);
+                                    } catch (UnknownIdentifierException e) {
+                                        return false;
+                                    }
+                                    return true;
+                                }
 
-                         /**
-                          * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
-                          * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
-                          * implementation, and all others need to be present.
-                          */
-                         public static boolean assertBuiltins(Object capiLibrary) {
-                             boolean hasMember = false;
-                             TreeSet<String> messages = new TreeSet<>();
-                             %s
-                             messages.forEach(System.err::println);
-                             return messages.isEmpty();
-                         }
-                     }
-                     """.formatted(String.join(System.lineSeparator(), lines)));
+                                /**
+                                 * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
+                                 * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
+                                 * implementation, and all others need to be present.
+                                 */
+                                public static boolean assertBuiltins(Object capiLibrary) {
+                                    boolean hasMember = false;
+                                    TreeSet<String> messages = new TreeSet<>();
+                                    %s
+                                    messages.forEach(System.err::println);
+                                    return messages.isEmpty();
+                                }
+                            }
+                            """.formatted(String.join(System.lineSeparator(), lines)));
         }
     }
 
