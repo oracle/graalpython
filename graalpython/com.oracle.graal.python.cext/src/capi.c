@@ -960,4 +960,4 @@ static void unimplemented(const char* name) {
 #define FUNC_NOT_IMPLEMENTED unimplemented(__func__); exit(-1);
 
 // {{start CAPI_BUILTINS}}
-#include "capi.gen.c"
+#include "capi.gen.c.h"

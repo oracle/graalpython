@@ -521,7 +521,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("}");
 
         var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
-        var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c", origins);
+        var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h", origins);
         try (var w = file.openWriter()) {
             w.append(String.join(System.lineSeparator(), lines));
         }
