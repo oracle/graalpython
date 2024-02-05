@@ -41,6 +41,8 @@
 package com.oracle.graal.python.processor;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -64,6 +67,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.AbstractAnnotationValueVisitor14;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.StandardLocation;
@@ -97,6 +101,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
+    private Map<String, String> argDescriptors = new HashMap<>();
     private Trees trees;
 
     private String getFieldInitializer(VariableElement theField) {
@@ -119,7 +124,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private String getCSignature(VariableElement obj) {
         // assumes that the C signature is the first literal string
         var initializer = getFieldInitializer(obj);
-        return initializer.split("\"")[1];
+        var signature = initializer.split("\"")[1];
+        // cache known arg descriptors
+        argDescriptors.putIfAbsent(signature, name(obj));
+        return signature;
     }
 
     private static boolean isVarArgs(VariableElement obj) {
@@ -339,7 +347,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         name = builtinName;
                     }
                     var ret = findValue(builtin, "ret", VariableElement.class);
-                    String call = findValue(builtin, "call", VariableElement.class).getSimpleName().toString();
+                    String call = name(findValue(builtin, "call", VariableElement.class));
                     boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
                     if (((TypeElement) element).getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
@@ -382,18 +390,21 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private void verifyNodeClass(TypeElement te, AnnotationMirror annotation) {
-        for (Element e : te.getEnclosedElements()) {
-            if (e.getKind() == ElementKind.METHOD) {
-                if (e.getModifiers().contains(Modifier.ABSTRACT) && e.getSimpleName().toString().equals("execute")) {
-                    if (((ExecutableElement) e).getParameters().size() != findValues(annotation, "args", VariableElement.class).size()) {
-                        // processingEnv.getMessager().printError("Arity mismatch between declared
-                        // arguments and builtin superclass", te);
+        var tm = te.asType();
+        while (tm instanceof DeclaredType dt) {
+            for (var e : dt.asElement().getEnclosedElements()) {
+                if (e.getKind() == ElementKind.METHOD) {
+                    if (e.getModifiers().contains(Modifier.ABSTRACT) && e.getSimpleName().toString().equals("execute")) {
+                        if (((ExecutableElement) e).getParameters().size() != findValues(annotation, "args", VariableElement.class).size()) {
+                            processingEnv.getMessager().printError("Arity mismatch between declared arguments and builtin superclass", te);
+                        }
+                        return;
                     }
-                    return;
                 }
             }
+            tm = ((TypeElement) dt.asElement()).getSuperclass();
         }
-        // processingEnv.getMessager().printError("Couldn't find execute method for C builtin", te);
+        processingEnv.getMessager().printError("Couldn't find execute method for C builtin", te);
     }
 
     private static Optional<CApiBuiltinDesc> findBuiltin(List<CApiBuiltinDesc> builtins, String name) {
@@ -404,20 +415,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * Check whether the two given types are similar, based on the C signature (and ignoring a
      * "struct" keyword).
      */
-    private static boolean isSimilarType(String t1, String t2) {
-        return t1.equals(t2) || t1.equals("struct " + t2) || ("struct " + t1).equals(t2);
+    private boolean isSimilarType(String t1, String t2) {
+        return t1.equals(t2) || t1.equals("struct " + t2) || ("struct " + t1).equals(t2) ||
+            t1.equals(resolveTypeAlias(t2)) || resolveTypeAlias(t1).equals(t2);
     }
 
     private void compareFunction(String name, VariableElement ret1, VariableElement ret2, VariableElement[] args1, VariableElement[] args2) {
-        if (!isSimilarType(getCSignature(ret1), getCSignature(ret2))) {
-            System.out.println("duplicate entry for " + name + ", different return " + ret1 + " vs. " + ret2);
+        compareFunction(name, ret1, getCSignature(ret2), args1, Arrays.stream(args2).map(this::getCSignature).toArray(String[]::new));
+    }
+
+    private void compareFunction(String name, VariableElement ret1, String ret2, VariableElement[] args1, String[] args2) {
+        if (!isSimilarType(getCSignature(ret1), ret2)) {
+            processingEnv.getMessager().printError("duplicate entry for " + name + ", different return " + ret1 + " vs. " + ret2);
         }
         if (args1.length != args2.length) {
-            System.out.println("duplicate entry for " + name + ", different arg lengths " + args1.length + " vs. " + args2.length);
+            processingEnv.getMessager().printError("duplicate entry for " + name + ", different arg lengths " + args1.length + " vs. " + args2.length);
         } else {
             for (int i = 0; i < args1.length; i++) {
-                if (!isSimilarType(getCSignature(args1[i]), getCSignature(args2[i]))) {
-                    System.out.println("duplicate entry for " + name + ", different arg " + i + ": " + args1[i] + " vs. " + args2[i]);
+                if (!isSimilarType(getCSignature(args1[i]), args2[i])) {
+                    processingEnv.getMessager().printError("duplicate entry for " + name + ", different arg " + i + ": " + args1[i] + " vs. " + args2[i]);
                 }
             }
         }
@@ -630,42 +646,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    /**
-     * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
-     * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
-     * implementation, and all others need to be present.
-     */
     private void generateCApiAsserts(List<CApiBuiltinDesc> allBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
-        lines.add("// @formatter:off");
-        lines.add("// Checkstyle: stop");
-        lines.add("package com.oracle.graal.python.builtins.modules.cext;");
         lines.add("");
-        lines.add("import com.oracle.truffle.api.CompilerDirectives;");
-        lines.add("import com.oracle.truffle.api.interop.InteropLibrary;");
-        lines.add("import com.oracle.truffle.api.interop.UnknownIdentifierException;");
-        lines.add("");
-        lines.add("public abstract class PythonCApiAssertions {");
-        lines.add("");
-        lines.add("    private PythonCApiAssertions() {");
-        lines.add("        // no instances");
-        lines.add("    }");
-        lines.add("");
-        lines.add("    public static boolean reallyHasMember(Object capiLibrary, String name) {");
-        lines.add("        try {");
-        lines.add("            InteropLibrary.getUncached().readMember(capiLibrary, name);");
-        lines.add("        } catch (UnsupportedMessageException e) {");
-        lines.add("            throw CompilerDirectives.shouldNotReachHere(e);");
-        lines.add("        } catch (UnknownIdentifierException e) {");
-        lines.add("            return false;");
-        lines.add("        }");
-        lines.add("        return true;");
-        lines.add("    }");
-        lines.add("");
-        lines.add("    public static boolean assertBuiltins(Object capiLibrary) {");
-        lines.add("        boolean hasMember = false;");
-        lines.add("        TreeSet<String> messages = new TreeSet<>();");
-
         for (var builtin : allBuiltins) {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
             if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
@@ -676,16 +659,155 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 lines.add("        messages.add(hasMember ? \"unexpected C impl: " + builtin.name + "\" : \"missing implementation: " + builtin.name + "\");");
             }
         }
-        lines.add("    ");
-        lines.add("        messages.forEach(System.out::println);");
-        lines.add("        return messages.isEmpty();");
-        lines.add("    }");
-        lines.add("}");
+        lines.add("");
 
         var origins = allBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
         var file = processingEnv.getFiler().createSourceFile("com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions", origins);
         try (var w = file.openWriter()) {
-            w.append(String.join(System.lineSeparator(), lines));
+            w.append("""
+                     // @formatter:off
+                     // Checkstyle: stop
+                     package com.oracle.graal.python.builtins.modules.cext;
+
+                     import java.util.TreeSet;
+                     import com.oracle.truffle.api.CompilerDirectives;
+                     import com.oracle.truffle.api.interop.InteropLibrary;
+                     import com.oracle.truffle.api.interop.UnknownIdentifierException;
+                     import com.oracle.truffle.api.interop.UnsupportedMessageException;
+
+                     public abstract class PythonCApiAssertions {
+
+                         private PythonCApiAssertions() {
+                             // no instances
+                         }
+
+                         public static boolean reallyHasMember(Object capiLibrary, String name) {
+                             try {
+                                 InteropLibrary.getUncached().readMember(capiLibrary, name);
+                             } catch (UnsupportedMessageException e) {
+                                 throw CompilerDirectives.shouldNotReachHere(e);
+                             } catch (UnknownIdentifierException e) {
+                                 return false;
+                             }
+                             return true;
+                         }
+
+                         /**
+                          * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
+                          * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
+                          * implementation, and all others need to be present.
+                          */
+                         public static boolean assertBuiltins(Object capiLibrary) {
+                             boolean hasMember = false;
+                             TreeSet<String> messages = new TreeSet<>();
+                             %s
+                             messages.forEach(System.err::println);
+                             return messages.isEmpty();
+                         }
+                     }
+                     """.formatted(String.join(System.lineSeparator(), lines)));
+        }
+    }
+
+    /**
+     * Looks for the given (relative) path, assuming that the current working directory is either
+     * the repository root or a project directory.
+     */
+    private static Path resolvePath(Path path) {
+        Path result = Path.of("graalpython").resolve(path);
+        if (result.toFile().exists()) {
+            return result;
+        }
+        result = Path.of("..").resolve(path);
+        if (result.toFile().exists()) {
+            return result;
+        }
+        throw new RuntimeException("not found: " + path);
+    }
+
+    /**
+     * These are functions that are introduced by GraalPy, mostly auxiliary functions that we added
+     * to avoid direct fields accesses:
+     */
+    private static final String[] ADDITIONAL = new String[]{"PyCFunction_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
+                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyASCIIObject_LENGTH", "_PyASCIIObject_STATE_ASCII",
+                    "_PyASCIIObject_STATE_COMPACT", "_PyASCIIObject_STATE_KIND", "_PyASCIIObject_STATE_READY", "_PyASCIIObject_WSTR", "_PyByteArray_Start", "_PyEval_SetCoroutineOriginTrackingDepth",
+                    "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer", "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_get_wstr_length", "_Py_REFCNT",
+                    "_Py_SET_REFCNT", "_Py_SET_SIZE", "_Py_SET_TYPE", "_Py_SIZE", "_Py_TYPE", "_PyTuple_SET_ITEM", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef",
+                    "PyCode_GetName", "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize", "_PyArray_Data", "_PyErr_Occurred",
+                    // TODO GR-46546 The following are backports from 3.11. Remove when updating
+                    "PyFrame_GetLasti", "PyFrame_GetLocals", "PyFrame_GetGlobals", "PyFrame_GetBuiltins"};
+
+    public String resolveArgDescriptor(String sig) {
+        switch (sig) {
+            case "struct _typeobject*":
+                return "PyTypeObject";
+            case "struct PyGetSetDef*":
+                return "PyGetSetDef";
+            case "const struct PyConfig*":
+                return "CONST_PYCONFIG_PTR";
+            case "struct PyConfig*":
+                return "PYCONFIG_PTR";
+        }
+        var knownDescriptor = argDescriptors.get(sig);
+        if (knownDescriptor == null) {
+            // processingEnv.getMessager().printWarning("unknown C signature: " + sig);
+            return "'%s'".formatted(sig);
+        } else {
+            return knownDescriptor;
+        }
+    }
+
+    public String resolveTypeAlias(String sig) {
+        return switch (sig) {
+            case "struct _typeobject*" -> "PyTypeObject*";
+            case "const struct PyConfig*" -> "const PyConfig*";
+            default -> sig;
+        };
+    }
+
+    /**
+     * Check the list of implemented and unimplemented builtins against the list of CPython exported
+     * symbols, to determine if builtins are missing. If a builtin is missing, this function
+     * suggests the appropriate @CApiBuiltin specification.
+     */
+    private void checkImports(List<CApiBuiltinDesc> builtins) throws IOException {
+        List<String> lines = Files.readAllLines(resolvePath(Path.of("com.oracle.graal.python.cext", "CAPIFunctions.txt")));
+
+        TreeSet<String> newBuiltins = new TreeSet<>();
+        TreeSet<String> names = new TreeSet<>();
+        builtins.forEach(n -> names.add(n.name));
+
+        for (String line : lines) {
+            String[] s = line.split(";");
+            String name = s[0].trim();
+            names.remove(name);
+            String retSig = s[1].trim();
+            String ret = resolveArgDescriptor(retSig);
+            String[] argSplit = s[2].isBlank() || "void".equals(s[2]) ? new String[0] : s[2].trim().split("\\|");
+            String[] args = Arrays.stream(argSplit).map(this::resolveArgDescriptor).toArray(String[]::new);
+
+            Optional<CApiBuiltinDesc> existing = findBuiltin(builtins, name);
+            if (existing.isPresent()) {
+                compareFunction(name, existing.get().returnType, retSig, existing.get().arguments, argSplit);
+            } else {
+                String argString = Arrays.stream(args).map(t -> String.valueOf(t)).collect(Collectors.joining(", "));
+                newBuiltins.add("    @CApiBuiltin(name = \"" + name + "\", ret = " + ret + ", args = {" + argString + "}, call = NotImplemented)");
+            }
+        }
+        if (!newBuiltins.isEmpty()) {
+            processingEnv.getMessager().printError("missing builtins (defined in CPython, but not in GraalPy):");
+            newBuiltins.stream().forEach(processingEnv.getMessager()::printError);
+        }
+
+        names.removeIf(n -> n.startsWith("Py_get_"));
+        names.removeIf(n -> n.startsWith("Py_set_"));
+        names.removeIf(n -> n.startsWith("PyTruffle"));
+        names.removeIf(n -> n.startsWith("_PyTruffle"));
+        names.removeAll(Arrays.asList(ADDITIONAL));
+        if (!names.isEmpty()) {
+            processingEnv.getMessager().printError("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");
+            processingEnv.getMessager().printError("    " + names.stream().collect(Collectors.joining(", ")));
         }
     }
 
@@ -765,6 +887,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             generateCApiHeader(javaBuiltins, methodFlags);
             generateBuiltinRegistry(javaBuiltins);
             generateCApiAsserts(allBuiltins);
+            checkImports(allBuiltins);
         } catch (IOException e) {
             processingEnv.getMessager().printError(e.getMessage());
         }

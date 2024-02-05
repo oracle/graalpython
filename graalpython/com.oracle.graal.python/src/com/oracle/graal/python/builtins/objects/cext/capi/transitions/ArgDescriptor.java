@@ -491,25 +491,6 @@ public enum ArgDescriptor {
         return behavior == ArgBehavior.Void;
     }
 
-    public static ArgDescriptor resolve(String sig) {
-        switch (sig) {
-            case "struct _typeobject*":
-                return PyTypeObject;
-            case "struct PyGetSetDef*":
-                return PyGetSetDef;
-            case "const struct PyConfig*":
-                return CONST_PYCONFIG_PTR;
-            case "struct PyConfig*":
-                return PYCONFIG_PTR;
-        }
-        for (ArgDescriptor d : values()) {
-            if (d.cSignature.equals(sig)) {
-                return d;
-            }
-        }
-        throw new IllegalArgumentException("unknown C signature: " + sig);
-    }
-
     public boolean isI64() {
         return behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long;
     }
