@@ -142,7 +142,7 @@ Unpacking to an empty iterable should raise ValueError
       ...
     ValueError: too many values to unpack (expected 0)
 
-"""
+""".replace('test.test_unpack', 'graalpython.lib-python.3.test.test_unpack')  # GraalPy change: difference due to how we run tests
 
 __test__ = {'doctests' : doctests}
 
