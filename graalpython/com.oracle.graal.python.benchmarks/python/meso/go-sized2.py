@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -427,10 +427,11 @@ def computer_move(board):
 
 def versus_cpu():
     board = Board()
-    pos = computer_move(board)
+    return computer_move(board)
 
 def __benchmark__(iters=10):
     random.seed(1)
+    r = 0
     for i in range(iters):
-        versus_cpu()
-
+        r |= versus_cpu()
+    return r

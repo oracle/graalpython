@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -208,10 +208,11 @@ def docompute(num):
 
 
 def measure(num):
+    sum_ = 0
     for run in range(num):
-        sum_ = docompute(100)
-    print("sum", sum_)
+        sum_ += docompute(100)[0]
+    return sum_
 
 
 def __benchmark__(num=5):
-    measure(num)
+    return measure(num)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -94,11 +94,11 @@ def main(queen_count):
 
 
 def measure(queen_count):
-    print(main(queen_count)[-1])
+    return main(queen_count)[-1]
     
 
 def __benchmark__(queen_count=10):
-    measure(queen_count)
+    return measure(queen_count)
 
 
 if __name__ == '__main__':

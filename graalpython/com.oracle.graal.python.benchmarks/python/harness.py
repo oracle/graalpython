@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import array
 from time import time
 
 try:
@@ -64,6 +64,18 @@ except ImportError:
 
 # for compatibility with Jython 2.7
 GRAALPYTHON = getattr(getattr(sys, "implementation", None), "name", None) == "graalpy"
+
+
+if GRAALPYTHON:
+    blackhole = __graalpython__.blackhole
+else:
+    blackhole_results = [None] * 16
+    blackhole_results_idx = 0
+    def blackhole(value):
+        global blackhole_results_idx
+        blackhole_results[blackhole_results_idx] = value
+        blackhole_results_idx = (blackhole_results_idx + 1) & 0xf
+
 
 _HRULE = '-'.join(['' for i in range(80)])
 
@@ -135,7 +147,7 @@ def norm(values):
 
 
 def pairwise_slopes(values, cp):
-    return [abs(float(values[i+1] - values[i]) / float(cp[i+1] - cp[i])) for i in range(len(values)-1)]
+    return [abs(float(values[i+1] - values[i]) / max(0.0000001, float(cp[i+1] - cp[i]))) for i in range(len(values)-1)]
 
 
 def last_n_percent_runs(values, n=0.1):
@@ -225,8 +237,15 @@ def _as_int(value):
     return value
 
 
+def has_low_variance(durations, durations_len):
+    v = durations[max(durations_len-4, 0):durations_len]
+    if statistics.stdev(v) / min(v) < 0.03 * UNITS_PER_SECOND:
+        return True
+
+
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None,
+                 live_results=False):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -245,6 +264,7 @@ class BenchRunner(object):
         self.warmup_runs = warmup_runs if warmup_runs > 0 else 0
         self.warmup = warmup if warmup > 0 else -1
         self.startup = startup
+        self.live_results = live_results
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -303,13 +323,31 @@ class BenchRunner(object):
         self._call_attr(ATTR_SETUP, *args)
         print("### start benchmark ... ")
 
-        report_startup = self.startup
+        def report_iteration(iteration, duration):
+            duration_str = "%.3f" % duration
+            if self._run_once:
+                print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
+            else:
+                print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__,
+                                                                  duration_str))
+
+        report_startup = bool(self.startup)
+
+        cleanup = False
+        cleanup_attr = self._get_attr(ATTR_CLEANUP)
+        if cleanup_attr and hasattr(cleanup_attr, '__call__'):
+            cleanup = cleanup_attr
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
-        startup_s = -1.0
-        early_warmup_s = -1.0
-        late_warmup_s = -1.0
-        durations = []
+        check_variance = statistics and os.environ.get("CI")
+        check_variance_threshold = 20 * UNITS_PER_SECOND
+        live_report = bool(os.environ.get("GRAALPY_BENCH_REPORT_LIVE", self.live_results))
+        if not live_report and not os.environ.get("CI"):
+                print("Note: export GRAALPY_BENCH_REPORT_LIVE or pass --live-results " +
+                      "to print the results immediately after each iteration")
+        durations = array.array('d', [0] * self.iterations)
+        timestamps = array.array('d', [0] * self.iterations)
+        durations_len = 0
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup_runs:
                 print("### (pre)warming up for %s iterations ... " % self.warmup_runs)
@@ -317,35 +355,39 @@ class BenchRunner(object):
                     bench_func(*args)
                     self._call_attr(ATTR_CLEANUP, *args)
 
+            # Try to keep the benchmark loop as simple as possible:
+            # Avoid (re)allocations, avoid attribute/dict/... lookups, etc.
             for iteration in range(self.iterations):
-                start = time()
-                bench_func(*args)
+                start = monotonic_best_accuracy()
+                result = bench_func(*args)
                 cur_time = monotonic_best_accuracy()
-                duration = time() - start
-                if report_startup and startup_s < 0.0 and iteration == self.startup[0] - 1:
-                    startup_s = get_seconds_since_startup(cur_time)
-                if report_startup and early_warmup_s < 0.0 and iteration == self.startup[1] - 1:
-                    early_warmup_s = get_seconds_since_startup(cur_time)
-                if report_startup and late_warmup_s < 0 and iteration == self.startup[2] - 1:
-                    late_warmup_s = get_seconds_since_startup(cur_time)
-                durations.append(duration)
-                duration_str = "%.3f" % duration
-                self._call_attr(ATTR_CLEANUP, *args)
-                if self._run_once:
-                    print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
-                else:
-                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__,
-                                                                      duration_str))
+                duration = cur_time - start
+                timestamps[durations_len] = cur_time
+                durations[durations_len] = cur_time - start
+                durations_len += 1
+                if live_report:
+                    report_iteration(iteration, duration)
+
+                blackhole(result)
+                if cleanup:
+                    cleanup(*args)
+
                 # a bit of fuzzy logic to avoid timing out on configurations
                 # that are slow, without having to rework our logic for getting
                 # default iterations
-                if statistics and os.environ.get("CI") and iteration >= 4 and duration > 20:
-                    v = durations[-4:]
-                    if statistics.stdev(v) / min(v) < 0.03:
+                if check_variance and iteration >= 4 and duration > check_variance_threshold:
+                    # assuming we get here if the iteration is > 20s, the following computation
+                    # should not affect the result so much...
+                    if has_low_variance(durations, durations_len):
                         # with less than 3 percent variance across ~20s
                         # iterations, we can safely stop here
                         break
 
+
+        durations = [d / UNITS_PER_SECOND for d in durations[:durations_len]]
+        if not live_report:
+            for i in range(len(durations)):
+                report_iteration(i, durations[i])
 
         print(_HRULE)
         print("### teardown ... ")
@@ -356,6 +398,9 @@ class BenchRunner(object):
         # summary
         # We can do that only on Graalpython
         if report_startup:
+            startup_s = get_seconds_since_startup(timestamps[self.startup[0] - 1])
+            early_warmup_s = get_seconds_since_startup(timestamps[self.startup[1] - 1])
+            late_warmup_s = get_seconds_since_startup(timestamps[self.startup[2] - 1])
             print("### STARTUP at iteration: %d, duration: %.3f" % (self.startup[0], startup_s))
             print("### EARLY WARMUP at iteration: %d, duration: %.3f" % (self.startup[1], early_warmup_s))
             print("### LATE WARMUP at iteration: %d, duration: %.3f" % (self.startup[2], late_warmup_s))
@@ -397,6 +442,7 @@ def run_benchmark(args):
     bench_file = None
     bench_args = []
     paths = []
+    live_results = False
 
     i = 0
     while i < len(args):
@@ -431,6 +477,8 @@ def run_benchmark(args):
             paths = args[i].split(",")
         elif arg.startswith("--path"):
             paths = arg.split("=")[1].split(",")
+        elif arg == "--live-results":
+            live_results = True
 
         elif bench_file is None:
             bench_file = arg
@@ -453,7 +501,7 @@ def run_benchmark(args):
     else:
         print("### no extra module search paths specified")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, live_results=live_results).run()
 
 
 if __name__ == '__main__':

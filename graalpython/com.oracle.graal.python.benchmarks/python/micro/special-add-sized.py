@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -53,8 +53,8 @@ def do_compute(num):
 
 def measure(num):
     sum_ = do_compute(num)
-    print("sum", sum_)
+    return sum_
 
 
 def __benchmark__(num=5):
-    measure(num)
+    return measure(num)

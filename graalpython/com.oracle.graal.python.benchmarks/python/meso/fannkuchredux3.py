@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -100,9 +100,8 @@ def fannkuch(n):
 
 def measure(num):
     sum, maxflips = fannkuch(num)
-    print(sum)
-    print("Pfannkuchen(%d) = %d" % (num, maxflips))
+    return (sum, num, maxflips)
 
 
 def __benchmark__(num=11):
-    measure(num)
+    return measure(num)

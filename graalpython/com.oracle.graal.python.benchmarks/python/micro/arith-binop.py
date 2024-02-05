@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -36,13 +36,14 @@ def docompute(num):
 
 
 def measure(num):
+    sum_ = 0
     for run in range(num):
-        sum_ = docompute(10000)  # 10000
-    print("sum", sum_)
+        sum_ += docompute(10000)  # 10000
+    return sum_
 
 
 def __benchmark__(num=5):
-    measure(num)
+    return measure(num)
 
 
 def __teardown__():

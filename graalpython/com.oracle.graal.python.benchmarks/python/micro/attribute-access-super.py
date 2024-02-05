@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -74,11 +74,13 @@ def do_stuff(bar):
 
 
 def measure(num):
+    _res = 0
     for i in range(num):
         result = do_stuff(Bar(42))
+        _res |= result[0] | result[1]
 
-    print(result)
+    return _res
 
 
 def __benchmark__(num=5000):
-    measure(num)
+    return measure(num)

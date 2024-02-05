@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Pablo Mouzo
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -126,7 +126,7 @@ def __benchmark__(num=10000):
 
 
 def java_embedded_bench_entrypoint(num=10000):
-    measure(int(num))
+    return measure(int(num))
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -32,12 +32,12 @@ def make_lists(num):
     for i in range(num):
         ll = make_list(100000)
 
-    print(ll[-1])
+    return ll[-1]
 
 
 def measure(num):
-    make_lists(num)  # 50000
+    return make_lists(num)  # 50000
 
 
 def __benchmark__(num=5000):
-    measure(num)
+    return measure(num)

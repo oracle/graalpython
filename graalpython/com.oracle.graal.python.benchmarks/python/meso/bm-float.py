@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -86,13 +86,15 @@ def benchmark():
         points.append(Point(i))
     for p in points:
         p.normalize()
-    maximize(points)
+    return maximize(points)
 
 
 def measure(iteration):
+    r = 0
     for i in range(iteration):
-        benchmark()
-
+        v = benchmark()
+        r += v.x + v.y - v.z
+    return r
 
 def __benchmark__(num=1000):
-    measure(num)
+    return measure(num)

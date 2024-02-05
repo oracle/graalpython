@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -39,11 +39,12 @@ def sumitup(iteration):
 
 
 def measure(num):
+    r = 0
     for i in range(num):  # 50000
-        sumitup(iteration)
+        r |= sumitup(iteration)
 
-    print(sumitup(iteration))
+    return r | sumitup(iteration)
     
 
 def __benchmark__(num=50000):
-    measure(num)
+    return measure(num)

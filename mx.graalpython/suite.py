@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "de0660c98f6e5f96b0bf5ccf3d585785a2cb3d87",
+                "version": "f9b06626162a843360d00e71193821e42d7a9f06",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "de0660c98f6e5f96b0bf5ccf3d585785a2cb3d87",
+                "version": "f9b06626162a843360d00e71193821e42d7a9f06",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "de0660c98f6e5f96b0bf5ccf3d585785a2cb3d87",
+                "version": "f9b06626162a843360d00e71193821e42d7a9f06",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "de0660c98f6e5f96b0bf5ccf3d585785a2cb3d87",
+                "version": "f9b06626162a843360d00e71193821e42d7a9f06",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -161,6 +161,12 @@ suite = {
               "artifactId": "org-netbeans-lib-profiler",
               "version": "RELEASE120-1",
             },
+        },
+        "JBANG" : {
+            "urls" : [
+                "https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.114.0.zip"
+            ],
+            "digest": "sha256:660c7eb2eda888897f20aa5c5927ccfed924f3b86d5f2a2477a7b0235cdc94bb"
         },
     },
 

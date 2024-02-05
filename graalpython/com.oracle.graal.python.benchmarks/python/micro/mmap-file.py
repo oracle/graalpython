@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,9 +62,9 @@ def measure(num):
         size = mm.size()
         for i in range(num):
             fill(mm, size)
-        print(mm[0:ndata])
+        return mm[0:ndata]
 
 
 def __benchmark__(num=100):
-    measure(num)
+    return measure(num)
 

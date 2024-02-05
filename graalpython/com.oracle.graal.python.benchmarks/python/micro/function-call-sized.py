@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -39,9 +39,8 @@ def call_functions(num):
 
 def measure(num):
     sum = call_functions(num)  # 1000000
-
-    print("Number of calls ", sum)
+    return sum
 
 
 def __benchmark__(num):
-    measure(num)
+    return measure(num)

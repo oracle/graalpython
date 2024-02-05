@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -123,17 +123,6 @@ def get_puzzle(w=w, h=h):
     return (board, cti, pieces)
 
 
-def print_board(board, w=w, h=h):
-
-    for y in range(h):
-        for x in range(w):
-            print(board[x + y * w], end=' ')
-        print('')
-        if y % 2 == 0:
-            print('', end=' ')
-    print()
-
-
 board, cti, pieces = get_puzzle()
 fps = get_footprints(board, cti, pieces)
 se_nh = get_senh(board, cti)
@@ -176,13 +165,12 @@ def main(n):
     pieces_left = list(range(len(pieces)))
     solutions = []
     solve(n, 0, free, curr_board, pieces_left, solutions)
-    print(len(solutions),  'solutions found\n')
-    for i in (0, -1): print_board(solutions[i])
+    return solutions
 
 
 def measure(num):
-    main(num)
+    return main(num)
 
 
 def __benchmark__(num=2098):
-    measure(num)
+    return measure(num)

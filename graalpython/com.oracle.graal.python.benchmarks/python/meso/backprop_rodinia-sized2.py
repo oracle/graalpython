@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -147,8 +147,8 @@ default_size = 2 ** 16
 
 
 def measure(layer_size=default_size):
-    print("Starting training kernel")
-    bpnn_train_kernel(data._iu_list, data._hu_list, data._iw_list, data._ou_list, data._hw_list,
+    # print("Starting training kernel")
+    return bpnn_train_kernel(data._iu_list, data._hu_list, data._iw_list, data._ou_list, data._hw_list,
                       data._od_list, data._t_list, data._hd_list, data._hw_prev_list, data._iw_prev_list, layer_size)
 
 
@@ -158,7 +158,7 @@ def __benchmark__(layer_size=default_size):
 
 def __setup__(layer_size=default_size):
     random.seed(7)
-    print("Input layer size : %d" % layer_size)
+    # print("Input layer size : %d" % layer_size)
     # Creates a new fully-connected network from scratch,
     # with the given numbers of input, hidden, and output units.
     # Threshold units are automatically included.  All weights are

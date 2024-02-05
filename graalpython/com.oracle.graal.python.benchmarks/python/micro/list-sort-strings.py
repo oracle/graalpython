@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -63,8 +63,8 @@ def measure(num):
     m = "\0"
     for i in range(num):
         m = max(m, sorted(data)[-1])
-    print(m[0])
+    return m[0]
 
 
 def __benchmark__(num=1000000):
-    measure(num)
+    return measure(num)

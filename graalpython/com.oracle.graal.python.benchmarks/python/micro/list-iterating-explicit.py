@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -41,8 +41,8 @@ def iterate_list(ll, num):
 
 def measure(num):
     last_item = iterate_list(LIST, num)  # 1000000
-    print("Last item ", last_item)
+    return last_item
 
 
 def __benchmark__(num=1000000):
-    measure(num)
+    return measure(num)

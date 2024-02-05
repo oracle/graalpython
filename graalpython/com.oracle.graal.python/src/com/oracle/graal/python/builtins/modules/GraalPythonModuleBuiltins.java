@@ -461,6 +461,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "blackhole", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Blackhole extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doIt(Object value) {
+            CompilerDirectives.blackhole(value);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "tdebug", takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class DebugNode extends PythonBuiltinNode {

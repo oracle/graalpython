@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -36,9 +36,8 @@ def call_sqrt(num):
 
 def measure(num):
     result = call_sqrt(num)
-
-    print("Sqrt", result)
+    return result
 
 
 def __benchmark__(num=500000000):
-    measure(num)
+    return measure(num)
