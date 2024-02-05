@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,10 +66,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.graal.python.test.builtin.modules.ClinicTestsClinicProviders.MyBuiltinWithCustomConvertorClinicProviderGen;
-import com.oracle.graal.python.test.builtin.modules.ClinicTestsClinicProviders.MyBuiltinWithDefaultValuesClinicProviderGen;
-import com.oracle.graal.python.test.builtin.modules.ClinicTestsFactory.MyBuiltinWithCustomConvertorNodeGen;
-import com.oracle.graal.python.test.builtin.modules.ClinicTestsFactory.MyBuiltinWithDefaultValuesNodeGen;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -101,7 +97,7 @@ public class ClinicTests {
     public abstract static class MyBuiltinWithDefaultValues extends PythonBinaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return MyBuiltinWithDefaultValuesClinicProviderGen.INSTANCE;
+            return ClinicTestsClinicProviders.MyBuiltinWithDefaultValuesClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -114,7 +110,7 @@ public class ClinicTests {
 
     @Test
     public void testDefaultValues() {
-        CallTarget callTarget = createCallTarget(MyBuiltinWithDefaultValuesNodeGen.create());
+        CallTarget callTarget = createCallTarget(ClinicTestsFactory.MyBuiltinWithDefaultValuesNodeGen.create());
         assertEquals(T_DO_DEFAULTS, callTarget.call(PNone.NO_VALUE, PNone.NO_VALUE));
         assertEquals(T_DO_DEFAULTS, callTarget.call(PNone.NONE, PNone.NO_VALUE));
         assertEquals(T_TYPE_ERROR, callTarget.call(PNone.NONE, PNone.NONE, EXPECT_TYPE_ERROR));
@@ -167,7 +163,7 @@ public class ClinicTests {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return MyBuiltinWithCustomConvertorClinicProviderGen.INSTANCE;
+            return ClinicTestsClinicProviders.MyBuiltinWithCustomConvertorClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -180,7 +176,7 @@ public class ClinicTests {
 
     @Test
     public void testCustomConvertor() {
-        CallTarget callTarget = createCallTarget(MyBuiltinWithCustomConvertorNodeGen.create());
+        CallTarget callTarget = createCallTarget(ClinicTestsFactory.MyBuiltinWithCustomConvertorNodeGen.create());
         assertEquals(T_DONE, callTarget.call(T_A_INPUT, T_B_INPUT));
     }
 
