@@ -202,14 +202,14 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode,
                         @Cached PRaiseNode.Lazy raise,
                         @Cached PyLongCheckExactNode isLong,
-                  @Cached PyLongAsLongAndOverflowNode toLong) {
+                        @Cached PyLongAsLongAndOverflowNode toLong) {
             syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
             if (self.isTraceArgument()) {
                 if (isLong.execute(inliningTarget, newLineno)) {
                     try {
                         long lineno = toLong.execute(frame, inliningTarget, newLineno);
                         if (lineno <= Integer.MAX_VALUE && lineno >= Integer.MIN_VALUE) {
-                            self.setJumpDestLine((int)lineno);
+                            self.setJumpDestLine((int) lineno);
                         } else {
                             throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
                         }
@@ -217,7 +217,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
                     }
                 } else {
-                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER)
+                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
                 }
             } else {
                 throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT, getContext().getThreadState(getLanguage()).getTracingWhat().pythonName);

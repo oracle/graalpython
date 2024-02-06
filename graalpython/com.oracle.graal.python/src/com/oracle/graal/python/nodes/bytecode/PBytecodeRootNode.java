@@ -2942,12 +2942,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         // line after the code block
                         throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
                     } else {
-                        var stacks = co.computeStackElems();
-                        String error = co.checkJump(stacks, bci, newBci);
-                        if (error != null) {
-                            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
-                        }
-                        ret = stacks.get(newBci).size() - stacks.get(bci).size();
+                        ret = computeJump(bci, newBci);
                         setCurrentBci(virtualFrame, bcioffset, newBci);
                     }
                 }
@@ -2955,6 +2950,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             pyFrame.setJumpDestLine(PFrame.DISALLOW_JUMPS);
         }
         mutableData.setPastBci(bci);
+        return ret;
+    }
+
+    @TruffleBoundary
+    private int computeJump(int bci, int newBci) {
+        int ret;
+        var stacks = co.computeStackElems();
+        String error = co.checkJump(stacks, bci, newBci);
+        if (error != null) {
+            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
+        }
+        ret = stacks.get(newBci).size() - stacks.get(bci).size();
         return ret;
     }
 
