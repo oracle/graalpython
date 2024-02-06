@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyTypeExtra;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -234,9 +235,8 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
-    public void setDictHiddenProp(Node inliningTarget, DynamicObjectLibrary dylib, InlinedBranchProfile hasMroShapeProfile, Object value) {
-        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
-        dylib.put(this, DICT, value);
+    public void setDictHiddenProp(Node inliningTarget, HiddenAttr.WriteNode writeNode, InlinedBranchProfile hasMroShapeProfile, Object value) {
+        writeNode.execute(inliningTarget, this, HiddenAttr.DICT, value);
         if (mroShapeSubTypes != null) {
             hasMroShapeProfile.enter(inliningTarget);
             invalidateMroShapeSubTypes();

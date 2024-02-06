@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
@@ -58,9 +59,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
@@ -75,15 +74,15 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     @Specialization
     static void doPythonClass(Node inliningTarget, PythonClass object, PDict dict,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @Shared @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                     @Cached InlinedBranchProfile hasMroShapeProfile) {
-        object.setDictHiddenProp(inliningTarget, dylib, hasMroShapeProfile, dict);
+        object.setDictHiddenProp(inliningTarget, writeHiddenAttrNode, hasMroShapeProfile, dict);
     }
 
     @Specialization(guards = "!isPythonClass(object)")
-    static void doPythonObjectNotClass(PythonObject object, PDict dict,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        object.setDict(dylib, dict);
+    static void doPythonObjectNotClass(Node inliningTarget, PythonObject object, PDict dict,
+                    @Shared @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
+        object.setDict(inliningTarget, writeHiddenAttrNode, dict);
     }
 
     @Specialization

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -320,21 +321,21 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "!isPythonObject(receiver.getStore())")
         static HashingStorage clearPlain(DynamicObjectStorage receiver,
-                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             dylib.resetShape(receiver.getStore(), PythonLanguage.get(dylib).getEmptyShape());
             return receiver;
         }
 
         @Specialization(guards = "isPythonObject(receiver.getStore())")
-        static HashingStorage clearObjectBacked(DynamicObjectStorage receiver,
-                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+        static HashingStorage clearObjectBacked(Node inliningTarget, DynamicObjectStorage receiver,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
             /*
              * We cannot use resetShape as that would lose hidden keys, such as CLASS or OBJ_ID.
              * Construct a new storage instead and set it as the object's __dict__'s storage.
              */
-            DynamicObjectStorage newStorage = new DynamicObjectStorage(new Store(PythonLanguage.get(dylib).getEmptyShape()));
+            DynamicObjectStorage newStorage = new DynamicObjectStorage(new Store(PythonLanguage.get(inliningTarget).getEmptyShape()));
             PythonObject owner = (PythonObject) receiver.getStore();
-            PDict dict = (PDict) dylib.getOrDefault(owner, PythonObject.DICT, null);
+            PDict dict = (PDict) readHiddenAttrNode.execute(inliningTarget, owner, HiddenAttr.DICT, null);
             if (dict != null && dict.getDictStorage() == receiver) {
                 dict.setDictStorage(newStorage);
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,5 @@ package com.oracle.graal.python.nodes;
 import com.oracle.truffle.api.object.HiddenKey;
 
 public abstract class HiddenAttributes {
-    public static final HiddenKey ID_KEY = new HiddenKey("object_id");
-    public static final HiddenKey DICT = new HiddenKey("ob_dict");
     public static final HiddenKey CLASS = new HiddenKey("ob_type");
 }
