@@ -43,6 +43,8 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
@@ -55,6 +57,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -142,6 +145,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonBuiltinNode {
+        // Kept around since it is used by other nodes
         public abstract int executeInt(VirtualFrame frame, PFrame self);
 
         @Specialization
@@ -168,7 +172,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
     @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class SetLinenoNode extends PythonBuiltinNode {
+    public abstract static class LinenoNode extends PythonBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PFrame self, Object newLineno);
 
         @Specialization(guards = "isNoValue(newLineno)")
@@ -176,6 +180,11 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared("isCurrentFrame") @Cached InlinedConditionProfile isCurrentFrameProfile,
                         @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
+            syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
+            return self.getLine();
+        }
+
+        private void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
@@ -184,7 +193,6 @@ public final class FrameBuiltins extends PythonBuiltins {
                 PFrame pyFrame = materializeNode.execute(frame, this, false, false);
                 assert pyFrame == self;
             }
-            return self.getLine();
         }
 
         @Specialization(guards = "!isNoValue(newLineno)")
@@ -192,20 +200,24 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared("isCurrentFrame") @Cached InlinedConditionProfile isCurrentFrameProfile,
                         @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode,
-                        @Cached PRaiseNode.Lazy raise) {
-            // Special case because this builtin can be called without going through an invoke node:
-            // we need to sync the location of the frame if and only if 'self' represents the
-            // current frame. If 'self' represents another frame on the stack, the location is
-            // already set
-            if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
-                assert pyFrame == self;
-            }
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PyLongCheckExactNode isLong,
+                  @Cached PyLongAsLongAndOverflowNode toLong) {
+            syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
             if (self.isTraceArgument()) {
-                if (newLineno instanceof Integer x) {
-                    self.setJumpDestLine(x);
+                if (isLong.execute(inliningTarget, newLineno)) {
+                    try {
+                        long lineno = toLong.execute(frame, inliningTarget, newLineno);
+                        if (lineno <= Integer.MAX_VALUE && lineno >= Integer.MIN_VALUE) {
+                            self.setJumpDestLine((int)lineno);
+                        } else {
+                            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
+                        }
+                    } catch (OverflowException e) {
+                        throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
+                    }
                 } else {
-                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EXPECTED_S_GOT_P, "int", newLineno);
+                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER)
                 }
             } else {
                 throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT, getContext().getThreadState(getLanguage()).getTracingWhat().pythonName);

@@ -629,7 +629,7 @@ public final class CodeUnit {
         todo.addFirst(0);
         while (!todo.isEmpty()) {
             int i = todo.removeLast();
-            assert blocks.get(i) != null : "TODO message here";
+            assert blocks.get(i) != null : "Reached block without determining its stack state";
             opCodeAt(code, i, (bci, op, oparg, followingArgs) -> {
                 ArrayList<StackItem> next = blocks.get(bci);
                 for (int j = 0; j < exceptionHandlerRanges.length; j += 4) {
@@ -692,8 +692,19 @@ public final class CodeUnit {
                     }
                     case LOAD_NONE:
                         opCodeAt(code, op.getNextBci(bci, oparg, false), (ignored, nextOp, ignored2, ignored3) -> {
-                            // used instead of exceptions in non-error paths for these opcodes
-                            // the handler code will push the Except StackItem
+                            // Usually, when compiling bytecode around exception handlers, the code
+                            // is generated twice, once for the path with no exception, and
+                            // once for the path with the exception. However, when generating code
+                            // for a with statement exit, the code is generated as follows (and in a
+                            // similar manner for async with).
+                            // ...
+                            // LOAD_NONE
+                            // EXIT_WITH (exception handler starts here)
+                            // ...
+                            // This means that setting the stack at EXIT_WITH to have Object on top,
+                            // as LOAD_NONE usually would, would cause a conflict with the exception
+                            // handler starting at that position, which has the stack top be an
+                            // Exception.
                             if (nextOp != OpCodes.GET_AEXIT_CORO && nextOp != OpCodes.EXIT_WITH) {
                                 setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), StackItem.Object.push(blocks.get(bci)));
                             }
@@ -722,16 +733,12 @@ public final class CodeUnit {
     private void handleGeneralOp(List<ArrayList<StackItem>> blocks, ArrayDeque<Integer> todo, int bci, int next, int stackLost, int stackGain) {
         if (next >= 0) {
             ArrayList<StackItem> blocksHere = new ArrayList<>(blocks.get(bci));
-            // System.out.println("Before: " + stackLost + "\t" + stackGain + "\t" + bci + "\t" +
-            // blocksHere);
             for (int k = 0; k < stackLost; ++k) {
                 blocksHere.remove(blocksHere.size() - 1);
             }
             for (int k = 0; k < stackGain; ++k) {
                 blocksHere.add(StackItem.Object);
             }
-            // System.out.println("Before stack: " + blocks.get(next));
-            // System.out.println("After: " + blocksHere);
             setNextStack(todo, blocks, next, blocksHere);
         }
     }

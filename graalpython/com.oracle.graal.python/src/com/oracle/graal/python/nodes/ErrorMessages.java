@@ -1620,5 +1620,7 @@ public abstract class ErrorMessages {
     public static final TruffleString LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK = tsLiteral("line %d comes after the current code block");
     public static final TruffleString LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK = tsLiteral("line %d comes before the current code block");
     public static final TruffleString CANT_JUMP_FROM_S_EVENT = tsLiteral("Can't jump from \"%s\" event.");
+    public static final TruffleString LINENO_MUST_BE_AN_INTEGER = tsLiteral("lineno must be an integer");
 
+    public static final TruffleString LINENO_OUT_OF_RANGE = tsLiteral("lineno out of range");
 }
