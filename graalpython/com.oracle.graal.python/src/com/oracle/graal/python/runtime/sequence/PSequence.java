@@ -225,19 +225,14 @@ public abstract class PSequence extends PythonBuiltinObject {
         }
     }
 
-    private boolean isInBounds(long idx, Node inliningTarget, SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
-        int length = getSequenceStorageNode.execute(inliningTarget, this).length();
-        return 0 <= idx && idx < length;
-    }
-
     @ExportMessage
     public boolean isArrayElementReadable(long idx,
                     @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+            return isInBoundsNode.execute(inliningTarget, this, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -246,11 +241,11 @@ public abstract class PSequence extends PythonBuiltinObject {
     @ExportMessage
     public boolean isArrayElementModifiable(long idx,
                     @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+            return isInBoundsNode.execute(inliningTarget, this, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -259,11 +254,11 @@ public abstract class PSequence extends PythonBuiltinObject {
     @ExportMessage
     public boolean isArrayElementInsertable(long idx,
                     @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !isInBounds(idx, inliningTarget, getSequenceStorageNode);
+            return !isInBoundsNode.execute(inliningTarget, this, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -272,11 +267,11 @@ public abstract class PSequence extends PythonBuiltinObject {
     @ExportMessage
     public boolean isArrayElementRemovable(long idx,
                     @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isInBounds(idx, inliningTarget, getSequenceStorageNode);
+            return isInBoundsNode.execute(inliningTarget, this, idx);
         } finally {
             gil.release(mustRelease);
         }
