@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -55,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -71,9 +70,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -207,9 +204,9 @@ public abstract class GetClassNode extends PNodeWithContext {
 
         @InliningCutoff
         @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "getPythonObjectConstantClass")
-        static Object getPythonObject(PythonObject object,
-                        @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return dylib.getOrDefault(object, CLASS, object.getInitialPythonClass());
+        static Object getPythonObject(Node inliningTarget, PythonObject object,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
+            return readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.CLASS, object.getInitialPythonClass());
         }
 
         @InliningCutoff

@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import java.util.ArrayList;
@@ -86,8 +85,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     private boolean consistentStorage(Object pythonClass) {
-        DynamicObjectLibrary dylib = DynamicObjectLibrary.getUncached();
-        Object constantClass = dylib.getOrDefault(this, CLASS, null);
+        Object constantClass = HiddenAttr.ReadNode.executeUncached(this, HiddenAttr.CLASS, null);
         if (constantClass == null) {
             return true;
         }
@@ -98,15 +96,6 @@ public class PythonObject extends PythonAbstractObject {
             return true;
         }
         return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
-    }
-
-    public void setPythonClass(Object cls, DynamicObjectLibrary dylib) {
-        // n.b.: the CLASS property is usually a constant property that is stored in the shape
-        // in
-        // single-context-mode. If we change it for the first time, there's an implicit shape
-        // transition
-        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
-        dylib.put(this, CLASS, cls);
     }
 
     public void setDict(Node inliningTarget, HiddenAttr.WriteNode writeNode, PDict dict) {
@@ -165,7 +154,7 @@ public class PythonObject extends PythonAbstractObject {
     @Override
     public String toString() {
         String className = "unknown";
-        Object storedPythonClass = DynamicObjectLibrary.getUncached().getOrDefault(this, CLASS, null);
+        Object storedPythonClass = HiddenAttr.ReadNode.executeUncached(this, HiddenAttr.CLASS, null);
         if (storedPythonClass instanceof PythonManagedClass) {
             className = ((PythonManagedClass) storedPythonClass).getQualName().toJavaStringUncached();
         } else if (storedPythonClass instanceof PythonBuiltinClassType) {

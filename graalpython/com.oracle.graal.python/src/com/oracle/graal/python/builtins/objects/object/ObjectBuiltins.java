@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -146,10 +147,8 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -182,7 +181,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         static PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached IsOtherBuiltinClassProfile classProfile1,
                         @Cached IsOtherBuiltinClassProfile classProfile2,
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
@@ -195,7 +194,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             }
 
             checkCompatibleForAssigmentNode.execute(frame, type, value);
-            self.setPythonClass(value, dylib);
+            writeHiddenAttrNode.execute(inliningTarget, self, HiddenAttr.CLASS, value);
             return PNone.NONE;
         }
 

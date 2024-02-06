@@ -77,7 +77,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
-import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -954,7 +954,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public Shape getShapeForClass(PythonAbstractClass klass) {
         if (isSingleContext()) {
-            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
+            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.CLASS.getKeyTodoRemoveThis(), klass, 0).build();
         } else {
             return getEmptyShape();
         }
@@ -969,7 +969,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Shape shape = builtinTypeInstanceShapes[ordinal];
         if (shape == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0);
+            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.CLASS.getKeyTodoRemoveThis(), type, 0);
             if (!type.isBuiltinWithDict()) {
                 shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
             }

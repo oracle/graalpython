@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.CLASS_CHANGED_FLAG;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_MATERIALIZED_DICT;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -57,6 +59,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 public enum HiddenAttr {
 
+    CLASS("ob_type"),
     DICT("ob_dict");
 
     private final HiddenKey key;
@@ -70,6 +73,7 @@ public enum HiddenAttr {
     }
 
     @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public static abstract class ReadNode extends Node {
         public abstract Object execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, Object defaultValue);
@@ -86,6 +90,7 @@ public enum HiddenAttr {
     }
 
     @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     @ImportStatic(HiddenAttr.class)
     public static abstract class WriteNode extends Node {
@@ -98,7 +103,18 @@ public enum HiddenAttr {
             dylib.put(self, DICT.key, value);
         }
 
-        @Specialization(guards = "attr != DICT || !isPythonObject(self)")
+        @Specialization(guards = "attr == CLASS")
+        static void doPythonObjectClass(PythonObject self, HiddenAttr attr, Object value,
+                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            // n.b.: the CLASS property is usually a constant property that is stored in the shape
+            // in
+            // single-context-mode. If we change it for the first time, there's an implicit shape
+            // transition
+            dylib.setShapeFlags(self, dylib.getShapeFlags(self) | CLASS_CHANGED_FLAG);
+            dylib.put(self, CLASS.key, value);
+        }
+
+        @Specialization(guards = "!isSpecialCaseAttr(attr) || !isPythonObject(self)")
         static void doGeneric(PythonAbstractObject self, HiddenAttr attr, Object value,
                         @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             dylib.put(self, attr.key, value);
@@ -106,6 +122,10 @@ public enum HiddenAttr {
 
         protected static boolean isPythonObject(Object object) {
             return object instanceof PythonObject;
+        }
+
+        protected static boolean isSpecialCaseAttr(HiddenAttr attr) {
+            return attr == DICT || attr == CLASS;
         }
 
     }
