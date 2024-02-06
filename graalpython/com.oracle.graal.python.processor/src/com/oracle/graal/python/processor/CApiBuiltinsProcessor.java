@@ -157,17 +157,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final class CApiBuiltinDesc {
         public final Element origin;
         public final String name;
-        public final boolean inlined;
         public final VariableElement[] arguments;
         public final VariableElement returnType;
         public final String call;
         public final String factory;
         public int id;
 
-        public CApiBuiltinDesc(Element origin, String name, boolean inlined, VariableElement returnType, VariableElement[] arguments, String call, String factory) {
+        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, String call, String factory) {
             this.origin = origin;
             this.name = name;
-            this.inlined = inlined;
             this.returnType = returnType;
             this.arguments = arguments;
             this.call = call;
@@ -350,10 +348,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     }
                     var ret = findValue(builtin, "ret", VariableElement.class);
                     String call = name(findValue(builtin, "call", VariableElement.class));
-                    boolean inlined = findValue(builtin, "inlined", Boolean.class);
+                    // boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
                     if (((TypeElement) element).getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
-                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, inlined, ret, args, call, null));
+                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, call, null));
                     } else {
                         if (!isValidReturnType(ret)) {
                             processingEnv.getMessager().printError(
@@ -380,7 +378,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             genName += "NodeGen";
                         }
                         verifyNodeClass(((TypeElement) element), builtin);
-                        javaBuiltins.add(new CApiBuiltinDesc(element, name, inlined, ret, args, call, genName));
+                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, call, genName));
                     }
                 }
             }
@@ -522,21 +520,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    return sizes;");
         lines.add("}");
 
+        updateResource("capi.gen.c.h", javaBuiltins, lines);
+    }
+
+    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines) throws IOException {
         var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
         String oldContents = "";
         String newContents = String.join(System.lineSeparator(), lines);
         try {
-            oldContents = processingEnv.getFiler().getResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h").getCharContent(true).toString();
+            oldContents = processingEnv.getFiler().getResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", name).getCharContent(true).toString();
         } catch (IOException e) {
             // pass to regenerate
         }
         if (!oldContents.equals(newContents)) {
-            var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h", origins);
+            var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", name, origins);
             try (var w = file.openWriter()) {
                 w.append(newContents);
             }
         } else {
-            processingEnv.getMessager().printNote("Python capi.gen.c.h is up to date");
+            processingEnv.getMessager().printNote("Python %s is up to date".formatted(name));
         }
     }
 
@@ -597,22 +599,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("#define " + entry.getKey() + " " + entry.getValue());
         }
 
-        var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
-        String oldContents = "";
-        String newContents = String.join(System.lineSeparator(), lines);
-        try {
-            oldContents = processingEnv.getFiler().getResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.c.h").getCharContent(true).toString();
-        } catch (IOException e) {
-            // pass to regenerate
-        }
-        if (!oldContents.equals(newContents)) {
-            var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "capi.gen.h", origins);
-            try (var w = file.openWriter()) {
-                w.append(String.join(System.lineSeparator(), lines));
-            }
-        } else {
-            processingEnv.getMessager().printNote("Python capi.gen.h is up to date");
-        }
+        updateResource("capi.gen.h", javaBuiltins, lines);
     }
 
     /**
