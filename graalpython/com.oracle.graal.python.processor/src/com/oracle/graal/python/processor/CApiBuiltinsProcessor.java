@@ -624,7 +624,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         lines.add("// @formatter:off");
         lines.add("// Checkstyle: stop");
-        lines.add("package com.oracle.graal.python.builtins.modules.cext;");
+        lines.add("package %s".formatted("com.oracle.graal.python.builtins.modules.cext;"));
         lines.add("");
         lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;");
         lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;");
@@ -691,7 +691,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             w.append("""
                             // @formatter:off
                             // Checkstyle: stop
-                            package com.oracle.graal.python.builtins.modules.cext;
+                            package %s;
 
                             import java.util.TreeSet;
                             import com.oracle.truffle.api.CompilerDirectives;
@@ -729,7 +729,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                     return messages.isEmpty();
                                 }
                             }
-                            """.formatted(String.join(System.lineSeparator(), lines)));
+                            """.formatted("com.oracle.graal.python.builtins.modules.cext", String.join(System.lineSeparator(), lines)));
         }
     }
 
