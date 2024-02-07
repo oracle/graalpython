@@ -395,7 +395,7 @@ def download_maven_artifact(modules_path, artifact, parsed_args):
     cmd += ["-v", MVN_GRAALPY_VERSION]
     cmd += ["-o", modules_path]
     if parsed_args.verbose:
-        print(f"downloading graalpython maven artefacts: {' '.join(cmd)}")
+        print(f"downloading graalpython maven artifacts: {' '.join(cmd)}")
 
     if parsed_args.verbose:
         p = subprocess.run(cmd)
