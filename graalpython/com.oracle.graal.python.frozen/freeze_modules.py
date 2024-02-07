@@ -16,7 +16,6 @@ import argparse
 import shutil
 
 from _sha256 import sha256
-from datetime import datetime
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
@@ -498,8 +497,8 @@ def lower_camel_case(str):
 #############################################
 # write frozen files
 
-FROZEN_MODULES_HEADER = f"""/*
- * Copyright (c) 2021, {datetime.now().year}, Oracle and/or its affiliates. All rights reserved.
+FROZEN_MODULES_HEADER = """/*
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -542,7 +541,7 @@ package com.oracle.graal.python.builtins.objects.module;
 
 import com.oracle.graal.python.builtins.PythonOS;
 
-public final class FrozenModules {{"""
+public final class FrozenModules {"""
 
 
 def freeze_module(src):
