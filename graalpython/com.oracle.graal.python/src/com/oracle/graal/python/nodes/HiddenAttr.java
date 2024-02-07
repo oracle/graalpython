@@ -71,6 +71,7 @@ public enum HiddenAttr {
     ORIGINAL_CONSTRUCTORS(HashlibModuleBuiltins.J_CONSTRUCTORS),    // hashlib
     PICKLE_STATE("state"),              // pickle
     NEXT_ELEMENT("next_element"),       // PythonAbstractObject
+    INTERNED("_interned"),              // PString
 
     ;
 

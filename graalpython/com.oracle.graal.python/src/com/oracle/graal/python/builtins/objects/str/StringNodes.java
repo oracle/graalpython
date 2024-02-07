@@ -65,11 +65,10 @@ import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMat
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -479,20 +478,20 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static PString doString(TruffleString string,
-                        @Shared("writeNode") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode,
+        static PString doString(Node inliningTarget, TruffleString string,
+                        @Shared @Cached HiddenAttr.WriteNode writeNode,
                         @Cached(inline = false) PythonObjectFactory factory) {
             final PString interned = factory.createString(string);
-            writeNode.execute(interned, PString.INTERNED, true);
+            writeNode.execute(inliningTarget, interned, HiddenAttr.INTERNED, true);
             return interned;
         }
 
         @Specialization
         static PString doPString(Node inliningTarget, PString string,
                         @Cached GetClassNode getClassNode,
-                        @Shared("writeNode") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode) {
+                        @Shared @Cached HiddenAttr.WriteNode writeNode) {
             if (cannotBeOverridden(getClassNode.execute(inliningTarget, string))) {
-                writeNode.execute(string, PString.INTERNED, true);
+                writeNode.execute(inliningTarget, string, HiddenAttr.INTERNED, true);
                 return string;
             }
             return null;
@@ -516,10 +515,9 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static boolean doIt(PString string,
-                        @Cached(inline = false) ReadAttributeFromDynamicObjectNode readNode) {
-            final Object isInterned = readNode.execute(string, PString.INTERNED);
-            return isInterned instanceof Boolean && (boolean) isInterned;
+        static boolean doIt(Node inliningTarget, PString string,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            return (boolean) readNode.execute(inliningTarget, string, HiddenAttr.INTERNED, Boolean.FALSE);
         }
     }
 
