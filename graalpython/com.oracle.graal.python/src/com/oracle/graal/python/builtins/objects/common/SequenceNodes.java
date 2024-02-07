@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,6 +88,28 @@ public abstract class SequenceNodes {
         static int doWithStorage(Node inliningTarget, PSequence seq,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage) {
             return getStorage.execute(inliningTarget, seq).length();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    public abstract static class IsInBoundsNode extends Node {
+        public abstract boolean execute(Node inliningTarget, PSequence seq, long idx);
+
+        @Specialization
+        static boolean doString(PString str, long idx,
+                        @Cached(inline = false) StringNodes.StringLenNode lenNode) {
+            int length = lenNode.execute(str);
+            return 0 <= idx && idx < length;
+        }
+
+        @Specialization(guards = "!isPString(seq)")
+        static boolean doWithStorage(Node inliningTarget, PSequence seq, long idx,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage) {
+            int length = getStorage.execute(inliningTarget, seq).length();
+            return 0 <= idx && idx < length;
         }
     }
 

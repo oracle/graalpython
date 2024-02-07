@@ -625,6 +625,38 @@ public class HostInteropTest extends PythonTests {
     }
 
     @Test
+    public void testException() {
+        Value t;
+        // cannot convert
+        t = context.eval("python", """
+                        import polyglot
+
+                        class MyType(object):
+                            pass
+
+                        @polyglot.interop_behavior(MyType)
+                        class MyTypeInteropBehaviorSupplier:
+                            @staticmethod
+                            def is_time_zone(t):
+                                return False
+
+                            @staticmethod
+                            def as_time_zone(t):
+                                raise polyglot.UnsupportedMessage
+
+                        MyType()
+                        """);
+        assertFalse(t.isTimeZone());
+        boolean raised = false;
+        try {
+            t.asTimeZone();
+        } catch (ClassCastException cce) {
+            raised = true;
+        }
+        assertTrue(raised);
+    }
+
+    @Test
     public void testByteBuffer() {
         Value t;
         // test bytes
