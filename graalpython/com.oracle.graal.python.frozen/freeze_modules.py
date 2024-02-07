@@ -634,8 +634,8 @@ def main():
     parsed_args = parser.parse_args()
 
     global STDLIB_DIR, FROZEN_MODULES_DIR
-    STDLIB_DIR = parsed_args.python_lib
-    FROZEN_MODULES_DIR = parsed_args.binary_dir
+    STDLIB_DIR = os.path.abspath(parsed_args.python_lib)
+    FROZEN_MODULES_DIR = os.path.abspath(parsed_args.binary_dir)
 
     # create module specs
     modules = list(parse_frozen_specs())
