@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_I
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_NAME_MAPPING;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_IMPORT_MAPPING;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_CP_REVERSE_NAME_MAPPING;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_STR_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
@@ -88,12 +89,12 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNodeGen;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -127,7 +128,7 @@ public final class PicklerNodes {
         @Child CastToTruffleStringNode toStringNode = CastToTruffleStringNode.create();
 
         @Child private PythonObjectFactory objectFactory;
-        @Child private ReadAttributeFromObjectNode attributeFromObjectNode;
+        @Child private HiddenAttr.ReadNode readHiddenAttributeNode;
         @Child private IsBuiltinObjectProfile errProfile;
         @Child private InlineIsBuiltinClassProfile isBuiltinClassProfile;
         @Child private HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode;
@@ -438,7 +439,7 @@ public final class PicklerNodes {
 
         protected Object lookupAttributeStrict(Frame frame, Object receiver, TruffleString name) {
             Object attr = lookupAttribute(frame, receiver, name);
-            if (attr == PNone.NO_VALUE) {
+            if (attr == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
             }
             return attr;
@@ -454,7 +455,7 @@ public final class PicklerNodes {
 
         protected Object getClass(Frame frame, Object object) {
             Object cls = getLookupAttrNode().executeCached(frame, object, T___CLASS__);
-            if (cls == PNone.NO_VALUE) {
+            if (cls == NO_VALUE) {
                 cls = getClass(object);
             }
             return cls;
@@ -514,16 +515,16 @@ public final class PicklerNodes {
             return asSizeNode.executeExactCached(frame, pyNumber);
         }
 
-        protected ReadAttributeFromObjectNode ensureReadAttrFromObjNode() {
-            if (attributeFromObjectNode == null) {
+        protected HiddenAttr.ReadNode ensureReadHiddenAttrNode() {
+            if (readHiddenAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                attributeFromObjectNode = insert(ReadAttributeFromObjectNode.create());
+                readHiddenAttributeNode = insert(HiddenAttr.ReadNode.create());
             }
-            return attributeFromObjectNode;
+            return readHiddenAttributeNode;
         }
 
         public PickleState getGlobalState(Python3Core core) {
-            final Object state = ensureReadAttrFromObjNode().execute(core.lookupType(PythonBuiltinClassType.Pickler), PickleUtils.PICKLE_STATE_KEY);
+            final Object state = ensureReadHiddenAttrNode().executeCached(core.lookupType(PythonBuiltinClassType.Pickler), HiddenAttr.PICKLE_STATE, NO_VALUE);
             assert state instanceof PickleState;
             return (PickleState) state;
         }
@@ -627,7 +628,7 @@ public final class PicklerNodes {
             for (TruffleString name : names) {
                 parent = object;
                 object = lookup.executeCached(frame, parent, name);
-                if (object == PNone.NO_VALUE) {
+                if (object == NO_VALUE) {
                     return null;
                 }
             }
@@ -714,7 +715,7 @@ public final class PicklerNodes {
             // we don't use PyImport_GetModule here, because it can return partially-initialised
             // modules, which then cause the getattribute to fail.
             Object module = PickleUtils.importDottedModule(mName);
-            if (module == PNone.NONE || module == PNone.NO_VALUE) {
+            if (module == PNone.NONE || module == NO_VALUE) {
                 return null;
             }
             return getattribute(frame, module, gName, self.getProto() >= 4);
@@ -739,7 +740,7 @@ public final class PicklerNodes {
 
         public TruffleString whichModule(VirtualFrame frame, PythonContext context, Object global, TruffleString[] dottedPath) {
             Object moduleName = lookupAttribute(frame, global, T___MODULE__);
-            if (moduleName != PNone.NO_VALUE) {
+            if (moduleName != NO_VALUE) {
                 // In some rare cases (e.g., bound methods of extension types), __module__ can be
                 // None. If it is so, then search sys.modules for the module of global
                 if (moduleName != PNone.NONE) {

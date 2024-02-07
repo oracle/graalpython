@@ -67,7 +67,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PickleUtils {
@@ -114,7 +113,6 @@ public final class PickleUtils {
     public static final String J_ATTR_BIN = "bin";
 
     private static final TruffleString[] SILLY_IMPORT_FROM_LIST = new TruffleString[]{T___DOC__};
-    public static final HiddenKey PICKLE_STATE_KEY = new HiddenKey("state");
 
     public static final int READ_WHOLE_LINE = -1;
 

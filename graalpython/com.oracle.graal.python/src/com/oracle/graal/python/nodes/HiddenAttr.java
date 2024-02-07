@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -67,6 +68,8 @@ public enum HiddenAttr {
     DECODER_OBJECT("decoder_object"),   // cjkcodecs
     KWD_MARK("kwd_mark"),               // functools
     ORIGINAL_CONSTRUCTORS(HashlibModuleBuiltins.J_CONSTRUCTORS),    // hashlib
+    PICKLE_STATE("state"),          // pickle
+
     ;
 
     private final HiddenKey key;
@@ -79,11 +82,15 @@ public enum HiddenAttr {
         return key;
     }
 
-    @GenerateInline
-    @GenerateCached(false)
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @GenerateUncached
     public static abstract class ReadNode extends Node {
         public abstract Object execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, Object defaultValue);
+
+        public final Object executeCached(PythonAbstractObject self, HiddenAttr attr, Object defaultValue) {
+            return execute(this, self, attr, defaultValue);
+        }
 
         public static Object executeUncached(PythonAbstractObject self, HiddenAttr attr, Object defaultValue) {
             return ReadNodeGen.getUncached().execute(null, self, attr, defaultValue);
@@ -93,6 +100,11 @@ public enum HiddenAttr {
         static Object doGeneric(PythonAbstractObject self, HiddenAttr attr, Object defaultValue,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             return dylib.getOrDefault(self, attr.key, defaultValue);
+        }
+
+        @NeverDefault
+        public static ReadNode create() {
+            return ReadNodeGen.create();
         }
     }
 

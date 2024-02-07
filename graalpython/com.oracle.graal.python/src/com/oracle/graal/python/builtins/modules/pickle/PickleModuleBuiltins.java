@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_DEFAULT_PICKLE_PROTOCOL;
-import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.PICKLE_STATE_KEY;
 
 import java.util.List;
 
@@ -59,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -90,7 +90,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         PickleState state = new PickleState();
         final PickleState.PickleStateInitNode initNode = PickleStateFactory.PickleStateInitNodeGen.getUncached();
         initNode.execute(state);
-        core.lookupType(PythonBuiltinClassType.Pickler).setAttribute(PICKLE_STATE_KEY, state);
+        HiddenAttr.WriteNode.executeUncached(core.lookupType(PythonBuiltinClassType.Pickler), HiddenAttr.PICKLE_STATE, state);
     }
 
     // types
