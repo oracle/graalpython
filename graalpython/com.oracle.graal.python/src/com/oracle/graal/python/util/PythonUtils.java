@@ -257,6 +257,19 @@ public final class PythonUtils {
     }
 
     /**
+     * Execute Arrays.fill and puts all exceptions on slow path.
+     */
+    public static void fill(Object[] array, int from, int to, Object value) {
+        try {
+            Arrays.fill(array, from, to, value);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes System.arraycopy and puts all exceptions on the slow path.
      */
     public static void arraycopy(Object src, int srcPos, Object dest, int destPos, int length) {
