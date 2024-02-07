@@ -60,7 +60,10 @@ import com.oracle.truffle.api.object.HiddenKey;
 public enum HiddenAttr {
 
     CLASS("ob_type"),
-    DICT("ob_dict");
+    DICT("ob_dict"),
+    ENCODER_OBJECT("encoder_object"),
+    DECODER_OBJECT("decoder_object"),
+    ;
 
     private final HiddenKey key;
 

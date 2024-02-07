@@ -69,9 +69,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -89,7 +88,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteIncrementalDecoder)
@@ -236,8 +234,6 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
     }
 
-    public static final HiddenKey DECODER_OBJECT_ATTR = new HiddenKey("decoder_object");
-
     @Builtin(name = "getstate", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "getstate($self, /)\n--\n\n")
     @GenerateNodeFactory
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
@@ -245,11 +241,12 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalDecoder_getstate_impl
         @Specialization
         static Object getstate(MultibyteIncrementalDecoderObject self,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached PythonObjectFactory factory) {
             PBytes buffer = factory.createBytes(Arrays.copyOf(self.pending, self.pendingsize));
             PInt statelong = factory.createInt(0);
-            writeAttrNode.execute(statelong, DECODER_OBJECT_ATTR, self.state);
+            writeHiddenAttrNode.execute(inliningTarget, statelong, HiddenAttr.DECODER_OBJECT, self.state);
             return factory.createTuple(new Object[]{buffer, statelong});
         }
     }
@@ -268,7 +265,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         @Specialization
         static Object setstate(VirtualFrame frame, MultibyteIncrementalDecoderObject self, PTuple state,
                         @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -284,13 +281,15 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
             self.pendingsize = buffersize;
             PythonUtils.arraycopy(bufferstr, 0, self.pending, 0, self.pendingsize);
-            Object s = readAttrNode.execute(statelong, DECODER_OBJECT_ATTR);
-            if (s == PNone.NO_VALUE) {
-                self.state = null;
+            Object s;
+            if (statelong instanceof PInt) {
+                s = readHiddenAttrNode.execute(inliningTarget, (PInt) statelong, HiddenAttr.DECODER_OBJECT, null);
             } else {
-                assert s instanceof MultibyteCodecState : "Not MultibyteCodecState object!";
-                self.state = (MultibyteCodecState) s;
+                // GetStateNode sets DECODER_OBJECT only on PInt, so for others it must be absent
+                s = null;
             }
+            assert s == null || s instanceof MultibyteCodecState : "Not MultibyteCodecState object!";
+            self.state = (MultibyteCodecState) s;
             // PythonUtils.arraycopy(statebytes, 0, self.state.c, 0, MULTIBYTECODECSTATE);
 
             return PNone.NONE;

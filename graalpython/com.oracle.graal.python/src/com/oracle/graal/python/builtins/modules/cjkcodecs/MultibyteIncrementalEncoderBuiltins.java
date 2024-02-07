@@ -78,10 +78,9 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -101,7 +100,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteIncrementalEncoder)
@@ -255,8 +253,6 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
     }
 
-    public static final HiddenKey ENCODER_OBJECT_ATTR = new HiddenKey("encoder_object");
-
     @Builtin(name = "getstate", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "getstate($self, /)\n--\n\n")
     @GenerateNodeFactory
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
@@ -265,7 +261,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         @Specialization
         static Object getstate(MultibyteIncrementalEncoderObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode asUTF8AndSize,
                         @Cached IntNodes.PyLongFromByteArray fromByteArray,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -294,8 +290,8 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
             // memcpy(statebytes + statesize, self.state.c, MULTIBYTECODECSTATE);
             // statesize += MULTIBYTECODECSTATE;
             Object stateobj = fromByteArray.execute(inliningTarget, statebytes, false);
-            // since statebytes.length > 8, we will get a PInt
-            writeAttrNode.execute(stateobj, ENCODER_OBJECT_ATTR, self.state);
+            assert (stateobj instanceof PInt); // since statebytes.length > 8, we will get a PInt
+            writeHiddenAttrNode.execute(inliningTarget, (PInt) stateobj, HiddenAttr.ENCODER_OBJECT, self.state);
             return stateobj;
         }
     }
@@ -308,7 +304,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalEncoder_setstate_impl
         static Object setstate(MultibyteIncrementalEncoderObject self, PInt statelong,
                         @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached IntNodes.PyLongAsByteArray asByteArray,
                         @Cached PRaiseNode.Lazy raiseNode) {
             int sizeOfStateBytes = 1 + MAXENCPENDING * 4 + MULTIBYTECODECSTATE;
@@ -323,13 +319,9 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
             // PythonUtils.arraycopy(statebytes, 1 + statebytes[0], self.state.c, 0,
             // MULTIBYTECODECSTATE);
-            Object s = readAttrNode.execute(statelong, ENCODER_OBJECT_ATTR);
-            if (s == PNone.NO_VALUE) {
-                self.state = null;
-            } else {
-                assert s instanceof MultibyteCodecState : "Not MultibyteCodecState object!";
-                self.state = (MultibyteCodecState) s;
-            }
+            Object s = readHiddenAttrNode.execute(inliningTarget, statelong, HiddenAttr.ENCODER_OBJECT, null);
+            assert s == null || s instanceof MultibyteCodecState : "Not MultibyteCodecState object!";
+            self.state = (MultibyteCodecState) s;
             return PNone.NONE;
         }
 
