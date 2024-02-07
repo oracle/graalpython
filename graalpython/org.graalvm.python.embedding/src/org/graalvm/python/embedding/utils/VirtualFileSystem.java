@@ -100,6 +100,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
         private HostIO allowHostIO = HostIO.READ_WRITE;
 
+        private Class<?> resourceLoadingClass;
+
         private Builder() {
         }
 
@@ -108,6 +110,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
          */
         public Builder vfsPrefix(String s) {
             vfsPrefix = s;
+            filesListPath = vfsPrefix + "/fileslist.txt";
             return this;
         }
 
@@ -130,7 +133,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         /**
          * The mount point for the virtual filesystem on Windows. This mount point shadows any real
-         * filesystem, so should be chose to avoid clashes with the users machine.
+         * filesystem, so should be chosen to avoid clashes with the users machine.
          */
         public Builder windowsMountPoint(String s) {
             windowsMountPoint = s;
@@ -139,10 +142,21 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         /**
          * The mount point for the virtual filesystem on Unices. This mount point shadows any real
-         * filesystem, so should be chose to avoid clashes with the users machine.
+         * filesystem, so should be chosen to avoid clashes with the users machine.
          */
         public Builder unixMountPoint(String s) {
             unixMountPoint = s;
+            return this;
+        }
+
+        /**
+         * By default virtual filesystem resources are loaded by delegating to
+         * VirtualFileSystem.class.getResource(name). Use resourceLoadingClass to determine where to
+         * locate resources in cases when for example VirtualFileSystem is on module path and the
+         * jar containing the resources is on class path.
+         */
+        public Builder resourceLoadingClass(Class<?> c) {
+            resourceLoadingClass = c;
             return this;
         }
 
@@ -165,7 +179,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
 
         public VirtualFileSystem build() {
-            return new VirtualFileSystem(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO);
+            return new VirtualFileSystem(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass);
         }
     }
 
@@ -198,6 +212,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * These use '/' as the separator and start with VFS_PREFIX, no trailing slashes.
      */
     private static Set<String> filesList;
+
+    /**
+     * Class used to read resources with getResource(name). By default VirtualFileSystem.class.
+     */
+    private Class<?> resourceLoadingClass;
+
     private static Set<String> dirsList;
     private static Map<String, String> lowercaseToResourceMap;
 
@@ -284,7 +304,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     String fileListResource,
                     String windowsMountPoint,
                     String unixMountPoint,
-                    HostIO allowHostIO) {
+                    HostIO allowHostIO,
+                    Class<?> resourceLoadingClass) {
+        if (resourceLoadingClass != null) {
+            this.resourceLoadingClass = resourceLoadingClass;
+        } else {
+            this.resourceLoadingClass = VirtualFileSystem.class;
+        }
         this.vfsPrefix = resourcesPrefix;
         this.filesListPath = fileListResource;
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
@@ -383,7 +409,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (caseInsensitive) {
             lowercaseToResourceMap = new HashMap<>();
         }
-        try (InputStream stream = VirtualFileSystem.class.getResourceAsStream(filesListPath)) {
+
+        try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(filesListPath)) {
             if (stream == null) {
                 return;
             }
@@ -432,12 +459,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                         file.indexOf(RESOURCE_SEPARATOR_CHAR, parentDir.length() + 1) < 0;
     }
 
-    private static Entry readFileEntry(String file) throws IOException {
+    Entry readFileEntry(String file) throws IOException {
         return new Entry(true, readResource(file));
     }
 
-    static byte[] readResource(String path) throws IOException {
-        try (InputStream stream = VirtualFileSystem.class.getResourceAsStream(path)) {
+    byte[] readResource(String path) throws IOException {
+        try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(path)) {
             if (stream == null) {
                 return null;
             }
@@ -467,7 +494,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         Entry e = vfsEntries.get(entryKey);
         if (e == null) {
             pathString = platformPathToResourcePath(pathString);
-            URL uri = pathString == null ? null : VirtualFileSystem.class.getResource(pathString);
+            URL uri = pathString == null ? null : this.resourceLoadingClass.getResource(pathString);
             if (uri != null) {
                 if (getDirsList().contains(pathString)) {
                     e = readDirEntry(pathString);
@@ -680,7 +707,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             return delegate.newDirectoryStream(dir, filter);
         }
         Entry e = file(dir);
-        if (e == null || e.isFile) {
+        if (e == null) {
+            throw new NoSuchFileException(dir.toString());
+        }
+        if (e.isFile) {
             throw new NotDirectoryException(dir.toString());
         }
         return new DirectoryStream<>() {

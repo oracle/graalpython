@@ -188,7 +188,115 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
     return ret;
 }
 
-// 751
+/* For Python 3.0.1 and later, the old three-way comparison has been
+   completely removed in favour of rich comparisons.  PyObject_Compare() and
+   PyObject_Cmp() are gone, and the builtin cmp function no longer exists.
+   The old tp_compare slot has been renamed to tp_as_async, and should no
+   longer be used.  Use tp_richcompare instead.
+
+   See (*) below for practical amendments.
+
+   tp_richcompare gets called with a first argument of the appropriate type
+   and a second object of an arbitrary type.  We never do any kind of
+   coercion.
+
+   The tp_richcompare slot should return an object, as follows:
+
+    NULL if an exception occurred
+    NotImplemented if the requested comparison is not implemented
+    any other false value if the requested comparison is false
+    any other true value if the requested comparison is true
+
+  The PyObject_RichCompare[Bool]() wrappers raise TypeError when they get
+  NotImplemented.
+
+  (*) Practical amendments:
+
+  - If rich comparison returns NotImplemented, == and != are decided by
+    comparing the object pointer (i.e. falling back to the base object
+    implementation).
+
+*/
+
+/* Map rich comparison operators to their swapped version, e.g. LT <--> GT */
+int _Py_SwappedOp[] = {Py_GT, Py_GE, Py_EQ, Py_NE, Py_LT, Py_LE};
+
+static const char * const opstrings[] = {"<", "<=", "==", "!=", ">", ">="};
+
+/* Perform a rich comparison, raising TypeError when the requested comparison
+   operator is not supported. */
+static PyObject *
+do_richcompare(PyObject *v, PyObject *w, int op)
+{
+    richcmpfunc f;
+    PyObject *res;
+    int checked_reverse_op = 0;
+
+    if (!Py_IS_TYPE(v, Py_TYPE(w)) &&
+        PyType_IsSubtype(Py_TYPE(w), Py_TYPE(v)) &&
+        (f = Py_TYPE(w)->tp_richcompare) != NULL) {
+        checked_reverse_op = 1;
+        res = (*f)(w, v, _Py_SwappedOp[op]);
+        if (res != Py_NotImplemented)
+            return res;
+        Py_DECREF(res);
+    }
+    if ((f = Py_TYPE(v)->tp_richcompare) != NULL) {
+        res = (*f)(v, w, op);
+        if (res != Py_NotImplemented)
+            return res;
+        Py_DECREF(res);
+    }
+    if (!checked_reverse_op && (f = Py_TYPE(w)->tp_richcompare) != NULL) {
+        res = (*f)(w, v, _Py_SwappedOp[op]);
+        if (res != Py_NotImplemented)
+            return res;
+        Py_DECREF(res);
+    }
+    /* If neither object implements it, provide a sensible default
+       for == and !=, but raise an exception for ordering. */
+    switch (op) {
+    case Py_EQ:
+        res = (v == w) ? Py_True : Py_False;
+        break;
+    case Py_NE:
+        res = (v != w) ? Py_True : Py_False;
+        break;
+    default:
+        PyErr_Format(PyExc_TypeError,
+                      "'%s' not supported between instances of '%.100s' and '%.100s'",
+                      opstrings[op],
+                      Py_TYPE(v)->tp_name,
+                      Py_TYPE(w)->tp_name);
+        return NULL;
+    }
+    Py_INCREF(res);
+    return res;
+}
+
+/* Perform a rich comparison with object result.  This wraps do_richcompare()
+   with a check for NULL arguments and a recursion check. */
+
+PyObject *
+PyObject_RichCompare(PyObject *v, PyObject *w, int op)
+{
+    assert(Py_LT <= op && op <= Py_GE);
+    if (v == NULL || w == NULL) {
+        if (!PyErr_Occurred()) {
+            PyErr_BadInternalCall();
+        }
+        return NULL;
+    }
+    if (Py_EnterRecursiveCall(" in comparison")) {
+        return NULL;
+    }
+    PyObject *res = do_richcompare(v, w, op);
+    Py_LeaveRecursiveCall();
+    return res;
+}
+
+/* Perform a rich comparison with integer result.  This wraps
+   PyObject_RichCompare(), returning -1 for error, 0 for false, 1 for true. */
 int
 PyObject_RichCompareBool(PyObject *v, PyObject *w, int op)
 {

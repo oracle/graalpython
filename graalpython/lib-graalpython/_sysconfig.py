@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,14 @@ def _get_posix_vars():
     import _imp
     import sys
     import os
-    darwin_native = sys.platform == "darwin" and __graalpython__.get_platform_id() == "native"
-    win32_native = sys.platform == "win32" and __graalpython__.get_platform_id() == "native"
+    platform_id = __graalpython__.get_platform_id()
+    managed = platform_id == "managed"
+    native = platform_id == "native"
+    darwin_native = sys.platform == "darwin" and native
+    win32_native = sys.platform == "win32" and native
 
     # note: this must be kept in sync with _imp.extension_suffixes
-    so_abi = sys.implementation.cache_tag + "-" + __graalpython__.get_platform_id() + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-" + platform_id + "-" + sys.implementation._multiarch
     if win32_native:
         so_ext = ".pyd"
     else:
@@ -89,6 +92,10 @@ def _get_posix_vars():
     cflags_default = list(opt_flags)
     if not use_system_toolchain:
         cflags_default += ["-Wno-unused-command-line-argument", "-DGRAALVM_PYTHON_LLVM"]
+        if managed:
+            cflags_default += ["-DGRAALVM_PYTHON_LLVM_MANAGED"]
+        elif native:
+            cflags_default += ["-DGRAALVM_PYTHON_LLVM_NATIVE"]
     if win32_native:
         cflags_default += ["-DMS_WINDOWS", "-DPy_ENABLE_SHARED", "-DHAVE_DECLSPEC_DLL"]
     g['CFLAGS_DEFAULT'] = ' '.join(cflags_default)

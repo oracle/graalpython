@@ -339,6 +339,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_GetID", ret = INT64_T, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_GetIDFromThreadState", ret = INT64_T, args = {PyThreadState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_Main", ret = PyInterpreterState, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsDouble", ret = Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsLong", ret = Long, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsLongAndOverflow", ret = Long, args = {PyObject, INT_LIST}, call = CImpl)
@@ -438,6 +439,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_Not", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Print", ret = Int, args = {PyObject, FILE_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Realloc", ret = Pointer, args = {Pointer, SIZE_T}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_RichCompare", ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyObject_RichCompareBool", ret = Int, args = {PyObject, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyObject_SelfIter", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_SetAttr", ret = Int, args = {PyObject, PyObject, PyObject}, call = CImpl)
@@ -522,6 +524,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyVectorcall_Function", ret = vectorcallfunc, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "Py_BuildValue", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "Py_DecRef", ret = Void, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "Py_EnterRecursiveCall", ret = Int, args = {ConstCharPtr}, call = CImpl)
     @CApiBuiltin(name = "Py_GetBuildInfo", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_GetCompiler", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_GetVersion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
@@ -531,6 +534,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_IsInitialized", ret = Int, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_IsNone", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "Py_IsTrue", ret = Int, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "Py_LeaveRecursiveCall", ret = Void, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_NewRef", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "Py_VaBuildValue", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "Py_XNewRef", ret = PyObject, args = {PyObject}, call = CImpl)
@@ -568,6 +572,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyImport_SetModule", ret = Int, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyLong_AsInt", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyLong_FromTime_t", ret = PyObject, args = {TIME_T}, call = CImpl)
+    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
     @CApiBuiltin(name = "_PyMemoryView_GetBuffer", ret = PY_BUFFER_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyModule_CreateInitialized", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallFunction_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
@@ -640,8 +645,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_gitversion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "_Py_parse_inf_or_nan", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = CImpl)
     @CApiBuiltin(name = "_Py_string_to_number_with_underscores", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PyObject, Pointer, func_objcharsizevoidptr}, call = CImpl)
-    @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
-    @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
 
     /*
      * Functions that are not implemented at the moment:

@@ -2547,7 +2547,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
                         @Cached CallTernaryMethodNode callRichcmp) {
-            Object richcmp = lookupRichcmp.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T_RICHCMP, receiver);
+            Object richcmp = lookupRichcmp.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__, receiver);
             return callRichcmp.execute(null, richcmp, receiver, arg1, arg2);
         }
     }

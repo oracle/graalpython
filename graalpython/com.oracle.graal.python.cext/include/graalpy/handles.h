@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,21 +39,26 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.utils.test;
+#ifndef SRC_HANDLES_H_
+#define SRC_HANDLES_H_
 
-import static org.junit.Assert.assertEquals;
+#include <object.h>
 
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
-import org.junit.Test;
+#define MANAGED_REFCNT 10
+#define HANDLE_BASE 0x8000000000000000ULL
+#define IMMORTAL_REFCNT (INT64_MAX >> 1)
 
-public class VirtualFileSystemTest {
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+#include <graalvm/llvm/polyglot.h>
+#define points_to_py_handle_space(PTR) polyglot_is_value((PTR))
+#define stub_to_pointer(STUB_PTR) (STUB_PTR)
+#define pointer_to_stub(O) (O)
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
 
-    @Test
-    public void defaultValues() throws Exception {
-        VirtualFileSystem vfs = VirtualFileSystem.create();
-        VirtualFileSystem vfs2 = VirtualFileSystem.newBuilder().build();
+#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
+#define stub_to_pointer(STUB_PTR) (((uintptr_t) (STUB_PTR)) | HANDLE_BASE)
+#define pointer_to_stub(PTR) ((PyObject *)(((uintptr_t) (PTR)) & ~HANDLE_BASE))
 
-        assertEquals(vfs.getPrefix(), vfs2.getPrefix());
-        assertEquals(vfs.getFileListPath(), vfs2.getFileListPath());
-    }
-}
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+
+#endif /* SRC_HANDLES_H_ */

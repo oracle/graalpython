@@ -163,6 +163,11 @@ Additionally, one can change the polyglot artifacts version with
             <type>pom</type>
         </dependency>
         <dependency>
+            <groupId>org.graalvm.python</groupId>
+            <artifactId>python-embedding</artifactId>
+            <version>${com.oracle.graal.python.test.polyglot.version}</version>
+          </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>

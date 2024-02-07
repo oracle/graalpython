@@ -239,8 +239,7 @@ def _as_int(value):
 
 def has_low_variance(durations, durations_len):
     v = durations[max(durations_len-4, 0):durations_len]
-    if statistics.stdev(v) / min(v) < 0.03 * UNITS_PER_SECOND:
-        return True
+    return statistics.stdev(v) / min(v) < 0.03
 
 
 class BenchRunner(object):
@@ -324,7 +323,8 @@ class BenchRunner(object):
         print("### start benchmark ... ")
 
         def report_iteration(iteration, duration):
-            duration_str = "%.3f" % duration
+            d = duration / UNITS_PER_SECOND
+            duration_str = "%.3f" % d
             if self._run_once:
                 print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
             else:
@@ -384,10 +384,10 @@ class BenchRunner(object):
                         break
 
 
-        durations = [d / UNITS_PER_SECOND for d in durations[:durations_len]]
         if not live_report:
-            for i in range(len(durations)):
+            for i in range(durations_len):
                 report_iteration(i, durations[i])
+        durations = [d / UNITS_PER_SECOND for d in durations[:durations_len]]
 
         print(_HRULE)
         print("### teardown ... ")

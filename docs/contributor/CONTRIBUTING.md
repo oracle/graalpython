@@ -13,20 +13,22 @@ The first thing you want to do is to set up [`mx`](https://github.com/graalvm/mx
 This is the build tool we use to develop GraalVM languages.
 Note that you can use any JDK, and do not need GraalVM for development.
 In that case you'll only be able to run without the just-in-time compiler, but that can be fine for making and testing changes that are not performance sensitive.
+You can also download a suitable JDK using mx:
+```bash
+mx fetch-jdk
+```
+Make sure that the `JAVA_HOME` environment variable is set.
 
-Once you have `mx` on your `PATH`, you can run `mx build` in this repository.
+For building GraalPy, you will also need some native build tools and libraries. On a Debian based system, install:
+```bash
+sudo apt install build-essential libc++-12-dev zlib1g-dev cmake
+```
+
+Lastly, download maven, extract it and include it on your `PATH`. 
+
+Once you have all the necessary tools, you can run `mx build` in this repository.
 This will initially download the required dependencies next to the repository and build Python.
 If it succeeds without errors, you should already be able to run `mx python` and get a REPL.
-
-If you just want to copy and paste some commands, these should get you started:
-
-```bash
-git clone https://github.com/graalvm/mx.git
-git clone https://github.com/graalvm/graalpython.git
-cd graalpython
-../mx/mx build
-../mx/mx python -c "print(42)"
-```
 
 For development, we recommend running `mx ideinit` next.
 This will generate configurations for Eclipse, IntelliJ, and NetBeans so that you can open the projects in these IDEs.

@@ -2276,10 +2276,6 @@ PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject* a, Py_ssize_t b) {
 PyAPI_FUNC(PyObject*) PyObject_Repr(PyObject* a) {
     return GraalPyObject_Repr(a);
 }
-#undef PyObject_RichCompare
-PyAPI_FUNC(PyObject*) PyObject_RichCompare(PyObject* a, PyObject* b, int c) {
-    return GraalPyObject_RichCompare(a, b, c);
-}
 #undef PyObject_SetArenaAllocator
 PyAPI_FUNC(void) PyObject_SetArenaAllocator(PyObjectArenaAllocator* a) {
     FUNC_NOT_IMPLEMENTED
@@ -3236,10 +3232,6 @@ PyAPI_FUNC(char*) Py_EncodeLocale(const wchar_t* a, size_t* b) {
 PyAPI_FUNC(void) Py_EndInterpreter(PyThreadState* a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef Py_EnterRecursiveCall
-PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
-    return GraalPy_EnterRecursiveCall(a);
-}
 #undef Py_Exit
 PyAPI_FUNC(void) Py_Exit(int a) {
     FUNC_NOT_IMPLEMENTED
@@ -3327,10 +3319,6 @@ PyAPI_FUNC(void) Py_InitializeEx(int a) {
 #undef Py_InitializeFromConfig
 PyAPI_FUNC(PyStatus) Py_InitializeFromConfig(const PyConfig* a) {
     FUNC_NOT_IMPLEMENTED
-}
-#undef Py_LeaveRecursiveCall
-PyAPI_FUNC(void) Py_LeaveRecursiveCall() {
-    GraalPy_LeaveRecursiveCall();
 }
 #undef Py_Main
 PyAPI_FUNC(int) Py_Main(int a, wchar_t** b) {

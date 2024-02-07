@@ -87,10 +87,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -148,6 +148,7 @@ import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -158,6 +159,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -2446,8 +2449,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doVoidPtr(PythonNativeVoidPtr x, long y,
+                        @Bind("this") Node inliningTarget,
                         @Cached CExtNodes.PointerCompareNode ltNode) {
-            return ltNode.execute(T___LT__, x, y);
+            return ltNode.execute(inliningTarget, ComparisonOp.LT, x, y);
         }
 
         @SuppressWarnings("unused")
@@ -2588,6 +2592,65 @@ public final class IntBuiltins extends PythonBuiltins {
         @Fallback
         static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class RichCompareHelperNode extends Node {
+
+        abstract Object execute(Node inliningTarget, Object left, Object right, ComparisonOp op);
+
+        @Specialization
+        static boolean doII(int left, int right, ComparisonOp op) {
+            return op.cmpResultToBool(Integer.compare(left, right));
+        }
+
+        @Specialization
+        static boolean doLL(long left, long right, ComparisonOp op) {
+            return op.cmpResultToBool(Long.compare(left, right));
+        }
+
+        @Specialization
+        static boolean doLP(long left, PInt right, ComparisonOp op) {
+            return op.cmpResultToBool(PInt.compareTo(left, right));
+        }
+
+        @Specialization
+        static boolean doPL(PInt left, long right, ComparisonOp op) {
+            return op.cmpResultToBool(left.compareTo(right));
+        }
+
+        @Specialization
+        static boolean doPP(PInt left, PInt right, ComparisonOp op) {
+            return op.cmpResultToBool(left.compareTo(right));
+        }
+
+        @Specialization
+        static boolean doVoidPtr(Node inliningTarget, PythonNativeVoidPtr x, long y, ComparisonOp op,
+                        @Cached CExtNodes.PointerCompareNode ltNode) {
+            return ltNode.execute(inliningTarget, op, x, y);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        static PNotImplemented doGeneric(Object a, Object b, ComparisonOp op) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = J___TRUFFLE_RICHCOMPARE__, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @ImportStatic(ComparisonOp.class)
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
+        static Object doCached(Object left, Object right, @SuppressWarnings("unused") int opCode,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
+                        @Cached RichCompareHelperNode cmpNode) {
+            return cmpNode.execute(inliningTarget, left, right, cachedOp);
         }
     }
 

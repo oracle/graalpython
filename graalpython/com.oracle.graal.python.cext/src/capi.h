@@ -252,7 +252,6 @@ typedef struct {
     BUILTIN(PyObject_IsTrue, int, PyObject*) \
     BUILTIN(PyObject_LengthHint, Py_ssize_t, PyObject*, Py_ssize_t) \
     BUILTIN(PyObject_Repr, PyObject*, PyObject*) \
-    BUILTIN(PyObject_RichCompare, PyObject*, PyObject*, PyObject*, int) \
     BUILTIN(PyObject_SetDoc, int, PyObject*, const char*) \
     BUILTIN(PyObject_SetItem, int, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyObject_Size, Py_ssize_t, PyObject*) \
@@ -371,6 +370,7 @@ typedef struct {
     BUILTIN(PyTruffle_Debug, int, void*) \
     BUILTIN(PyTruffle_DebugTrace, void) \
     BUILTIN(PyTruffle_Ellipsis, PyObject*) \
+    BUILTIN(PyTruffle_EnterRecursiveCall, int, const char*) \
     BUILTIN(PyTruffle_False, PyObject*) \
     BUILTIN(PyTruffle_FatalErrorFunc, void, const char*, const char*, int) \
     BUILTIN(PyTruffle_FileSystemDefaultEncoding, PyObject*) \
@@ -379,6 +379,7 @@ typedef struct {
     BUILTIN(PyTruffle_GetMaxNativeMemory, size_t) \
     BUILTIN(PyTruffle_HashConstant, long, int) \
     BUILTIN(PyTruffle_InitBuiltinTypesAndStructs, void, void*) \
+    BUILTIN(PyTruffle_LeaveRecursiveCall, void) \
     BUILTIN(PyTruffle_LogString, void, int, const char*) \
     BUILTIN(PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
     BUILTIN(PyTruffle_Native_Options, int) \
@@ -442,9 +443,7 @@ typedef struct {
     BUILTIN(Py_CompileString, PyObject*, const char*, const char*, int) \
     BUILTIN(Py_CompileStringExFlags, PyObject*, const char*, const char*, int, PyCompilerFlags*, int) \
     BUILTIN(Py_CompileStringObject, PyObject*, const char*, PyObject*, int, PyCompilerFlags*, int) \
-    BUILTIN(Py_EnterRecursiveCall, int, const char*) \
     BUILTIN(Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(Py_LeaveRecursiveCall, void) \
     BUILTIN(Py_get_PyASCIIObject_length, Py_ssize_t, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_ascii, unsigned int, PyASCIIObject*) \
     BUILTIN(Py_get_PyASCIIObject_state_compact, unsigned int, PyASCIIObject*) \
@@ -804,27 +803,6 @@ static inline int get_method_flags_wrapper(int flags) {
         return JWRAPPER_O;
     return JWRAPPER_UNSUPPORTED;
 }
-
-#define MANAGED_REFCNT 10
-#define HANDLE_BASE 0x8000000000000000ULL
-#define IMMORTAL_REFCNT (INT64_MAX >> 1)
-
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-#define points_to_py_handle_space(PTR) polyglot_is_value((PTR))
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
-
-#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
-
-static MUST_INLINE PyObject *stub_to_pointer(PyObject *stub_ptr)
-{
-    return ((uintptr_t) stub_ptr) | HANDLE_BASE;
-}
-
-static MUST_INLINE PyObject *pointer_to_stub(PyObject *o)
-{
-    return ((uintptr_t) o) & ~HANDLE_BASE;
-}
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 

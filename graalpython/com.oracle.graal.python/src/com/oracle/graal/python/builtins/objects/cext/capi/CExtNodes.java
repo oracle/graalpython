@@ -159,6 +159,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -574,11 +575,12 @@ public abstract class CExtNodes {
         }
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    @GenerateInline(false) // footprint reduction 68 -> 50
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PointerCompareNode extends Node {
-        public abstract boolean execute(TruffleString opName, Object a, Object b);
+
+        public abstract boolean execute(Node inliningTarget, ComparisonOp op, Object a, Object b);
 
         private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCExtSymbolNode importCAPISymbolNode) {
             try {
@@ -590,74 +592,35 @@ public abstract class CExtNodes {
             }
         }
 
-        @Specialization(guards = "isEq(opName, equalNode)", limit = "2")
-        static boolean doEq(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+        @Specialization(guards = "op.isEqualityOp()", limit = "2")
+        static boolean doEqNe(ComparisonOp op, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a") InteropLibrary aLib,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary bLib,
-                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
-            return aLib.isIdentical(a, b, bLib);
+                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+            return aLib.isIdentical(a, b, bLib) == (op == ComparisonOp.EQ);
         }
 
-        @Specialization(guards = "isNe(opName, equalNode)", limit = "2")
-        static boolean doNe(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
-                        @CachedLibrary("a") InteropLibrary aLib,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary bLib,
-                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
-            return !aLib.isIdentical(a, b, bLib);
-        }
-
-        @Specialization(guards = "areEqual(cachedOpName, opName, equalNode)")
-        static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
-                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true, neverDefault = false) int op,
+        @Specialization
+        static boolean doPythonNativeObject(Node inliningTarget, ComparisonOp op, PythonNativeObject a, PythonNativeObject b,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
-            return executeCFunction(inliningTarget, op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
+            CompilerAsserts.partialEvaluationConstant(op);
+            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "areEqual(cachedOpName, opName, equalNode)")
-        static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
-                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true, neverDefault = false) int op,
+        @Specialization
+        static boolean doPythonNativeObjectLong(Node inliningTarget, ComparisonOp op, PythonNativeObject a, long b,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
-            return executeCFunction(inliningTarget, op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
+            CompilerAsserts.partialEvaluationConstant(op);
+            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "areEqual(cachedOpName, opName, equalNode)")
-        static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared @Cached(value = "opName", neverDefault = true) @SuppressWarnings("unused") TruffleString cachedOpName,
-                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true, neverDefault = false) int op,
+        @Specialization
+        static boolean doNativeVoidPtrLong(Node inliningTarget, ComparisonOp op, PythonNativeVoidPtr a, long b,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
-            return executeCFunction(inliningTarget, op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
-        }
-
-        static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
-            for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
-                if (equalNode.execute(SpecialMethodNames.getCompareName(i), specialMethodName, TS_ENCODING)) {
-                    return i;
-                }
-            }
-            throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
-        }
-
-        static boolean areEqual(TruffleString cachedOpName, TruffleString opName, TruffleString.EqualNode equalNode) {
-            return equalNode.execute(cachedOpName, opName, TS_ENCODING);
-        }
-
-        static boolean isEq(TruffleString opName, TruffleString.EqualNode equalNode) {
-            return equalNode.execute(SpecialMethodNames.T___EQ__, opName, TS_ENCODING);
-        }
-
-        static boolean isNe(TruffleString opName, TruffleString.EqualNode equalNode) {
-            return equalNode.execute(SpecialMethodNames.T___NE__, opName, TS_ENCODING);
+            CompilerAsserts.partialEvaluationConstant(op);
+            return executeCFunction(inliningTarget, op.opCode, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
     }
 

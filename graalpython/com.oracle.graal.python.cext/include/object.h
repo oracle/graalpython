@@ -56,6 +56,8 @@ A standard interface exists for objects that contain an array of items
 whose size is determined when the object is allocated.
 */
 
+#include "graalpy/handles.h"
+
 /* Py_DEBUG implies Py_REF_DEBUG. */
 #if defined(Py_DEBUG) && !defined(Py_REF_DEBUG)
 #  define Py_REF_DEBUG
@@ -137,7 +139,11 @@ static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
 PyAPI_FUNC(PyTypeObject*) PyTruffle_TYPE(PyObject *ob);
 static inline PyTypeObject* Py_TYPE(PyObject *ob) {
+#if defined(GRAALVM_PYTHON) && !defined(GRAALVM_PYTHON_LLVM_MANAGED) && defined(NDEBUG)
+    return (pointer_to_stub(ob)->ob_type);
+#else
     return PyTruffle_TYPE(ob);
+#endif
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_TYPE(ob) Py_TYPE(_PyObject_CAST(ob))
