@@ -592,13 +592,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
          * {@link NativeCAPISymbol.FUN_GET_METHODS_FLAGS}
          */
         lines.add("");
-        List<Map.Entry<String, Long>> methodFlagsDefines = new ArrayList<>();
-        methodFlagsDefines.addAll(methodFlags.entrySet());
-        methodFlagsDefines.sort((a, b) -> a.getValue().compareTo(b.getValue()));
-        for (var entry : methodFlagsDefines) {
-            lines.add("#define " + entry.getKey() + " " + entry.getValue());
-        }
-
+        methodFlags.entrySet().stream().sorted((a, b) -> a.getValue().compareTo(b.getValue())).forEach(e -> lines.add("#define " + e.getKey() + " " + e.getValue()));
         updateResource("capi.gen.h", javaBuiltins, lines);
     }
 
