@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.InputType;
@@ -75,13 +75,10 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = AstModuleBuiltins.J__AST, isEager = true)
 public final class AstModuleBuiltins extends PythonBuiltins {
-
-    private static final HiddenKey AST_STATE_KEY = new HiddenKey("ast_state");
 
     static final String J__AST = "_ast";
     static final TruffleString T__AST = tsLiteral(J__AST);
@@ -114,7 +111,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         PythonModule astModule = core.lookupBuiltinModule(T__AST);
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
-        astModule.setAttribute(AST_STATE_KEY, state);
+        HiddenAttr.WriteNode.executeUncached(astModule, HiddenAttr.AST_STATE, state);
     }
 
     @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
@@ -136,7 +133,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     private static AstState getAstState(PythonContext context) {
-        return (AstState) ReadAttributeFromObjectNode.getUncached().execute(context.lookupBuiltinModule(T__AST), AST_STATE_KEY);
+        return (AstState) HiddenAttr.ReadNode.executeUncached(context.lookupBuiltinModule(T__AST), HiddenAttr.AST_STATE, null);
     }
 
     @TruffleBoundary

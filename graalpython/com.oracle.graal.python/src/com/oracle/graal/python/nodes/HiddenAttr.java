@@ -72,6 +72,7 @@ public enum HiddenAttr {
     PICKLE_STATE("state"),              // pickle
     NEXT_ELEMENT("next_element"),       // PythonAbstractObject
     INTERNED("_interned"),              // PString
+    AST_STATE("ast_state"),             // _ast
 
     ;
 
