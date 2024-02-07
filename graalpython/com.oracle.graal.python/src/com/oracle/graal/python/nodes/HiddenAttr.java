@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.CLASS_CHANGED_FLAG;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_MATERIALIZED_DICT;
 
+import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
@@ -65,6 +66,7 @@ public enum HiddenAttr {
     ENCODER_OBJECT("encoder_object"),   // cjkcodecs
     DECODER_OBJECT("decoder_object"),   // cjkcodecs
     KWD_MARK("kwd_mark"),               // functools
+    ORIGINAL_CONSTRUCTORS(HashlibModuleBuiltins.J_CONSTRUCTORS),    // hashlib
     ;
 
     private final HiddenKey key;
