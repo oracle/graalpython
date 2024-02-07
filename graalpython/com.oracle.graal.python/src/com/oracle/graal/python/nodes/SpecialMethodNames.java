@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SpecialMethodNames {
@@ -464,25 +462,11 @@ public abstract class SpecialMethodNames {
 
     public static final TruffleString T_UPDATE = tsLiteral("update");
 
-    public static final String J_RICHCMP = "__truffle_richcompare__";
-    public static final TruffleString T_RICHCMP = tsLiteral(J_RICHCMP);
+    public static final String J___TRUFFLE_RICHCOMPARE__ = "__truffle_richcompare__";
+    public static final TruffleString T___TRUFFLE_RICHCOMPARE__ = tsLiteral(J___TRUFFLE_RICHCOMPARE__);
 
     public static final String J_TRUFFLE_SOURCE = "__truffle_source__";
 
     public static final String J_SHUTDOWN = "_shutdown";
     public static final TruffleString T_SHUTDOWN = tsLiteral(J_SHUTDOWN);
-
-    // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
-    // in various places
-    @CompilationFinal(dimensions = 1) private static final TruffleString[] COMPARE_OPSTRINGS = tsArray("<", "<=", "==", "!=", ">", ">=");
-    @CompilationFinal(dimensions = 1) private static final TruffleString[] COMPARE_OPNAMES = new TruffleString[]{T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__};
-    public static final int COMPARE_OP_COUNT = COMPARE_OPNAMES.length;
-
-    public static TruffleString getCompareOpString(int op) {
-        return COMPARE_OPSTRINGS[op];
-    }
-
-    public static TruffleString getCompareName(int op) {
-        return COMPARE_OPNAMES[op];
-    }
 }

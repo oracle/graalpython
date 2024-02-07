@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,27 +47,69 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 
+import com.oracle.truffle.api.CompilerDirectives;
+
 public enum ComparisonOp {
-    EQ(J___EQ__, a -> a == 0),
-    NE(J___NE__, a -> a != 0),
-    LT(J___LT__, a -> a < 0),
-    GT(J___GT__, a -> a > 0),
-    LE(J___LE__, a -> a <= 0),
-    GE(J___GE__, a -> a >= 0);
+
+    EQ(J___EQ__, 2, a -> a == 0),
+    NE(J___NE__, 3, a -> a != 0),
+    LT(J___LT__, 0, a -> a < 0),
+    GT(J___GT__, 4, a -> a > 0),
+    LE(J___LE__, 1, a -> a <= 0),
+    GE(J___GE__, 5, a -> a >= 0);
 
     public final String builtinName;
-    private final IntPredicate fromCompareResult;
+    /**
+     * The integer code of the operation as used by CPython (and in native code).
+     */
+    public final int opCode;
+    public final IntPredicate intPredicate;
 
-    ComparisonOp(String builtinName, IntPredicate fromCompareResult) {
+    ComparisonOp(String builtinName, int opCode, IntPredicate intPredicate) {
         this.builtinName = builtinName;
-        this.fromCompareResult = fromCompareResult;
+        this.opCode = opCode;
+        this.intPredicate = intPredicate;
     }
 
     public boolean cmpResultToBool(int cmpResult) {
-        return fromCompareResult.test(cmpResult);
+        return intPredicate.test(cmpResult);
     }
 
     public boolean isEqualityOp() {
         return this == EQ || this == NE;
+    }
+
+    public static boolean isEqualityOpCode(int op) {
+        assert EQ.opCode == 2 && NE.opCode == 3;
+        return op == 2 || op == 3;
+    }
+
+    public static ComparisonOp fromOpCode(int op) {
+        ComparisonOp result;
+        switch (op) {
+            case 0:
+                result = LT;
+                break;
+            case 1:
+                result = LE;
+                break;
+            case 2:
+                result = EQ;
+                break;
+            case 3:
+                result = NE;
+                break;
+            case 4:
+                result = GT;
+                break;
+            case 5:
+                result = GE;
+                break;
+            default:
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("unexpected operation: " + op);
+        }
+        assert result.opCode == op;
+        return result;
     }
 }

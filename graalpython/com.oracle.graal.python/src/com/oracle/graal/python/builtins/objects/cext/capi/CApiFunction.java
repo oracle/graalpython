@@ -449,6 +449,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_gitversion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_GetCompiler", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
     @CApiBuiltin(name = "Py_GetVersion", ret = ConstCharPtrAsTruffleString, args = {}, call = CImpl)
+    @CApiBuiltin(name = "Py_EnterRecursiveCall", ret = Int, args = {ConstCharPtr}, call = CImpl)
+    @CApiBuiltin(name = "Py_LeaveRecursiveCall", ret = Void, args = {}, call = CImpl)
 
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyObject_CallFunctionObjArgs", ret = PyObject, args = {PyObject, VARARGS}, call = CImpl)
@@ -470,6 +472,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_GetAttr", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_SetAttr", ret = Int, args = {PyObject, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Not", ret = Int, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_RichCompare", ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyObject_RichCompareBool", ret = Int, args = {PyObject, PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_NextNotImplemented", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "Py_NewRef", ret = PyObject, args = {PyObject}, call = CImpl)

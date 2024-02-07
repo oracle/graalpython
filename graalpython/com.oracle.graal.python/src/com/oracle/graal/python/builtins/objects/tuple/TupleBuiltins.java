@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -42,6 +42,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -100,6 +102,8 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.ComparisonOp;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -404,6 +408,48 @@ public final class TupleBuiltins extends PythonBuiltins {
         @Override
         protected CmpNode createCmp() {
             return SequenceStorageNodes.CmpNode.createLt();
+        }
+    }
+
+    @Builtin(name = J___TRUFFLE_RICHCOMPARE__, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @ImportStatic(ComparisonOp.class)
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
+        static Object doPTuple(VirtualFrame frame, PTuple left, PTuple right, @SuppressWarnings("unused") int opCode,
+                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
+                        @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        @Specialization(guards = {"opCode == cachedOp.opCode", "checkRight.execute(inliningTarget, right)"}, limit = "6", replaces = "doPTuple")
+        static Object doRelOp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int opCode,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
+                        @Cached GetTupleStorage getLeft,
+                        @Cached GetTupleStorage getRight,
+                        @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
+        }
+
+        static SequenceStorageNodes.CmpNode createCmpNode(ComparisonOp op) {
+            switch (op) {
+                case LE:
+                    return SequenceStorageNodes.CmpNode.createLe();
+                case LT:
+                    return SequenceStorageNodes.CmpNode.createLt();
+                case EQ:
+                    return SequenceStorageNodes.CmpNode.createEq();
+                case NE:
+                    return SequenceStorageNodes.CmpNode.createNe();
+                case GT:
+                    return SequenceStorageNodes.CmpNode.createGt();
+                case GE:
+                    return SequenceStorageNodes.CmpNode.createGe();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
