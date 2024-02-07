@@ -491,20 +491,4 @@ def test_native_executable_module():
         assert "hello standalone world" in out
 
 
-# skip according to split
-if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
-    def patch_functions():
-        import types
-        batch, total = (int(x) for x in os.environ["TAGGED_UNITTEST_PARTIAL"].split("/"))
-        test_functions = []
-        for g in globals():
-            if isinstance(g, types.FunctionType) and g.__name__.startswith("test_"):
-                test_functions.append((globals(), g))
-            elif isinstance(g, unittest.TestCase):
-                for f in dir(g):
-                    if isinstance(f, types.FunctionType) and f.__name__.startswith("test_"):
-                        test_functions.append((g.__dict__, f))
-        for idx, (owner, test_func) in enumerate(test_functions):
-            if idx % total != batch:
-                owner[test_func.__name__] = unittest.skip(test_func)
-    patch_functions()
+unittest.skip_deselected_test_functions(globals())
