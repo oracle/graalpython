@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -117,6 +118,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -124,9 +126,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -157,7 +157,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -171,7 +170,6 @@ public abstract class ObjectNodes {
     @GenerateInline
     @GenerateCached(false)
     abstract static class GetObjectIdNode extends Node {
-        private static final HiddenKey OBJECT_ID = new HiddenKey("_id");
 
         public abstract long execute(Node inliningTarget, Object self);
 
@@ -184,29 +182,29 @@ public abstract class ObjectNodes {
         }
 
         @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption(readNode)")
-        static long singleThreadedObject(Object self,
-                        @Shared @Cached(inline = false) ReadAttributeFromDynamicObjectNode readNode,
-                        @Shared @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode) {
-            Object objectId = readNode.execute(self, OBJECT_ID);
-            if (objectId == PNone.NO_VALUE) {
+        static long singleThreadedObject(Node inliningTarget, PythonAbstractObject self,
+                        @Shared @Cached HiddenAttr.ReadNode readNode,
+                        @Shared @Cached HiddenAttr.WriteNode writeNode) {
+            Object objectId = readNode.execute(inliningTarget, self, HiddenAttr.OBJECT_ID, null);
+            if (objectId == null) {
                 objectId = PythonContext.get(readNode).getNextObjectId();
-                writeNode.execute(self, OBJECT_ID, objectId);
+                writeNode.execute(inliningTarget, self, HiddenAttr.OBJECT_ID, objectId);
             }
             assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
             return (long) objectId;
         }
 
         @Specialization(guards = "isIDableObject(self)", replaces = "singleThreadedObject")
-        static long multiThreadedObject(Object self,
-                        @Shared @Cached(inline = false) ReadAttributeFromDynamicObjectNode readNode,
-                        @Shared @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode) {
-            Object objectId = readNode.execute(self, OBJECT_ID);
-            if (objectId == PNone.NO_VALUE) {
+        static long multiThreadedObject(Node inliningTarget, PythonAbstractObject self,
+                        @Shared @Cached HiddenAttr.ReadNode readNode,
+                        @Shared @Cached HiddenAttr.WriteNode writeNode) {
+            Object objectId = readNode.execute(inliningTarget, self, HiddenAttr.OBJECT_ID, null);
+            if (objectId == null) {
                 synchronized (self) {
-                    objectId = readNode.execute(self, OBJECT_ID);
-                    if (objectId == PNone.NO_VALUE) {
+                    objectId = readNode.execute(inliningTarget, self, HiddenAttr.OBJECT_ID, null);
+                    if (objectId == null) {
                         objectId = PythonContext.get(readNode).getNextObjectId();
-                        writeNode.execute(self, OBJECT_ID, objectId);
+                        writeNode.execute(inliningTarget, self, HiddenAttr.OBJECT_ID, objectId);
                     }
                 }
             }

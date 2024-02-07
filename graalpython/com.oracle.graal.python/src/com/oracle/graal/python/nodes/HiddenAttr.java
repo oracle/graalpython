@@ -62,6 +62,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 public enum HiddenAttr {
 
+    OBJECT_ID("_id"),                   // ObjectNodes
     CLASS("ob_type"),
     DICT("ob_dict"),
     ENCODER_OBJECT("encoder_object"),   // cjkcodecs
