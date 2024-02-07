@@ -412,12 +412,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     private boolean isInBounds(long idx, PySequenceSizeNode sequenceSizeNode) {
-        try {
-            long length = sequenceSizeNode.execute(this);
-            return 0 <= idx && idx < length;
-        } catch (PException pe) {
-            return false;
-        }
+        long length = sequenceSizeNode.execute(this);
+        return 0 <= idx && idx < length;
     }
 
     @ExportMessage
@@ -439,7 +435,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return isInBounds(idx, sequenceSizeNode);
+                try {
+                    return isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -465,7 +465,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return isInBounds(idx, sequenceSizeNode);
+                try {
+                    return isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -491,7 +495,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return !isInBounds(idx, sequenceSizeNode);
+                try {
+                    return !isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -517,7 +525,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return isInBounds(idx, sequenceSizeNode);
+                try {
+                    return isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
