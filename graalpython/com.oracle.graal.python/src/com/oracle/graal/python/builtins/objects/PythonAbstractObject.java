@@ -117,6 +117,7 @@ import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -180,8 +181,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1833,8 +1832,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
-    private static final HiddenKey NEXT_ELEMENT = new HiddenKey("next_element");
-
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasIteratorNextElement(
@@ -1849,7 +1846,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
                     @Exclusive @Cached GilNode gil,
                     @CachedLibrary("this") InteropLibrary ilib,
-                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws UnsupportedMessageException {
+                    // GR-44020: make shared:
+                    @Exclusive @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+                    @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (ilib.isIterator(this)) {
@@ -1858,13 +1857,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (behavior != null) {
                     return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
                 } else {
-                    Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
+                    Object nextElement = readHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, null);
                     if (nextElement != null) {
                         return true;
                     }
                     try {
                         nextElement = getNextNode.execute(null, this);
-                        dylib.put(this, NEXT_ELEMENT, nextElement);
+                        writeHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, nextElement);
                         return true;
                     } catch (PException e) {
                         e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, exceptionProfile);
@@ -1885,8 +1884,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary ilib,
-                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                     // GR-44020: make shared:
+                    @Exclusive @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+                    @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                     @Exclusive @Cached GilNode gil) throws StopIterationException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -1896,8 +1896,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (behavior != null) {
                     return getValue.execute(inliningTarget, behavior, method, this);
                 } else {
-                    Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
-                    dylib.put(this, NEXT_ELEMENT, null);
+                    Object nextElement = readHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, null);
+                    writeHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, null);
                     return nextElement;
                 }
             } else {

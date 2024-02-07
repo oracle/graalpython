@@ -68,7 +68,8 @@ public enum HiddenAttr {
     DECODER_OBJECT("decoder_object"),   // cjkcodecs
     KWD_MARK("kwd_mark"),               // functools
     ORIGINAL_CONSTRUCTORS(HashlibModuleBuiltins.J_CONSTRUCTORS),    // hashlib
-    PICKLE_STATE("state"),          // pickle
+    PICKLE_STATE("state"),              // pickle
+    NEXT_ELEMENT("next_element"),       // PythonAbstractObject
 
     ;
 
