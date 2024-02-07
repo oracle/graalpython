@@ -40,19 +40,15 @@
  */
 package com.oracle.graal.python.nodes.interop;
 
-import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
-
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
@@ -61,13 +57,13 @@ public abstract class IsInteropBehaviorDefinedNode extends Node {
     public abstract boolean execute(Node inlineTarget, PythonAbstractObject receiver, InteropBehaviorMethod method);
 
     @Specialization
-    static boolean isDefined(Node inlineTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
+    static boolean isDefined(Node inliningTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
                     @Cached GetClassNode getClassNode,
                     @Cached InlinedConditionProfile isMethodDefined,
-                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        Object klass = getClassNode.execute(inlineTarget, receiver);
-        Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
-        return value instanceof InteropBehavior behavior && isMethodDefined.profile(inlineTarget, behavior.isDefined(method));
+                    @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
+        Object klass = getClassNode.execute(inliningTarget, receiver);
+        Object value = readHiddenAttrNode.execute(inliningTarget, (PythonAbstractObject) klass, HiddenAttr.HOST_INTEROP_BEHAVIOR, null);
+        return value instanceof InteropBehavior behavior && isMethodDefined.profile(inliningTarget, behavior.isDefined(method));
     }
 
     @NeverDefault

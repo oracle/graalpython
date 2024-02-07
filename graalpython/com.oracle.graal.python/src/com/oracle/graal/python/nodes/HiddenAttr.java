@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.CLASS_CHANGED_FLAG;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_MATERIALIZED_DICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -73,6 +74,7 @@ public enum HiddenAttr {
     NEXT_ELEMENT("next_element"),       // PythonAbstractObject
     INTERNED("_interned"),              // PString
     AST_STATE("ast_state"),             // _ast
+    HOST_INTEROP_BEHAVIOR(J___GRAALPYTHON_INTEROP_BEHAVIOR__),      // polyglot
 
     ;
 

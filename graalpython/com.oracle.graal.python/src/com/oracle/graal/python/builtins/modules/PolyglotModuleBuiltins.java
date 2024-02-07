@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
@@ -101,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -147,8 +147,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -653,9 +651,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
             if (isTypeNode.execute(inliningTarget, klass)) {
-                Object value = dylib.getOrDefault(klass, RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR, null);
+                Object value = readHiddenAttrNode.execute(inliningTarget, klass, HiddenAttr.HOST_INTEROP_BEHAVIOR, null);
                 if (value instanceof InteropBehavior behavior) {
                     return factory.createList(behavior.getDefinedMethods());
                 }
@@ -799,7 +797,6 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                                     """)
     @GenerateNodeFactory
     public abstract static class RegisterInteropBehaviorNode extends PythonBuiltinNode {
-        public static final HiddenKey HOST_INTEROP_BEHAVIOR = new HiddenKey(J___GRAALPYTHON_INTEROP_BEHAVIOR__);
 
         void handleArg(Object value, InteropBehaviorMethod method, InteropBehavior interopBehavior, PRaiseNode raiseNode) {
             if (value instanceof Boolean boolValue) {
@@ -837,8 +834,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         Object is_hash_entry_modifiable, Object is_hash_entry_insertable, Object is_hash_entry_removable, Object read_hash_value, Object write_hash_entry, Object remove_hash_entry,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                        @Cached PRaiseNode raiseNode) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
                 final InteropBehavior interopBehavior = new InteropBehavior(receiver);
 
@@ -898,7 +894,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 handleArg(write_hash_entry, InteropBehaviorMethod.write_hash_entry, interopBehavior, raiseNode);
                 handleArg(remove_hash_entry, InteropBehaviorMethod.remove_hash_entry, interopBehavior, raiseNode);
 
-                dylib.put(receiver, HOST_INTEROP_BEHAVIOR, interopBehavior);
+                HiddenAttr.WriteNode.executeUncached(receiver, HiddenAttr.HOST_INTEROP_BEHAVIOR, interopBehavior);
                 return PNone.NONE;
             }
             throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);

@@ -40,10 +40,9 @@
  */
 package com.oracle.graal.python.nodes.interop;
 
-import static com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins.RegisterInteropBehaviorNode.HOST_INTEROP_BEHAVIOR;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -52,10 +51,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @GenerateUncached
 @GenerateInline
@@ -65,12 +61,12 @@ public abstract class GetInteropBehaviorNode extends PNodeWithContext {
     @Specialization
     static InteropBehavior getInteropBehavior(Node inliningTarget, PythonAbstractObject receiver, InteropBehaviorMethod method,
                     @Cached GetClassNode getClassNode,
-                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                    @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
         Object klass = getClassNode.execute(inliningTarget, receiver);
         if (klass instanceof PythonBuiltinClassType pythonBuiltinClassType) {
             klass = PythonContext.get(getClassNode).lookupType(pythonBuiltinClassType);
         }
-        Object value = dylib.getOrDefault((DynamicObject) klass, HOST_INTEROP_BEHAVIOR, null);
+        Object value = readHiddenAttrNode.execute(inliningTarget, (PythonAbstractObject) klass, HiddenAttr.HOST_INTEROP_BEHAVIOR, null);
         if (value instanceof InteropBehavior behavior && behavior.isDefined(method)) {
             return behavior;
         }
