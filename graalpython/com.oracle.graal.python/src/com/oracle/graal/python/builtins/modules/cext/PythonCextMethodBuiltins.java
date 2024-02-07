@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,14 +83,14 @@ public final class PythonCextMethodBuiltins {
     @GenerateCached(false)
     abstract static class CFunctionNewExMethodNode extends Node {
 
-        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc);
+        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object cls, Object doc);
 
-        final Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc) {
+        final Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object doc) {
             return execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc);
         }
 
         @Specialization
-        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc,
+        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object cls, Object doc,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Cached CreateFunctionNode createFunctionNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {

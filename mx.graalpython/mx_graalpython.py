@@ -1072,6 +1072,10 @@ def graalpytest(args):
     # if we got a binary path it's most likely CPython, so don't add graalpython args
     if not args.python:
         cmd_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+    elif args.python.endswith('graalpy'):
+        gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+        mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
+        cmd_args += gp_args
     # we assume that unknown args are polyglot arguments and just prepend them to the test driver
     cmd_args += unknown_args + [_graalpytest_driver()]
     if args.verbose:
