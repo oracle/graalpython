@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_M
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
+import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteNodeGen;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -61,8 +62,9 @@ public enum HiddenAttr {
 
     CLASS("ob_type"),
     DICT("ob_dict"),
-    ENCODER_OBJECT("encoder_object"),
-    DECODER_OBJECT("decoder_object"),
+    ENCODER_OBJECT("encoder_object"),   // cjkcodecs
+    DECODER_OBJECT("decoder_object"),   // cjkcodecs
+    KWD_MARK("kwd_mark"),               // functools
     ;
 
     private final HiddenKey key;
@@ -98,6 +100,10 @@ public enum HiddenAttr {
     @ImportStatic(HiddenAttr.class)
     public static abstract class WriteNode extends Node {
         public abstract void execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, Object value);
+
+        public static void executeUncached(PythonAbstractObject self, HiddenAttr attr, Object value) {
+            WriteNodeGen.getUncached().execute(null, self, attr, value);
+        }
 
         @Specialization(guards = "attr == DICT")
         static void doPythonObjectDict(PythonObject self, HiddenAttr attr, Object value,

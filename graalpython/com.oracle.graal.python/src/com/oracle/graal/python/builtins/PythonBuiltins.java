@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -266,8 +267,12 @@ public abstract class PythonBuiltins {
     }
 
     private void addBuiltinConstantInternal(Object name, Object value) {
-        assert name instanceof TruffleString || name instanceof HiddenKey;
+        assert name instanceof TruffleString || name instanceof HiddenKey || name instanceof HiddenAttr;
         builtinConstants.put(name, ensureNoJavaString(value));
+    }
+
+    protected final void addBuiltinConstant(HiddenAttr name, Object value) {
+        addBuiltinConstantInternal(name, value);
     }
 
     protected final void addBuiltinConstant(HiddenKey name, Object value) {
@@ -290,9 +295,12 @@ public abstract class PythonBuiltins {
         for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
             Object constant = assertNoJavaString(entry.getKey());
             Object value = assertNoJavaString(entry.getValue());
-            assert constant instanceof TruffleString || constant instanceof HiddenKey;
-            assert !(value instanceof String);
-            obj.setAttribute(constant, value);
+            if (constant instanceof HiddenAttr attr) {
+                HiddenAttr.WriteNode.executeUncached(obj, attr, value);
+            } else {
+                assert constant instanceof TruffleString || constant instanceof HiddenKey;
+                obj.setAttribute(constant, value);
+            }
         }
     }
 
