@@ -316,6 +316,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     return sequenceGetItem.execute(this, PInt.intValueExact(key));
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
+                } catch (PException pe) {
+                    throw UnsupportedMessageException.create();
                 }
             }
         } finally {
@@ -342,6 +344,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     sequenceSetItemNode.execute(this, PInt.intValueExact(key), value);
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
+                } catch (PException pe) {
+                    throw UnsupportedMessageException.create();
                 }
             }
         } finally {
@@ -368,6 +372,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     sequenceDelItemNode.execute(this, PInt.intValueExact(key));
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
+                } catch (PException pe) {
+                    throw UnsupportedMessageException.create();
                 }
             }
         } finally {
