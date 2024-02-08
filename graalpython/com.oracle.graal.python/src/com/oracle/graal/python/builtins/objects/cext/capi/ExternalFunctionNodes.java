@@ -407,7 +407,9 @@ public abstract class ExternalFunctionNodes {
         NEW(42, PyObjectTransfer, PyObject, PyObject, PyObject),
         MP_DELITEM(43, PrimitiveResult32, PyObject, PyObject, PyObject),
         TP_STR(44, PyObjectTransfer, PyObject),
-        TP_REPR(45, PyObjectTransfer, PyObject);
+        TP_REPR(45, PyObjectTransfer, PyObject),
+        DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
+        DESCR_DELATTRO(47, InitResult, PyObject, PyObject, PyObject); // the last one is always NULL
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
@@ -546,6 +548,14 @@ public abstract class ExternalFunctionNodes {
                 case DESCR_GET:
                     nodeKlass = DescrGetRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new DescrGetRootNode(l, name, sig) : l -> new DescrGetRootNode(l, name);
+                    break;
+                case DESCR_DELETE:
+                    nodeKlass = DescrGetRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? l -> new DescrDeleteRootNode(l, name, sig) : l -> new DescrDeleteRootNode(l, name);
+                    break;
+                case DESCR_DELATTRO:
+                    nodeKlass = DelAttrRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? l -> new DelAttrRootNode(l, name, sig) : l -> new DelAttrRootNode(l, name);
                     break;
                 case RICHCMP:
                     nodeKlass = RichCmpFuncRootNode.class;
@@ -1651,6 +1661,79 @@ public abstract class ExternalFunctionNodes {
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
             releaseNativeWrapperNode.execute(cArguments[2]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c:wrap_descr_delete}
+     */
+    public static final class DescrDeleteRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "obj"), KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readObj;
+
+        public DescrDeleteRootNode(PythonLanguage language, TruffleString name) {
+            super(language, name, false);
+        }
+
+        public DescrDeleteRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+            this.readObj = ReadIndexedArgumentNode.create(1);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            Object obj = readObj.execute(frame);
+            return new Object[]{self, obj, PNone.NO_VALUE};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c:wrap_delattr}
+     */
+    public static final class DelAttrRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "obj"), KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readObj;
+
+        public DelAttrRootNode(PythonLanguage language, TruffleString name) {
+            super(language, name, false);
+        }
+
+        public DelAttrRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+            this.readObj = ReadIndexedArgumentNode.create(1);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            Object obj = readObj.execute(frame);
+            // TODO: check if we need Carlo Verre hack here (see typeobject.c:hackcheck)
+            return new Object[]{self, obj, PNone.NO_VALUE};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
