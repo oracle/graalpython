@@ -93,7 +93,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
     private static Object allocateCLayout(PythonThreadState threadState) {
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
 
-        Object ptr = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyThreadState);
+        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.PyThreadState);
         CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
         PythonContext pythonContext = PythonContext.get(null);
         Object nullValue = pythonContext.getNativeNull().getPtr();

@@ -141,8 +141,12 @@ public class CStructAccess {
             return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, size, 1);
         }
 
-        public static AllocateNode getUncached() {
-            return AllocateNodeGen.getUncached();
+        public static Object allocUncached(CStructs struct) {
+            return AllocateNodeGen.getUncached().alloc(struct);
+        }
+
+        public static Object allocUncached(long size) {
+            return AllocateNodeGen.getUncached().alloc(size);
         }
     }
 
@@ -1117,6 +1121,10 @@ public class CStructAccess {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class WritePointerNode extends Node implements CStructAccessNode {
+
+        public static void writeUncached(Object pointer, CFields field, Object value) {
+            WritePointerNodeGen.getUncached().write(pointer, field, value);
+        }
 
         abstract void execute(Object pointer, long offset, Object value);
 

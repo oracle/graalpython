@@ -117,7 +117,7 @@ public abstract class ToNativeTypeNode {
     }
 
     private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyAsyncMethods);
+        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyAsyncMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         writePointerNode.write(mem, CFields.PyAsyncMethods__am_await, getSlot(obj, SlotMethodDef.AM_AWAIT));
         writePointerNode.write(mem, CFields.PyAsyncMethods__am_aiter, getSlot(obj, SlotMethodDef.AM_AITER));
@@ -127,7 +127,7 @@ public abstract class ToNativeTypeNode {
     }
 
     private static Object allocatePyMappingMethods(PythonManagedClass obj) {
-        Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyMappingMethods);
+        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyMappingMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         writePointerNode.write(mem, CFields.PyMappingMethods__mp_length, getSlot(obj, SlotMethodDef.MP_LENGTH));
         writePointerNode.write(mem, CFields.PyMappingMethods__mp_subscript, getSlot(obj, SlotMethodDef.MP_SUBSCRIPT));
@@ -136,7 +136,7 @@ public abstract class ToNativeTypeNode {
     }
 
     private static Object allocatePyNumberMethods(PythonManagedClass obj, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyNumberMethods);
+        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_absolute, getSlot(obj, SlotMethodDef.NB_ABSOLUTE));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_add, getSlot(obj, SlotMethodDef.NB_ADD));
@@ -178,7 +178,7 @@ public abstract class ToNativeTypeNode {
     }
 
     private static Object allocatePySequenceMethods(PythonManagedClass obj, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyNumberMethods);
+        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_length, getSlot(obj, SlotMethodDef.SQ_LENGTH));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_concat, getSlot(obj, SlotMethodDef.SQ_CONCAT));
