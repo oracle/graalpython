@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InitResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
@@ -1101,15 +1102,32 @@ public abstract class ExternalFunctionNodes {
             }
         }
 
-        static boolean releaseArgsTuple(Object argsTupleWrapper, CStructAccess.FreeNode freeNode, boolean ownsMemory) {
+        static boolean releaseArgsTuple(Object argsTupleObject, CStructAccess.FreeNode freeNode, boolean eagerNativeStorage) {
             try {
-                assert argsTupleWrapper instanceof PythonObjectNativeWrapper;
-                Object argsTuple = ((PythonObjectNativeWrapper) argsTupleWrapper).getDelegate();
+                assert argsTupleObject instanceof PythonObjectNativeWrapper;
+                PythonObjectNativeWrapper argsTupleWrapper = (PythonObjectNativeWrapper) argsTupleObject;
+                Object argsTuple = argsTupleWrapper.getDelegate();
                 assert argsTuple instanceof PTuple;
                 SequenceStorage s = ((PTuple) argsTuple).getSequenceStorage();
+                /*
+                 * This assumes that the common case is that the args tuple is still owned by the
+                 * runtime. However, it could be that the C extension does 'Py_INCREF(argsTuple)'
+                 * and in this case, we must not free the memory. Further, since we assumed that we
+                 * may free the memory after the call returned, we also need to create a
+                 * NativeSequenceStorageReference such that the NativeSequenceStorage will not leak.
+                 */
                 boolean isNativeSequenceStorage = s instanceof NativeSequenceStorage;
-                if (isNativeSequenceStorage && ownsMemory) {
-                    freeNode.free(((NativeSequenceStorage) s).getPtr());
+                if (isNativeSequenceStorage && eagerNativeStorage) {
+                    NativeSequenceStorage nativeSequenceStorage = (NativeSequenceStorage) s;
+                    if (argsTupleWrapper.getRefCount() == MANAGED_REFCNT) {
+                        // in this case, the runtime still exclusively owns the memory
+                        freeNode.free(nativeSequenceStorage.getPtr());
+                    } else {
+                        // the C ext also created a reference; no exclusive ownership
+                        CApiTransitions.registerNativeSequenceStorage(nativeSequenceStorage);
+                    }
+                } else {
+                    assert !isNativeSequenceStorage || ((NativeSequenceStorage) s).hasReference();
                 }
                 return isNativeSequenceStorage;
             } catch (ClassCastException e) {
