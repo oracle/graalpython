@@ -88,6 +88,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_POLYGLOT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
@@ -459,6 +460,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     IOUnsupportedOperation("UnsupportedOperation", "io", Flags.EXCEPTION),
 
     Empty("Empty", "_queue", Flags.EXCEPTION),
+
+    UnsupportedMessage("UnsupportedMessage", J_POLYGLOT, Flags.EXCEPTION),
 
     // warnings
     Warning("Warning", J_BUILTINS, Flags.EXCEPTION),
@@ -873,6 +876,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         ArgError.base = PBaseException;
 
         Empty.base = Exception;
+        UnsupportedMessage.base = Exception;
 
         boolean assertionsEnabled = false;
         assert (assertionsEnabled = true) == true;

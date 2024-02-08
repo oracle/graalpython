@@ -295,7 +295,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             case PIOBase, // _io._IOBase
                     PRawIOBase, // _io._RawIOBase
                     PBufferedIOBase, // _io._BufferedIOBase
-                    PTextIOBase // _io._TextIOBase
+                    PTextIOBase, // _io._TextIOBase
+                    PLock // _thread.LockType
                     -> 24;
             case PBytesIO, // _io.BytesIO
                     PPartial // functools.partial
@@ -306,6 +307,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     PBufferedRandom, // _io.BufferedRandom
                     PLruCacheWrapper
                     -> 144;
+            case PickleBuffer -> 96; // _pickle.PickleBuffer
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
 
             default -> -1; // unknown or not implemented
@@ -425,6 +427,10 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             boolean allowed = true;
             if (clazz instanceof PythonBuiltinClassType type) {
+                if (type.getWeaklistoffset() < 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("Unknown weaklistoffset of " + type);
+                }
                 allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {

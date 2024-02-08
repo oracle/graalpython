@@ -316,6 +316,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     return sequenceGetItem.execute(this, PInt.intValueExact(key));
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
+                } catch (PException pe) {
+                    throw UnsupportedMessageException.create();
                 }
             }
         } finally {
@@ -342,6 +344,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     sequenceSetItemNode.execute(this, PInt.intValueExact(key), value);
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
+                } catch (PException pe) {
+                    throw UnsupportedMessageException.create();
                 }
             }
         } finally {
@@ -368,6 +372,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     sequenceDelItemNode.execute(this, PInt.intValueExact(key));
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
+                } catch (PException pe) {
+                    throw UnsupportedMessageException.create();
                 }
             }
         } finally {
@@ -406,12 +412,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     private boolean isInBounds(long idx, PySequenceSizeNode sequenceSizeNode) {
-        try {
-            long length = sequenceSizeNode.execute(this);
-            return 0 <= idx && idx < length;
-        } catch (PException pe) {
-            return false;
-        }
+        long length = sequenceSizeNode.execute(this);
+        return 0 <= idx && idx < length;
     }
 
     @ExportMessage
@@ -433,7 +435,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return isInBounds(idx, sequenceSizeNode);
+                try {
+                    return isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -459,7 +465,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return isInBounds(idx, sequenceSizeNode);
+                try {
+                    return isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -485,7 +495,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return !isInBounds(idx, sequenceSizeNode);
+                try {
+                    return !isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -511,7 +525,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this, idx);
             } else {
-                return isInBounds(idx, sequenceSizeNode);
+                try {
+                    return isInBounds(idx, sequenceSizeNode);
+                } catch (PException pe) {
+                    return false;
+                }
             }
         } finally {
             gil.release(mustRelease);
@@ -983,7 +1001,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("truffle-inlining")
     public ZoneId asTimeZone(
                     @Bind("$node") Node inliningTarget,
-                    @CachedLibrary("this") InteropLibrary lib,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -995,9 +1012,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            if (!lib.isTimeZone(this)) {
-                throw UnsupportedMessageException.create();
-            }
             InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
