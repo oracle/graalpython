@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -96,14 +97,14 @@ public final class PThreadState extends PythonStructNativeWrapper {
         Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.PyThreadState);
         CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
         PythonContext pythonContext = PythonContext.get(null);
-        Object nullValue = pythonContext.getNativeNull().getPtr();
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict == null) {
             threadStateDict = pythonContext.factory().createDict();
             threadState.setDict(threadStateDict);
         }
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
-        writePtrNode.write(ptr, CFields.PyThreadState__interp, nullValue);
+        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        writePtrNode.write(ptr, CFields.PyThreadState__small_ints, cApiContext.getOrCreateSmallInts());
         return ptr;
     }
 }

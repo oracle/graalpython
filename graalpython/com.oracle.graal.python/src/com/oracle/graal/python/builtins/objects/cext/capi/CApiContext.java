@@ -74,13 +74,18 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -162,6 +167,16 @@ public final class CApiContext extends CExtContext {
      * {@code PyLong_FromLong}; implemented in macro {@code CHECK_SMALL_INT}).
      */
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
+
+    /**
+     * Pointer to a native array of long objects in interval
+     * [{@link com.oracle.graal.python.builtins.objects.cext.structs.CConstants#_PY_NSMALLNEGINTS
+     * -_PY_NSMALLNEGINTS},
+     * {@link com.oracle.graal.python.builtins.objects.cext.structs.CConstants#_PY_NSMALLPOSINTS
+     * _PY_NSMALLPOSINTS}[. This corresponds to CPython's {@code PyInterpreterState.small_ints} and
+     * is actually a native mirror of {@link #primitiveNativeWrapperCache}.
+     */
+    private Object nativeSmallIntsArray;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, Object> extensions = new HashMap<>(4);
@@ -326,6 +341,40 @@ public final class CApiContext extends CExtContext {
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(long l) {
         assert CApiGuards.isSmallLong(l);
         return getCachedPrimitiveNativeWrapper((int) l);
+    }
+
+    /**
+     * Returns or allocates (on demand) the native array {@code PyInterpreterState.small_ints} and
+     * write all elements to it.
+     */
+    Object getOrCreateSmallInts() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (nativeSmallIntsArray == null) {
+            int nSmallNegativeInts = CConstants._PY_NSMALLNEGINTS.intValue();
+            int nSmallPositiveInts = CConstants._PY_NSMALLPOSINTS.intValue();
+            Object smallInts = CStructAccess.AllocateNode.callocUncached(nSmallNegativeInts + nSmallPositiveInts, CStructAccess.POINTER_SIZE);
+            for (int i = 0; i < nSmallNegativeInts + nSmallPositiveInts; i++) {
+                CStructAccessFactory.WriteObjectNewRefNodeGen.getUncached().writeArrayElement(smallInts, i, i - nSmallNegativeInts);
+            }
+            nativeSmallIntsArray = smallInts;
+        }
+        return nativeSmallIntsArray;
+    }
+
+    private void freeSmallInts() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (nativeSmallIntsArray != null) {
+            int nSmallNegativeInts = CConstants._PY_NSMALLNEGINTS.intValue();
+            int nSmallPositiveInts = CConstants._PY_NSMALLPOSINTS.intValue();
+            for (int i = 0; i < nSmallNegativeInts + nSmallPositiveInts; i++) {
+                Object elementPtr = ReadPointerNode.getUncached().readArrayElement(nativeSmallIntsArray, i);
+                // again, take ownership
+                Object element = NativeToPythonStealingNode.executeUncached(elementPtr);
+                assert element instanceof Number number && number.intValue() == i - nSmallNegativeInts;
+            }
+            FreeNode.executeUncached(nativeSmallIntsArray);
+            nativeSmallIntsArray = null;
+        }
     }
 
     @TruffleBoundary
@@ -687,6 +736,7 @@ public final class CApiContext extends CExtContext {
         for (Object pyMethodDefPointer : methodDefinitions.values()) {
             PyMethodDefHelper.free(pyMethodDefPointer);
         }
+        freeSmallInts();
     }
 
     @TruffleBoundary

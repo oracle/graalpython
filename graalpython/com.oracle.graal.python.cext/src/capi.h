@@ -71,6 +71,7 @@
 #include "pycore_pymem.h"
 #include "pycore_fileutils.h"
 #include "bytesobject.h"
+#include "pycore_global_objects.h" // _PY_NSMALLPOSINTS
 
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
 #include <graalvm/llvm/polyglot.h>

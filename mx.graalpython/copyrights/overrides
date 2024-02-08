@@ -152,6 +152,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_fileutils.h,pyt
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_frame.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_gc.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_gil.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_global_objects.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_moduleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_namespace.h,python.copyright

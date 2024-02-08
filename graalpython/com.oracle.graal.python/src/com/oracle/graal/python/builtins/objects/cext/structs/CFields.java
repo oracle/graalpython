@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyAsyncMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyInterpreterState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMappingMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMemberDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
@@ -329,8 +328,8 @@ public enum CFields {
     PyMemberDef__flags(Int),
     PyMemberDef__doc(ConstCharPtr),
 
-    PyThreadState__interp(PyInterpreterState),
     PyThreadState__dict(PyObject),
+    PyThreadState__small_ints(PyObjectPtr),
 
     PyBaseExceptionObject__dict(PyObject),
     PyBaseExceptionObject__args(PyObject),
