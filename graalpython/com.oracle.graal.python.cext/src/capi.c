@@ -519,7 +519,12 @@ PyAPI_FUNC(void*) PyTruffle_Add_Offset(void* value, long offset) {
 
 PyAPI_FUNC(void) PyTruffle_ObjectArrayRelease(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
-        Py_DECREF(array[i]);
+        /* This needs to use 'Py_XDECREF' because we use this function to
+           deallocate storages of tuples, lists, ..., where this is done in the
+           appropriate 'tp_traverse' function which uses 'Py_VISIT' and this
+           allows an element to be 'NULL'. Elements may, in particular, be
+           'NULL' if a tuple dies before all elements are initialized. */
+        Py_XDECREF(array[i]);
     }
 }
 
