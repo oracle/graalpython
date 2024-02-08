@@ -57,6 +57,14 @@
 #  define LIKELY(value) (value)
 #endif
 
+#if defined(__GNUC__)
+#define THREAD_LOCAL __thread
+#elif defined(_MSC_VER)
+#define THREAD_LOCAL __declspec(thread)
+#else
+#error "don't know how to declare thread local variable"
+#endif
+
 #ifdef MS_WINDOWS
 // define the below, otherwise windows' sdk defines complex to _complex and breaks us
 #define _COMPLEX_DEFINED
@@ -136,6 +144,10 @@ CAPI_BUILTINS
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
 PyAPI_DATA(PyObject*) _PyTruffle_Zero;
 PyAPI_DATA(PyObject*) _PyTruffle_One;
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {

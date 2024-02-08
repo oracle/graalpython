@@ -260,7 +260,15 @@ PyObject* _Py_NotImplementedStructReference;
 PyObject* _PyTruffle_Zero;
 PyObject* _PyTruffle_One;
 
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+THREAD_LOCAL PyThreadState *tstate_current = NULL;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+
 static void initialize_globals() {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    // store the thread state into a thread local variable
+    tstate_current = GraalPyThreadState_Get();
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
