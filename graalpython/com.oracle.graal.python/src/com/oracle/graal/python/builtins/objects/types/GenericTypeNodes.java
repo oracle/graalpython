@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -267,7 +268,7 @@ public abstract class GenericTypeNodes {
             Object param = paramsStorage.getItemNormalized(i);
             Object prepare = PyObjectLookupAttr.executeUncached(param, T___TYPING_PREPARE_SUBST__);
             if (!(prepare instanceof PNone)) {
-                Object itemarg = item instanceof PTuple ? item : PythonObjectFactory.getUncached().createTuple(new Object[]{item});
+                Object itemarg = item instanceof PTuple ? item : PythonContext.get(node).factory().createTuple(new Object[]{item});
                 item = CallNode.getUncached().execute(prepare, self, itemarg);
             }
         }
@@ -291,7 +292,7 @@ public abstract class GenericTypeNodes {
                 assert iparam >= 0;
                 arg = CallNode.getUncached().execute(subst, argitems[iparam]);
             } else {
-                arg = subsTvars(arg, parameters, argitems);
+                arg = subsTvars(node, arg, parameters, argitems);
             }
             if (unpack && arg instanceof PTuple tuple /* CPython doesn't check the cast?! */) {
                 listExtend(newargs, tuple);
@@ -303,7 +304,7 @@ public abstract class GenericTypeNodes {
     }
 
     @TruffleBoundary
-    private static Object subsTvars(Object obj, PTuple parameters, Object[] argitems) {
+    private static Object subsTvars(Node node, Object obj, PTuple parameters, Object[] argitems) {
         Object subparams = PyObjectLookupAttr.executeUncached(obj, T___PARAMETERS__);
         if (subparams instanceof PTuple tuple && tuple.getSequenceStorage().length() > 0) {
             SequenceStorage subparamsStorage = tuple.getSequenceStorage();
@@ -315,14 +316,16 @@ public abstract class GenericTypeNodes {
                     Object param = arg;
                     arg = argitems[foundIndex];
                     // TypeVarTuple
-                    if (arg instanceof PTuple tuple1 &&
-                                    LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Iter).execute(GetClassNode.executeUncached(param)) != PNone.NO_VALUE) {
-                        listExtend(subargs, tuple1);
+                    if (arg instanceof PTuple tuple1) {
+                        Object paramType = GetClassNode.executeUncached(param);
+                        if (LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Iter).execute(paramType) != PNone.NO_VALUE) {
+                            listExtend(subargs, tuple1);
+                        }
                     }
                 }
                 subargs.add(arg);
             }
-            PTuple subargsTuple = PythonObjectFactory.getUncached().createTuple(subargs.toArray());
+            PTuple subargsTuple = PythonContext.get(node).factory().createTuple(subargs.toArray());
             obj = PyObjectGetItem.executeUncached(obj, subargsTuple);
         }
         return obj;
