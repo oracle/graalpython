@@ -165,10 +165,10 @@ def file_not_empty(path):
             pass
     raise SystemError("file %s not available" % path)
 
-resulttype_mapping = {'s': 'const char *', 'y': 'const char *', 'z': 'const char *', 'u': 'const wchar_t *', 'U': 'const char *', 
+resulttype_mapping = {'s': 'const char *', 'y': 'const char *', 'z': 'const char *', 'u': 'const wchar_t *', 'U': 'const char *',
                       'i': 'int', 'b': 'char', 'h': 'short int', 'l': 'long int', 'B': 'unsigned char', 'H': 'unsigned short int',
-                      'I': 'unsigned int', 'k': 'unsigned long', 'L': 'long long', 'K': 'unsigned long long', 'n': 'Py_ssize_t', 
-                      'c': 'char', 'C': 'int', 'd': 'double', 'f': 'float', 'D': 'Py_complex *', 'O': 'PyObject *', 
+                      'I': 'unsigned int', 'k': 'unsigned long', 'L': 'long long', 'K': 'unsigned long long', 'n': 'Py_ssize_t',
+                      'c': 'char', 'C': 'int', 'd': 'double', 'f': 'float', 'D': 'Py_complex *', 'O': 'PyObject *',
                       'S': 'PyObject *', 'N': 'PyObject *'}
 
 c_template = """
@@ -496,7 +496,66 @@ class UnseenFormatter(Formatter):
             return Formatter.get_value(key, args, kwds)
 
 
+def _compile_module(c_source, name):
+    source_file = DIR / f'{name}.c'
+    with open(source_file, "wb", buffering=0) as f:
+        f.write(bytes(c_source, 'utf-8'))
+    # ensure file was really written
+    try:
+        stat_result = os.stat(source_file)
+        if stat_result[6] == 0:
+            raise SystemError("empty source file %s" % (source_file,))
+    except FileNotFoundError:
+        raise SystemError("source file %s not available" % (source_file,))
+    ccompile(None, name)
+    sys.path.insert(0, str(DIR))
+    try:
+        cmodule = __import__(name)
+    finally:
+        sys.path.pop(0)
+    return cmodule
+
+
 def CPyExtType(name, code='', **kwargs):
+    mod_template = """
+    static PyModuleDef {name}module = {{
+        PyModuleDef_HEAD_INIT,
+        "{name}",
+        "",
+        -1,
+        NULL, NULL, NULL, NULL, NULL
+    }};
+
+    PyMODINIT_FUNC
+    PyInit_{name}(void)
+    {{
+        PyObject* m = PyModule_Create(&{name}module);
+        if (m == NULL)
+            return NULL;
+
+        {ready_code}
+        if (PyType_Ready(&{name}Type) < 0)
+            return NULL;
+        {post_ready_code}
+
+
+        Py_INCREF(&{name}Type);
+        PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);
+        return m;
+    }}
+    """
+    type_decl = CPyExtTypeDecl(name, code, **kwargs)
+
+    kwargs["name"] = name
+    kwargs.setdefault("ready_code", "")
+    kwargs.setdefault("post_ready_code", "")
+    c_source = type_decl + UnseenFormatter().format(mod_template, **kwargs)
+
+    cmodule = _compile_module(c_source, name)
+    return getattr(cmodule, name)
+
+
+def CPyExtTypeDecl(name, code='', **kwargs):
     template = """
     #include "Python.h"
     /* structmember.h is not included by default in Python.h */
@@ -628,38 +687,10 @@ def CPyExtType(name, code='', **kwargs):
         {tp_new},                   /* tp_new */
         {tp_free},                  /* tp_free */
     }};
-
-    static PyModuleDef {name}module = {{
-        PyModuleDef_HEAD_INIT,
-        "{name}",
-        "",
-        -1,
-        NULL, NULL, NULL, NULL, NULL
-    }};
-
-    PyMODINIT_FUNC
-    PyInit_{name}(void)
-    {{
-        PyObject* m = PyModule_Create(&{name}module);
-        if (m == NULL)
-            return NULL;
-
-        {ready_code}
-        if (PyType_Ready(&{name}Type) < 0)
-            return NULL;
-        {post_ready_code}
-
-
-        Py_INCREF(&{name}Type);
-        PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);
-        return m;
-    }}
     """
 
     kwargs["name"] = name
     kwargs["code"] = code
-    kwargs.setdefault("ready_code", "")
-    kwargs.setdefault("post_ready_code", "")
     kwargs.setdefault("tp_name", f"{name}.{name}")
     kwargs.setdefault("tp_itemsize", "0")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
@@ -669,27 +700,76 @@ def CPyExtType(name, code='', **kwargs):
     kwargs.setdefault("cmembers", "")
     kwargs.setdefault("includes", "")
     kwargs.setdefault("struct_base", "PyObject_HEAD")
-    c_source = UnseenFormatter().format(template, **kwargs)
+    return UnseenFormatter().format(template, **kwargs)
 
-    source_file = DIR / f'{name}.c'
-    with open(source_file, "wb", buffering=0) as f:
-        f.write(bytes(c_source, 'utf-8'))
 
-    # ensure file was really written
-    try:
-        stat_result = os.stat(source_file)
-        if stat_result[6] == 0:
-            raise SystemError("empty source file %s" % (source_file,))
-    except FileNotFoundError:
-        raise SystemError("source file %s not available" % (source_file,))
+def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
+    '''
+    :param bases: tuple of baseclasses to be used for PyType_FromSpecWithBases
+    :param slots: array of slots as strings in format "{Py_sq_length, &my_sq_len}"
+    '''
+    template = """
+    #include "Python.h"
+    /* structmember.h is not included by default in Python.h */
+    #include "structmember.h"
 
-    ccompile(None, name)
-    sys.path.insert(0, str(DIR))
-    try:
-        cmodule = __import__(name)
-    finally:
-        sys.path.pop(0)
-    return getattr(cmodule, name)
+    #if !GRAALVM_PYTHON && (PY_VERSION_HEX < 0x03090000)
+    #define Py_SET_REFCNT(ob, v) ((_PyObject_CAST(ob)->ob_refcnt = (v)))
+    #define Py_SET_TYPE(ob, v)   ((_PyObject_CAST(ob)->ob_type) = (v))
+    #define Py_SET_SIZE(ob, v)   ((_PyVarObject_CAST(ob)->ob_size = (Py_ssize_t) (v)))
+    #endif
+
+    {includes}
+
+    {code}
+
+    PyType_Slot slots[] = {{
+        {slots}
+    }};
+
+    PyType_Spec spec = {{ "{name}Type", sizeof(PyHeapTypeObject), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
+
+    static PyObject* create(PyObject* unused, PyObject* bases) {{
+        {ready_code}
+        PyObject* type = PyType_FromSpecWithBases(&spec, bases);
+        if (type == NULL)
+            return NULL;
+        {post_ready_code}
+        return type;
+    }}
+
+    static PyMethodDef ModMethods[] = {{
+        {{"create",  &create, METH_O, "Create the type."}},
+        {{NULL, NULL, 0, NULL}}
+    }};
+
+    static PyModuleDef {name}module = {{
+        PyModuleDef_HEAD_INIT,
+        "{name}",
+        "",
+        -1,
+        ModMethods,
+        NULL, NULL, NULL, NULL
+    }};
+
+    PyMODINIT_FUNC
+    PyInit_{name}(void)
+    {{
+        PyObject* m = PyModule_Create(&{name}module);
+        if (m == NULL)
+            return NULL;
+        return m;
+    }}
+    """
+    kwargs["name"] = name
+    kwargs["code"] = code
+    kwargs["slots"] = '{0}' if slots is None else ',\n'.join(slots + ['{0}'])
+    kwargs.setdefault("includes", "")
+    kwargs.setdefault("ready_code", "")
+    kwargs.setdefault("post_ready_code", "")
+    code = UnseenFormatter().format(template, **kwargs)
+    mod = _compile_module(code, name)
+    return mod.create(bases)
 
 
 CPyExtTestCase.compile_module = ccompile
