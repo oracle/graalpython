@@ -770,8 +770,8 @@ PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src,
     memcpy(dest + dest_offset, src + src_offset, len);
 }
 
-PyAPI_FUNC(void*) truffle_calloc(size_t size) {
-	return calloc(1, size);
+PyAPI_FUNC(void*) truffle_calloc(size_t count, size_t elsize) {
+	return calloc(count, elsize);
 }
 
 // avoid problems with calling "void" intrinsics via interop
