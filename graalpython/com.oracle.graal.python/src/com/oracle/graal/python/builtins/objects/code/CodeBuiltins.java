@@ -140,7 +140,6 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
@@ -152,7 +151,6 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetQualNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
