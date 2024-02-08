@@ -224,20 +224,13 @@ public final class PythonCextTupleBuiltins {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
+            assert result != null : "tuple must not contain Java null";
             Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 tuple.setSequenceStorage(sequenceStorage);
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
-            }
-            if (result == null) {
-                /*
-                 * This can happen when the tuple is not fully initialized. Such tuple is not valid,
-                 * but the C code sometimes uses PyTuple_GET_ITEM to Py_XDECREF the items on error
-                 * paths when they failed to populate the tuple.
-                 */
-                return getNativeNull(inliningTarget);
             }
             return result;
         }
