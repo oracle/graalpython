@@ -149,8 +149,8 @@ def replace_field_access(contents, match, replacement, assignment):
 
 auto_replacements = {
                     # avoid direct access - predecrement/preincrement:
-                    r'--([\d\w_]+)->ob_refcnt': (replace_pre, 'Py_SET_REFCNT(%receiver, Py_REFCNT(%receiver) - 1)'),
-                    r'\+\+([\d\w_]+)->ob_refcnt': (replace_pre, 'Py_SET_REFCNT(%receiver, Py_REFCNT(%receiver) + 1)'),
+                    r'--([\d\w_]+)->ob_refcnt': (replace_pre, '(Py_SET_REFCNT(%receiver, Py_REFCNT(%receiver) - 1), Py_REFCNT(%receiver))'),
+                    r'\+\+([\d\w_]+)->ob_refcnt': (replace_pre, '(Py_SET_REFCNT(%receiver, Py_REFCNT(%receiver) + 1), Py_REFCNT(%receiver))'),
                     # avoid direct access:
                     r'\W(ob_type)\W': (replace_field_access, 'Py_TYPE(%receiver)'),
                     r'\W(ob_refcnt)\W': (replace_field_access, 'Py_REFCNT(%receiver)'),
