@@ -118,159 +118,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
     public static int getBuiltinTypeWeaklistoffset(PythonBuiltinClassType cls) {
         // @formatter:off
         return switch (cls) {
-            case PythonObject, // object
-                    PInt, // int
-                    Boolean, // bool
-                    PByteArray, // bytearray
-                    PBytes, // bytes
-                    PList, // list
-                    PNone, // NoneType
-                    PNotImplemented, // NotImplementedType
-                    PTraceback, // traceback
-                    Super, // super
-                    PRange, // range
-                    PDict, // dict
-                    PDictKeysView, // dict_keys
-                    PDictValuesView, // dict_values
-                    PDictItemsView, // dict_items
-                    PDictReverseKeyIterator, // dict_reversekeyiterator
-                    PDictReverseValueIterator, // dict_reversevalueiterator
-                    PDictReverseItemIterator, // dict_reverseitemiterator
-                    PString, // str
-                    PSlice, // slice
-                    PStaticmethod, // staticmethod
-                    PComplex, // complex
-                    PFloat, // float
-                    PProperty, // property
-                    PTuple, // tuple
-                    PEnumerate, // enumerate
-                    PReverseIterator, // reversed
-                    PFrame, // frame
-                    PMappingproxy, // mappingproxy
-                    GetSetDescriptor, // getset_descriptor
-                    WrapperDescriptor, // wrapper_descriptor
-                    MethodWrapper, // method-wrapper
-                    PEllipsis, // ellipsis
-                    MemberDescriptor, // member_descriptor
-                    PSimpleNamespace, // types.SimpleNamespace
-                    Capsule, // PyCapsule
-                    PCell, // cell
-                    PInstancemethod, // instancemethod
-                    PBuiltinClassMethod, // classmethod_descriptor
-                    PBuiltinFunction, // method_descriptor
-                    PSentinelIterator, // callable_iterator
-                    PIterator, // iterator
-                    PCoroutineWrapper, // coroutine_wrapper
-                    PEncodingMap, // EncodingMap
-                    PIntInfo, // sys.int_info
-                    PBaseException, // BaseException
-                    Exception, // Exception
-                    TypeError, // TypeError
-                    StopAsyncIteration, // StopAsyncIteration
-                    StopIteration, // StopIteration
-                    GeneratorExit, // GeneratorExit
-                    SystemExit, // SystemExit
-                    KeyboardInterrupt, // KeyboardInterrupt
-                    ImportError, // ImportError
-                    ModuleNotFoundError, // ModuleNotFoundError
-                    OSError, // OSError
-                    EOFError, // EOFError
-                    RuntimeError, // RuntimeError
-                    RecursionError, // RecursionError
-                    NotImplementedError, // NotImplementedError
-                    NameError, // NameError
-                    UnboundLocalError, // UnboundLocalError
-                    AttributeError, // AttributeError
-                    SyntaxError, // SyntaxError
-                    IndentationError, // IndentationError
-                    TabError, // TabError
-                    LookupError, // LookupError
-                    IndexError, // IndexError
-                    KeyError, // KeyError
-                    ValueError, // ValueError
-                    UnicodeError, // UnicodeError
-                    UnicodeEncodeError, // UnicodeEncodeError
-                    UnicodeDecodeError, // UnicodeDecodeError
-                    UnicodeTranslateError, // UnicodeTranslateError
-                    AssertionError, // AssertionError
-                    ArithmeticError, // ArithmeticError
-                    FloatingPointError, // FloatingPointError
-                    OverflowError, // OverflowError
-                    ZeroDivisionError, // ZeroDivisionError
-                    SystemError, // SystemError
-                    ReferenceError, // ReferenceError
-                    MemoryError, // MemoryError
-                    BufferError, // BufferError
-                    Warning, // Warning
-                    UserWarning, // UserWarning
-                    DeprecationWarning, // DeprecationWarning
-                    PendingDeprecationWarning, // PendingDeprecationWarning
-                    SyntaxWarning, // SyntaxWarning
-                    RuntimeWarning, // RuntimeWarning
-                    FutureWarning, // FutureWarning
-                    ImportWarning, // ImportWarning
-                    UnicodeWarning, // UnicodeWarning
-                    BytesWarning, // BytesWarning
-                    ResourceWarning, // ResourceWarning
-                    ConnectionError, // ConnectionError
-                    BlockingIOError, // BlockingIOError
-                    BrokenPipeError, // BrokenPipeError
-                    ChildProcessError, // ChildProcessError
-                    ConnectionAbortedError, // ConnectionAbortedError
-                    ConnectionRefusedError, // ConnectionRefusedError
-                    ConnectionResetError, // ConnectionResetError
-                    FileExistsError, // FileExistsError
-                    FileNotFoundError, // FileNotFoundError
-                    IsADirectoryError, // IsADirectoryError
-                    NotADirectoryError, // NotADirectoryError
-                    InterruptedError, // InterruptedError
-                    PermissionError, // PermissionError
-                    ProcessLookupError, // ProcessLookupError
-                    TimeoutError, // TimeoutError
-                    PFloatInfo, // sys.float_info
-                    PythonModuleDef, // moduledef
-                    PHashInfo, // sys.hash_info
-                    PVersionInfo, // sys.version_info
-                    PFlags, // sys.flags
-                    PThreadInfo, // sys.thread_info
-                    PMap, // map
-                    PZip, // zip
-                    PClassmethod, // classmethod
-                    PBytesIOBuf, // _io._BytesIOBuffer
-                    PIncrementalNewlineDecoder, // _io.IncrementalNewlineDecoder
-                    PStatResult, // os.stat_result
-                    PStatvfsResult, // os.statvfs_result
-                    PTerminalSize, // os.terminal_size
-                    PScandirIterator, // posix.ScandirIterator
-                    PDirEntry, // posix.DirEntry
-                    PUnameResult, // posix.uname_result
-                    PStructTime, // time.struct_time
-                    PDictItemIterator, // dict_itemiterator
-                    PDictKeyIterator, // dict_keyiterator
-                    PDictValueIterator, // dict_valueiterator
-                    PAccumulate, // itertools.accumulate
-                    PCombinations, // itertools.combinations
-                    PCombinationsWithReplacement, // itertools.combinations_with_replacement
-                    PCycle, // itertools.cycle
-                    PDropwhile, // itertools.dropwhile
-                    PTakewhile, // itertools.takewhile
-                    PIslice, // itertools.islice
-                    PStarmap, // itertools.starmap
-                    PChain, // itertools.chain
-                    PCompress, // itertools.compress
-                    PFilterfalse, // itertools.filterfalse
-                    PCount, // itertools.count
-                    PZipLongest, // itertools.zip_longest
-                    PPermutations, // itertools.permutations
-                    PProduct, // itertools.product
-                    PRepeat, // itertools.repeat
-                    PGroupBy, // itertools.groupby
-                    PTeeDataObject, // itertools._tee_dataobject
-                    PDefaultDict, // collections.defaultdict
-                    PDequeIter, // _collections._deque_iterator
-                    PDequeRevIter, // _collections._deque_reverse_iterator
-                    PTupleGetter // _collections._tuplegetter
-                    -> 0;
             case PythonClass -> 368; // type
             case PSet, // set
                     PFrozenSet // frozenset
@@ -285,7 +132,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     PThreadLocal, // _thread._local
                     PRLock, // _thread.RLock
                     PBufferedRWPair, // _io.BufferedRWPair
-                    PAsyncGenerator // async_generator
+                    PAsyncGenerator, // async_generator
+                    PGenericAlias
                     -> 40;
             case PMethod, // method
                     PFileIO, // _io.FileIO
@@ -309,8 +157,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     -> 144;
             case PickleBuffer -> 96; // _pickle.PickleBuffer
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
-
-            default -> -1; // unknown or not implemented
+            default -> 0;
             // @formatter:on
         };
     }
@@ -427,10 +274,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             boolean allowed = true;
             if (clazz instanceof PythonBuiltinClassType type) {
-                if (type.getWeaklistoffset() < 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("Unknown weaklistoffset of " + type);
-                }
                 allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {
