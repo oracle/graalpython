@@ -270,10 +270,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "PyLong_FromSsize_t", ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    @CApiBuiltin(name = "PyLong_FromLong", ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Direct)
-    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Direct)
-    abstract static class PyLong_FromLongLong extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
+    abstract static class PyTruffleLong_FromLongLong extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int doSignedInt(int n) {

@@ -8,7 +8,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-unsigned char _PyLong_DigitValue[];
+#include "pycore_long.h" // _PyLong_SMALL_INT_PTRS
+
+#define IS_SMALL_INT(ival) (-_PY_NSMALLNEGINTS <= (ival) && (ival) < _PY_NSMALLPOSINTS)
+#define IS_SMALL_UINT(ival) ((ival) < _PY_NSMALLPOSINTS)
 
 // partially taken from CPython 3.7.0 "Objects/longobject.c"
 PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
@@ -53,22 +56,22 @@ PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
     char prev;
     long value;
     while (true) {
-    	if (*str == '_') {
+        if (*str == '_') {
             if (prev == '_') {
                 goto error;
             }
-    	} else {
-    		unsigned char digit = _PyLong_DigitValue[Py_CHARMASK(*str)];
-    		if (digit >= base) {
-    			break;
-    		}
-    		long new_value = value * base - digit;
-    		if (new_value > value) {
-    			// overflow
-    			overflow = 1;
-    		}
-    		value = new_value;
-    	}
+        } else {
+            unsigned char digit = _PyLong_DigitValue[Py_CHARMASK(*str)];
+            if (digit >= base) {
+                break;
+            }
+            long new_value = value * base - digit;
+            if (new_value > value) {
+                // overflow
+                overflow = 1;
+            }
+            value = new_value;
+        }
         prev = *str;
         ++str;
         ++digits;
@@ -85,16 +88,16 @@ PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
         *pend = str;
     }
     if (value == LONG_MIN && !negative) {
-    	overflow = 1;
+        overflow = 1;
     }
 
     if (overflow) {
-    	PyObject* string = PyUnicode_FromStringAndSize(numberStart, digits);
-    	PyObject* result = GraalPyTruffleLong_FromString(string, base, negative);
-    	Py_DecRef(string);
-    	return result;
+        PyObject* string = PyUnicode_FromStringAndSize(numberStart, digits);
+        PyObject* result = GraalPyTruffleLong_FromString(string, base, negative);
+        Py_DecRef(string);
+        return result;
     } else {
-    	return PyLong_FromLong(negative ? value : -value);
+        return PyLong_FromLong(negative ? value : -value);
     }
 
  error:
@@ -204,7 +207,7 @@ size_t PyLong_AsSize_t(PyObject *obj) {
 
 typedef PyObject* (*fromVoidPtr_fun_t)(void*);
 PyObject * PyLong_FromVoidPtr(void *p) {
-	// directly do the upcall to avoid a cast to primitive and reference counting
+    // directly do the upcall to avoid a cast to primitive and reference counting
     return ((fromVoidPtr_fun_t)GraalPyLong_FromUnsignedLongLong)(p);
 }
 
@@ -267,4 +270,40 @@ _PyLong_UnsignedLong_Converter(PyObject *obj, void *ptr)
 
     *(unsigned long *)ptr = uval;
     return 1;
+}
+
+static PyObject *
+get_small_int(sdigit ival)
+{
+    assert(IS_SMALL_INT(ival));
+    /* GraalVM change
+    PyObject *v = (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + ival];
+    */
+    PyObject *v = _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS + ival];
+    Py_INCREF(v);
+    return v;
+}
+
+PyObject *
+PyLong_FromLong(long ival) {
+    if (IS_SMALL_INT(ival)) {
+        return get_small_int((sdigit)ival);
+    }
+    return GraalPyTruffleLong_FromLongLong((long long) ival);
+}
+
+PyObject *
+PyLong_FromLongLong(long long ival) {
+    if (IS_SMALL_INT(ival)) {
+        return get_small_int((sdigit)ival);
+    }
+    return GraalPyTruffleLong_FromLongLong(ival);
+}
+
+PyObject *
+PyLong_FromSsize_t(Py_ssize_t ival) {
+    if (IS_SMALL_INT(ival)) {
+        return get_small_int((sdigit)ival);
+    }
+    return GraalPyTruffleLong_FromLongLong((long long) ival);
 }
