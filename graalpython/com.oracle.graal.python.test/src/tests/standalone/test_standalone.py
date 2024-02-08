@@ -293,10 +293,10 @@ class PolyglotAppTest(unittest.TestCase):
                 cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "hello java" in out
-                
+
                 #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
                 assert "java.lang.NoClassDefFoundError" not in out
-                
+
             finally:
                 self.purge_local_repo(target_dir, False)
 
@@ -318,11 +318,11 @@ class PolyglotAppTest(unittest.TestCase):
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 if sys.platform != 'win32':
                     assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
-                else: 
-                    # different error message on windows due to generate launcher python script executed 
+                else:
+                    # different error message on windows due to generate launcher python script executed
                     # before the actuall process-resources goal
                     assert "Could not find or load main class com.oracle.graal.python.shell.GraalPythonMain" in out
-                    
+
             finally:
                 self.purge_local_repo(target_dir, False)
 
@@ -350,21 +350,21 @@ class PolyglotAppTest(unittest.TestCase):
                 assert "-m ensurepip" not in out
                 assert "ujson" not in out
                 assert "termcolor" not in out
-                
+
                 # remove ujson pkg from plugin config and check if unistalled
                 with open(os.path.join(target_dir, "pom.xml"), "r") as f:
                     contents = f.read()
-                
+
                 with open(os.path.join(target_dir, "pom.xml"), "w") as f:
-                    f.write(contents.replace("<package>ujson</package>", ""))               
-                
+                    f.write(contents.replace("<package>ujson</package>", ""))
+
                 cmd = MVN_CMD + ["process-resources"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)                
+                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
                 assert "-m venv" not in out
                 assert "-m ensurepip" not in out
                 assert "Uninstalling ujson" in out
                 assert "termcolor" not in out
-                
+
             finally:
                 self.purge_local_repo(target_dir, False)
 
