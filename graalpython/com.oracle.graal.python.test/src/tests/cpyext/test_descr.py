@@ -77,17 +77,10 @@ class TestDescrObject(object):
     def test_new_descr(self):
         C = CPyExtType("C_", 
                             '''
-                            typedef struct A_Struct A_Object;
-
-                            struct A_Struct {
-                                PyObject_HEAD
-                                int some_int;
-                            };
-
                             PyTypeObject A_Type = {
                                 PyVarObject_HEAD_INIT(NULL, 0)
                                 .tp_name = "A",
-                                .tp_basicsize = sizeof(A_Object),
+                                .tp_basicsize = sizeof(C_Object),
                                 .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
                             };
 
@@ -165,6 +158,7 @@ class TestDescrObject(object):
                              tp_clear="(inquiry)C_clear",
                              tp_new="C_new",
                              tp_init="(initproc)C_init",
+                             cmembers="int some_int;",
                              ready_code='''
                                 if (PyType_Ready(&A_Type) < 0)
                                     return NULL;
@@ -181,125 +175,118 @@ class TestDescrObject(object):
             pass
         assert bar().foo(None) is None
 
-    # FIXME Segfaults on CPython 3.11
-    # def test_new_descr_getset(self):
-    #     F = CPyExtType("F_",
-    #                         '''
-    #                         typedef struct D_Struct D_Object;
-    #
-    #                         struct D_Struct {
-    #                             PyObject_HEAD
-    #                             PyObject * obj;
-    #                         };
-    #
-    #                         PyTypeObject D_Type = {
-    #                             PyVarObject_HEAD_INIT(NULL, 0)
-    #                             .tp_name = "A",
-    #                             .tp_basicsize = sizeof(D_Object),
-    #                             .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    #                         };
-    #
-    #                         static PyObject *
-    #                         foo_get(D_Object *obj, void *Py_UNUSED(ignored))
-    #                         {
-    #                             Py_INCREF(obj->obj);
-    #                             return obj->obj;
-    #                         }
-    #
-    #                         static int
-    #                         foo_set(D_Object *obj, PyObject *value, void *Py_UNUSED(ignored))
-    #                         {
-    #                             size_t v = PyLong_AsSize_t(value) + 1;
-    #                             obj->obj = PyLong_FromSize_t(v);
-    #                             Py_INCREF(obj->obj);
-    #                             return 0;
-    #                         }
-    #
-    #                         static PyGetSetDef foo_getset = {
-    #                             "foo", (getter)foo_get, (setter)foo_set, "bar"
-    #                         };
-    #
-    #                         static PyObject* E_new(PyTypeObject* type, PyObject* a, PyObject* b) {
-    #                             PyTypeObject *result;
-    #                             PyGetSetDef *getset_def;
-    #                             PyObject *get_set;
-    #                             int x;
-    #                             result = (PyTypeObject *)PyType_Type.tp_new(type, a, b);
-    #                             if (result == NULL)
-    #                                 return NULL;
-    #
-    #                             getset_def = &foo_getset;
-    #
-    #                             get_set = PyDescr_NewGetSet(result, getset_def);
-    #                             if (!get_set) {
-    #                                 Py_DECREF(result);
-    #                                 return NULL;
-    #                             }
-    #                             x = PyDict_SetItemString(result->tp_dict,
-    #                                                     getset_def->name,
-    #                                                     get_set);
-    #                             Py_DECREF(get_set);
-    #                             if (x == -1) {
-    #                                 Py_DECREF(result);
-    #                                 return NULL;
-    #                             }
-    #
-    #                             return (PyObject *) result;
-    #                         }
-    #
-    #                         PyTypeObject E_Type = {
-    #                             PyVarObject_HEAD_INIT(NULL, 0)
-    #                             .tp_name = "B",
-    #                             .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    #                             .tp_new = E_new,
-    #                         };
-    #
-    #                         static PyObject* F_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
-    #                              return cls->tp_alloc(cls, 0);
-    #                         }
-    #
-    #                         static int
-    #                         F_traverse(F_Object *self, visitproc visit, void *arg) {
-    #                             // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
-    #                             // see typeobject.c:inherit_special:241
-    #                             return 0;
-    #                         }
-    #
-    #                         static int
-    #                         F_clear(F_Object *self) {
-    #                             // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
-    #                             // see typeobject.c:inherit_special:241
-    #                             return 0;
-    #                         }
-    #
-    #                         static int
-    #                         F_init(F_Object *self, PyObject *a, PyObject *k)
-    #                         {
-    #                             return 0;
-    #                         }
-    #
-    #                          ''',
-    #                          tp_traverse="(traverseproc)F_traverse",
-    #                          tp_clear="(inquiry)F_clear",
-    #                          tp_new="F_new",
-    #                          tp_init="(initproc)F_init",
-    #                          ready_code='''
-    #                             if (PyType_Ready(&D_Type) < 0)
-    #                                 return NULL;
-    #
-    #                             E_Type.tp_base = &PyType_Type;
-    #                             if (PyType_Ready(&E_Type) < 0)
-    #                                 return NULL;
-    #
-    #                             Py_SET_TYPE(&F_Type, &E_Type);
-    #                             F_Type.tp_base = &D_Type;''',
-    #                         )
-    #
-    #     class baz(F):
-    #         pass
-    #     b = baz()
-    #     b.foo = 41
-    #     assert b.foo == 42
+    def test_new_descr_getset(self):
+        F = CPyExtType("F_",
+                            '''
+                            PyTypeObject D_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "A",
+                                .tp_basicsize = sizeof(F_Object),
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                            };
+
+                            static PyObject *
+                            foo_get(F_Object *obj, void *Py_UNUSED(ignored))
+                            {
+                                Py_INCREF(obj->obj);
+                                return obj->obj;
+                            }
+
+                            static int
+                            foo_set(F_Object *obj, PyObject *value, void *Py_UNUSED(ignored))
+                            {
+                                size_t v = PyLong_AsSize_t(value) + 1;
+                                obj->obj = PyLong_FromSize_t(v);
+                                Py_INCREF(obj->obj);
+                                return 0;
+                            }
+
+                            static PyGetSetDef foo_getset = {
+                                "foo", (getter)foo_get, (setter)foo_set, "bar"
+                            };
+
+                            static PyObject* E_new(PyTypeObject* type, PyObject* a, PyObject* b) {
+                                PyTypeObject *result;
+                                PyGetSetDef *getset_def;
+                                PyObject *get_set;
+                                int x;
+                                result = (PyTypeObject *)PyType_Type.tp_new(type, a, b);
+                                if (result == NULL)
+                                    return NULL;
+
+                                getset_def = &foo_getset;
+
+                                get_set = PyDescr_NewGetSet(result, getset_def);
+                                if (!get_set) {
+                                    Py_DECREF(result);
+                                    return NULL;
+                                }
+                                x = PyDict_SetItemString(result->tp_dict,
+                                                        getset_def->name,
+                                                        get_set);
+                                Py_DECREF(get_set);
+                                if (x == -1) {
+                                    Py_DECREF(result);
+                                    return NULL;
+                                }
+
+                                return (PyObject *) result;
+                            }
+
+                            PyTypeObject E_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "B",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_new = E_new,
+                            };
+
+                            static PyObject* F_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 return cls->tp_alloc(cls, 0);
+                            }
+
+                            static int
+                            F_traverse(F_Object *self, visitproc visit, void *arg) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+
+                            static int
+                            F_clear(F_Object *self) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+
+                            static int
+                            F_init(F_Object *self, PyObject *a, PyObject *k)
+                            {
+                                return 0;
+                            }
+
+                             ''',
+                             tp_traverse="(traverseproc)F_traverse",
+                             tp_clear="(inquiry)F_clear",
+                             tp_new="F_new",
+                             tp_init="(initproc)F_init",
+                             cmembers="PyObject* obj;",
+                             ready_code='''
+                                if (PyType_Ready(&D_Type) < 0)
+                                    return NULL;
+
+                                E_Type.tp_base = &PyType_Type;
+                                if (PyType_Ready(&E_Type) < 0)
+                                    return NULL;
+
+                                Py_SET_TYPE(&F_Type, &E_Type);
+                                F_Type.tp_base = &D_Type;''',
+                            )
+
+        class baz(F):
+            pass
+        b = baz()
+        b.foo = 41
+        assert b.foo == 42
 
 class TestDescr(CPyExtTestCase):
 
