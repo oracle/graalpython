@@ -119,9 +119,8 @@ CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 
-# TODO msimacek: revert
-# if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
-#     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
+if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
+    os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
 
 
 def is_collecting_coverage():
