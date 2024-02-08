@@ -66,7 +66,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenericAliasIterator)
-public class GenericAliasIteratorBuiltins extends PythonBuiltins {
+public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GenericAliasIteratorBuiltinsFactory.getFactories();
@@ -76,7 +76,7 @@ public class GenericAliasIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(PGenericAliasIterator self,
+        static Object next(PGenericAliasIterator self,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
             if (self.isExhausted()) {
@@ -93,7 +93,7 @@ public class GenericAliasIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(VirtualFrame frame, PGenericAliasIterator self,
+        static Object reduce(VirtualFrame frame, PGenericAliasIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PythonObjectFactory factory) {

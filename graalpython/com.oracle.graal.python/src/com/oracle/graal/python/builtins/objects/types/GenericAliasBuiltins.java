@@ -153,7 +153,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OriginNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object origin(PGenericAlias self) {
+        static Object origin(PGenericAlias self) {
             return self.getOrigin();
         }
     }
@@ -162,7 +162,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object args(PGenericAlias self) {
+        static Object args(PGenericAlias self) {
             return self.getArgs();
         }
     }
@@ -171,7 +171,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object parameters(PGenericAlias self,
+        static Object parameters(PGenericAlias self,
                         @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory.Lazy factory) {
             if (self.getParameters() == null) {
@@ -185,7 +185,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class UnpackedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object unpacked(PGenericAlias self) {
+        static Object unpacked(PGenericAlias self) {
             return self.isStarred();
         }
     }
@@ -195,7 +195,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object union(Object self, Object other,
+        static Object union(Object self, Object other,
                         @Cached GenericTypeNodes.UnionTypeOrNode orNode) {
             return orNode.execute(self, other);
         }
@@ -208,7 +208,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object repr(PGenericAlias self) {
+        static Object repr(PGenericAlias self) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             if (self.isStarred()) {
                 sb.appendCodePointUncached('*');
@@ -245,7 +245,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(VirtualFrame frame, PGenericAlias self,
+        static long hash(VirtualFrame frame, PGenericAlias self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashOrigin,
                         @Cached PyObjectHashNode hashArgs) {
@@ -259,7 +259,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CallMethodNode extends PythonVarargsBuiltinNode {
         @Specialization
-        Object call(VirtualFrame frame, PGenericAlias self, Object[] args, PKeyword[] kwargs,
+        static Object call(VirtualFrame frame, PGenericAlias self, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectSetAttr setAttr,
@@ -283,7 +283,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
 
         @Specialization
         @ExplodeLoop
-        Object getattribute(VirtualFrame frame, PGenericAlias self, Object nameObj,
+        static Object getattribute(VirtualFrame frame, PGenericAlias self, Object nameObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
@@ -308,7 +308,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eq(VirtualFrame frame, PGenericAlias self, PGenericAlias other,
+        static boolean eq(VirtualFrame frame, PGenericAlias self, PGenericAlias other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqOrigin,
                         @Cached PyObjectRichCompareBool.EqNode eqArgs) {
@@ -320,7 +320,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object eq(Object self, Object other) {
+        static Object eq(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -384,7 +384,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object dir(PGenericAlias self,
+        static Object dir(PGenericAlias self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectDir dir,
                         @Cached PySequenceContainsNode containsNode,
@@ -403,12 +403,13 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getitem(PGenericAlias self, Object item,
+        static Object getitem(PGenericAlias self, Object item,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory) {
             if (self.getParameters() == null) {
                 self.setParameters(factory.createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
             }
-            Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
+            Object[] newargs = GenericTypeNodes.subsParameters(inliningTarget, self, self.getArgs(), self.getParameters(), item);
             PTuple newargsTuple = factory.createTuple(newargs);
             return factory.createGenericAlias(self.getOrigin(), newargsTuple, self.isStarred());
         }
@@ -418,7 +419,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TypingUnpackedTupleArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object get(PGenericAlias self,
+        static Object get(PGenericAlias self,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode) {
             if (self.isStarred() && isSameTypeNode.execute(inliningTarget, self.getOrigin(), PythonBuiltinClassType.PTuple)) {
@@ -432,7 +433,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PGenericAlias self,
+        static Object iter(PGenericAlias self,
                         @Cached PythonObjectFactory factory) {
             return factory.createGenericAliasIterator(self);
         }
