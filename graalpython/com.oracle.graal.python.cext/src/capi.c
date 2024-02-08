@@ -45,6 +45,12 @@
 
 #define ASSERTIONS
 
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+int points_to_py_handle_space(void* ptr) {
+   return polyglot_is_value(ptr);
+}
+#endif
+
 typedef struct arrayobject {
     PyObject_VAR_HEAD
     char *ob_item;
