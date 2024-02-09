@@ -1349,6 +1349,7 @@ def graalpython_gate_runner(args, tasks):
             "test_multiprocessing_graalpy.py", # import _winapi
             "test_patched_pip.py",
             "test_pathlib.py",
+            "test_pdb.py", # Tends to hit GR-41935
             "test_posix.py", # import posix
             "test_pyio.py",
             "test_signal.py",
