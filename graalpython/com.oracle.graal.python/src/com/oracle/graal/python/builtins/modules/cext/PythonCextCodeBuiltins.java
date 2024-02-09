@@ -113,11 +113,11 @@ public final class PythonCextCodeBuiltins {
     @CApiBuiltin(ret = Int, args = {PyCodeObject, Int}, call = Direct)
     abstract static class PyCode_Addr2Line extends CApiBinaryBuiltinNode {
         @Specialization
-        static int addr2line(PCode code, int bci) {
-            if (bci < 0) {
+        static int addr2line(PCode code, int lasti) {
+            if (lasti < 0) {
                 return code.co_firstlineno();
             }
-            return code.bciToLine(bci);
+            return code.bciToLine(code.lastiToBci(lasti));
         }
     }
 
