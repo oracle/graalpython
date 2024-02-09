@@ -45,8 +45,28 @@ from . import CPyExtTestCase, CPyExtFunction
 __dir__ = __file__.rpartition("/")[0]
 
 
+def example_generator():
+    # Some random code to make sure we excercise the bytecode index translation
+    a = 1
+    if a == 2:
+        yield 2
+    yield 1
+
+
+gen = example_generator()
+next(gen)
+example_generator_frame = gen.gi_frame
+
+
 def example_function():
     return 1
+
+
+def reference_PyCode_Addr2Line(args):
+    code, lasti = args
+    if lasti >= 0:
+        return list(code.co_positions())[lasti // 2][0]
+    return code.co_firstlineno
 
 
 class DummyClass():
@@ -134,15 +154,16 @@ class TestCodeobject(CPyExtTestCase):
     )
 
     test_PyCode_Addr2Line = CPyExtFunction(
-        lambda args: args[0].co_firstlineno + int(args[1] >= 0),
+        reference_PyCode_Addr2Line,
         lambda: (
             (example_function.__code__, -1),
             # CPython return firstlineno for 0, which doesn't make much sense
             # (example_function.__code__, 0),
-            (example_function.__code__, 2),
+            (example_generator.__code__, example_generator_frame.f_lasti),
         ),
-        code='''int wrap_PyCode_Addr2Line(PyObject* code, int bci) {
-                return PyCode_Addr2Line((PyCodeObject*)code, bci);
+        code='''
+            int wrap_PyCode_Addr2Line(PyObject* code, int lasti) {
+                return PyCode_Addr2Line((PyCodeObject*)code, lasti);
             }
             ''',
         resultspec="i",
