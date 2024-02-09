@@ -981,11 +981,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {
-        return trace(new PTraceback(getLanguage(), frame, lineno, next));
+        return trace(new PTraceback(getLanguage(), frame, lineno, -1, next));
     }
 
-    public final PTraceback createTraceback(PFrame frame, int lineno, int bci, PTraceback next) {
-        return trace(new PTraceback(getLanguage(), frame, lineno, bci, next));
+    public final PTraceback createTracebackWithLasti(PFrame frame, int lineno, int lasti, PTraceback next) {
+        return trace(new PTraceback(getLanguage(), frame, lineno, lasti, next));
     }
 
     public final PTraceback createTraceback(LazyTraceback tb) {

@@ -2819,13 +2819,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         static Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame pframe, int lasti, int lineno,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTraceback(pframe, lineno, lasti, next);
+            return factory.createTracebackWithLasti(pframe, lineno, lasti, next);
         }
 
         @Specialization
         static Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame pframe, int lasti, int lineno,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTraceback(pframe, lineno, lasti, null);
+            return factory.createTracebackWithLasti(pframe, lineno, lasti, null);
         }
 
         @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
