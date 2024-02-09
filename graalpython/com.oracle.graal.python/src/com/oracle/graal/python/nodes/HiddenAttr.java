@@ -78,6 +78,7 @@ public enum HiddenAttr {
     DATA("__data__"),                   // readline
     SIGNAL_MODULE_DATA("signalModuleData"), // _signal
     CURRENT_ALARM("current_alarm"),     // _signal
+    DEFAULT_TIMEOUT("default_timeout"), // _socket
 
     ;
 
