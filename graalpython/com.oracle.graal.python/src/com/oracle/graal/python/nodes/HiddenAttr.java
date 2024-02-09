@@ -76,6 +76,8 @@ public enum HiddenAttr {
     AST_STATE("ast_state"),             // _ast
     HOST_INTEROP_BEHAVIOR(J___GRAALPYTHON_INTEROP_BEHAVIOR__),      // polyglot
     DATA("__data__"),                   // readline
+    SIGNAL_MODULE_DATA("signalModuleData"), // _signal
+    CURRENT_ALARM("current_alarm"),     // _signal
 
     ;
 
