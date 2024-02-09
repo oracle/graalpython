@@ -57,7 +57,6 @@ import com.oracle.graal.python.compiler.SourceMap;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -300,8 +299,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         static Object lines(PCode self) {
             PythonObjectFactory factory = PythonContext.get(null).factory();
             PTuple tuple;
-            if (self.getRootNode() instanceof PBytecodeRootNode bytecodeRootNode) {
-                CodeUnit co = bytecodeRootNode.getCodeUnit();
+            CodeUnit co = self.getCodeUnit();
+            if (co != null) {
                 SourceMap map = co.getSourceMap();
                 List<PTuple> lines = new ArrayList<>();
                 if (map != null && map.startLineMap.length > 0) {
@@ -333,8 +332,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         Object positions(PCode self) {
             PythonObjectFactory factory = PythonContext.get(null).factory();
             PTuple tuple;
-            if (self.getRootNode() instanceof PBytecodeRootNode bytecodeRootNode) {
-                CodeUnit co = bytecodeRootNode.getCodeUnit();
+            CodeUnit co = self.getCodeUnit();
+            if (co != null) {
                 SourceMap map = co.getSourceMap();
                 List<PTuple> lines = new ArrayList<>();
                 if (map != null && map.startLineMap.length > 0) {

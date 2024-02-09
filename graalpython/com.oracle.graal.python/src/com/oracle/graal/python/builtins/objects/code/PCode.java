@@ -505,6 +505,10 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
+    public CodeUnit getCodeUnit() {
+        return getCodeUnit(getRootNode());
+    }
+
     public Object[] getConstants() {
         if (constants == null) {
             constants = extractConstants(getRootNode());
