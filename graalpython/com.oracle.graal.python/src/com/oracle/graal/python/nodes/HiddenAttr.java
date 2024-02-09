@@ -75,6 +75,7 @@ public enum HiddenAttr {
     INTERNED("_interned"),              // PString
     AST_STATE("ast_state"),             // _ast
     HOST_INTEROP_BEHAVIOR(J___GRAALPYTHON_INTEROP_BEHAVIOR__),      // polyglot
+    DATA("__data__"),                   // readline
 
     ;
 
