@@ -98,6 +98,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private Trees trees;
 
     private String getFieldInitializer(VariableElement theField) {
+        if (trees == null) {
+            return "";
+        }
         if (argDescriptorToInitializer.isEmpty()) {
             // lazily initialize all arg descriptors in a single scan
             var codeScanner = new ArgDescriptorsTreeScanner();
@@ -115,7 +118,13 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     @Override
     public synchronized void init(ProcessingEnvironment pe) {
         super.init(pe);
-        this.trees = Trees.instance(pe);
+        try {
+            this.trees = Trees.instance(pe);
+        } catch (Throwable t) {
+            // ECJ does not support this, so we skip the some processing of C API builtins
+            pe.getMessager().printWarning("The compiler does not support source tree parsing during annotation processing. Regeneration of Python C API builtins will be incorrect.");
+            this.trees = null;
+        }
     }
 
     private String getCSignature(VariableElement obj) {
@@ -425,6 +434,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private void compareFunction(String name, VariableElement ret1, String ret2, VariableElement[] args1, String[] args2) {
+        if (trees == null) {
+            return; // This isn't correct without parsing
+        }
         if (!isSimilarType(getCSignature(ret1), ret2)) {
             processingEnv.getMessager().printError("duplicate entry for " + name + ", different return " + ret1 + " vs. " + ret2);
         }
@@ -890,11 +902,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             return true;
         }
         try {
-            generateCApiSource(allBuiltins, constants, fields, structs);
-            generateCApiHeader(javaBuiltins, methodFlags);
+            if (trees != null) {
+                // needs jdk.compiler
+                generateCApiSource(allBuiltins, constants, fields, structs);
+                generateCApiHeader(javaBuiltins, methodFlags);
+            }
             generateBuiltinRegistry(javaBuiltins);
             generateCApiAsserts(allBuiltins);
-            checkImports(allBuiltins);
+            if (trees != null) {
+                // needs jdk.compiler
+                checkImports(allBuiltins);
+            }
         } catch (IOException e) {
             processingEnv.getMessager().printError(e.getMessage());
         }

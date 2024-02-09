@@ -72,8 +72,6 @@ public final class NativePointer implements TruffleObject {
     /**
      * Returns an object representing a {@code NULL} pointer. This may also be used if
      * {@link PythonContext#isNativeAccessAllowed()} is {@code false}.
-     *
-     * @return
      */
     public static NativePointer createNull() {
         return new NativePointer();
