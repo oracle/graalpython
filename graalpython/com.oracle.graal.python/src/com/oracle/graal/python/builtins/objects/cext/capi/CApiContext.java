@@ -96,6 +96,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -720,6 +721,10 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public void finalizeCapi() {
+        // TODO(fa): remove GIL acquisition (GR-51314)
+        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            freeSmallInts();
+        }
         if (pyDateTimeCAPICapsule != null) {
             PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
         }
@@ -736,7 +741,6 @@ public final class CApiContext extends CExtContext {
         for (Object pyMethodDefPointer : methodDefinitions.values()) {
             PyMethodDefHelper.free(pyMethodDefPointer);
         }
-        freeSmallInts();
     }
 
     @TruffleBoundary
