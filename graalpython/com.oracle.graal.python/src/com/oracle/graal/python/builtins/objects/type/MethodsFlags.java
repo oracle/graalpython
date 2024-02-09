@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.oracle.graal.python.annotations.CApiConstants;
 
 /**
  * This class is a simple representation of methods slots occupation of `cls->tp_as_number`,
@@ -52,9 +51,8 @@ import java.util.List;
  * Use {@link com.oracle.graal.python.lib.GetMethodsFlagsNode} to retrieve slots occupation of a
  * given class.
  */
+@CApiConstants
 public abstract class MethodsFlags {
-
-    public static final List<String> CAPI_METHODS_FLAGS_DEFINES = new ArrayList<>();
 
     // PyNumberMethods
 
@@ -133,60 +131,6 @@ public abstract class MethodsFlags {
     public static final long AM_SEND = 1L << 57;
 
     public static final long ASYNC_METHODS = AM_AWAIT | AM_AITER | AM_ANEXT | AM_SEND;
-
-    static {
-        // CapiCodeGen
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_ADD " + NB_ADD);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_SUBTRACT " + NB_SUBTRACT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_MULTIPLY " + NB_MULTIPLY);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_REMAINDER " + NB_REMAINDER);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_DIVMOD " + NB_DIVMOD);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_POWER " + NB_POWER);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_NEGATIVE " + NB_NEGATIVE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_POSITIVE " + NB_POSITIVE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_ABSOLUTE " + NB_ABSOLUTE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_BOOL " + NB_BOOL);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INVERT " + NB_INVERT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_LSHIFT " + NB_LSHIFT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_RSHIFT " + NB_RSHIFT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_AND " + NB_AND);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_XOR " + NB_XOR);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_OR " + NB_OR);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INT " + NB_INT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_FLOAT " + NB_FLOAT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_ADD " + NB_INPLACE_ADD);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_SUBTRACT " + NB_INPLACE_SUBTRACT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_MULTIPLY " + NB_INPLACE_MULTIPLY);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_REMAINDER " + NB_INPLACE_REMAINDER);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_POWER " + NB_INPLACE_POWER);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_LSHIFT " + NB_INPLACE_LSHIFT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_RSHIFT " + NB_INPLACE_RSHIFT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_AND " + NB_INPLACE_AND);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_XOR " + NB_INPLACE_XOR);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_OR " + NB_INPLACE_OR);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_FLOOR_DIVIDE " + NB_FLOOR_DIVIDE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_TRUE_DIVIDE " + NB_TRUE_DIVIDE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_FLOOR_DIVIDE " + NB_INPLACE_FLOOR_DIVIDE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_TRUE_DIVIDE " + NB_INPLACE_TRUE_DIVIDE);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INDEX " + NB_INDEX);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_MATRIX_MULTIPLY " + NB_MATRIX_MULTIPLY);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define NB_INPLACE_MATRIX_MULTIPLY " + NB_INPLACE_MATRIX_MULTIPLY);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_LENGTH " + SQ_LENGTH);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_CONCAT " + SQ_CONCAT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_REPEAT " + SQ_REPEAT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_ITEM " + SQ_ITEM);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_ASS_ITEM " + SQ_ASS_ITEM);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_CONTAINS " + SQ_CONTAINS);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_INPLACE_CONCAT " + SQ_INPLACE_CONCAT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define SQ_INPLACE_REPEAT " + SQ_INPLACE_REPEAT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define MP_LENGTH " + MP_LENGTH);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define MP_SUBSCRIPT " + MP_SUBSCRIPT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define MP_ASS_SUBSCRIPT " + MP_ASS_SUBSCRIPT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_AWAIT " + AM_AWAIT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_AITER " + AM_AITER);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_ANEXT " + AM_ANEXT);
-        CAPI_METHODS_FLAGS_DEFINES.add("#define AM_SEND " + AM_SEND);
-    }
 
     // builtins methods flags
 

@@ -86,9 +86,11 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -109,7 +111,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.PyTr
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
@@ -878,22 +879,24 @@ public final class PythonCextBuiltins {
         Ignored,
     }
 
-    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.SOURCE)
     public @interface CApiBuiltins {
         CApiBuiltin[] value();
     }
 
     /**
      * Builtin implementations in the C API (or helpers for implementing builtins with C code) are
-     * marked with this annotation. The information in the annotation allows code generation
-     * ({@link CApiCodeGen}), argument conversions (based on {@link ArgDescriptor}s), and
-     * verification of the C API implementation in general.
+     * marked with this annotation. The information in the annotation allows code generation,
+     * argument conversions (based on {@link ArgDescriptor}s), and verification of the C API
+     * implementation in general.
      *
      * Apart from being placed on classes that implement {@link CApiBuiltinNode}, this annotation is
      * also used in {@link CApiFunction} to list all functions that are implemented in C code or
      * that are not currently implemented.
      */
-    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.SOURCE)
     @Repeatable(value = CApiBuiltins.class)
     public @interface CApiBuiltin {
 
