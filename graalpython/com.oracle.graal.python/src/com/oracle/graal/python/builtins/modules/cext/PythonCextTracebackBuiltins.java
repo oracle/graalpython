@@ -91,7 +91,10 @@ public final class PythonCextTracebackBuiltins {
             PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(language);
             PException currentException = threadState.getCurrentException();
             if (currentException != null) {
-                PTraceback currentTraceback = materializeLazyTracebackNode.execute(inliningTarget, threadState.getCurrentTraceback());
+                PTraceback currentTraceback = null;
+                if (threadState.getCurrentTraceback() != null) {
+                    currentTraceback = materializeLazyTracebackNode.execute(inliningTarget, threadState.getCurrentTraceback());
+                }
                 PTraceback newTraceback = factory.createTraceback(frame, frame.getLine(), currentTraceback);
                 threadState.setCurrentTraceback(new LazyTraceback(newTraceback));
             }
