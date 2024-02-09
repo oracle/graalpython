@@ -48,7 +48,7 @@ import shutil
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 skip_purge = 'SKIP_STANDALONE_UNITTESTS_PURGE' in os.environ and os.environ['SKIP_STANDALONE_UNITTESTS_PURGE'] == "true"
 
-MVN_CMD = [shutil.which('mvn')]
+MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
 
 def run_cmd(cmd, env, cwd=None):
     print(f"Executing:\n    {cmd=}\n")
@@ -87,7 +87,6 @@ def get_gp():
             "native-image exists: " + str(os.path.exists(ni)),
             "javac exists: " + str(os.path.exists(jc)),
             "graalpy exits: " + str(os.path.exists(graalpy)),
-            "java exists: " + str(os.path.exists(java)),
             sep="\n",
         )
         assert False

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -395,7 +395,7 @@ def download_maven_artifact(modules_path, artifact, parsed_args):
     cmd += ["-v", MVN_GRAALPY_VERSION]
     cmd += ["-o", modules_path]
     if parsed_args.verbose:
-        print(f"downloading graalpython maven artefacts: {' '.join(cmd)}")
+        print(f"downloading graalpython maven artifacts: {' '.join(cmd)}")
 
     if parsed_args.verbose:
         p = subprocess.run(cmd)
