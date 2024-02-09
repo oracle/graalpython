@@ -97,8 +97,8 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyThreadState, args = {}, call = Direct, inlined = true)
-    abstract static class PyThreadState_Get extends CApiNullaryBuiltinNode {
+    @CApiBuiltin(ret = PyThreadState, args = {}, call = Ignored)
+    abstract static class PyTruffleThreadState_Get extends CApiNullaryBuiltinNode {
 
         @Specialization
         Object get() {

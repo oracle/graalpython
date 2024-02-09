@@ -45,8 +45,25 @@
 extern TruffleContext* TRUFFLE_CONTEXT;
 
 PyThreadState *
+PyThreadState_Get() {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    PyThreadState *ts = tstate_current;
+    if (ts) {
+        return ts;
+    }
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return GraalPyTruffleThreadState_Get();
+}
+
+PyThreadState *
 _PyThreadState_UncheckedGet(void) {
-    return GraalPyThreadState_Get();
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    PyThreadState *ts = tstate_current;
+    if (ts) {
+        return ts;
+    }
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return GraalPyTruffleThreadState_Get();
 }
 
 void PyThreadState_Clear(PyThreadState *tstate) {
@@ -71,8 +88,13 @@ PyInterpreterState* PyInterpreterState_Main()
 }
 
 PyThreadState* PyGILState_GetThisThreadState(void) {
-    // TODO this should return NULL when called from a thread that is not known to python
-    return GraalPyThreadState_Get();
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    PyThreadState *ts = tstate_current;
+    if (ts) {
+        return ts;
+    }
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return GraalPyTruffleThreadState_Get();
 }
 
 PyObject* PyState_FindModule(struct PyModuleDef* module) {

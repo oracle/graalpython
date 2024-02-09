@@ -434,6 +434,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PySys_Audit", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_Clear", ret = Void, args = {PyThreadState}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_DeleteCurrent", ret = Void, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThreadState_Get", ret = PyThreadState, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThread_free_lock", ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = CImpl)
     @CApiBuiltin(name = "PyThread_tss_alloc", ret = PY_TSS_T_PTR, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThread_tss_create", ret = Int, args = {PY_TSS_T_PTR}, call = CImpl)
