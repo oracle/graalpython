@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -621,7 +621,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (hasArguments) {
                 rootNode = new RootNodeWithArguments(this, rootNode);
             }
-            if (topLevel && context.isCoreInitialized()) {
+            if (topLevel) {
                 rootNode = new TopLevelExceptionHandler(this, rootNode, source);
             }
             return PythonUtils.getOrCreateCallTarget(rootNode);
