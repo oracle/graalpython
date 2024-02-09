@@ -128,8 +128,13 @@ public abstract class CodeNodes {
                  * you call `inspect.signature()` on such function-like object.
                  */
                 int posArgCount = argCount + positionalOnlyArgCount;
-                TruffleString[] parameterNames = Arrays.copyOf(varnames, posArgCount);
-                TruffleString[] kwOnlyNames = Arrays.copyOfRange(varnames, posArgCount, posArgCount + kwOnlyArgCount);
+                TruffleString[] parameterNames, kwOnlyNames;
+                if (varnames != null) {
+                    parameterNames = Arrays.copyOf(varnames, posArgCount);
+                    kwOnlyNames = Arrays.copyOfRange(varnames, posArgCount, posArgCount + kwOnlyArgCount);
+                } else {
+                    parameterNames = kwOnlyNames = PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+                }
                 int varArgsIndex = (flags & PCode.CO_VARARGS) != 0 ? posArgCount : -1;
                 signature = new Signature(positionalOnlyArgCount,
                                 (flags & PCode.CO_VARKEYWORDS) != 0,
