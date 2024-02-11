@@ -349,8 +349,8 @@ public enum ArgDescriptor {
     PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached()),
     PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached());
 
-    public final String cSignature;
-    public final ArgBehavior behavior;
+    private final String cSignature;
+    private final ArgBehavior behavior;
     private final boolean transfer;
     private final Supplier<CheckFunctionResultNode> checkResult;
     private final CheckFunctionResultNode uncachedCheckResult;
@@ -490,25 +490,6 @@ public enum ArgDescriptor {
 
     public boolean isVoid() {
         return behavior == ArgBehavior.Void;
-    }
-
-    public static ArgDescriptor resolve(String sig) {
-        switch (sig) {
-            case "struct _typeobject*":
-                return PyTypeObject;
-            case "struct PyGetSetDef*":
-                return PyGetSetDef;
-            case "const struct PyConfig*":
-                return CONST_PYCONFIG_PTR;
-            case "struct PyConfig*":
-                return PYCONFIG_PTR;
-        }
-        for (ArgDescriptor d : values()) {
-            if (d.cSignature.equals(sig)) {
-                return d;
-            }
-        }
-        throw new IllegalArgumentException("unknown C signature: " + sig);
     }
 
     public boolean isI64() {

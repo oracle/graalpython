@@ -54,7 +54,7 @@ CATALOG_ALIAS = "tested_catalog"
 WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
 JBANG_CMD = os.environ.get('JBANG_CMD')
 ENV = os.environ.copy()
-USE_SHELL = 'win' in sys.platform 
+USE_SHELL = 'win' in sys.platform
 
 def run_cmd(cmd, env=ENV, cwd=None):
     print(f"\nExecuting: {cmd=}")
@@ -66,7 +66,7 @@ def run_cmd(cmd, env=ENV, cwd=None):
         out.append(line)
     print("========== end of output ==========")
     return "".join(out), process.wait()
-    
+
 class TestJBangIntegration(unittest.TestCase):
 
     def setUpClass(self):
@@ -76,29 +76,29 @@ class TestJBangIntegration(unittest.TestCase):
         self.ensureLocalMavenRepo()
         self.catalog_file = self.getCatalogFile()
         self.registerCatalog(self.catalog_file)
-     
+
     def tearDownClass(self):
         if not is_enabled:
             return
-        try: 
+        try:
             shutil.rmtree(WORK_DIR)
         except Exception as e:
             print(f"The test run correctly but problem during removing workdir: {e}")
-            
+
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-      
+
     def tearDown(self):
         try:
             shutil.rmtree(self.tmpdir)
         except Exception as e:
             print(f"The test run correctly but problem during removing workdir: {e}")
-            
+
     def ensureProxy(self):
         java_tools = os.environ.get('JAVA_TOOL_OPTIONS')
         if java_tools is None:
             java_tools = ""
-        
+
         http_proxy = os.environ.get('http_proxy')
         https_proxy = os.environ.get('http_proxy')
         if https_proxy and 'https_proxy' not in java_tools and len(https_proxy.split(":")) == 2:
@@ -107,25 +107,25 @@ class TestJBangIntegration(unittest.TestCase):
         if http_proxy and 'http_proxy' not in java_tools and len(http_proxy.split(":")) == 2:
             server, port = http_proxy.split(":")
             java_tools = f"{java_tools} -Dhttp.proxyHost={server} -Dhttp.proxyPort={port}"
-    
+
         if len(java_tools) > 0:
             os.environ['JAVA_TOOL_OPTIONS'] = java_tools
 
     def ensureLocalMavenRepo(self):
         if MAVEN_REPO_LOCAL_URL is None:
             self.fail("'org.graalvm.maven.downloader.repository' is not defined")
-    
-    def getCatalogFile(self): 
+
+    def getCatalogFile(self):
         catalog_dir = os.path.dirname(os.path.abspath(__file__))
         for _ in range(5):
             catalog_dir = os.path.dirname(catalog_dir)
         return os.path.join(catalog_dir, 'jbang-catalog.json')
-        
+
     def getCatalogData(self, catalog_file):
         try:
             with open(catalog_file, 'r') as json_file:
                 json_data = json.load(json_file)
-            
+
         except FileNotFoundError:
             self.fail(f"Catalog {catalog_file} was not found.")
         except json.JSONDecodeError:
@@ -135,7 +135,7 @@ class TestJBangIntegration(unittest.TestCase):
         return json_data
 
     def addLocalMavenRepo(self, file):
-    
+
         with open(file, 'r') as script_file:
             content = script_file.readlines()
 
@@ -153,7 +153,7 @@ class TestJBangIntegration(unittest.TestCase):
                 script_file.writelines(content)
         else:
             self.fail(f"Not found any dependecies in: {file}")
-    
+
     def registerCatalog(self, catalog_file):
         # we need to be sure that the current dir is not dir, where is the catalog defined
         os.chdir(WORK_DIR)
@@ -165,13 +165,13 @@ class TestJBangIntegration(unittest.TestCase):
                 # registering our catalog
                 command = [JBANG_CMD, "catalog", "add", "--name", CATALOG_ALIAS, catalog_file]
                 out, result = run_cmd(command)
-                if result != 0:                
+                if result != 0:
                     self.fail(f"Problem during registering catalog: {out}")
         else:
             self.fail(f"Problem during registering catalog: {out}")
-            
+
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
-    def test_catalog(self):       
+    def test_catalog(self):
         json_data = self.getCatalogData(self.catalog_file)
         for alias in json_data.get("aliases", {}).values():
             script_ref = alias.get("script-ref")
@@ -182,7 +182,7 @@ class TestJBangIntegration(unittest.TestCase):
             for file_ref in template.get("file-refs", {}).values():
                 file_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), file_ref))
                 self.assertTrue(os.path.isfile(file_path), f"The path definied in catalog is not found: {file_path}")
-    
+
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graal_version(self):
         json_data = self.getCatalogData(self.catalog_file)
@@ -195,7 +195,7 @@ class TestJBangIntegration(unittest.TestCase):
             self.assertIn (f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION} was not foudn in {script_path}")
             self.assertIn (f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION} was not foudn in {script_path}")
             self.assertIn (f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION} was not foudn in {script_path}")
-            
+
         for template in json_data.get("templates", {}).values():
             for file_ref in template.get("file-refs", {}).values():
                 file_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), file_ref))
@@ -205,30 +205,30 @@ class TestJBangIntegration(unittest.TestCase):
                 self.assertIn (f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION} was not foudn in {script_path}")
                 self.assertIn (f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION} was not foudn in {script_path}")
                 self.assertIn (f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION} was not foudn in {script_path}")
-                
+
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graalpy_template(self):
         template_name = "graalpy"
         test_file = "graalpy_test.java"
         work_dir = self.tmpdir
         os.chdir(work_dir)
-        
+
         command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
         out, result = run_cmd(command)
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
-        
+
         # add local maven repo to the deps
         test_file_path = os.path.join(work_dir, test_file)
         self.addLocalMavenRepo(test_file_path)
-        
+
         tested_code = "print (f\'This is test text and result is {123456789 * 1000}\')"
         expected_text = "This is test text and result is 123456789000"
         command = [JBANG_CMD, "--verbose",  test_file_path, tested_code]
         out, result = run_cmd(command)
-        
+
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}\n")
         self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
-        
+
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     @unittest.skipUnless('win' not in sys.platform, "Currently the jbang native image on Win gate fails.")
     def test_graalpy_template_native(self):
@@ -236,39 +236,41 @@ class TestJBangIntegration(unittest.TestCase):
         test_file = "graalpy_test.java"
         work_dir = self.tmpdir
         os.chdir(work_dir)
-        
+
         command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
         out, result = run_cmd(command)
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
-        
+
         test_file_path = os.path.join(work_dir, test_file)
         self.addLocalMavenRepo(test_file_path)
         tested_code = "print (f\'This is test text and result is {147258369 * 1000}\')"
         expected_text = "This is test text and result is 147258369000"
         command = [JBANG_CMD, "--verbose", "--native", test_file_path, tested_code]
         out, result = run_cmd(command)
-        
+
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
-            
-    
+
+
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graalpy_local_repo_template(self):
         template_name = "graalpy_local_repo"
         test_file = "graalpy_test_local_repo.java"
         work_dir = self.tmpdir
         os.chdir(work_dir)
-        
+
         command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}", f"-Dpath_to_local_repo={MAVEN_REPO_LOCAL_URL}", test_file]
         out, result = run_cmd(command)
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
-        
+
         test_file_path = os.path.join(work_dir, test_file)
         tested_code = "print (f\'This is test text and result is {987654321 * 1000}\')"
         expected_text = "This is test text and result is 987654321000"
         command = [JBANG_CMD, "--verbose", test_file_path, tested_code]
         out, result = run_cmd(command)
-        
+
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
-        
+
+
+unittest.skip_deselected_test_functions(globals())

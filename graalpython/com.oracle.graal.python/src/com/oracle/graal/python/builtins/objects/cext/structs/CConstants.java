@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.nodes.ErrorMessages.INTERNAL_INT_OVERFLOW;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import com.oracle.graal.python.annotations.CApiConstants;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -55,9 +55,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 /**
  * Helper enum to extract constants from the C space. Constants are limited to the range of "long"
- * values, but '-1' is not allowed at the moment. Run {@link CApiCodeGen} to regenerate the
- * necessary definitions on the C side.
+ * values, but '-1' is not allowed at the moment.
  */
+@CApiConstants
 public enum CConstants {
     PYLONG_BITS_IN_DIGIT,
     READONLY,

@@ -2058,10 +2058,6 @@ def python_checkcopyrights(args):
 
     _python_checkpatchfiles()
 
-    r = generate_capi_forwards([])
-    if r != 0:
-        mx.abort("re-generating C API forwards produced changes, out of sync")
-
 
 def python_run_mx_filetests(args):
     for test in glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
@@ -3420,25 +3416,6 @@ def no_return(fn):
     return inner
 
 
-def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, **kwargs):
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
-    vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
-    if extra_dists:
-        dists += extra_dists
-    vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk, cp_prefix=cp_prefix, cp_suffix=cp_suffix)
-    if not jdk:
-        jdk = get_jdk()
-    vm_args += ['-ea', '-esa']
-
-    if extra_vm_args:
-        vm_args += extra_vm_args
-
-    vm_args += ["--module", "org.graalvm.py/com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen"]
-
-    print("\nGraalPython needs to be built before executing this command. If you encounter build errors because of changed builtin definitions, manually remove the contents of com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry.createBuiltinNode before building.\n")
-    return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, cwd=SUITE.dir, **kwargs)
-
-
 def host_inlining_log_extract_method(args_in):
     parser = ArgumentParser(description="Extracts single method from host inlining log file. "
                                  "Result, when saved to file, can be visualized with: java scripts/HostInliningVisualizer.java filename")
@@ -3545,6 +3522,5 @@ mx.update_commands(SUITE, {
     'python-leak-test': [run_leak_launcher, ''],
     'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
-    'python-capi-forwards': [generate_capi_forwards, ''],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
 })

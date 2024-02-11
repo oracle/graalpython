@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "21e21a8f00f6333b91bcd3b1a25eaa5616f008a1",
+                "version": "8aca1406a68115c09ad3e51bfe00fe0ba1c95c84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "21e21a8f00f6333b91bcd3b1a25eaa5616f008a1",
+                "version": "8aca1406a68115c09ad3e51bfe00fe0ba1c95c84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "21e21a8f00f6333b91bcd3b1a25eaa5616f008a1",
+                "version": "8aca1406a68115c09ad3e51bfe00fe0ba1c95c84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "21e21a8f00f6333b91bcd3b1a25eaa5616f008a1",
+                "version": "8aca1406a68115c09ad3e51bfe00fe0ba1c95c84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -344,6 +344,7 @@ suite = {
             ],
             "requires": [
                 "java.compiler",
+                "jdk.compiler",
             ],
             "jacoco": "exclude",
             "javaCompliance": "17+",
@@ -429,6 +430,7 @@ suite = {
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
             ],
+            "forceJavac": True, # GRAALPYTHON_PROCESSOR is not compatible with ECJ
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
         },
@@ -457,6 +459,7 @@ suite = {
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
             ],
+            "forceJavac": True, # GRAALPYTHON_PROCESSOR is not compatible with ECJ
             "workingSets": "Truffle,Python",
             "testProject": True,
             "javaProperties": {
@@ -647,12 +650,14 @@ suite = {
             "toolchain": "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
             "max_jobs": "8",
             "vpath": True,
+            "use_jdk_headers": True, # not actually, just making mx happy
             "ninja_targets": ["all"],
             "ninja_install_targets": ["install"],
             "os_arch": {
                 "windows": {
                     "<others>": {
                         "cmakeConfig": {
+                            "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
@@ -674,6 +679,7 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "cmakeConfig": {
+                            "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
@@ -700,6 +706,7 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
                 "sulong:SULONG_LEGACY",
+                "com.oracle.graal.python",
             ],
         },
 
