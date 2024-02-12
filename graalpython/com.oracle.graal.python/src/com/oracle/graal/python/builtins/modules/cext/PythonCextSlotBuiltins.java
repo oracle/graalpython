@@ -90,6 +90,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
+import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
+import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
+import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -148,9 +151,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -171,7 +172,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -731,20 +731,20 @@ public final class PythonCextSlotBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class GetSliceField extends Node {
-        abstract Object execute(Node inliningTarget, PSlice object, HiddenKey key, Object value);
+        abstract Object execute(Node inliningTarget, PSlice object, HiddenAttr key, Object value);
 
         @Specialization
-        static Object get(Node inliningTarget, PSlice object, HiddenKey key, Object value,
-                        @Cached(inline = false) ReadAttributeFromDynamicObjectNode read,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write,
+        static Object get(Node inliningTarget, PSlice object, HiddenAttr key, Object value,
+                        @Cached HiddenAttr.ReadNode read,
+                        @Cached HiddenAttr.WriteNode write,
                         @Cached PythonCextBuiltins.PromoteBorrowedValue promote) {
-            Object promotedValue = read.execute(object, key);
-            if (promotedValue == PNone.NO_VALUE) {
+            Object promotedValue = read.execute(inliningTarget, object, key, null);
+            if (promotedValue == null) {
                 promotedValue = promote.execute(inliningTarget, value);
                 if (promotedValue == null) {
                     return value;
                 }
-                write.execute(object, key, promotedValue);
+                write.execute(inliningTarget, object, key, promotedValue);
             }
             return promotedValue;
         }
@@ -752,37 +752,34 @@ public final class PythonCextSlotBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_start extends CApiUnaryBuiltinNode {
-        private static final HiddenKey START_KEY = new HiddenKey("promoted_start");
 
         @Specialization
         static Object doStart(PSlice object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
-            return getSliceField.execute(inliningTarget, object, START_KEY, object.getStart());
+            return getSliceField.execute(inliningTarget, object, PROMOTED_START, object.getStart());
         }
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_step extends CApiUnaryBuiltinNode {
-        private static final HiddenKey STEP_KEY = new HiddenKey("promoted_step");
 
         @Specialization
         static Object doStep(PSlice object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
-            return getSliceField.execute(inliningTarget, object, STEP_KEY, object.getStep());
+            return getSliceField.execute(inliningTarget, object, PROMOTED_STEP, object.getStep());
         }
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_stop extends CApiUnaryBuiltinNode {
-        private static final HiddenKey STOP_KEY = new HiddenKey("promoted_stop");
 
         @Specialization
         static Object doStop(PSlice object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
-            return getSliceField.execute(inliningTarget, object, STOP_KEY, object.getStop());
+            return getSliceField.execute(inliningTarget, object, PROMOTED_STOP, object.getStop());
         }
     }
 

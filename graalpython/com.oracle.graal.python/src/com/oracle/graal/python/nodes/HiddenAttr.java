@@ -90,6 +90,9 @@ public enum HiddenAttr {
     DEFAULTACTION("_defaultaction"),    // _warnings
     ONCEREGISTRY("_onceregistry"),      // _warnings
     METHOD_DEF_PTR("method_def_ptr"),   // PythonCextMethodBuiltins
+    PROMOTED_START("promoted_start"),   // PythonCextSlotBuiltins
+    PROMOTED_STEP("promoted_step"),     // PythonCextSlotBuiltins
+    PROMOTED_STOP("promoted_stop"),     // PythonCextSlotBuiltins
 
     ;
 
