@@ -83,6 +83,10 @@ public enum HiddenAttr {
     THREAD_COUNT("thread_count"),       // _thread
     CURRENT_ZONE_ID("currentZoneID"),   // time
     TIME_SLEPT("timeSlept"),            // time
+    FILTERS_VERSION("filters_version"), // _warnings
+    FILTERS("filters"),                 // _warnings
+    DEFAULTACTION("_defaultaction"),    // _warnings
+    ONCEREGISTRY("_onceregistry"),      // _warnings
 
     ;
 
@@ -120,14 +124,23 @@ public enum HiddenAttr {
         public static ReadNode create() {
             return ReadNodeGen.create();
         }
+
+        @NeverDefault
+        public static ReadNode getUncached() {
+            return ReadNodeGen.getUncached();
+        }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @GenerateUncached
     @ImportStatic(HiddenAttr.class)
     public static abstract class WriteNode extends Node {
         public abstract void execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, Object value);
+
+        public final void executeCached(PythonAbstractObject self, HiddenAttr attr, Object value) {
+            execute(this, self, attr, value);
+        }
 
         public static void executeUncached(PythonAbstractObject self, HiddenAttr attr, Object value) {
             WriteNodeGen.getUncached().execute(null, self, attr, value);
@@ -165,5 +178,9 @@ public enum HiddenAttr {
             return attr == DICT || attr == CLASS;
         }
 
+        @NeverDefault
+        public static WriteNode create() {
+            return WriteNodeGen.create();
+        }
     }
 }
