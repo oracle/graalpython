@@ -40,10 +40,7 @@
  */
 #include "capi.h"
 
-#ifndef Py_DEFAULT_RECURSION_LIMIT
-#define Py_DEFAULT_RECURSION_LIMIT 1000
-#endif
-
+#include "pycore_ceval.h"         // _PyEval_SignalAsyncExc()
 
 PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject *kwargs) {
     return PyObject_Call(func, args, kwargs);
@@ -94,32 +91,67 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                                   kwdefs, closure);
 }
 
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
-#if defined(__GNUC__)
-static __thread int _tls_recursion_depth = 0;
-#elif defined(_MSC_VER)
-static __declspec(thread) int _tls_recursion_depth = 0;
-#else
-#error "don't know how to declare thread local variable"
-#endif
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
-
-int Py_EnterRecursiveCall(const char *where) {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPyTruffle_EnterRecursiveCall(where);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
-    if (++_tls_recursion_depth > Py_DEFAULT_RECURSION_LIMIT) {
-        PyErr_SetString(PyExc_RecursionError, where);
+/* The function _Py_EnterRecursiveCallTstate() only calls _Py_CheckRecursiveCall()
+   if the recursion_depth reaches recursion_limit. */
+int
+_Py_CheckRecursiveCall(PyThreadState *tstate, const char *where)
+{
+    /* Check against global limit first. */
+    int depth = tstate->recursion_limit - tstate->recursion_remaining;
+    /* GraalVM change:
+    if (depth < tstate->interp->ceval.recursion_limit) {
+        tstate->recursion_limit = tstate->interp->ceval.recursion_limit;
+    */
+    if (depth < Py_DEFAULT_RECURSION_LIMIT) {
+        tstate->recursion_limit = Py_DEFAULT_RECURSION_LIMIT;
+        tstate->recursion_remaining = tstate->recursion_limit - depth;
+        assert(tstate->recursion_remaining > 0);
+        return 0;
+    }
+#ifdef USE_STACKCHECK
+    if (PyOS_CheckStack()) {
+        ++tstate->recursion_remaining;
+        _PyErr_SetString(tstate, PyExc_MemoryError, "Stack overflow");
         return -1;
     }
+#endif
+    if (tstate->recursion_headroom) {
+        if (tstate->recursion_remaining < -50) {
+            /* Overflowing while handling an overflow. Give up. */
+            Py_FatalError("Cannot recover from stack overflow.");
+        }
+    }
+    else {
+        if (tstate->recursion_remaining <= 0) {
+            tstate->recursion_headroom++;
+            /* GraalVM change:
+            _PyErr_Format(tstate, PyExc_RecursionError,
+            */
+            PyErr_Format(PyExc_RecursionError,
+                        "maximum recursion depth exceeded%s",
+                        where);
+            tstate->recursion_headroom--;
+            ++tstate->recursion_remaining;
+            return -1;
+        }
+    }
     return 0;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
-void Py_LeaveRecursiveCall()  {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    GraalPyTruffle_LeaveRecursiveCall();
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
-    _tls_recursion_depth--;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+
+/* Implement Py_EnterRecursiveCall() and Py_LeaveRecursiveCall() as functions
+   for the limited API. */
+
+#undef Py_EnterRecursiveCall
+
+int Py_EnterRecursiveCall(const char *where)
+{
+    return _Py_EnterRecursiveCall(where);
+}
+
+#undef Py_LeaveRecursiveCall
+
+void Py_LeaveRecursiveCall(void)
+{
+    _Py_LeaveRecursiveCall();
 }
