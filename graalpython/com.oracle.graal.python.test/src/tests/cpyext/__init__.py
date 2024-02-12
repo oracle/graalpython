@@ -96,7 +96,9 @@ class CPyExtTestCase():
                     self.compile_module(modname)
 
 
-def ccompile(self, name):
+compiled_registry = set()
+
+def ccompile(self, name, check_duplicate_name=True):
     from distutils.core import setup, Extension
     from distutils.sysconfig import get_config_var
     from hashlib import sha256
@@ -123,6 +125,14 @@ def ccompile(self, name):
 
     # note, the suffix is already a string like '.so'
     lib_file = DIR / f'{name}{EXT_SUFFIX}'
+
+    if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
+        print(f"\n\nWARNING: module with name '{name}' was already compiled, but with different source code. "
+              "Have you accidentally used the same name for two different CPyExtType, CPyExtHeapType, "
+              "or similar helper calls? Modules with same name can sometimes confuse the import machinery "
+              "and cause all sorts of trouble.\n")
+
+    compiled_registry.add(name)
 
     # Compare checksums and only re-compile if different.
     # Note: It could be that the C source file's checksum didn't change but someone
@@ -772,4 +782,5 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
     return mod.create(bases)
 
 
-CPyExtTestCase.compile_module = ccompile
+# Avoiding duplicate names requires larger refactoring
+CPyExtTestCase.compile_module = lambda self, name: ccompile(self, name, check_duplicate_name=False)

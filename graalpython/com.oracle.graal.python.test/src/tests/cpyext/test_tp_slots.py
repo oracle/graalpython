@@ -40,25 +40,21 @@ from . import CPyExtType, CPyExtHeapType
 
 
 def test_descr():
-    TestDescrSet = CPyExtType("TestDescrSet",
+    TestDescrSetAndDel = CPyExtType("TestDescrSetAndDel",
                               '''
                               int testdescr_set(PyObject* self, PyObject* key, PyObject* value) {
-                                  Py_XDECREF(((TestDescrSetObject*)self)->payload);
+                                  Py_XDECREF(((TestDescrSetAndDelObject*)self)->payload);
                                   if (value != NULL) {
                                       Py_INCREF(value);
                                   }
-                                  ((TestDescrSetObject*)self)->payload = value;
+                                  ((TestDescrSetAndDelObject*)self)->payload = value;
                                   return 0;
                               }
 
                               PyObject* testdescr_get(PyObject* self, PyObject* key, PyObject* type) {
-                                  PyObject* r = ((TestDescrSetObject*)self)->payload;
+                                  PyObject* r = ((TestDescrSetAndDelObject*)self)->payload;
                                   if (r == NULL) {
-                                      // TODO returning Py_RETURN_NONE fires: assert x.prop is None
-                                      // SystemError: __get__ returned NULL without setting an exception
-                                      // but only on Darwin aarch64
-                                      Py_INCREF(Py_False);
-                                      return Py_False;
+                                      Py_RETURN_NONE;
                                   }
                                   Py_INCREF(r);
                                   return r;
@@ -68,25 +64,25 @@ def test_descr():
                               tp_descr_set="(descrsetfunc) testdescr_set",
                               tp_descr_get="(descrgetfunc) testdescr_get")
     class MyC:
-        prop = TestDescrSet()
+        prop = TestDescrSetAndDel()
 
     x = MyC()
     x.prop = 42
     assert x.prop == 42
     del x.prop
-    assert x.prop is False
+    assert x.prop is None
 
     x = MyC()
     x.prop = 42
     assert x.prop == 42
     x.__delattr__('prop')
-    assert x.prop is False
+    assert x.prop is None
 
-    raw = TestDescrSet()
+    raw = TestDescrSetAndDel()
     raw.__set__('foo', 42)
     assert raw.__get__(raw, 'foo') == 42
     raw.__delete__(raw)
-    assert raw.__get__(raw, 'foo') is False
+    assert raw.__get__(raw, 'foo') is None
 
 
 def test_attrs():

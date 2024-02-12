@@ -1173,11 +1173,11 @@ class TestObject(object):
         assert obj.some_member.__doc__ == expected_doc
 
     def test_multiple_inheritance_with_native(self):
-        _A = CPyExtType("_A","")
+        _AA = CPyExtType("_AA","")
         class B:
             def __getattr__(self, name):
                 return name
-        class X(_A, B):
+        class X(_AA, B):
             b = 2
         x = X()
         assert x.foo == "foo"
