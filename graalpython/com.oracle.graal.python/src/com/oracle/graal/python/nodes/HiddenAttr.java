@@ -61,45 +61,43 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
-public enum HiddenAttr {
+public final class HiddenAttr {
 
-    OBJECT_ID("_id"),                   // ObjectNodes
-    CLASS("ob_type"),
-    DICT("ob_dict"),
-    WEAKLIST("__weaklist__"),           // _weakref
-    WEAK_REF_QUEUE("weakRefQueue"),     // _weakref
-    ENCODER_OBJECT("encoder_object"),   // cjkcodecs
-    DECODER_OBJECT("decoder_object"),   // cjkcodecs
-    KWD_MARK("kwd_mark"),               // functools
-    ORIGINAL_CONSTRUCTORS(HashlibModuleBuiltins.J_CONSTRUCTORS),    // hashlib
-    PICKLE_STATE("state"),              // pickle
-    NEXT_ELEMENT("next_element"),       // PythonAbstractObject
-    INTERNED("_interned"),              // PString
-    AST_STATE("ast_state"),             // _ast
-    HOST_INTEROP_BEHAVIOR(J___GRAALPYTHON_INTEROP_BEHAVIOR__),      // polyglot
-    DATA("__data__"),                   // readline
-    SIGNAL_MODULE_DATA("signalModuleData"), // _signal
-    CURRENT_ALARM("current_alarm"),     // _signal
-    DEFAULT_TIMEOUT("default_timeout"), // _socket
-    TREGEX_CACHE("tregex_cache"),       // _sre
-    THREAD_COUNT("thread_count"),       // _thread
-    CURRENT_ZONE_ID("currentZoneID"),   // time
-    TIME_SLEPT("timeSlept"),            // time
-    FILTERS_VERSION("filters_version"), // _warnings
-    FILTERS("filters"),                 // _warnings
-    DEFAULTACTION("_defaultaction"),    // _warnings
-    ONCEREGISTRY("_onceregistry"),      // _warnings
-    METHOD_DEF_PTR("method_def_ptr"),   // PythonCextMethodBuiltins
-    PROMOTED_START("promoted_start"),   // PythonCextSlotBuiltins
-    PROMOTED_STEP("promoted_step"),     // PythonCextSlotBuiltins
-    PROMOTED_STOP("promoted_stop"),     // PythonCextSlotBuiltins
-    METHODS_FLAGS("__methods_flags__"), // GetMethodsFlagsNode
-
-    ;
+    public static final HiddenAttr OBJECT_ID = new HiddenAttr("_id");                   // ObjectNodes
+    public static final HiddenAttr CLASS = new HiddenAttr("ob_type");
+    public static final HiddenAttr DICT = new HiddenAttr("ob_dict");
+    public static final HiddenAttr WEAKLIST = new HiddenAttr("__weaklist__");           // _weakref
+    public static final HiddenAttr WEAK_REF_QUEUE = new HiddenAttr("weakRefQueue");     // _weakref
+    public static final HiddenAttr ENCODER_OBJECT = new HiddenAttr("encoder_object");   // cjkcodecs
+    public static final HiddenAttr DECODER_OBJECT = new HiddenAttr("decoder_object");   // cjkcodecs
+    public static final HiddenAttr KWD_MARK = new HiddenAttr("kwd_mark");               // functools
+    public static final HiddenAttr ORIGINAL_CONSTRUCTORS = new HiddenAttr(HashlibModuleBuiltins.J_CONSTRUCTORS);    // hashlib
+    public static final HiddenAttr PICKLE_STATE = new HiddenAttr("state");              // pickle
+    public static final HiddenAttr NEXT_ELEMENT = new HiddenAttr("next_element");       // PythonAbstractObject
+    public static final HiddenAttr INTERNED = new HiddenAttr("_interned");              // PString
+    public static final HiddenAttr AST_STATE = new HiddenAttr("ast_state");             // _ast
+    public static final HiddenAttr HOST_INTEROP_BEHAVIOR = new HiddenAttr(J___GRAALPYTHON_INTEROP_BEHAVIOR__);      // polyglot
+    public static final HiddenAttr DATA = new HiddenAttr("__data__");                   // readline
+    public static final HiddenAttr SIGNAL_MODULE_DATA = new HiddenAttr("signalModuleData"); // _signal
+    public static final HiddenAttr CURRENT_ALARM = new HiddenAttr("current_alarm");     // _signal
+    public static final HiddenAttr DEFAULT_TIMEOUT = new HiddenAttr("default_timeout"); // _socket
+    public static final HiddenAttr TREGEX_CACHE = new HiddenAttr("tregex_cache");       // _sre
+    public static final HiddenAttr THREAD_COUNT = new HiddenAttr("thread_count");       // _thread
+    public static final HiddenAttr CURRENT_ZONE_ID = new HiddenAttr("currentZoneID");   // time
+    public static final HiddenAttr TIME_SLEPT = new HiddenAttr("timeSlept");            // time
+    public static final HiddenAttr FILTERS_VERSION = new HiddenAttr("filters_version"); // _warnings
+    public static final HiddenAttr FILTERS = new HiddenAttr("filters");                 // _warnings
+    public static final HiddenAttr DEFAULTACTION = new HiddenAttr("_defaultaction");    // _warnings
+    public static final HiddenAttr ONCEREGISTRY = new HiddenAttr("_onceregistry");      // _warnings
+    public static final HiddenAttr METHOD_DEF_PTR = new HiddenAttr("method_def_ptr");   // PythonCextMethodBuiltins
+    public static final HiddenAttr PROMOTED_START = new HiddenAttr("promoted_start");   // PythonCextSlotBuiltins
+    public static final HiddenAttr PROMOTED_STEP = new HiddenAttr("promoted_step");     // PythonCextSlotBuiltins
+    public static final HiddenAttr PROMOTED_STOP = new HiddenAttr("promoted_stop");     // PythonCextSlotBuiltins
+    public static final HiddenAttr METHODS_FLAGS = new HiddenAttr("__methods_flags__"); // GetMethodsFlagsNode
 
     private final HiddenKey key;
 
-    HiddenAttr(String keyName) {
+    private HiddenAttr(String keyName) {
         key = new HiddenKey(keyName);
     }
 
