@@ -409,7 +409,7 @@ public abstract class ExternalFunctionNodes {
         TP_STR(44, PyObjectTransfer, PyObject),
         TP_REPR(45, PyObjectTransfer, PyObject),
         DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        DESCR_DELATTRO(47, InitResult, PyObject, PyObject, PyObject); // the last one is always NULL
+        DELATTRO(47, InitResult, PyObject, PyObject, PyObject); // the last one is always NULL
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
@@ -553,7 +553,7 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = DescrGetRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new DescrDeleteRootNode(l, name, sig) : l -> new DescrDeleteRootNode(l, name);
                     break;
-                case DESCR_DELATTRO:
+                case DELATTRO:
                     nodeKlass = DelAttrRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new DelAttrRootNode(l, name, sig) : l -> new DelAttrRootNode(l, name);
                     break;
