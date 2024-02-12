@@ -79,6 +79,7 @@ public enum HiddenAttr {
     SIGNAL_MODULE_DATA("signalModuleData"), // _signal
     CURRENT_ALARM("current_alarm"),     // _signal
     DEFAULT_TIMEOUT("default_timeout"), // _socket
+    TREGEX_CACHE("tregex_cache"),       // _sre
 
     ;
 
