@@ -93,6 +93,7 @@ public enum HiddenAttr {
     PROMOTED_START("promoted_start"),   // PythonCextSlotBuiltins
     PROMOTED_STEP("promoted_step"),     // PythonCextSlotBuiltins
     PROMOTED_STOP("promoted_stop"),     // PythonCextSlotBuiltins
+    METHODS_FLAGS("__methods_flags__"), // GetMethodsFlagsNode
 
     ;
 
