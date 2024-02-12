@@ -81,6 +81,8 @@ public enum HiddenAttr {
     DEFAULT_TIMEOUT("default_timeout"), // _socket
     TREGEX_CACHE("tregex_cache"),       // _sre
     THREAD_COUNT("thread_count"),       // _thread
+    CURRENT_ZONE_ID("currentZoneID"),   // time
+    TIME_SLEPT("timeSlept"),            // time
 
     ;
 
