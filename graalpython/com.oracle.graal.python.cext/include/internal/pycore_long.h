@@ -15,10 +15,6 @@ extern "C" {
 
 #include "pycore_global_objects.h"  // _PY_NSMALLNEGINTS
 
-// GraalVM change: use our own globals instead of interpreter state
-PyAPI_DATA(PyObject*) _PyTruffle_Zero;
-PyAPI_DATA(PyObject*) _PyTruffle_One;
-
 /* other API */
 
 /* GraalVM change

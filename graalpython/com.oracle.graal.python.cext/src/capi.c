@@ -257,9 +257,6 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
-PyObject* _PyTruffle_Zero;
-PyObject* _PyTruffle_One;
-
 #ifndef GRAALVM_PYTHON_LLVM_MANAGED
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
@@ -274,8 +271,6 @@ static void initialize_globals() {
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
     _Py_TrueStructReference = (struct _longobject*)GraalPyTruffle_True();
     _Py_FalseStructReference = (struct _longobject*)GraalPyTruffle_False();
-    _PyTruffle_Zero = GraalPyTruffleLong_Zero();
-    _PyTruffle_One = GraalPyTruffleLong_One();
 }
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
