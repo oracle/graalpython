@@ -66,6 +66,8 @@ public enum HiddenAttr {
     OBJECT_ID("_id"),                   // ObjectNodes
     CLASS("ob_type"),
     DICT("ob_dict"),
+    WEAKLIST("__weaklist__"),           // _weakref
+    WEAK_REF_QUEUE("weakRefQueue"),     // _weakref
     ENCODER_OBJECT("encoder_object"),   // cjkcodecs
     DECODER_OBJECT("decoder_object"),   // cjkcodecs
     KWD_MARK("kwd_mark"),               // functools
