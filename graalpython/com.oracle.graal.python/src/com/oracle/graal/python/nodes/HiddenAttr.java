@@ -80,6 +80,7 @@ public enum HiddenAttr {
     CURRENT_ALARM("current_alarm"),     // _signal
     DEFAULT_TIMEOUT("default_timeout"), // _socket
     TREGEX_CACHE("tregex_cache"),       // _sre
+    THREAD_COUNT("thread_count"),       // _thread
 
     ;
 

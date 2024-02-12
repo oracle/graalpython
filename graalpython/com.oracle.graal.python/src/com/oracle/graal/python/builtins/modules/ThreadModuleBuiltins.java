@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
+import static com.oracle.graal.python.nodes.HiddenAttr.THREAD_COUNT;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.WeakReference;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -81,7 +83,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -92,14 +93,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__THREAD)
 public final class ThreadModuleBuiltins extends PythonBuiltins {
-    private static final HiddenKey THREAD_COUNT = new HiddenKey("thread_count");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -181,11 +178,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         long getCount(PythonModule self) {
-            try {
-                return DynamicObjectLibrary.getUncached().getIntOrDefault(self, THREAD_COUNT, 0);
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            return (int) HiddenAttr.ReadNode.executeUncached(self, THREAD_COUNT, 0);
         }
     }
 
@@ -239,14 +232,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
 
                     // the increment is protected by the gil
-                    DynamicObjectLibrary lib = DynamicObjectLibrary.getUncached();
-                    int curCount = 0;
-                    try {
-                        curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 0);
-                    } catch (UnexpectedResultException ure) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                    lib.putInt(threadModule, THREAD_COUNT, curCount + 1);
+                    int curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 0);
+                    HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount + 1);
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
                         // it's own stack and if we would pass the current frame, this would be
@@ -260,12 +247,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                             WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
                         }
                     } finally {
-                        try {
-                            curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 1);
-                        } catch (UnexpectedResultException ure) {
-                            throw CompilerDirectives.shouldNotReachHere();
-                        }
-                        lib.putInt(threadModule, THREAD_COUNT, curCount - 1);
+                        curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 1);
+                        HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount - 1);
                     }
                 }
             }, env.getContext(), context.getThreadGroup());
