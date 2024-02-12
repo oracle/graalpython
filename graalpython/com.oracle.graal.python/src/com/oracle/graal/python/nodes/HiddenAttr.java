@@ -89,6 +89,7 @@ public enum HiddenAttr {
     FILTERS("filters"),                 // _warnings
     DEFAULTACTION("_defaultaction"),    // _warnings
     ONCEREGISTRY("_onceregistry"),      // _warnings
+    METHOD_DEF_PTR("method_def_ptr"),   // PythonCextMethodBuiltins
 
     ;
 
