@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -155,6 +155,17 @@ def _reference_find(args):
         return s.find(sub, start, end)
     else:
         return s.rfind(sub, start, end)
+
+
+def _reference_data(args):
+    s = args[0]
+    max_cp = max(map(ord, s))
+    if max_cp <= 0xFF:
+        return s.encode('latin-1')
+    elif max_cp <= 0xFFFF:
+        return s.encode('utf-16-le' if sys.byteorder == 'little' else 'utf-16-be')
+    else:
+        return s.encode('utf-32-le' if sys.byteorder == 'little' else 'utf-32-be')
 
 
 def _decoder_for_utf16(byteorder):
@@ -804,6 +815,20 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_CompareWithASCIIString = CPyExtFunction(
+        _reference_compare,
+        lambda: (
+            ("a", "a"),
+            ("a", "b"),
+            ("a", "ab"),
+            ("ab", "a"),
+        ),
+        resultspec="i",
+        argspec='Os',
+        arguments=["PyObject* left", "const char* right"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyUnicode_Tailmatch = CPyExtFunction(
         _reference_tailmatch,
         lambda: (
@@ -1028,6 +1053,28 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='OOnn',
         arguments=["PyObject* string", "PyObject* sub", "Py_ssize_t start", "Py_ssize_t end"],
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DATA = CPyExtFunction(
+        _reference_data,
+        lambda: (
+            ("asdf",),
+            ("ššš",),
+            ("すごい",),
+            ("😂",),
+        ),
+        code='''
+        PyObject* wrap_PyUnicode_DATA(PyObject* string) {
+            const char* data = (const char*)PyUnicode_DATA(string);
+            Py_ssize_t size = PyUnicode_GET_LENGTH(string) * (Py_ssize_t)PyUnicode_KIND(string);
+            return PyBytes_FromStringAndSize(data, size);
+        }
+        ''',
+        callfunction='wrap_PyUnicode_DATA',
+        resultspec='O',
+        argspec='O',
+        arguments=["PyObject* string"],
+        cmpfunc=unhandled_error_compare,
     )
 
 

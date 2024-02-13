@@ -83,7 +83,7 @@ int PyCFunction_GetFlags(PyObject *func) {
 	return PyMethodDef_ml_flags(def);
 }
 
-PyAPI_FUNC(PyTypeObject *) PyCFunction_GetClass(PyObject *func) {
+PyTypeObject * PyCMethod_GetClass(PyObject *func) {
 	PyMethodDef* def = PyCFunctionObject_m_ml(func);
 	return PyMethodDef_ml_flags(def) & METH_METHOD ? PyCMethodObject_mm_class(func) : NULL;
 }

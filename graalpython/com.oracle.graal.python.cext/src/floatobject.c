@@ -1,12 +1,15 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 
 #include "capi.h"
-#include "pycore_dtoa.h"          // _Py_dg_dtoa()
+#include "floatobject.h"
 
+#include <ctype.h>
+#include <float.h>
+#include <stdlib.h>               // strtol()
 
 
 typedef enum {
@@ -59,8 +62,6 @@ static void init_formats(void) {
 
 
 // Below taken from CPython
-
-
 double
 PyFloat_AsDouble(PyObject *op)
 {
@@ -125,7 +126,7 @@ PyFloat_AsDouble(PyObject *op)
 
 
 /*----------------------------------------------------------------------------
- * _PyFloat_{Pack,Unpack}{2,4,8}.  See floatobject.h.
+ * PyFloat_{Pack,Unpack}{2,4,8}.  See floatobject.h.
  * To match the NPY_HALF_ROUND_TIES_TO_EVEN behavior in:
  * https://github.com/numpy/numpy/blob/master/numpy/core/src/npymath/halffloat.c
  * We use:
@@ -136,8 +137,9 @@ PyFloat_AsDouble(PyObject *op)
  */
 
 int
-_PyFloat_Pack2(double x, unsigned char *p, int le)
+PyFloat_Pack2(double x, char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     unsigned char sign;
     int e;
     double f;
@@ -240,8 +242,9 @@ _PyFloat_Pack2(double x, unsigned char *p, int le)
 }
 
 int
-_PyFloat_Pack4(double x, unsigned char *p, int le)
+PyFloat_Pack4(double x, char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (float_format == unknown_format) {
         unsigned char sign;
         int e;
@@ -347,8 +350,9 @@ _PyFloat_Pack4(double x, unsigned char *p, int le)
 }
 
 int
-_PyFloat_Pack8(double x, unsigned char *p, int le)
+PyFloat_Pack8(double x, char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (double_format == unknown_format) {
         unsigned char sign;
         int e;
@@ -476,8 +480,9 @@ _PyFloat_Pack8(double x, unsigned char *p, int le)
 }
 
 double
-_PyFloat_Unpack2(const unsigned char *p, int le)
+PyFloat_Unpack2(const char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     unsigned char sign;
     int e;
     unsigned int f;
@@ -499,24 +504,16 @@ _PyFloat_Unpack2(const unsigned char *p, int le)
     f |= *p;
 
     if (e == 0x1f) {
-#ifdef PY_NO_SHORT_FLOAT_REPR
+#if _PY_SHORT_FLOAT_REPR == 0
         if (f == 0) {
             /* Infinity */
             return sign ? -Py_HUGE_VAL : Py_HUGE_VAL;
         }
         else {
             /* NaN */
-#ifdef Py_NAN
             return sign ? -Py_NAN : Py_NAN;
-#else
-            PyErr_SetString(
-                PyExc_ValueError,
-                "can't unpack IEEE 754 NaN "
-                "on platform that does not support NaNs");
-            return -1;
-#endif  /* #ifdef Py_NAN */
         }
-#else
+#else  // _PY_SHORT_FLOAT_REPR == 1
         if (f == 0) {
             /* Infinity */
             return _Py_dg_infinity(sign);
@@ -525,7 +522,7 @@ _PyFloat_Unpack2(const unsigned char *p, int le)
             /* NaN */
             return _Py_dg_stdnan(sign);
         }
-#endif  /* #ifdef PY_NO_SHORT_FLOAT_REPR */
+#endif  // _PY_SHORT_FLOAT_REPR == 1
     }
 
     x = (double)f / 1024.0;
@@ -546,8 +543,9 @@ _PyFloat_Unpack2(const unsigned char *p, int le)
 }
 
 double
-_PyFloat_Unpack4(const unsigned char *p, int le)
+PyFloat_Unpack4(const char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (float_format == unknown_format) {
         unsigned char sign;
         int e;
@@ -624,8 +622,9 @@ _PyFloat_Unpack4(const unsigned char *p, int le)
 }
 
 double
-_PyFloat_Unpack8(const unsigned char *p, int le)
+PyFloat_Unpack8(const char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (double_format == unknown_format) {
         unsigned char sign;
         int e;

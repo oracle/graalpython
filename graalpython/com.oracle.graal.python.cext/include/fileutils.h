@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -21,7 +21,7 @@ PyAPI_FUNC(char*) Py_EncodeLocale(
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_FILEUTILS_H
-#  include  "cpython/fileutils.h"
+#  include "cpython/fileutils.h"
 #  undef Py_CPYTHON_FILEUTILS_H
 #endif
 

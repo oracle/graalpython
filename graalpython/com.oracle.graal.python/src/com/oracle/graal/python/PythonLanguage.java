@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -174,8 +174,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String NAME = "Python";
     public static final String IMPLEMENTATION_NAME = "GraalPy";
     public static final int MAJOR = 3;
-    public static final int MINOR = 10;
-    public static final int MICRO = 13;
+    public static final int MINOR = 11;
+    public static final int MICRO = 7;
     public static final int RELEASE_LEVEL_ALPHA = 0xA;
     public static final int RELEASE_LEVEL_BETA = 0xB;
     public static final int RELEASE_LEVEL_GAMMA = 0xC;

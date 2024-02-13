@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -306,9 +306,9 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    abstract static class _PyList_SET_ITEM extends CApiTernaryBuiltinNode {
+    abstract static class PyTruffleList_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
-        static int doManaged(PList list, long index, Object element,
+        static Object doManaged(PList list, long index, Object element,
                         @Bind("this") Node inliningTarget,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
@@ -321,11 +321,11 @@ public final class PythonCextListBuiltins {
             if (generalizedProfile.profile(inliningTarget, list.getSequenceStorage() != newStorage)) {
                 list.setSequenceStorage(newStorage);
             }
-            return 0;
+            return PNone.NO_VALUE;
         }
 
         @Specialization
-        static int doNative(PythonAbstractNativeObject list, long index, Object element,
+        static Object doNative(PythonAbstractNativeObject list, long index, Object element,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeListStorage asNativeStorage,
                         @Cached SequenceStorageNodes.InitializeNativeItemScalarNode setItemNode,
@@ -333,7 +333,7 @@ public final class PythonCextListBuiltins {
             NativeSequenceStorage sequenceStorage = asNativeStorage.execute(list);
             checkBounds(inliningTarget, sequenceStorage, index, raiseNode);
             setItemNode.execute(sequenceStorage, (int) index, element);
-            return 0;
+            return PNone.NO_VALUE;
         }
 
         @Fallback

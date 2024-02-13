@@ -206,7 +206,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 28;
+    public static final int BYTECODE_VERSION = 29;
 
     private final ErrorCallback errorCallback;
 
@@ -408,10 +408,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     // helpers
 
     private void enterScope(String name, CompilationScope scopeType, SSTNode node) {
-        enterScope(name, scopeType, node, 0, 0, 0, false, false);
+        enterScope(name, scopeType, node, 0, 0, 0, false, false, node.getSourceRange());
     }
 
-    private void enterScope(String name, CompilationScope scope, SSTNode node, ArgumentsTy args) {
+    private void enterScope(String name, CompilationScope scope, SSTNode node, ArgumentsTy args, SourceRange startLocation) {
         int argc, pargc, kwargc;
         boolean splat, kwSplat;
         if (args == null) {
@@ -424,16 +424,16 @@ public class Compiler implements SSTreeVisitor<Void> {
             splat = args.varArg != null;
             kwSplat = args.kwArg != null;
         }
-        enterScope(name, scope, node, argc, pargc, kwargc, splat, kwSplat);
+        enterScope(name, scope, node, argc, pargc, kwargc, splat, kwSplat, startLocation);
     }
 
     private void enterScope(String name, CompilationScope scopeType, SSTNode node, int argc, int pargc, int kwargc,
-                    boolean hasSplat, boolean hasKwSplat) {
+                    boolean hasSplat, boolean hasKwSplat, SourceRange startLocation) {
         if (unit != null) {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
-                        hasSplat, hasKwSplat, node.getSourceRange(), futureFeatures);
+                        hasSplat, hasKwSplat, startLocation, futureFeatures);
         nestingLevel++;
     }
 
@@ -474,16 +474,24 @@ public class Compiler implements SSTreeVisitor<Void> {
     private boolean containsAnnotations(StmtTy stmt) {
         if (stmt instanceof StmtTy.AnnAssign) {
             return true;
-        } else if (stmt instanceof StmtTy.For) {
-            return containsAnnotations(((StmtTy.For) stmt).body) || containsAnnotations(((StmtTy.For) stmt).orElse);
-        } else if (stmt instanceof StmtTy.While) {
-            return containsAnnotations(((StmtTy.While) stmt).body) || containsAnnotations(((StmtTy.While) stmt).orElse);
-        } else if (stmt instanceof StmtTy.If) {
-            return containsAnnotations(((StmtTy.If) stmt).body) || containsAnnotations(((StmtTy.If) stmt).orElse);
-        } else if (stmt instanceof StmtTy.With) {
-            return containsAnnotations(((StmtTy.With) stmt).body);
-        } else if (stmt instanceof StmtTy.Try) {
-            StmtTy.Try tryStmt = (StmtTy.Try) stmt;
+        } else if (stmt instanceof StmtTy.For forStmt) {
+            return containsAnnotations(forStmt.body) || containsAnnotations(forStmt.orElse);
+        } else if (stmt instanceof StmtTy.While whileStmt) {
+            return containsAnnotations(whileStmt.body) || containsAnnotations(whileStmt.orElse);
+        } else if (stmt instanceof StmtTy.If ifStmt) {
+            return containsAnnotations(ifStmt.body) || containsAnnotations(ifStmt.orElse);
+        } else if (stmt instanceof StmtTy.With withStmt) {
+            return containsAnnotations(withStmt.body);
+        } else if (stmt instanceof StmtTy.Try tryStmt) {
+            if (tryStmt.handlers != null) {
+                for (ExceptHandlerTy h : tryStmt.handlers) {
+                    if (containsAnnotations(((ExceptHandlerTy.ExceptHandler) h).body)) {
+                        return true;
+                    }
+                }
+            }
+            return containsAnnotations(tryStmt.body) || containsAnnotations(tryStmt.finalBody) || containsAnnotations(tryStmt.orElse);
+        } else if (stmt instanceof StmtTy.TryStar tryStmt) {
             if (tryStmt.handlers != null) {
                 for (ExceptHandlerTy h : tryStmt.handlers) {
                     if (containsAnnotations(((ExceptHandlerTy.ExceptHandler) h).body)) {
@@ -953,7 +961,6 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
             newFlags |= OpCodes.MakeFunctionFlags.HAS_CLOSURE;
         }
-        addObject(unit.constants, code.qualname);
         addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) newFlags});
     }
 
@@ -1484,7 +1491,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             checkForbiddenArgs(node.args);
             int makeFunctionFlags = collectDefaults(node.args);
-            enterScope("<lambda>", CompilationScope.Lambda, node, node.args);
+            enterScope("<lambda>", CompilationScope.Lambda, node, node.args, node.getSourceRange());
             /* Make None the first constant, so the lambda can't have a docstring. */
             addObject(unit.constants, PNone.NONE);
             CodeUnit code;
@@ -1580,7 +1587,7 @@ public class Compiler implements SSTreeVisitor<Void> {
          */
         SourceRange savedLocation = setLocation(node);
         try {
-            enterScope(name, CompilationScope.Comprehension, node, 1, 0, 0, false, false);
+            enterScope(name, CompilationScope.Comprehension, node, 1, 0, 0, false, false, node.getSourceRange());
             boolean isAsyncGenerator = unit.scope.isCoroutine();
             if (type != ComprehensionType.GENEXPR) {
                 // The result accumulator, empty at the beginning
@@ -2417,7 +2424,12 @@ public class Compiler implements SSTreeVisitor<Void> {
         setLocation(node);
         visitSequence(node.decoratorList);
 
-        enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false);
+        SourceRange startLocation = node.getSourceRange();
+        if (node.decoratorList != null && node.decoratorList.length > 0) {
+            startLocation = node.decoratorList[0].getSourceRange();
+        }
+
+        enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false, startLocation);
         addNameOp("__name__", ExprContextTy.Load);
         addNameOp("__module__", ExprContextTy.Store);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(unit.qualName)));
@@ -2443,12 +2455,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         callHelper(CALL_FUNCTION_VARARGS, 0, 2, node.bases, node.keywords);
 
-        if (node.decoratorList != null) {
-            ExprTy[] decoratorList = node.decoratorList;
-            for (int i = 0; i < decoratorList.length; i++) {
-                addOp(CALL_FUNCTION, 1);
-            }
-        }
+        applyDecorators(node.decoratorList);
 
         addNameOp(node.name, ExprContextTy.Store);
 
@@ -2520,6 +2527,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         // visit decorators
         visitSequence(decoratorList);
 
+        SourceRange startLocation = node.getSourceRange();
+        if (decoratorList != null && decoratorList.length > 0) {
+            startLocation = decoratorList[0].getSourceRange();
+        }
+
         // visit defaults outside the function scope
         int makeFunctionFlags = collectDefaults(args);
 
@@ -2529,7 +2541,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
 
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
-        enterScope(name, scopeType, node, args);
+        enterScope(name, scopeType, node, args, startLocation);
 
         CodeUnit code;
         try {
@@ -2543,14 +2555,20 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         makeClosure(code, makeFunctionFlags);
 
-        if (decoratorList != null) {
-            for (int i = 0; i < decoratorList.length; i++) {
-                addOp(CALL_FUNCTION, 1);
-            }
-        }
+        applyDecorators(decoratorList);
 
         addNameOp(name, ExprContextTy.Store);
         return null;
+    }
+
+    private void applyDecorators(ExprTy[] decoratorList) {
+        if (decoratorList != null) {
+            for (int i = decoratorList.length - 1; i >= 0; i--) {
+                SourceRange savedLocation = setLocation(decoratorList[i]);
+                addOp(CALL_FUNCTION, 1);
+                setLocation(savedLocation);
+            }
+        }
     }
 
     private boolean visitAnnotations(ArgumentsTy args, ExprTy returns) {
@@ -3461,7 +3479,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(PatternTy.MatchStar node) {
-        return emitNotImplemented("match star");
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
@@ -3669,6 +3687,12 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         unit.useNextBlock(end);
 
+        return null;
+    }
+
+    @Override
+    public Void visit(StmtTy.TryStar node) {
+        emitNotImplemented("try star");
         return null;
     }
 

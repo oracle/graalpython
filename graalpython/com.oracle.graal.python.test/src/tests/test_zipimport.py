@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -65,25 +65,6 @@ class BasicZipImportTests(ZipImportBaseTestCase):
         zipimport._zip_directory_cache.clear()
         z = zipimport.zipimporter(ZIP_PATH)
         self.assertTrue(zipimport._zip_directory_cache[ZIP_ABS_PATH] is not None)
-
-    def test_create_zipimport_from_bytes(self):
-        zipimport._zip_directory_cache.clear()
-        a = bytes(ZIP_PATH, 'UTF-8')
-        z = zipimport.zipimporter(a)
-        self.assertTrue(zipimport._zip_directory_cache[os.path.abspath(ZIP_PATH)] is not None)
-
-    def test_create_zipimport_from_pathlike(self):
-        class MyPath():
-            def __init__(self, path):
-                self.value = path
-            def __fspath__(self):
-                return self.value
-
-        zipimport._zip_directory_cache.clear()
-        mp = MyPath(ZIP_PATH)
-        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
-            z = zipimport.zipimporter(mp)
-            self.assertTrue(zipimport._zip_directory_cache[os.path.abspath(ZIP_PATH)] is not None)
 
     def test_zipimporter_find_module(self):
         self.assertTrue(self.z is self.z.find_module("MyTestModule"))

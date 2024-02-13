@@ -313,8 +313,8 @@ class TestRmTree(BaseTest, unittest.TestCase):
 
     @unittest.skipIf(sys.platform[:6] == 'cygwin',
                      "This test can't be run on Cygwin (issue #1071513).")
-    @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                     "This test can't be run reliably as root (issue #1076467).")
+    @os_helper.skip_if_dac_override
+    @os_helper.skip_unless_working_chmod
     def test_on_error(self):
         self.errorState = 0
         os.mkdir(TESTFN)
@@ -408,6 +408,27 @@ class TestRmTree(BaseTest, unittest.TestCase):
         else:
             self.assertFalse(shutil._use_fd_functions)
             self.assertFalse(shutil.rmtree.avoids_symlink_attacks)
+
+    @unittest.skipUnless(shutil._use_fd_functions, "dir_fd is not supported")
+    def test_rmtree_with_dir_fd(self):
+        tmp_dir = self.mkdtemp()
+        victim = 'killme'
+        fullname = os.path.join(tmp_dir, victim)
+        dir_fd = os.open(tmp_dir, os.O_RDONLY)
+        self.addCleanup(os.close, dir_fd)
+        os.mkdir(fullname)
+        os.mkdir(os.path.join(fullname, 'subdir'))
+        write_file(os.path.join(fullname, 'subdir', 'somefile'), 'foo')
+        self.assertTrue(os.path.exists(fullname))
+        shutil.rmtree(victim, dir_fd=dir_fd)
+        self.assertFalse(os.path.exists(fullname))
+
+    @unittest.skipIf(shutil._use_fd_functions, "dir_fd is supported")
+    def test_rmtree_with_dir_fd_unsupported(self):
+        tmp_dir = self.mkdtemp()
+        with self.assertRaises(NotImplementedError):
+            shutil.rmtree(tmp_dir, dir_fd=0)
+        self.assertTrue(os.path.exists(tmp_dir))
 
     def test_rmtree_dont_delete_file(self):
         # When called on a file instead of a directory, don't delete it.
@@ -1019,8 +1040,7 @@ class TestCopy(BaseTest, unittest.TestCase):
 
     @os_helper.skip_unless_symlink
     @os_helper.skip_unless_xattr
-    @unittest.skipUnless(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                         'root privileges required')
+    @os_helper.skip_unless_dac_override
     def test_copyxattr_symlinks(self):
         # On Linux, it's only possible to access non-user xattr for symlinks;
         # which in turn require root privileges. This test should be expanded
@@ -1609,6 +1629,49 @@ class TestArchives(BaseTest, unittest.TestCase):
         formats = [name for name, params in get_archive_formats()]
         self.assertNotIn('xxx', formats)
 
+    def test_make_tarfile_rootdir_nodir(self):
+        # GH-99203
+        self.addCleanup(os_helper.unlink, f'{TESTFN}.tar')
+        for dry_run in (False, True):
+            with self.subTest(dry_run=dry_run):
+                tmp_dir = self.mkdtemp()
+                nonexisting_file = os.path.join(tmp_dir, 'nonexisting')
+                with self.assertRaises(FileNotFoundError) as cm:
+                    make_archive(TESTFN, 'tar', nonexisting_file, dry_run=dry_run)
+                self.assertEqual(cm.exception.errno, errno.ENOENT)
+                self.assertEqual(cm.exception.filename, nonexisting_file)
+                self.assertFalse(os.path.exists(f'{TESTFN}.tar'))
+
+                tmp_fd, tmp_file = tempfile.mkstemp(dir=tmp_dir)
+                os.close(tmp_fd)
+                with self.assertRaises(NotADirectoryError) as cm:
+                    make_archive(TESTFN, 'tar', tmp_file, dry_run=dry_run)
+                self.assertEqual(cm.exception.errno, errno.ENOTDIR)
+                self.assertEqual(cm.exception.filename, tmp_file)
+                self.assertFalse(os.path.exists(f'{TESTFN}.tar'))
+
+    @support.requires_zlib()
+    def test_make_zipfile_rootdir_nodir(self):
+        # GH-99203
+        self.addCleanup(os_helper.unlink, f'{TESTFN}.zip')
+        for dry_run in (False, True):
+            with self.subTest(dry_run=dry_run):
+                tmp_dir = self.mkdtemp()
+                nonexisting_file = os.path.join(tmp_dir, 'nonexisting')
+                with self.assertRaises(FileNotFoundError) as cm:
+                    make_archive(TESTFN, 'zip', nonexisting_file, dry_run=dry_run)
+                self.assertEqual(cm.exception.errno, errno.ENOENT)
+                self.assertEqual(cm.exception.filename, nonexisting_file)
+                self.assertFalse(os.path.exists(f'{TESTFN}.zip'))
+
+                tmp_fd, tmp_file = tempfile.mkstemp(dir=tmp_dir)
+                os.close(tmp_fd)
+                with self.assertRaises(NotADirectoryError) as cm:
+                    make_archive(TESTFN, 'zip', tmp_file, dry_run=dry_run)
+                self.assertEqual(cm.exception.errno, errno.ENOTDIR)
+                self.assertEqual(cm.exception.filename, tmp_file)
+                self.assertFalse(os.path.exists(f'{TESTFN}.zip'))
+
     ### shutil.unpack_archive
 
     def check_unpack_archive(self, format, **kwargs):
@@ -1829,8 +1892,7 @@ class TestWhich(BaseTest, unittest.TestCase):
                 # Other platforms: shouldn't match in the current directory.
                 self.assertIsNone(rv)
 
-    @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                     'non-root user required')
+    @os_helper.skip_if_dac_override
     def test_non_matching_mode(self):
         # Set the file read-only and ask for writeable files.
         os.chmod(self.temp_file.name, stat.S_IREAD)
@@ -2181,11 +2243,11 @@ class TestMove(BaseTest, unittest.TestCase):
             os.rmdir(dst_dir)
 
 
-    @unittest.skipUnless(hasattr(os, 'geteuid') and os.geteuid() == 0
-                         and hasattr(os, 'lchflags')
+    @os_helper.skip_unless_dac_override
+    @unittest.skipUnless(hasattr(os, 'lchflags')
                          and hasattr(stat, 'SF_IMMUTABLE')
                          and hasattr(stat, 'UF_OPAQUE'),
-                         'root privileges required')
+                         'requires lchflags')
     def test_move_dir_permission_denied(self):
         # bpo-42782: shutil.move should not create destination directories
         # if the source directory cannot be removed.
@@ -2432,7 +2494,7 @@ class _ZeroCopyFileTest(object):
     def test_same_file(self):
         self.addCleanup(self.reset)
         with self.get_files() as (src, dst):
-            with self.assertRaises(Exception):
+            with self.assertRaises((OSError, _GiveupOnFastCopy)):
                 self.zerocopy_fun(src, src)
         # Make sure src file is not corrupted.
         self.assertEqual(read_file(TESTFN, binary=True), self.FILEDATA)
@@ -2667,6 +2729,7 @@ class TestGetTerminalSize(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    @unittest.skipIf(support.is_wasi, "WASI has no /dev/null")
     def test_fallback(self):
         with os_helper.EnvironmentVarGuard() as env:
             del env['LINES']

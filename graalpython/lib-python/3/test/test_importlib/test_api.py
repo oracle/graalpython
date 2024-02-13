@@ -1,4 +1,4 @@
-from . import util as test_util
+from test.test_importlib import util as test_util
 
 init = test_util.import_importlib('importlib')
 util = test_util.import_importlib('importlib.util')
@@ -396,7 +396,7 @@ class InvalidateCacheTests:
             def invalidate_caches(self):
                 self.called = True
 
-        key = 'gobledeegook'
+        key = os.path.abspath('gobledeegook')
         meta_ins = InvalidatingNullFinder()
         path_ins = InvalidatingNullFinder()
         sys.meta_path.insert(0, meta_ins)

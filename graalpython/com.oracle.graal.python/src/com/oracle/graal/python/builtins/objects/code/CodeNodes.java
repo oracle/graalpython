@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,7 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
-                        TruffleString filename, TruffleString name, int firstlineno,
+                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
 
             PythonLanguage language = PythonLanguage.get(this);
@@ -101,7 +101,8 @@ public abstract class CodeNodes {
             try {
                 return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
-                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
+                                constants, names, varnames, freevars, cellvars,
+                                filename, name, qualname, firstlineno, linetable);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
@@ -113,7 +114,7 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
-                        TruffleString filename, TruffleString name, int firstlineno,
+                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
 
             RootCallTarget ct;
@@ -127,8 +128,13 @@ public abstract class CodeNodes {
                  * you call `inspect.signature()` on such function-like object.
                  */
                 int posArgCount = argCount + positionalOnlyArgCount;
-                TruffleString[] parameterNames = Arrays.copyOf(varnames, posArgCount);
-                TruffleString[] kwOnlyNames = Arrays.copyOfRange(varnames, posArgCount, posArgCount + kwOnlyArgCount);
+                TruffleString[] parameterNames, kwOnlyNames;
+                if (varnames != null) {
+                    parameterNames = Arrays.copyOf(varnames, posArgCount);
+                    kwOnlyNames = Arrays.copyOfRange(varnames, posArgCount, posArgCount + kwOnlyArgCount);
+                } else {
+                    parameterNames = kwOnlyNames = PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+                }
                 int varArgsIndex = (flags & PCode.CO_VARARGS) != 0 ? posArgCount : -1;
                 signature = new Signature(positionalOnlyArgCount,
                                 (flags & PCode.CO_VARKEYWORDS) != 0,
@@ -144,7 +150,7 @@ public abstract class CodeNodes {
                 context.setCodeFilename(ct, filename);
             }
             PythonObjectFactory factory = context.factory();
-            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
+            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
         @SuppressWarnings("static-method")

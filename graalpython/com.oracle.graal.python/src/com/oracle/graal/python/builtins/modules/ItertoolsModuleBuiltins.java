@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
@@ -297,7 +298,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cycle", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCycle, doc = "Make an iterator returning elements from the iterable and\n" +
+    @Builtin(name = "cycle", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PCycle, doc = "Make an iterator returning elements from the iterable and\n" +
                     "    saving a copy of each. When the iterable is exhausted, return\n" +
                     "    elements from the saved copy. Repeats indefinitely.\n\n" +
                     "    Equivalent to :\n\n" +
@@ -310,41 +311,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     "    \t\tfor element in saved:\n" +
                     "    \t\t\tyield element")
     @GenerateNodeFactory
-    public abstract static class CycleNode extends PythonBinaryBuiltinNode {
+    public abstract static class CycleNode extends PythonVarargsBuiltinNode {
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        static PCycle construct(VirtualFrame frame, Object cls, Object iterable,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached IsTypeNode isTypeNode,
-                        @Cached PythonObjectFactory factory) {
-            PCycle self = factory.createCycle(cls);
-            self.setSaved(new ArrayList<>());
-            self.setIterable(getIter.execute(frame, inliningTarget, iterable));
-            self.setIndex(0);
-            self.setFirstpass(false);
-            return self;
-        }
-
-        @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        @SuppressWarnings("unused")
-        static Object notype(Object cls, Object iterable,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
-        }
-    }
-
-    @Builtin(name = "dropwhile", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PDropwhile, doc = "dropwhile(predicate, iterable) --> dropwhile object\n\n" +
-                    "Drop items from the iterable while predicate(item) is true.\n" +
-                    "Afterwards, return every element until the iterable is exhausted.")
-    @GenerateNodeFactory
-    public abstract static class DropwhileNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected static PDropwhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
+        static PCycle construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PythonObjectFactory factory,
@@ -352,6 +324,46 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "cycle()");
+            }
+            if (args.length != 1) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_EXPECTED_D_ARGS, "cycle", 1);
+            }
+            Object iterable = args[0];
+            PCycle self = factory.createCycle(cls);
+            self.setSaved(new ArrayList<>());
+            self.setIterable(getIter.execute(frame, inliningTarget, iterable));
+            self.setIndex(0);
+            self.setFirstpass(false);
+            return self;
+        }
+    }
+
+    @Builtin(name = "dropwhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDropwhile, doc = "dropwhile(predicate, iterable) --> dropwhile object\n\n" +
+                    "Drop items from the iterable while predicate(item) is true.\n" +
+                    "Afterwards, return every element until the iterable is exhausted.")
+    @GenerateNodeFactory
+    public abstract static class DropwhileNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        static PDropwhile construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!isTypeNode.execute(inliningTarget, cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+            }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "dropwhile()");
+            }
+            if (args.length != 2) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_EXPECTED_D_ARGS, "dropwhile", 2);
+            }
+            Object predicate = args[0];
+            Object iterable = args[1];
             PDropwhile self = factory.createDropwhile(cls);
             self.setPredicate(predicate);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
@@ -360,15 +372,16 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "filterfalse", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PFilterfalse, doc = "filterfalse(function or None, sequence) --> filterfalse object\n\n" +
+    @Builtin(name = "filterfalse", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFilterfalse, doc = "filterfalse(function or None, sequence) --> filterfalse object\n\n" +
                     "Return those items of sequence for which function(item) is false.\n" +
                     "If function is None, return the items that are false.")
     @GenerateNodeFactory
-    public abstract static class FilterFalseNode extends PythonTernaryBuiltinNode {
+    public abstract static class FilterFalseNode extends PythonVarargsBuiltinNode {
 
         @Specialization
-        static PFilterfalse construct(VirtualFrame frame, Object cls, Object func, Object sequence,
+        static PFilterfalse construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PythonObjectFactory factory,
@@ -376,6 +389,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "filterfalse()");
+            }
+            if (args.length != 2) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_EXPECTED_D_ARGS, "filterfalse", 2);
+            }
+            Object func = args[0];
+            Object sequence = args[1];
             PFilterfalse self = factory.createFilterfalse(cls);
             self.setFunc(PGuards.isPNone(func) ? null : func);
             self.setSequence(getIter.execute(frame, inliningTarget, sequence));
@@ -446,14 +467,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "takewhile", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PTakewhile, doc = "Make an iterator that returns elements from the iterable as\n" +
+    @Builtin(name = "takewhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PTakewhile, doc = "Make an iterator that returns elements from the iterable as\n" +
                     "long as the predicate is true.\n\nEquivalent to :\n\ndef takewhile(predicate, iterable):\n\tfor x in iterable:\n\t\tif predicate(x):\n\t\t\tyield x\n" +
                     "\t\telse:\n\t\t\tbreak")
     @GenerateNodeFactory
-    public abstract static class TakewhileNode extends PythonTernaryBuiltinNode {
+    public abstract static class TakewhileNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static PTakewhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
+        static PTakewhile construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PythonObjectFactory factory,
@@ -461,6 +483,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "takewhile()");
+            }
+            if (args.length != 2) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_EXPECTED_D_ARGS, "takewhile", 2);
+            }
+            Object predicate = args[0];
+            Object iterable = args[1];
             PTakewhile self = factory.createTakewhile(cls);
             self.setPredicate(predicate);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
@@ -810,30 +840,29 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "chain", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PChain, doc = "Return a chain object whose .__next__() method returns elements from the\n" +
+    @Builtin(name = "chain", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PChain, doc = "Return a chain object whose .__next__() method returns elements from the\n" +
                     "first iterable until it is exhausted, then elements from the next\niterable, until all of the iterables are exhausted.")
     @GenerateNodeFactory
-    public abstract static class ChainNode extends PythonBuiltinNode {
+    public abstract static class ChainNode extends PythonVarargsBuiltinNode {
 
-        @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        static PChain construct(VirtualFrame frame, Object cls, Object[] iterables,
+        @Specialization
+        static PChain construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!isTypeNode.execute(inliningTarget, cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+            }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "chain()");
+            }
             PChain self = factory.createChain(cls);
-            self.setSource(getIter.execute(frame, inliningTarget, factory.createList(iterables)));
+            self.setSource(getIter.execute(frame, inliningTarget, factory.createList(args)));
             self.setActive(PNone.NONE);
             return self;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        static Object notype(Object cls, Object[] iterables,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsTypeNode isTypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -882,14 +911,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "starmap", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PStarmap, doc = "starmap(function, sequence) --> starmap object\n\n" +
+    @Builtin(name = "starmap", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PStarmap, doc = "starmap(function, sequence) --> starmap object\n\n" +
                     "Return an iterator whose values are returned from the function evaluated\n" +
                     "with an argument tuple taken from the given sequence.")
     @GenerateNodeFactory
-    public abstract static class StarmapNode extends PythonTernaryBuiltinNode {
+    public abstract static class StarmapNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static PStarmap construct(VirtualFrame frame, Object cls, Object fun, Object iterable,
+        static PStarmap construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PythonObjectFactory factory,
@@ -897,6 +927,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "starmap()");
+            }
+            if (args.length != 2) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_EXPECTED_D_ARGS, "starmap", 2);
+            }
+            Object fun = args[0];
+            Object iterable = args[1];
             PStarmap self = factory.createStarmap(cls);
             self.setFun(fun);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
@@ -904,12 +942,13 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "islice", minNumOfPositionalArgs = 2, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PIslice)
+    @Builtin(name = "islice", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PIslice)
     @GenerateNodeFactory
-    public abstract static class IsliceNode extends PythonBuiltinNode {
+    public abstract static class IsliceNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static Object constructOne(VirtualFrame frame, Object cls, Object iterable, Object[] args,
+        static Object constructOne(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
                         @Cached InlinedBranchProfile hasStart,
@@ -933,18 +972,21 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                 wrongTypeBranch.enter(inliningTarget);
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-            if (args.length == 0 || args.length > 3) {
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "islice()");
+            }
+            if (args.length < 2 || args.length > 4) {
                 wrongArgsBranch.enter(inliningTarget);
                 throw raiseNode.get(inliningTarget).raise(TypeError, ISLICE_WRONG_ARGS);
             }
             int start = 0;
             int step = 1;
             int stop = -1;
-            if (argsLen1.profile(inliningTarget, args.length == 1)) {
-                if (args[0] != PNone.NONE) {
+            if (argsLen1.profile(inliningTarget, args.length == 2)) {
+                if (args[1] != PNone.NONE) {
                     hasStop.enter(inliningTarget);
                     try {
-                        stop = asIntNode.executeExact(frame, inliningTarget, args[0], OverflowError);
+                        stop = asIntNode.executeExact(frame, inliningTarget, args[1], OverflowError);
                     } catch (PException e) {
                         stopNotInt.enter(inliningTarget);
                         throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
@@ -954,20 +996,20 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     stopWrongValue.enter(inliningTarget);
                     throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                 }
-            } else if (argsLen2.profile(inliningTarget, args.length == 2) || argsLen3.profile(inliningTarget, args.length == 3)) {
-                if (args[0] != PNone.NONE) {
+            } else if (argsLen2.profile(inliningTarget, args.length == 3) || argsLen3.profile(inliningTarget, args.length == 4)) {
+                if (args[1] != PNone.NONE) {
                     hasStart.enter(inliningTarget);
                     try {
-                        start = asIntNode.executeExact(frame, inliningTarget, args[0], OverflowError);
+                        start = asIntNode.executeExact(frame, inliningTarget, args[1], OverflowError);
                     } catch (PException e) {
                         startNotInt.enter(inliningTarget);
                         throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                     }
                 }
-                if (args[1] != PNone.NONE) {
+                if (args[2] != PNone.NONE) {
                     hasStop.enter(inliningTarget);
                     try {
-                        stop = asIntNode.executeExact(frame, inliningTarget, args[1], OverflowError);
+                        stop = asIntNode.executeExact(frame, inliningTarget, args[2], OverflowError);
                     } catch (PException e) {
                         stopNotInt.enter(inliningTarget);
                         throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
@@ -978,11 +1020,11 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                 }
             }
-            if (argsLen3.profile(inliningTarget, args.length == 3)) {
-                if (args[2] != PNone.NONE) {
+            if (argsLen3.profile(inliningTarget, args.length == 4)) {
+                if (args[3] != PNone.NONE) {
                     hasStep.enter(inliningTarget);
                     try {
-                        step = asIntNode.executeExact(frame, inliningTarget, args[2], OverflowError);
+                        step = asIntNode.executeExact(frame, inliningTarget, args[3], OverflowError);
                     } catch (PException e) {
                         overflowBranch.enter(inliningTarget);
                         step = -1;
@@ -993,6 +1035,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(ValueError, STEP_FOR_ISLICE_MUST_BE);
                 }
             }
+            Object iterable = args[0];
             PIslice self = factory.createIslice(cls);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setNext(start);

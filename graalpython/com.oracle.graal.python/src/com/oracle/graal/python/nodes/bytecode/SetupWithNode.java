@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,11 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -80,11 +79,11 @@ public abstract class SetupWithNode extends PNodeWithContext {
         Object type = getClassNode.execute(inliningTarget, contextManager);
         Object enter = lookupEnter.execute(frame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
-            throw raiseNode.raise(AttributeError, new Object[]{T___ENTER__});
+            throw raiseNode.raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL, type);
         }
         Object exit = lookupExit.execute(frame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
-            throw raiseNode.raise(AttributeError, new Object[]{T___EXIT__});
+            throw raiseNode.raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL_EXIT, type);
         }
         Object res = callEnter.executeObject(frame, enter, contextManager);
         frame.setObject(++stackTop, exit);

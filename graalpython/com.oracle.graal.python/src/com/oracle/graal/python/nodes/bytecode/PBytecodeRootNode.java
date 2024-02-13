@@ -5778,6 +5778,30 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    public int bciToLasti(int bci) {
+        if (bci <= 0) {
+            return bci;
+        }
+        byte[] bytecode = co.code;
+        int number = 0;
+        for (int i = 0; i < bytecode.length;) {
+            if (i >= bci) {
+                return number;
+            }
+            i += OpCodes.fromOpCode(bytecode[i]).length();
+            number += 2;
+        }
+        return -1;
+    }
+
+    public int lastiToBci(int lasti) {
+        int bci = 0;
+        for (int i = 0; i < lasti && bci < co.code.length; i += 2) {
+            bci += OpCodes.fromOpCode(co.code[bci]).length();
+        }
+        return bci;
+    }
+
     @Override
     public boolean isInternal() {
         return internal;

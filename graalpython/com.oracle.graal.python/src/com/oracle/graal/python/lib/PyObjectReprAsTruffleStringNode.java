@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,11 +67,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyObjectReprAsTruffleStringNode extends PNodeWithContext {
     public static TruffleString executeUncached(Object object) {
         return PyObjectReprAsTruffleStringNodeGen.getUncached().execute(null, null, object);
-    }
-
-    // TODO: calling this with VirtualFrame that may not be null is likely a bug, review the usages
-    public static TruffleString executeUncached(Frame frame, Object object) {
-        return PyObjectReprAsTruffleStringNodeGen.getUncached().execute(frame, null, object);
     }
 
     public final TruffleString executeCached(Frame frame, Object object) {

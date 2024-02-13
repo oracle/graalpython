@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,39 +46,8 @@ sys.path.insert(0, os.getcwd())
 
 class TestLoader(unittest.TestLoader):
 
-    def prepare_test_decimal(self, module):
-        # Taken from test_main() in test_decimal.py
-        module.init(module.C)
-        module.init(module.P)
-        module.TEST_ALL = True
-        module.DEBUG = None
-        for filename in os.listdir(module.directory):
-            if '.decTest' not in filename or filename.startswith("."):
-                continue
-            head, tail = filename.split('.')
-            tester = lambda self, f=filename: self.eval_file(module.directory + f)
-            setattr(module.CIBMTestCases, 'test_' + head, tester)
-            setattr(module.PyIBMTestCases, 'test_' + head, tester)
-            del filename, head, tail, tester
-        return self.suiteClass(self.loadTestsFromTestCase(cls) for cls in module.all_tests)
-
     def loadTestsFromModule(self, module, pattern=None):
-        if module.__name__.endswith('test_decimal'):
-            return self.prepare_test_decimal(module)
-        if module.__name__.endswith('test_multiprocessing_spawn'):
-            sys.path.insert(1, os.path.dirname(module.__name__.replace(".", "/")))
-            import _test_multiprocessing
-            sys.modules['__main__'] = _test_multiprocessing
         suite = super().loadTestsFromModule(module, pattern=pattern)
-        test_main = getattr(module, 'test_main', None)
-        if callable(test_main):
-            class TestMain(unittest.TestCase):
-                pass
-
-            TestMain.__module__ = test_main.__module__
-            TestMain.__qualname__ = TestMain.__name__
-            TestMain.test_main = staticmethod(test_main)
-            suite.addTests(self.loadTestsFromTestCase(TestMain))
         return suite
 
 

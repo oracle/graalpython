@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -239,7 +239,10 @@ public final class ExceptionUtils {
 
     @TruffleBoundary
     public static void printJavaStackTrace(PException e) {
-        LazyTraceback traceback = e.getTraceback();
+        LazyTraceback traceback = null;
+        if (e.getUnreifiedException() instanceof PBaseException pythonException) {
+            traceback = pythonException.getTraceback();
+        }
         // Find the exception for the original raise site (not for subsequent reraises)
         while (traceback != null && traceback.getNextChain() != null) {
             traceback = traceback.getNextChain();

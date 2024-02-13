@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,6 +10,18 @@
 static PyObject *unicode_empty = NULL;
 
 #define MAX_UNICODE 0x10ffff
+
+#define _Py_RETURN_UNICODE_EMPTY()                      \
+    do {                                                \
+        _Py_INCREF_UNICODE_EMPTY();                     \
+        return unicode_empty;                           \
+    } while (0)
+
+// '_Py_ascii_whitespace' was moved to 'const_arrays.h'
+
+static PyObject * _PyUnicode_FromUCS1(const Py_UCS1 *s, Py_ssize_t size);
+static PyObject * _PyUnicode_FromUCS2(const Py_UCS2 *s, Py_ssize_t size);
+static PyObject * _PyUnicode_FromUCS4(const Py_UCS4 *s, Py_ssize_t size);
 
 static MUST_INLINE const char* convert_errors(const char *errors) {
     return errors != NULL ? errors : "strict";
@@ -717,7 +729,7 @@ PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right)
 }
 
 // 15659
-PyUnicodeObject *
+PyObject *
 unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
 {
     PyObject *self;
@@ -726,8 +738,7 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     unsigned int kind;
     void *data;
 
-    if (unicode == NULL)
-        return NULL;
+    assert(PyType_IsSubtype(type, &PyUnicode_Type));
     assert(_PyUnicode_CHECK(unicode));
     if (PyUnicode_READY(unicode) == -1) {
         return NULL;
@@ -795,8 +806,7 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     memcpy(data, PyUnicode_DATA(unicode),
               kind * (length + 1));
     assert(_PyUnicode_CheckConsistency(self, 1));
-
-    return (PyUnicodeObject*)self;
+    return self;
 
 onError:
     Py_DECREF(self);
@@ -837,36 +847,34 @@ PyUnicode_InternFromString(const char *cp)
 
 // GraalPy additions
 
-Py_ssize_t _PyASCIIObject_LENGTH(PyASCIIObject* op) {
+unsigned int PyTruffleUnicode_CHECK_INTERNED(PyObject *op) {
+    return GET_SLOT_SPECIAL(op, PyASCIIObject, state_interned, state.interned);
+}
+
+Py_ssize_t PyTruffleUnicode_GET_LENGTH(PyObject* op) {
 	return PyASCIIObject_length(op);
 }
 
-wchar_t* _PyASCIIObject_WSTR(PyASCIIObject* op) {
-	return PyASCIIObject_wstr(op);
+Py_ssize_t PyTruffleUnicode_WSTR_LENGTH(PyObject *op) {
+    return PyCompactUnicodeObject_wstr_length(op);
 }
 
-unsigned int _PyASCIIObject_STATE_ASCII(PyASCIIObject* op) {
+unsigned int PyTruffleUnicode_IS_ASCII(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ascii, state.ascii);
 }
 
-unsigned int _PyASCIIObject_STATE_COMPACT(PyASCIIObject* op) {
+unsigned int PyTruffleUnicode_IS_COMPACT(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_compact, state.compact);
 }
 
-unsigned int _PyASCIIObject_STATE_KIND(PyASCIIObject* op) {
+int _PyTruffleUnicode_KIND(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
 }
 
-unsigned int _PyASCIIObject_STATE_READY(PyASCIIObject* op) {
+unsigned int PyTruffleUnicode_IS_READY(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ready, state.ready);
 }
 
-void* _PyUnicodeObject_DATA(PyUnicodeObject* op) {
+void* _PyTruffleUnicode_NONCOMPACT_DATA(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyUnicodeObject, data, data.any);
-}
-
-Py_ssize_t _PyUnicode_get_wstr_length(PyObject* op) {
-    return PyUnicode_IS_COMPACT_ASCII(op) ?
-            PyASCIIObject_length(op) :
-            PyCompactUnicodeObject_wstr_length(op);
 }

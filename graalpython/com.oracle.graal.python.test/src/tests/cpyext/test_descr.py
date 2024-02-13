@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -77,17 +77,10 @@ class TestDescrObject(object):
     def test_new_descr(self):
         C = CPyExtType("C_", 
                             '''
-                            typedef struct A_Struct A_Object;
-
-                            struct A_Struct {
-                                PyObject_HEAD
-                                int some_int;
-                            };
-
                             PyTypeObject A_Type = {
                                 PyVarObject_HEAD_INIT(NULL, 0)
                                 .tp_name = "A",
-                                .tp_basicsize = sizeof(A_Object),
+                                .tp_basicsize = sizeof(C_Object),
                                 .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
                             };
 
@@ -165,6 +158,7 @@ class TestDescrObject(object):
                              tp_clear="(inquiry)C_clear",
                              tp_new="C_new",
                              tp_init="(initproc)C_init",
+                             cmembers="int some_int;",
                              ready_code='''
                                 if (PyType_Ready(&A_Type) < 0)
                                     return NULL;
@@ -182,31 +176,24 @@ class TestDescrObject(object):
         assert bar().foo(None) is None
 
     def test_new_descr_getset(self):
-        F = CPyExtType("F_", 
+        F = CPyExtType("F_",
                             '''
-                            typedef struct D_Struct D_Object;
-
-                            struct D_Struct {
-                                PyObject_HEAD
-                                PyObject * obj;
-                            };
-
                             PyTypeObject D_Type = {
                                 PyVarObject_HEAD_INIT(NULL, 0)
                                 .tp_name = "A",
-                                .tp_basicsize = sizeof(D_Object),
+                                .tp_basicsize = sizeof(F_Object),
                                 .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
                             };
 
                             static PyObject *
-                            foo_get(D_Object *obj, void *Py_UNUSED(ignored))
+                            foo_get(F_Object *obj, void *Py_UNUSED(ignored))
                             {
                                 Py_INCREF(obj->obj);
                                 return obj->obj;
                             }
 
                             static int
-                            foo_set(D_Object *obj, PyObject *value, void *Py_UNUSED(ignored))
+                            foo_set(F_Object *obj, PyObject *value, void *Py_UNUSED(ignored))
                             {
                                 size_t v = PyLong_AsSize_t(value) + 1;
                                 obj->obj = PyLong_FromSize_t(v);
@@ -282,6 +269,7 @@ class TestDescrObject(object):
                              tp_clear="(inquiry)F_clear",
                              tp_new="F_new",
                              tp_init="(initproc)F_init",
+                             cmembers="PyObject* obj;",
                              ready_code='''
                                 if (PyType_Ready(&D_Type) < 0)
                                     return NULL;
@@ -289,11 +277,11 @@ class TestDescrObject(object):
                                 E_Type.tp_base = &PyType_Type;
                                 if (PyType_Ready(&E_Type) < 0)
                                     return NULL;
-                                    
-                                Py_SET_TYPE(&F_Type, &E_Type); 
+
+                                Py_SET_TYPE(&F_Type, &E_Type);
                                 F_Type.tp_base = &D_Type;''',
                             )
-        
+
         class baz(F):
             pass
         b = baz()

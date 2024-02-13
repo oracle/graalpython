@@ -46,7 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -69,6 +69,8 @@ import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -78,7 +80,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -93,10 +94,12 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
 public final class WeakRefModuleBuiltins extends PythonBuiltins {
@@ -115,159 +118,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
     public static int getBuiltinTypeWeaklistoffset(PythonBuiltinClassType cls) {
         // @formatter:off
         return switch (cls) {
-            case PythonObject, // object
-                    PInt, // int
-                    Boolean, // bool
-                    PByteArray, // bytearray
-                    PBytes, // bytes
-                    PList, // list
-                    PNone, // NoneType
-                    PNotImplemented, // NotImplementedType
-                    PTraceback, // traceback
-                    Super, // super
-                    PRange, // range
-                    PDict, // dict
-                    PDictKeysView, // dict_keys
-                    PDictValuesView, // dict_values
-                    PDictItemsView, // dict_items
-                    PDictReverseKeyIterator, // dict_reversekeyiterator
-                    PDictReverseValueIterator, // dict_reversevalueiterator
-                    PDictReverseItemIterator, // dict_reverseitemiterator
-                    PString, // str
-                    PSlice, // slice
-                    PStaticmethod, // staticmethod
-                    PComplex, // complex
-                    PFloat, // float
-                    PProperty, // property
-                    PTuple, // tuple
-                    PEnumerate, // enumerate
-                    PReverseIterator, // reversed
-                    PFrame, // frame
-                    PMappingproxy, // mappingproxy
-                    GetSetDescriptor, // getset_descriptor
-                    WrapperDescriptor, // wrapper_descriptor
-                    MethodWrapper, // method-wrapper
-                    PEllipsis, // ellipsis
-                    MemberDescriptor, // member_descriptor
-                    PSimpleNamespace, // types.SimpleNamespace
-                    Capsule, // PyCapsule
-                    PCell, // cell
-                    PInstancemethod, // instancemethod
-                    PBuiltinClassMethod, // classmethod_descriptor
-                    PBuiltinFunction, // method_descriptor
-                    PSentinelIterator, // callable_iterator
-                    PIterator, // iterator
-                    PCoroutineWrapper, // coroutine_wrapper
-                    PEncodingMap, // EncodingMap
-                    PIntInfo, // sys.int_info
-                    PBaseException, // BaseException
-                    Exception, // Exception
-                    TypeError, // TypeError
-                    StopAsyncIteration, // StopAsyncIteration
-                    StopIteration, // StopIteration
-                    GeneratorExit, // GeneratorExit
-                    SystemExit, // SystemExit
-                    KeyboardInterrupt, // KeyboardInterrupt
-                    ImportError, // ImportError
-                    ModuleNotFoundError, // ModuleNotFoundError
-                    OSError, // OSError
-                    EOFError, // EOFError
-                    RuntimeError, // RuntimeError
-                    RecursionError, // RecursionError
-                    NotImplementedError, // NotImplementedError
-                    NameError, // NameError
-                    UnboundLocalError, // UnboundLocalError
-                    AttributeError, // AttributeError
-                    SyntaxError, // SyntaxError
-                    IndentationError, // IndentationError
-                    TabError, // TabError
-                    LookupError, // LookupError
-                    IndexError, // IndexError
-                    KeyError, // KeyError
-                    ValueError, // ValueError
-                    UnicodeError, // UnicodeError
-                    UnicodeEncodeError, // UnicodeEncodeError
-                    UnicodeDecodeError, // UnicodeDecodeError
-                    UnicodeTranslateError, // UnicodeTranslateError
-                    AssertionError, // AssertionError
-                    ArithmeticError, // ArithmeticError
-                    FloatingPointError, // FloatingPointError
-                    OverflowError, // OverflowError
-                    ZeroDivisionError, // ZeroDivisionError
-                    SystemError, // SystemError
-                    ReferenceError, // ReferenceError
-                    MemoryError, // MemoryError
-                    BufferError, // BufferError
-                    Warning, // Warning
-                    UserWarning, // UserWarning
-                    DeprecationWarning, // DeprecationWarning
-                    PendingDeprecationWarning, // PendingDeprecationWarning
-                    SyntaxWarning, // SyntaxWarning
-                    RuntimeWarning, // RuntimeWarning
-                    FutureWarning, // FutureWarning
-                    ImportWarning, // ImportWarning
-                    UnicodeWarning, // UnicodeWarning
-                    BytesWarning, // BytesWarning
-                    ResourceWarning, // ResourceWarning
-                    ConnectionError, // ConnectionError
-                    BlockingIOError, // BlockingIOError
-                    BrokenPipeError, // BrokenPipeError
-                    ChildProcessError, // ChildProcessError
-                    ConnectionAbortedError, // ConnectionAbortedError
-                    ConnectionRefusedError, // ConnectionRefusedError
-                    ConnectionResetError, // ConnectionResetError
-                    FileExistsError, // FileExistsError
-                    FileNotFoundError, // FileNotFoundError
-                    IsADirectoryError, // IsADirectoryError
-                    NotADirectoryError, // NotADirectoryError
-                    InterruptedError, // InterruptedError
-                    PermissionError, // PermissionError
-                    ProcessLookupError, // ProcessLookupError
-                    TimeoutError, // TimeoutError
-                    PFloatInfo, // sys.float_info
-                    PythonModuleDef, // moduledef
-                    PHashInfo, // sys.hash_info
-                    PVersionInfo, // sys.version_info
-                    PFlags, // sys.flags
-                    PThreadInfo, // sys.thread_info
-                    PMap, // map
-                    PZip, // zip
-                    PClassmethod, // classmethod
-                    PBytesIOBuf, // _io._BytesIOBuffer
-                    PIncrementalNewlineDecoder, // _io.IncrementalNewlineDecoder
-                    PStatResult, // os.stat_result
-                    PStatvfsResult, // os.statvfs_result
-                    PTerminalSize, // os.terminal_size
-                    PScandirIterator, // posix.ScandirIterator
-                    PDirEntry, // posix.DirEntry
-                    PUnameResult, // posix.uname_result
-                    PStructTime, // time.struct_time
-                    PDictItemIterator, // dict_itemiterator
-                    PDictKeyIterator, // dict_keyiterator
-                    PDictValueIterator, // dict_valueiterator
-                    PAccumulate, // itertools.accumulate
-                    PCombinations, // itertools.combinations
-                    PCombinationsWithReplacement, // itertools.combinations_with_replacement
-                    PCycle, // itertools.cycle
-                    PDropwhile, // itertools.dropwhile
-                    PTakewhile, // itertools.takewhile
-                    PIslice, // itertools.islice
-                    PStarmap, // itertools.starmap
-                    PChain, // itertools.chain
-                    PCompress, // itertools.compress
-                    PFilterfalse, // itertools.filterfalse
-                    PCount, // itertools.count
-                    PZipLongest, // itertools.zip_longest
-                    PPermutations, // itertools.permutations
-                    PProduct, // itertools.product
-                    PRepeat, // itertools.repeat
-                    PGroupBy, // itertools.groupby
-                    PTeeDataObject, // itertools._tee_dataobject
-                    PDefaultDict, // collections.defaultdict
-                    PDequeIter, // _collections._deque_iterator
-                    PDequeRevIter, // _collections._deque_reverse_iterator
-                    PTupleGetter // _collections._tuplegetter
-                    -> 0;
             case PythonClass -> 368; // type
             case PSet, // set
                     PFrozenSet // frozenset
@@ -282,7 +132,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     PThreadLocal, // _thread._local
                     PRLock, // _thread.RLock
                     PBufferedRWPair, // _io.BufferedRWPair
-                    PAsyncGenerator // async_generator
+                    PAsyncGenerator, // async_generator
+                    PGenericAlias
                     -> 40;
             case PMethod, // method
                     PFileIO, // _io.FileIO
@@ -306,8 +157,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     -> 144;
             case PickleBuffer -> 96; // _pickle.PickleBuffer
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
-
-            default -> -1; // unknown or not implemented
+            default -> 0;
             // @formatter:on
         };
     }
@@ -346,6 +196,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static final TruffleString T_PROXY_TYPE = tsLiteral("ProxyType");
+    private static final TruffleString T_CALLABLE_PROXY_TYPE = tsLiteral("CallableProxyType");
+
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
@@ -354,6 +207,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         PythonBuiltinClass refType = core.lookupType(PythonBuiltinClassType.PReferenceType);
         weakrefModule.setAttribute(T_REF, refType);
         refType.setAttribute(weakRefQueueKey, weakRefQueue);
+        // FIXME we should intrinsify those types
+        TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
+        TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_CALLABLE_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
             if (!ctx.isGcEnabled()) {
@@ -393,11 +249,13 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // ReferenceType constructor
-    @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
+    @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
-    public abstract static class ReferenceTypeNode extends PythonTernaryBuiltinNode {
+    public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
         @Child private ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
         @Child private CStructAccess.ReadI64Node getTpWeaklistoffsetNode;
+
+        public abstract PReferenceType execute(Object cls, Object object, Object callback);
 
         @Specialization(guards = "!isNativeObject(object)")
         @SuppressWarnings("truffle-static-method")
@@ -416,10 +274,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             boolean allowed = true;
             if (clazz instanceof PythonBuiltinClassType type) {
-                if (type.getWeaklistoffset() < 0) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw shouldNotReachHere("Unknown weaklistoffset of " + type);
-                }
                 allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {
@@ -509,6 +363,11 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             }
+        }
+
+        @NeverDefault
+        public static ReferenceTypeNode create() {
+            return WeakRefModuleBuiltinsFactory.ReferenceTypeNodeFactory.create(null);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,9 +95,9 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -105,10 +105,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -185,34 +182,15 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"isNoValue(none)"}, limit = "1")
-        static Object doManagedCachedShape(PythonModule self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetDictIfExistsNode getDict,
-                        @Shared @Cached SetDictNode setDict,
-                        @CachedLibrary("self") DynamicObjectLibrary dynamicObjectLibrary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PDict dict = getDict.execute(self);
-            if (dict == null) {
-                if (hasInitialProperties(dynamicObjectLibrary, self)) {
-                    return PNone.NONE;
-                }
-                dict = createDict(inliningTarget, self, setDict, factory);
-            }
-            return dict;
-        }
 
-        @Specialization(guards = "isNoValue(none)", replaces = "doManagedCachedShape")
+        @Specialization(guards = "isNoValue(none)")
         static Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetDictIfExistsNode getDict,
-                        @Shared @Cached SetDictNode setDict,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict,
+                        @Cached PythonObjectFactory factory) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                if (hasInitialPropertiesUncached(self)) {
-                    return PNone.NONE;
-                }
                 dict = createDict(inliningTarget, self, setDict, factory);
             }
             return dict;
@@ -221,7 +199,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetDictIfExistsNode getDict,
+                        @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Cached PRaiseNode.Lazy raiseNode) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
@@ -240,29 +218,6 @@ public final class ModuleBuiltins extends PythonBuiltins {
             PDict dict = factory.createDictFixedStorage(self);
             setDict.execute(inliningTarget, self, dict);
             return dict;
-        }
-
-        @TruffleBoundary
-        private static boolean hasInitialPropertiesUncached(PythonModule self) {
-            return hasInitialProperties(DynamicObjectLibrary.getUncached(), self);
-        }
-
-        private static boolean hasInitialProperties(DynamicObjectLibrary dynamicObjectLibrary, PythonModule self) {
-            return hasInitialPropertyCount(dynamicObjectLibrary, self) && initialPropertiesChanged(dynamicObjectLibrary, self);
-        }
-
-        private static boolean hasInitialPropertyCount(DynamicObjectLibrary dynamicObjectLibrary, PythonModule self) {
-            return dynamicObjectLibrary.getShape(self).getPropertyCount() == PythonModule.INITIAL_MODULE_ATTRS.length;
-        }
-
-        @ExplodeLoop
-        private static boolean initialPropertiesChanged(DynamicObjectLibrary lib, PythonModule self) {
-            for (int i = 0; i < PythonModule.INITIAL_MODULE_ATTRS.length; i++) {
-                if (lib.getOrDefault(self, PythonModule.INITIAL_MODULE_ATTRS[i], PNone.NO_VALUE) != PNone.NO_VALUE) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 

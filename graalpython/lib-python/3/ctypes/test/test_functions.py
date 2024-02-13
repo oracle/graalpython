@@ -42,16 +42,16 @@ class FunctionTestCase(unittest.TestCase):
 
         from _ctypes import _Pointer
         with self.assertRaises(TypeError):
-            class X(object, _Pointer):
+            class X2(object, _Pointer):
                 pass
 
         from _ctypes import _SimpleCData
         with self.assertRaises(TypeError):
-            class X(object, _SimpleCData):
+            class X3(object, _SimpleCData):
                 _type_ = "i"
 
         with self.assertRaises(TypeError):
-            class X(object, Structure):
+            class X4(object, Structure):
                 _fields_ = []
 
     @need_symbol('c_wchar')
@@ -128,6 +128,7 @@ class FunctionTestCase(unittest.TestCase):
         self.assertEqual(result, -21)
         self.assertEqual(type(result), float)
 
+    @need_symbol('c_longdouble')
     def test_longdoubleresult(self):
         f = dll._testfunc_D_bhilfD
         f.argtypes = [c_byte, c_short, c_int, c_long, c_float, c_longdouble]
@@ -198,15 +199,6 @@ class FunctionTestCase(unittest.TestCase):
         # of the pointer:
         result = f(byref(c_int(99)))
         self.assertNotEqual(result.contents, 99)
-
-    def test_errors(self):
-        f = dll._testfunc_p_p
-        f.restype = c_int
-
-        class X(Structure):
-            _fields_ = [("y", c_int)]
-
-        self.assertRaises(TypeError, f, X()) #cannot convert parameter
 
     ################################################################
     def test_shorts(self):

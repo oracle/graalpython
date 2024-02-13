@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -1037,10 +1038,10 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class ConjugateNode extends FloatNode {
     }
 
-    @Builtin(name = J___GETFORMAT__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = J___GETFORMAT__, minNumOfPositionalArgs = 2, isClassmethod = true, parameterNames = {"$cls", "typestr"})
+    @ArgumentClinic(name = "typestr", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class GetFormatNode extends PythonBinaryBuiltinNode {
+    abstract static class GetFormatNode extends PythonBinaryClinicBuiltinNode {
         private static final TruffleString T_FLOAT = tsLiteral(J_FLOAT);
         private static final TruffleString T_DOUBLE = tsLiteral("double");
         private static final TruffleString T_UNKNOWN = tsLiteral("unknown");
@@ -1074,6 +1075,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         static TruffleString getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object typeStr,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.ValueError, ErrorMessages.ARG_D_MUST_BE_S_OR_S, "__getformat__()", 1, "double", "float");
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FloatBuiltinsClinicProviders.GetFormatNodeClinicProviderGen.INSTANCE;
         }
     }
 

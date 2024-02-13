@@ -111,21 +111,3 @@ const char * PyModule_GetName(PyObject *m) {
     }
     return PyUnicode_AsUTF8(name);
 }
-
-PyModuleDef* _PyModule_GetDef(PyObject *mod) {
-    assert(PyModule_Check(mod));
-    return GraalPy_get_PyModuleObject_md_def((PyModuleObject*) mod);
-}
-
-void* _PyModule_GetState(PyObject* mod) {
-    assert(PyModule_Check(mod));
-    return GraalPy_get_PyModuleObject_md_state((PyModuleObject*) mod);
-}
-
-PyObject* _PyModule_GetDict(PyObject *mod) {
-    assert(PyModule_Check(mod));
-    PyObject *dict = GraalPy_get_PyModuleObject_md_dict((PyModuleObject*) mod);
-    // _PyModule_GetDict(mod) must not be used after calling module_clear(mod)
-    assert(dict != NULL);
-    return dict;
-}

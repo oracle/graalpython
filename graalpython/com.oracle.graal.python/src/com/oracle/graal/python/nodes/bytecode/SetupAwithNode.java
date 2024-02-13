@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,11 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -60,7 +59,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -75,21 +73,17 @@ public abstract class SetupAwithNode extends PNodeWithContext {
                     @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupAEnter,
                     @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupAExit,
                     @Cached CallUnaryMethodNode callEnter,
-                    @Cached InlinedBranchProfile error1Profile,
-                    @Cached InlinedBranchProfile error2Profile,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
         Object contextManager = frame.getObject(stackTop);
         Object type = getClassNode.execute(inliningTarget, contextManager);
         Object enter = lookupAEnter.execute(frame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
-            error1Profile.enter(inliningTarget);
-            throw raiseNode.raise(AttributeError, new Object[]{T___AENTER__});
+            throw raiseNode.raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL, type);
         }
         Object exit = lookupAExit.execute(frame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
-            error2Profile.enter(inliningTarget);
-            throw raiseNode.raise(AttributeError, new Object[]{T___AEXIT__});
+            throw raiseNode.raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT, type);
         }
         Object res = callEnter.executeObject(frame, enter, contextManager);
         frame.setObject(++stackTop, exit);

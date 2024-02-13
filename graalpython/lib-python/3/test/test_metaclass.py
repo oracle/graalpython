@@ -1,3 +1,7 @@
+import doctest
+import unittest
+
+
 doctests = """
 
 Basic class construction.
@@ -246,7 +250,7 @@ Test failures in looking up the __prepare__ method work.
     [...]
     test.test_metaclass.ObscureException
 
-"""
+""".replace('test.test_metaclass', 'graalpython.lib-python.3.test.test_metaclass')  # GraalPy change: difference in how we run the tests
 
 import sys
 
@@ -256,10 +260,10 @@ if hasattr(sys, 'gettrace') and sys.gettrace():
 else:
     __test__ = {'doctests' : doctests}
 
-def test_main(verbose=False):
-    from test import support
-    from test import test_metaclass
-    support.run_doctest(test_metaclass, verbose)
+def load_tests(loader, tests, pattern):
+    tests.addTest(doctest.DocTestSuite())
+    return tests
+
 
 if __name__ == "__main__":
-    test_main(verbose=True)
+    unittest.main()

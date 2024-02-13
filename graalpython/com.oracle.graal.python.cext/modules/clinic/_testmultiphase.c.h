@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,11 +13,11 @@ PyDoc_STRVAR(_testmultiphase_StateAccessType_get_defining_module__doc__,
 "\n"
 "Return the module of the defining class.\n"
 "\n"
-"Also tests that result of _PyType_GetModuleByDef matches defining_class\'s\n"
+"Also tests that result of PyType_GetModuleByDef matches defining_class\'s\n"
 "module.");
 
 #define _TESTMULTIPHASE_STATEACCESSTYPE_GET_DEFINING_MODULE_METHODDEF    \
-    {"get_defining_module", (PyCFunction)(void(*)(void))_testmultiphase_StateAccessType_get_defining_module, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_get_defining_module__doc__},
+    {"get_defining_module", _PyCFunction_CAST(_testmultiphase_StateAccessType_get_defining_module), METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_get_defining_module__doc__},
 
 static PyObject *
 _testmultiphase_StateAccessType_get_defining_module_impl(StateAccessTypeObject *self,
@@ -37,10 +37,10 @@ PyDoc_STRVAR(_testmultiphase_StateAccessType_getmodulebydef_bad_def__doc__,
 "getmodulebydef_bad_def($self, /)\n"
 "--\n"
 "\n"
-"Test that result of _PyType_GetModuleByDef with a bad def is NULL.");
+"Test that result of PyType_GetModuleByDef with a bad def is NULL.");
 
 #define _TESTMULTIPHASE_STATEACCESSTYPE_GETMODULEBYDEF_BAD_DEF_METHODDEF    \
-    {"getmodulebydef_bad_def", (PyCFunction)(void(*)(void))_testmultiphase_StateAccessType_getmodulebydef_bad_def, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_getmodulebydef_bad_def__doc__},
+    {"getmodulebydef_bad_def", _PyCFunction_CAST(_testmultiphase_StateAccessType_getmodulebydef_bad_def), METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_getmodulebydef_bad_def__doc__},
 
 static PyObject *
 _testmultiphase_StateAccessType_getmodulebydef_bad_def_impl(StateAccessTypeObject *self,
@@ -67,7 +67,7 @@ PyDoc_STRVAR(_testmultiphase_StateAccessType_increment_count_clinic__doc__,
 "This tests Argument Clinic support for defining_class.");
 
 #define _TESTMULTIPHASE_STATEACCESSTYPE_INCREMENT_COUNT_CLINIC_METHODDEF    \
-    {"increment_count_clinic", (PyCFunction)(void(*)(void))_testmultiphase_StateAccessType_increment_count_clinic, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_increment_count_clinic__doc__},
+    {"increment_count_clinic", _PyCFunction_CAST(_testmultiphase_StateAccessType_increment_count_clinic), METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_increment_count_clinic__doc__},
 
 static PyObject *
 _testmultiphase_StateAccessType_increment_count_clinic_impl(StateAccessTypeObject *self,
@@ -123,7 +123,7 @@ PyDoc_STRVAR(_testmultiphase_StateAccessType_get_count__doc__,
 "Return the value of the module-state counter.");
 
 #define _TESTMULTIPHASE_STATEACCESSTYPE_GET_COUNT_METHODDEF    \
-    {"get_count", (PyCFunction)(void(*)(void))_testmultiphase_StateAccessType_get_count, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_get_count__doc__},
+    {"get_count", _PyCFunction_CAST(_testmultiphase_StateAccessType_get_count), METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _testmultiphase_StateAccessType_get_count__doc__},
 
 static PyObject *
 _testmultiphase_StateAccessType_get_count_impl(StateAccessTypeObject *self,
@@ -138,4 +138,4 @@ _testmultiphase_StateAccessType_get_count(StateAccessTypeObject *self, PyTypeObj
     }
     return _testmultiphase_StateAccessType_get_count_impl(self, cls);
 }
-/*[clinic end generated code: output=ec5029d1275cbf94 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=48739d81c3834078 input=a9049054013a1b77]*/

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,96 +8,94 @@
 
 from collections import namedtuple
 import marshal
-import ntpath
 import os
+import ntpath
 import posixpath
 import sys
-import textwrap
+import argparse
 import shutil
 
 from _sha256 import sha256
 
-
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
+STDLIB_DIR: str
+FROZEN_MODULES_DIR: str
+
+OS_PATH = 'ntpath' if os.name == 'nt' else 'posixpath'
+
 # These are modules that get frozen.
-TESTS_SECTION = "Test module"
+TESTS_SECTION = 'Test module'
 FROZEN = [
     # See parse_frozen_spec() for the format.
     # In cases where the frozenid is duplicated, the first one is re-used.
-    (
-        "import system",
-        [
-            # These frozen modules are necessary for bootstrapping the import
-            # system.
-            "importlib._bootstrap : _frozen_importlib",
-            "importlib._bootstrap_external : _frozen_importlib_external",
-            'zipimport',
-        ],
-    ),
-    (
-        "stdlib - startup, without site (python -S)",
-        [
-            "abc",
-            "codecs",
-            "<encodings.*>",
-            "io",
-        ],
-    ),
-    (
-        "stdlib - startup, with site",
-        [
-            "_py_abc",
-            "_weakrefset",
-            "types",
-            "enum",
-            "sre_constants",
-            "sre_parse",
-            "sre_compile",
-            "operator",
-            "keyword",
-            "heapq",
-            "reprlib",
-            "<collections.*>",
-            "functools",
-            "copyreg",
-            "re",
-            "locale",
-            "rlcompleter",
-            "_collections_abc",
-            "_sitebuiltins",
-            "genericpath",
-            "ntpath",
-            "posixpath",
-            # We must explicitly mark os.path as a frozen module, it is also special cased below
-            ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
-            "os",
-            "site",
-            "stat",
-            "datetime",
-            "contextlib",
-            "warnings",
-            "inspect",
-        ],
-    ),
-    (
-        TESTS_SECTION,
-        [
-            "__hello__",
-            "__hello__ : __hello_alias__",
-            "__hello__ : <__phello_alias__>",
-            "__hello__ : __phello_alias__.spam",
-            "__hello__ : <__phello__>",
-            "__hello__ : __phello__.spam",
-            # '<__phello__.**.*>',
-            f"frozen_only : __hello_only__ = {FROZEN_ONLY}",
-        ],
-    ),
+    ('import system', [
+        # These frozen modules are necessary for bootstrapping
+        # the import system.
+        'importlib._bootstrap : _frozen_importlib',
+        'importlib._bootstrap_external : _frozen_importlib_external',
+        # This module is important because some Python builds rely
+        # on a builtin zip file instead of a filesystem.
+        'zipimport',
+        ]),
+    ('stdlib - startup, without site (python -S)', [
+        'abc',
+        'codecs',
+        '<encodings.*>',
+        'io',
+        ]),
+    ('stdlib - startup, with site', [
+        '_py_abc',
+        '_weakrefset',
+        'types',
+        'enum',
+        'sre_constants',
+        'sre_parse',
+        'sre_compile',
+        'operator',
+        'keyword',
+        'heapq',
+        'reprlib',
+        '<collections.*>',
+        'functools',
+        'copyreg',
+        '<re.*>',
+        'locale',
+        'rlcompleter',
+        '_collections_abc',
+        '_sitebuiltins',
+        'genericpath',
+        'ntpath',
+        'posixpath',
+        # We must explicitly mark os.path as a frozen module
+        # even though it will never be imported.
+        f'{OS_PATH} : os.path',
+        'os',
+        'site',
+        'stat',
+        'datetime',
+        'contextlib',
+        'warnings',
+        'inspect',
+        ]),
+    ('runpy - run module with -m', [
+        "importlib.util",
+        "importlib.machinery",
+        "runpy",
+    ]),
+    (TESTS_SECTION, [
+        '__hello__',
+        '__hello__ : __hello_alias__',
+        '__hello__ : <__phello_alias__>',
+        '__hello__ : __phello_alias__.spam',
+        '<__phello__.**.*>',
+        f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
+        ]),
 ]
 BOOTSTRAP = {
-    "importlib._bootstrap",
-    "importlib._bootstrap_external",
-    "zipimport",
+    'importlib._bootstrap',
+    'importlib._bootstrap_external',
+    'zipimport',
 }
 
 
@@ -133,43 +131,56 @@ def add_graalpython_core():
 
 add_graalpython_core()
 
+#######################################
+# platform-specific helpers
+
+if os.path is posixpath:
+    relpath_for_posix_display = os.path.relpath
+
+    def relpath_for_windows_display(path, base):
+        return ntpath.relpath(
+            ntpath.join(*path.split(os.path.sep)),
+            ntpath.join(*base.split(os.path.sep)),
+        )
+
+else:
+    relpath_for_windows_display = ntpath.relpath
+
+    def relpath_for_posix_display(path, base):
+        return posixpath.relpath(
+            posixpath.join(*path.split(os.path.sep)),
+            posixpath.join(*base.split(os.path.sep)),
+        )
+
 
 #######################################
 # specs
 
-
-def parse_frozen_specs(stdlib_path, output_path):
+def parse_frozen_specs():
     seen = {}
     for section, specs in FROZEN:
-        parsed = _parse_specs(specs, section, seen, stdlib_path=stdlib_path)
+        parsed = _parse_specs(specs, section, seen)
         for item in parsed:
             frozenid, pyfile, modname, ispkg, section = item
-            if sys.flags.verbose:
-                print(frozenid, pyfile, modname, ispkg, section)
             try:
                 source = seen[frozenid]
             except KeyError:
-                source = FrozenSource.from_id(
-                    stdlib_path=stdlib_path,
-                    output_path=output_path,
-                    frozenid=frozenid,
-                    pyfile=pyfile,
-                )
+                source = FrozenSource.from_id(frozenid, pyfile)
                 seen[frozenid] = source
             else:
                 assert not pyfile or pyfile == source.pyfile, item
             yield FrozenModule(modname, ispkg, section, source)
 
 
-def _parse_specs(specs, section, seen, *, stdlib_path):
+def _parse_specs(specs, section, seen):
     for spec in specs:
-        info, subs = _parse_spec(spec, seen, section, stdlib_path=stdlib_path)
+        info, subs = _parse_spec(spec, seen, section)
         yield info
         for info in subs or ():
             yield info
 
 
-def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
+def _parse_spec(spec, knownids=None, section=None):
     """Yield an info tuple for each module corresponding to the given spec.
 
     The info consists of: (frozenid, pyfile, modname, ispkg, section).
@@ -199,14 +210,14 @@ def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
     Also, if "modname" has brackets then "frozenid" should not,
     and "pyfile" should have been provided..
     """
-    frozenid, _, remainder = spec.partition(":")
-    modname, _, pyfile = remainder.partition("=")
+    frozenid, _, remainder = spec.partition(':')
+    modname, _, pyfile = remainder.partition('=')
     frozenid = frozenid.strip()
     modname = modname.strip()
     pyfile = pyfile.strip()
 
     submodules = None
-    if modname.startswith("<") and modname.endswith(">"):
+    if modname.startswith('<') and modname.endswith('>'):
         assert check_modname(frozenid), spec
         modname = modname[1:-1]
         assert check_modname(modname), spec
@@ -229,7 +240,7 @@ def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
         ispkg = False
     else:
         assert not modname or check_modname(modname), spec
-        resolved = iter(resolve_modules(frozenid, stdlib_path=stdlib_path))
+        resolved = iter(resolve_modules(frozenid))
         frozenid, pyfile, ispkg = next(resolved)
         if not modname:
             modname = frozenid
@@ -237,7 +248,6 @@ def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
             pkgid = frozenid
             pkgname = modname
             pkgfiles = {pyfile: pkgid}
-
             def iter_subs():
                 for frozenid, pyfile, ispkg in resolved:
                     if pkgname:
@@ -251,7 +261,6 @@ def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
                         elif ispkg:
                             pkgfiles[pyfile] = frozenid
                     yield frozenid, pyfile, modname, ispkg, section
-
             submodules = iter_subs()
 
     info = (frozenid, pyfile or None, modname, ispkg, section)
@@ -261,15 +270,15 @@ def _parse_spec(spec, knownids=None, section=None, *, stdlib_path):
 #######################################
 # frozen source files
 
+class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile deepfreezefile')):
 
-class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile stdlib_path")):
     @classmethod
-    def from_id(cls, *, stdlib_path, output_path, frozenid, pyfile=None):
+    def from_id(cls, frozenid, pyfile=None):
         if not pyfile:
-            pyfile = os.path.join(stdlib_path, *frozenid.split(".")) + ".py"
-            assert os.path.exists(pyfile), (frozenid, pyfile)
-        binaryfile = resolve_frozen_file(frozenid, output_path)
-        return cls(frozenid, pyfile, binaryfile, stdlib_path)
+            pyfile = os.path.join(STDLIB_DIR, *frozenid.split('.')) + '.py'
+            #assert os.path.exists(pyfile), (frozenid, pyfile)
+        frozenfile = resolve_frozen_file(frozenid, FROZEN_MODULES_DIR)
+        return cls(frozenid, pyfile, frozenfile, STDLIB_DIR)
 
     @classmethod
     def resolve_symbol(cls, frozen_id):
@@ -281,7 +290,7 @@ class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile stdlib_path"
 
     @property
     def modname(self):
-        if os.path.normpath(self.pyfile).startswith(os.path.normpath(self.stdlib_path)):
+        if self.pyfile.startswith(STDLIB_DIR):
             return self.id
         return None
 
@@ -294,10 +303,14 @@ class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile stdlib_path"
     def ispkg(self):
         if not self.pyfile:
             return False
-        elif self.frozenid.endswith(".__init__"):
+        elif self.frozenid.endswith('.__init__'):
             return False
         else:
-            return os.path.basename(self.pyfile) == "__init__.py"
+            return os.path.basename(self.pyfile) == '__init__.py'
+
+    @property
+    def isbootstrap(self):
+        return self.id in BOOTSTRAP
 
 
 def resolve_frozen_file(frozenid, destdir):
@@ -310,21 +323,21 @@ def resolve_frozen_file(frozenid, destdir):
         try:
             frozenid = frozenid.frozenid
         except AttributeError:
-            raise ValueError(f"unsupported frozenid {frozenid!r}")
+            raise ValueError(f'unsupported frozenid {frozenid!r}')
     # We use a consistent naming convention for all frozen modules.
     frozen_symbol = FrozenSource.resolve_symbol(frozenid)
-    binaryfile = f"Frozen{frozen_symbol}.bin"
+    frozenfile = f"Frozen{frozen_symbol}.bin"
 
     if not destdir:
-        return binaryfile
-    return os.path.join(destdir, binaryfile)
+        return frozenfile
+    return os.path.join(destdir, frozenfile)
 
 
 #######################################
 # frozen modules
 
+class FrozenModule(namedtuple('FrozenModule', 'name ispkg section source')):
 
-class FrozenModule(namedtuple("FrozenModule", "name ispkg section source")):
     def __getattr__(self, name):
         return getattr(self.source, name)
 
@@ -346,15 +359,15 @@ class FrozenModule(namedtuple("FrozenModule", "name ispkg section source")):
     def summarize(self):
         source = self.source.modname
         if source:
-            source = f"<{source}>"
+            source = f'<{source}>'
         else:
             source = relpath_for_posix_display(self.pyfile, ROOT_DIR)
         return {
-            "module": self.name,
-            "ispkg": self.ispkg,
-            "source": source,
-            "frozen": os.path.basename(self.binaryfile),
-            "checksum": _get_checksum(self.binaryfile),
+            'module': self.name,
+            'ispkg': self.ispkg,
+            'source': source,
+            'frozen': os.path.basename(self.frozenfile),
+            'checksum': _get_checksum(self.frozenfile),
         }
 
 
@@ -369,30 +382,27 @@ def _iter_sources(modules):
 #######################################
 # generic helpers
 
-
 def _get_checksum(filename):
-    with open(filename, "rb", encoding="utf-8") as infile:
+    with open(filename, "rb") as infile:
         contents = infile.read()
     m = sha256()
     m.update(contents)
     return m.hexdigest()
 
 
-def resolve_modules(modname, *, stdlib_path, pyfile=None):
-    if modname.startswith("<") and modname.endswith(">"):
+def resolve_modules(modname, pyfile=None):
+    if modname.startswith('<') and modname.endswith('>'):
         if pyfile:
-            assert (
-                os.path.isdir(pyfile) or os.path.basename(pyfile) == "__init__.py"
-            ), pyfile
+            assert os.path.isdir(pyfile) or os.path.basename(pyfile) == '__init__.py', pyfile
         ispkg = True
         modname = modname[1:-1]
         rawname = modname
         # For now, we only expect match patterns at the end of the name.
-        _modname, sep, match = modname.rpartition(".")
+        _modname, sep, match = modname.rpartition('.')
         if sep:
-            if _modname.endswith(".**"):
+            if _modname.endswith('.**'):
                 modname = _modname[:-3]
-                match = f"**.{match}"
+                match = f'**.{match}'
             elif match and not match.isidentifier():
                 modname = _modname
             # Otherwise it's a plain name so we leave it alone.
@@ -404,10 +414,10 @@ def resolve_modules(modname, *, stdlib_path, pyfile=None):
         match = None
 
     if not check_modname(modname):
-        raise ValueError(f"not a valid module name ({rawname})")
+        raise ValueError(f'not a valid module name ({rawname})')
 
     if not pyfile:
-        pyfile = _resolve_module(modname, stdlib_path, ispkg=ispkg)
+        pyfile = _resolve_module(modname, ispkg=ispkg)
     elif os.path.isdir(pyfile):
         pyfile = _resolve_module(modname, pyfile, ispkg)
     yield modname, pyfile, ispkg
@@ -418,15 +428,14 @@ def resolve_modules(modname, *, stdlib_path, pyfile=None):
 
 
 def check_modname(modname):
-    return all(n.isidentifier() for n in modname.split("."))
+    return all(n.isidentifier() for n in modname.split('.'))
 
 
-def iter_submodules(pkgname, pkgdir=None, match="*", stdlib_path=None):
+def iter_submodules(pkgname, pkgdir=None, match='*'):
     if not pkgdir:
-        assert stdlib_path
-        pkgdir = os.path.join(stdlib_path, *pkgname.split("."))
+        pkgdir = os.path.join(STDLIB_DIR, *pkgname.split('.'))
     if not match:
-        match = "**.*"
+        match = '**.*'
     match_modname = _resolve_modname_matcher(match, pkgdir)
 
     def _iter_submodules(pkgname, pkgdir):
@@ -434,11 +443,11 @@ def iter_submodules(pkgname, pkgdir=None, match="*", stdlib_path=None):
             matched, recursive = match_modname(entry.name)
             if not matched:
                 continue
-            modname = f"{pkgname}.{entry.name}"
-            if modname.endswith(".py"):
+            modname = f'{pkgname}.{entry.name}'
+            if modname.endswith('.py'):
                 yield modname[:-3], entry.path, False
             elif entry.is_dir():
-                pyfile = os.path.join(entry.path, "__init__.py")
+                pyfile = os.path.join(entry.path, '__init__.py')
                 # We ignore namespace packages.
                 if os.path.exists(pyfile):
                     yield modname, pyfile, True
@@ -450,7 +459,7 @@ def iter_submodules(pkgname, pkgdir=None, match="*", stdlib_path=None):
 
 def _resolve_modname_matcher(match, rootdir=None):
     if isinstance(match, str):
-        if match.startswith("**."):
+        if match.startswith('**.'):
             recursive = True
             pat = match[3:]
             assert match
@@ -458,27 +467,27 @@ def _resolve_modname_matcher(match, rootdir=None):
             recursive = False
             pat = match
 
-        if pat == "*":
-
+        if pat == '*':
             def match_modname(modname):
                 return True, recursive
-
         else:
             raise NotImplementedError(match)
     elif callable(match):
         match_modname = match(rootdir)
     else:
-        raise ValueError(f"unsupported matcher {match!r}")
+        raise ValueError(f'unsupported matcher {match!r}')
     return match_modname
 
 
-def _resolve_module(modname, pathentry, ispkg=False):
+def _resolve_module(modname, pathentry=None, ispkg=False):
+    if pathentry is None:
+        pathentry = STDLIB_DIR
     assert pathentry, pathentry
     pathentry = os.path.normpath(pathentry)
     assert os.path.isabs(pathentry)
     if ispkg:
-        return os.path.join(pathentry, *modname.split("."), "__init__.py")
-    return os.path.join(pathentry, *modname.split(".")) + ".py"
+        return os.path.join(pathentry, *modname.split('.'), '__init__.py')
+    return os.path.join(pathentry, *modname.split('.')) + '.py'
 
 
 def lower_camel_case(str):
@@ -489,7 +498,7 @@ def lower_camel_case(str):
 # write frozen files
 
 FROZEN_MODULES_HEADER = """/*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -536,7 +545,7 @@ public final class FrozenModules {"""
 
 
 def freeze_module(src):
-    with open(src.pyfile, "r", encoding="utf-8") as src_file, open(src.binaryfile, "wb") as binary_file:
+    with open(src.pyfile, "r", encoding="utf-8") as src_file, open(src.frozenfile, "wb") as binary_file:
         code_obj = compile(src_file.read(), f"<frozen {src.id}>", "exec")
         marshal.dump(code_obj, binary_file)
 
@@ -550,8 +559,9 @@ def write_frozen_modules_map(out_file, modules):
             or not any(module.orig == m.orig for m in modules if m != module)
         ):
             ispkg = "true" if module.ispkg else "false"
+            orig = f'"{module.orig}"' if module.orig else "null"
             out_file.write(
-                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", "{module.frozenid}", {ispkg});\n'
+                f'        private static final PythonFrozenModule {module.symbol} = new PythonFrozenModule("{module.symbol}", {orig}, {ispkg});\n'
             )
     out_file.write("    }\n")
 
@@ -614,17 +624,20 @@ def add_tabs(str, number):
     return "\n".join(tabbed_lines)
 
 
-def main(args):
-    from argparse import ArgumentParser
+def main():
 
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("--python-lib", required=True)
     parser.add_argument("--binary-dir", required=True)
     parser.add_argument("--sources-dir", required=True)
-    parsed_args = parser.parse_args(args)
+    parsed_args = parser.parse_args()
+
+    global STDLIB_DIR, FROZEN_MODULES_DIR
+    STDLIB_DIR = os.path.abspath(parsed_args.python_lib)
+    FROZEN_MODULES_DIR = os.path.abspath(parsed_args.binary_dir)
 
     # create module specs
-    modules = list(parse_frozen_specs(parsed_args.python_lib, parsed_args.binary_dir))
+    modules = list(parse_frozen_specs())
 
     shutil.rmtree(parsed_args.binary_dir, ignore_errors=True)
     os.makedirs(parsed_args.binary_dir)
@@ -639,5 +652,5 @@ def main(args):
     )
 
 
-if __name__ == "__main__":
-    main(sys.argv[1:])
+if __name__ == '__main__':
+    main()

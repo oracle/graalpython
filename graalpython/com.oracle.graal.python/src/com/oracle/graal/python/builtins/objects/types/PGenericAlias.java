@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,14 +45,17 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.object.Shape;
 
 public class PGenericAlias extends PythonBuiltinObject {
-    private Object origin;
-    private PTuple args;
+    private final Object origin;
+    private final PTuple args;
     private PTuple parameters;
+    // Whether we're a starred type, e.g. *tuple[int]
+    private final boolean starred;
 
-    public PGenericAlias(Object cls, Shape instanceShape, Object origin, PTuple args) {
+    public PGenericAlias(Object cls, Shape instanceShape, Object origin, PTuple args, boolean starred) {
         super(cls, instanceShape);
         this.origin = origin;
         this.args = args;
+        this.starred = starred;
     }
 
     public Object getOrigin() {
@@ -69,5 +72,9 @@ public class PGenericAlias extends PythonBuiltinObject {
 
     public void setParameters(PTuple parameters) {
         this.parameters = parameters;
+    }
+
+    public boolean isStarred() {
+        return starred;
     }
 }

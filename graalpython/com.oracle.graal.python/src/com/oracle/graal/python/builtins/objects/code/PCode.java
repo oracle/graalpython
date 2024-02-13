@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,7 +101,6 @@ public final class PCode extends PythonBuiltinObject {
     public static final int CO_VARKEYWORDS = 0x8;
     public static final int CO_NESTED = 0x10;
     public static final int CO_GENERATOR = 0x20;
-    public static final int CO_NOFREE = 0x40;
     public static final int CO_COROUTINE = 0x80;
     public static final int CO_ITERABLE_COROUTINE = 0x100;
     public static final int CO_ASYNC_GENERATOR = 0x200;
@@ -135,6 +134,9 @@ public final class PCode extends PythonBuiltinObject {
     private TruffleString filename;
     // name with which this code object was defined
     private TruffleString name;
+    // qualified name with which this code object was defined
+    private TruffleString qualname;
+
     // number of first line in Python source code
     private int firstlineno = -1;
     // is a string encoding the mapping from bytecode offsets to line numbers
@@ -169,11 +171,15 @@ public final class PCode extends PythonBuiltinObject {
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
         this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, null,
-                        null, null, null, null, codeUnit.name, -1, codeUnit.srcOffsetTable);
+                        null, null, null, null,
+                        codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, TruffleString[] names,
-                    TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals,
+                    int stacksize, int flags, Object[] constants, TruffleString[] names,
+                    TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
+                    TruffleString filename, TruffleString name, TruffleString qualname,
+                    int firstlineno, byte[] linetable) {
         super(cls, instanceShape);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
@@ -183,6 +189,7 @@ public final class PCode extends PythonBuiltinObject {
         this.varnames = varnames;
         this.filename = filename;
         this.name = name;
+        this.qualname = qualname;
         this.firstlineno = firstlineno;
         this.linetable = linetable;
         this.freevars = freevars;
@@ -435,11 +442,26 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    public int lastiToBci(int lasti) {
+        RootNode funcRootNode = rootNodeForExtraction(getRootNode());
+        if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+            return bytecodeRootNode.lastiToBci(lasti);
+        }
+        return lasti;
+    }
+
     public TruffleString getName() {
         if (name == null) {
             name = extractName(getRootNode());
         }
         return name;
+    }
+
+    public TruffleString getQualName() {
+        if (qualname == null) {
+            qualname = extractName(getRootNode());
+        }
+        return qualname;
     }
 
     public int getArgcount() {
@@ -490,6 +512,10 @@ public final class PCode extends PythonBuiltinObject {
         } else {
             return PythonUtils.EMPTY_BYTE_ARRAY;
         }
+    }
+
+    public CodeUnit getCodeUnit() {
+        return getCodeUnit(getRootNode());
     }
 
     public Object[] getConstants() {
@@ -703,6 +729,12 @@ public final class PCode extends PythonBuiltinObject {
         TruffleString codeName = this.getName();
         assert codeName != null : "PCode.co_name cannot be null!";
         return codeName;
+    }
+
+    public TruffleString co_qualname() {
+        TruffleString qualName = this.getQualName();
+        assert qualName != null : "PCode.co_qualname cannot be null!";
+        return qualName;
     }
 
     public TruffleString co_filename() {

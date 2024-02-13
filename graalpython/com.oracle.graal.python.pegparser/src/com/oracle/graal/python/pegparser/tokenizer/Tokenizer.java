@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2021 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -15,6 +15,7 @@ import java.util.EnumSet;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 
@@ -492,7 +493,7 @@ public class Tokenizer {
     }
 
     private void parserWarn(String warning) {
-        errorCallback.onWarning(WarningType.Deprecation, getCurrentTokenRange(false), warning);
+        errorCallback.onWarning(WarningType.Syntax, getCurrentTokenRange(false), warning);
     }
 
     /**
@@ -547,7 +548,7 @@ public class Tokenizer {
             parserWarn(String.format("invalid %s literal", kind));
             nextChar();
         } else { /* In future releases, only error will remain. */
-            if (isPotentialIdentifierChar(c)) {
+            if (c < 128 && isPotentialIdentifierChar(c)) {
                 oneBack();
                 return syntaxError(String.format("invalid %s literal", kind));
             }
@@ -579,7 +580,7 @@ public class Tokenizer {
         if (invalid < len) {
             int codePoint = tokenString.codePointAt(invalid);
             String printString = new String(new int[]{codePoint}, 0, 1);
-            return String.format("invalid character '%s' (U+%x)", printString, codePoint);
+            return String.format("invalid character '%s' (U+%04X)", printString, codePoint);
         }
         return null;
     }
@@ -906,9 +907,12 @@ public class Tokenizer {
                         oneBack();
 
                         String tokenString = new String(codePointsInput, tokenStart, nextCharIndex - tokenStart);
-                        String errMsg = null;
-                        if (nonascii && ((errMsg = verifyIdentifier(tokenString)) != null)) {
-                            return createToken(Token.Kind.ERRORTOKEN, errMsg);
+                        if (nonascii) {
+                            String errMsg = verifyIdentifier(tokenString);
+                            if (errMsg != null) {
+                                done = StatusCode.SYNTAX_ERROR;
+                                return createToken(Token.Kind.ERRORTOKEN, errMsg);
+                            }
                         }
                         if (!asyncHacks || insideAsyncDef) {
                             if (tokenString.equals("async")) {

@@ -212,7 +212,7 @@ Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
     }
     else {
         /* Otherwise replace the error with caller's error object. */
-    	PyErr_Format(err, "cannot fit '%s' into an index-sized integer", PyObject_Type(item));
+    	PyErr_Format(err, "cannot fit '%s' into an index-sized integer", Py_TYPE(item)->tp_name);
     }
 
     Py_DECREF(value);

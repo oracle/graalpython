@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -128,11 +127,6 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
     static final String J__CSV = "_csv";
     static final TruffleString T__CSV = tsLiteral(J__CSV);
-
-    static {
-        // See comment about Python 3.10 in #getChar() and graalpython/test/test_csv.py
-        assert PythonLanguage.MINOR <= 10;
-    }
 
     private static final TruffleString T_NOT_SET = tsLiteral("NOT_SET");
     static final int NOT_SET_CODEPOINT = -1;
@@ -569,13 +563,8 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 return T_NOT_SET;
             }
 
-            if (TruffleString.CodePointLengthNode.getUncached().execute(charValue, TS_ENCODING) > 1) {
+            if (TruffleString.CodePointLengthNode.getUncached().execute(charValue, TS_ENCODING) != 1) {
                 throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
-            }
-
-            // CPython supports empty quotechars and escapechars until inclusive 3.10.
-            if (charValue.isEmpty()) {
-                return T_NOT_SET;
             }
 
             return charValue;

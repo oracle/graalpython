@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -42,14 +42,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonModule extends PythonObject {
-
-    @CompilationFinal(dimensions = 1) static final Object[] INITIAL_MODULE_ATTRS = new Object[]{T___NAME__, T___DOC__, T___PACKAGE__, T___LOADER__, T___SPEC__, T___CACHED__, T___FILE__};
 
     /**
      * Stores the native {@code PyModuleDef *} structure if this modules was created via the

@@ -1,11 +1,10 @@
-# Copyright (c) 2022, Oracle and/or its affiliates.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import argparse
 import sys
-
-from typing import Any, Iterator, Callable
+from typing import Any, Callable, Iterator
 
 from pegen.build import build_parser
 from pegen.grammar import Grammar, Rule

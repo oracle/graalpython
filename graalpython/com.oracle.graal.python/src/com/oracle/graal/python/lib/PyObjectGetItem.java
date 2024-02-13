@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -157,16 +157,18 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                         @Cached PyObjectLookupAttr lookupClassGetItem,
                         @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Cached PythonObjectFactory factory,
-                        @Cached CallNode callClassGetItem) {
+                        @Cached CallNode callClassGetItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isTypeNode.execute(inliningTarget, type)) {
                 Object classGetitem = lookupClassGetItem.execute(frame, inliningTarget, type, T___CLASS_GETITEM__);
-                if (classGetitem != PNone.NO_VALUE) {
+                if (!(classGetitem instanceof PNone)) {
                     return callClassGetItem.execute(frame, classGetitem, key);
                 }
                 if (isBuiltinClassProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                     // Special case type[int], but disallow other types so str[int] fails
                     return factory.createGenericAlias(type, key);
                 }
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_NOT_SUBSCRIPTABLE, type);
             }
             return PNone.NO_VALUE;
         }

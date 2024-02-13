@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,8 +10,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdarg.h>
 
 /* Type PyByteArrayObject represents a mutable array of bytes.
  * The Python API is that of a sequence;
@@ -41,7 +39,7 @@ PyAPI_FUNC(int) PyByteArray_Resize(PyObject *, Py_ssize_t);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_BYTEARRAYOBJECT_H
-#  include  "cpython/bytearrayobject.h"
+#  include "cpython/bytearrayobject.h"
 #  undef Py_CPYTHON_BYTEARRAYOBJECT_H
 #endif
 

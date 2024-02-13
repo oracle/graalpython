@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -130,6 +130,19 @@ public final class RLockBuiltins extends PythonBuiltins {
             PTuple retVal = factory.createTuple(new Object[]{count, self.getOwnerId()});
             self.releaseAll();
             return retVal;
+        }
+    }
+
+    @Builtin(name = "_recursion_count", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class RecursionCountNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int recursionCount(PRLock self) {
+            if (self.isOwned()) {
+                return self.getCount();
+            } else {
+                return 0;
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,6 @@
 package com.oracle.graal.python.builtins.objects.property;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
-import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
-import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNREADABLE_ATTRIBUTE;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNREADABLE_ATTRIBUTE_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELETE__;
@@ -64,6 +58,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -81,17 +76,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProperty)
 public final class PropertyBuiltins extends PythonBuiltins {
@@ -292,101 +290,77 @@ public final class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline(false) // error path only, don't inline
+    abstract static class PropertyErrorNode extends Node {
+        abstract PException execute(VirtualFrame frame, PProperty self, Object obj, String what);
+
+        @Specialization
+        PException error(VirtualFrame frame, PProperty self, Object obj, String what,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.GetQualNameNode getQualNameNode,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached PRaiseNode raiseNode) {
+            TruffleString qualName = getQualNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, obj));
+            if (self.getPropertyName() != null) {
+                TruffleString propertyName = reprNode.execute(frame, inliningTarget, self.getPropertyName());
+                throw raiseNode.raise(AttributeError, ErrorMessages.PROPERTY_S_OF_S_OBJECT_HAS_NO_S, propertyName, qualName, what);
+            } else {
+                throw raiseNode.raise(AttributeError, ErrorMessages.PROPERTY_OF_S_OBJECT_HAS_NO_S, qualName, what);
+            }
+        }
+    }
+
     @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj", "type"})
     @GenerateNodeFactory
     abstract static class PropertyGetNode extends PythonTernaryBuiltinNode {
-        @Child private CallUnaryMethodNode callNode;
 
-        @Specialization(guards = "isPNone(obj)")
-        static Object doNone(PProperty self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type) {
-            return self;
-        }
-
-        @Specialization(replaces = "doNone")
-        Object doGeneric(VirtualFrame frame, PProperty self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+        @Specialization
+        static Object get(VirtualFrame frame, PProperty self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached CallUnaryMethodNode callNode,
+                        @Cached PropertyErrorNode propertyErrorNode) {
             if (PGuards.isPNone(obj)) {
                 return self;
             }
 
             Object fget = self.getFget();
             if (fget == null) {
-                if (self.getPropertyName() != null) {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, UNREADABLE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
-                } else {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, UNREADABLE_ATTRIBUTE);
-                }
+                throw propertyErrorNode.execute(frame, self, obj, "getter");
             }
-            return ensureCallNode().executeObject(frame, fget, obj);
-        }
-
-        private CallUnaryMethodNode ensureCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(CallUnaryMethodNode.create());
-            }
-            return callNode;
+            return callNode.executeObject(frame, fget, obj);
         }
     }
 
     @Builtin(name = J___SET__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "obj", "value"})
     @GenerateNodeFactory
     abstract static class PropertySetNode extends PythonTernaryBuiltinNode {
-        @Child private CallBinaryMethodNode callSetNode;
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, PProperty self, Object obj, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+        static Object doGeneric(VirtualFrame frame, PProperty self, Object obj, Object value,
+                        @Cached CallBinaryMethodNode callNode,
+                        @Cached PropertyErrorNode propertyErrorNode) {
             Object func = self.getFset();
             if (func == null) {
-                if (self.getPropertyName() != null) {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_SET_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
-                } else {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_SET_ATTRIBUTE);
-                }
+                throw propertyErrorNode.execute(frame, self, obj, "setter");
             }
-            ensureCallSetNode().executeObject(frame, func, obj, value);
+            callNode.executeObject(frame, func, obj, value);
             return PNone.NONE;
-        }
-
-        private CallBinaryMethodNode ensureCallSetNode() {
-            if (callSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callSetNode = insert(CallBinaryMethodNode.create());
-            }
-            return callSetNode;
         }
     }
 
     @Builtin(name = J___DELETE__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj"})
     @GenerateNodeFactory
     abstract static class PropertyDeleteNode extends PythonBinaryBuiltinNode {
-        @Child private CallUnaryMethodNode callDeleteNode;
-
         @Specialization
-        Object doGeneric(VirtualFrame frame, PProperty self, Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+        static Object doGeneric(VirtualFrame frame, PProperty self, Object obj,
+                        @Cached CallUnaryMethodNode callNode,
+                        @Cached PropertyErrorNode propertyErrorNode) {
             Object func = self.getFdel();
             if (func == null) {
-                if (self.getPropertyName() != null) {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_DELETE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
-                } else {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_DELETE_ATTRIBUTE);
-                }
+                throw propertyErrorNode.execute(frame, self, obj, "deleter");
             }
-            ensureCallDeleteNode().executeObject(frame, func, obj);
+            callNode.executeObject(frame, func, obj);
             return PNone.NONE;
-        }
-
-        private CallUnaryMethodNode ensureCallDeleteNode() {
-            if (callDeleteNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callDeleteNode = insert(CallUnaryMethodNode.create());
-            }
-            return callDeleteNode;
         }
     }
 

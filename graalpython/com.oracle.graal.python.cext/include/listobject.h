@@ -56,7 +56,7 @@ PyAPI_FUNC(char*) _PyArray_Data(PyObject* array);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_LISTOBJECT_H
-#  include  "cpython/listobject.h"
+#  include "cpython/listobject.h"
 #  undef Py_CPYTHON_LISTOBJECT_H
 #endif
 

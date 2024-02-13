@@ -7,10 +7,10 @@ from test.support.os_helper import TESTFN, unlink
 from test.support import check_free_after_iterating, ALWAYS_EQ, NEVER_EQ
 import pickle
 import collections.abc
-from test import support
 import functools
 import contextlib
 import builtins
+from test import support
 
 # Test result of triple loop (too big to inline)
 TRIPLETS = [(0, 0, 0), (0, 0, 1), (0, 0, 2),
@@ -84,6 +84,16 @@ class NoIterClass:
 class BadIterableClass:
     def __iter__(self):
         raise ZeroDivisionError
+
+class CallableIterClass:
+    def __init__(self):
+        self.i = 0
+    def __call__(self):
+        i = self.i
+        self.i = i + 1
+        if i > 100:
+            raise IndexError # Emergency stop
+        return i
 
 class EmptyIterClass:
     def __len__(self):
@@ -278,6 +288,7 @@ class TestCase(unittest.TestCase):
             (bytearray(8),),
             ((1, 2, 3),),
             (lambda: 0, 0),
+            (tuple[int],)  # GenericAlias
         ]
 
         try:
@@ -318,16 +329,7 @@ class TestCase(unittest.TestCase):
 
     # Test two-argument iter() with callable instance
     def test_iter_callable(self):
-        class C:
-            def __init__(self):
-                self.i = 0
-            def __call__(self):
-                i = self.i
-                self.i = i + 1
-                if i > 100:
-                    raise IndexError # Emergency stop
-                return i
-        self.check_iterator(iter(C(), 10), list(range(10)), pickle=False)
+        self.check_iterator(iter(CallableIterClass(), 10), list(range(10)), pickle=True)
 
     # Test two-argument iter() with function
     def test_iter_function(self):

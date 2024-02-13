@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,6 +81,7 @@ int get_buffer_r(PyObject *arg, Py_buffer *view) {
 
 int get_buffer_rw(PyObject *arg, Py_buffer *view) {
     if (PyObject_GetBuffer(arg, view, PyBUF_WRITABLE) != 0) {
+        PyErr_Clear();
         return -1;
     }
     if (!PyBuffer_IsContiguous(view, 'C')) {

@@ -18,6 +18,7 @@ AUDIT_TESTS_PY = support.findfile("audit-tests.py")
 class AuditTest(unittest.TestCase):
     maxDiff = None
 
+    @support.requires_subprocess()
     def do_test(self, *args):
         with subprocess.Popen(
             [sys.executable, "-X utf8", AUDIT_TESTS_PY, *args],
@@ -31,6 +32,7 @@ class AuditTest(unittest.TestCase):
             if p.returncode:
                 self.fail("".join(p.stderr))
 
+    @support.requires_subprocess()
     def run_python(self, *args):
         events = []
         with subprocess.Popen(
@@ -171,6 +173,18 @@ class AuditTest(unittest.TestCase):
             ]
         self.assertEqual(actual, expected)
 
+
+    def test_sys_getframe(self):
+        returncode, events, stderr = self.run_python("test_sys_getframe")
+        if returncode:
+            self.fail(stderr)
+
+        if support.verbose:
+            print(*events, sep='\n')
+        actual = [(ev[0], ev[2]) for ev in events]
+        expected = [("sys._getframe", "test_sys_getframe")]
+
+        self.assertEqual(actual, expected)
 
     def test_syslog(self):
         syslog = import_helper.import_module("syslog")

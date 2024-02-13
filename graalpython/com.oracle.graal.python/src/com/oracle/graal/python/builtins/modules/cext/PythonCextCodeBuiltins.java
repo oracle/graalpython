@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,8 +52,7 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi15BuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi16BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi18BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
@@ -68,33 +67,16 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodeBuiltins {
 
-    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
-    abstract static class PyCode_New extends CApi15BuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public static Object codeNew(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
-                        Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, int firstlineno, Object lnotab,
-                        @Cached CallNode callNode) {
-            /*
-             * This rearranges the arguments (freevars, cellvars).
-             */
-            Object[] args = new Object[]{
-                            argcount,
-                            0, // posonlyargcount
-                            kwonlyargcount, nlocals, stacksize, flags,
-                            code, consts, names, varnames, filename, name, firstlineno, lnotab,
-                            freevars, cellvars
-            };
-            return callNode.execute(PythonBuiltinClassType.PCode, args);
-        }
-    }
-
-    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
-    abstract static class PyCode_NewWithPosOnlyArgs extends CApi16BuiltinNode {
+    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
+                    PyObject}, call = Direct)
+    abstract static class PyCode_NewWithPosOnlyArgs extends CApi18BuiltinNode {
         @Specialization
         @TruffleBoundary
         public static Object codeNew(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
-                        Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, int firstlineno, Object lnotab,
+                        Object names, Object varnames, Object freevars, Object cellvars,
+                        Object filename, Object name, Object qualname,
+                        int firstlineno, Object lnotab,
+                        @SuppressWarnings("unused") Object exceptionTable,
                         @Cached CallNode callNode) {
             /*
              * This rearranges the arguments (freevars, cellvars).
@@ -103,7 +85,9 @@ public final class PythonCextCodeBuiltins {
                             argcount,
                             posonlyargcount,
                             kwonlyargcount, nlocals, stacksize, flags,
-                            code, consts, names, varnames, filename, name, firstlineno, lnotab,
+                            code, consts, names, varnames,
+                            filename, name, qualname,
+                            firstlineno, lnotab, exceptionTable,
                             freevars, cellvars
             };
             return callNode.execute(PythonBuiltinClassType.PCode, args);
@@ -119,16 +103,21 @@ public final class PythonCextCodeBuiltins {
         static PCode newEmpty(TruffleString filename, TruffleString funcname, int lineno,
                         @Cached CodeNodes.CreateCodeNode createCodeNode) {
             return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
-                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
-                            EMPTY_TRUFFLESTRING_ARRAY, filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
+                            EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
+                            filename, funcname, funcname,
+                            lineno, EMPTY_BYTE_ARRAY);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyCodeObject, Int}, call = Direct)
     abstract static class PyCode_Addr2Line extends CApiBinaryBuiltinNode {
         @Specialization
-        static int addr2line(PCode code, int bci) {
-            return code.bciToLine(bci);
+        static int addr2line(PCode code, int lasti) {
+            if (lasti < 0) {
+                return code.co_firstlineno();
+            }
+            return code.bciToLine(code.lastiToBci(lasti));
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,12 +43,16 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_LENGTH;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_SUBSCRIPT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_BOOL;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
@@ -62,6 +66,10 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_RSHI
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_SUBTRACT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ASS_ITEM;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ITEM;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_LENGTH;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.lib.GetMethodsFlagsNode.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -238,19 +246,19 @@ public enum SpecialMethodSlot {
     Subclasscheck(T___SUBCLASSCHECK__),
     Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
 
-    GetItem(T___GETITEM__),
-    SetItem(T___SETITEM__),
-    DelItem(T___DELITEM__),
+    GetItem(T___GETITEM__, SQ_ITEM | MP_SUBSCRIPT),
+    SetItem(T___SETITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
+    DelItem(T___DELITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
 
     Exit(T___EXIT__),
     Enter(T___ENTER__),
 
-    Len(T___LEN__),
+    Len(T___LEN__, SQ_LENGTH | MP_LENGTH),
     LengthHint(T___LENGTH_HINT__),
-    Contains(T___CONTAINS__),
+    Contains(T___CONTAINS__, SQ_CONTAINS),
     Bool(T___BOOL__, NB_BOOL),
     Hash(T___HASH__),
-    Index(T___INDEX__),
+    Index(T___INDEX__, NB_INDEX),
     Float(T___FLOAT__, NB_FLOAT),
     Int(T___INT__, NB_INT),
     Str(T___STR__),
@@ -272,10 +280,12 @@ public enum SpecialMethodSlot {
     ROr(T___ROR__, NB_OR),
     Xor(T___XOR__, NB_XOR),
     RXor(T___RXOR__, NB_XOR),
+    // Don't add SQ_CONCAT, CPython doesn't add a wrapper for it
     Add(T___ADD__, NB_ADD),
     RAdd(T___RADD__, NB_ADD),
     Sub(T___SUB__, NB_SUBTRACT),
     RSub(T___RSUB__, NB_SUBTRACT),
+    // Don't add SQ_REPEAT, CPython doesn't add a wrapper for it
     Mul(T___MUL__, NB_MULTIPLY),
     RMul(T___RMUL__, NB_MULTIPLY),
     MatMul(T___MATMUL__, NB_MATRIX_MULTIPLY),

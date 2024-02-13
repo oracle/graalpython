@@ -66,8 +66,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.AbstractAnnotationValueVisitor14;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.StandardLocation;
@@ -734,14 +734,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * These are functions that are introduced by GraalPy, mostly auxiliary functions that we added
      * to avoid direct fields accesses:
      */
-    private static final String[] ADDITIONAL = new String[]{"PyCFunction_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
-                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyASCIIObject_LENGTH", "_PyASCIIObject_STATE_ASCII",
-                    "_PyASCIIObject_STATE_COMPACT", "_PyASCIIObject_STATE_KIND", "_PyASCIIObject_STATE_READY", "_PyASCIIObject_WSTR", "_PyByteArray_Start", "_PyEval_SetCoroutineOriginTrackingDepth",
-                    "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer", "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_get_wstr_length", "_Py_REFCNT",
-                    "_Py_SET_REFCNT", "_Py_SET_SIZE", "_Py_SET_TYPE", "_Py_SIZE", "_Py_TYPE", "_PyTuple_SET_ITEM", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef",
-                    "PyCode_GetName", "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize", "_PyArray_Data", "_PyErr_Occurred",
-                    // TODO GR-46546 The following are backports from 3.11. Remove when updating
-                    "PyFrame_GetLasti", "PyFrame_GetLocals", "PyFrame_GetGlobals", "PyFrame_GetBuiltins"};
+    private static final String[] ADDITIONAL = new String[]{"PyCMethod_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
+                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer",
+                    "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
+                    "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
+                    "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler",
+    };
 
     public String resolveArgDescriptor(String sig) {
         switch (sig) {

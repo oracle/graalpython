@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -20,13 +20,13 @@ extern "C" {
    flag is set).  The array must be terminated with an entry whose name
    pointer is NULL. */
 
-typedef struct PyMemberDef {
+struct PyMemberDef {
     const char *name;
     int type;
     Py_ssize_t offset;
     int flags;
     const char *doc;
-} PyMemberDef;
+};
 
 /* Types */
 #define T_SHORT     0
@@ -70,8 +70,8 @@ typedef struct PyMemberDef {
 #define PY_AUDIT_READ       READ_RESTRICTED
 
 /* Current API, use this */
-PyAPI_FUNC(PyObject *) PyMember_GetOne(const char *, struct PyMemberDef *);
-PyAPI_FUNC(int) PyMember_SetOne(char *, struct PyMemberDef *, PyObject *);
+PyAPI_FUNC(PyObject *) PyMember_GetOne(const char *, PyMemberDef *);
+PyAPI_FUNC(int) PyMember_SetOne(char *, PyMemberDef *, PyObject *);
 
 
 #ifdef __cplusplus

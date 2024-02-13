@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -309,17 +309,47 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "\n" +
                     "Flags provided through command line arguments or environment vars.",
                     // @formatter:on
-                    17,
+                    18,
                     new String[]{
-                                    "debug", "inspect", "interactive", "optimize", "dont_write_bytecode",
-                                    "no_user_site", "no_site", "ignore_environment", "verbose",
-                                    "bytes_warning", "quiet", "hash_randomization", "isolated",
-                                    "dev_mode", "utf8_mode", "warn_default_encoding", "int_max_str_digits"},
+                                    "debug",
+                                    "inspect",
+                                    "interactive",
+                                    "optimize",
+                                    "dont_write_bytecode",
+                                    "no_user_site",
+                                    "no_site",
+                                    "ignore_environment",
+                                    "verbose",
+                                    "bytes_warning",
+                                    "quiet",
+                                    "hash_randomization",
+                                    "isolated",
+                                    "dev_mode",
+                                    "utf8_mode",
+                                    "warn_default_encoding",
+                                    "safe_path",
+                                    "int_max_str_digits",
+                    },
                     new String[]{
-                                    "-d", "-i", "-i", "-O or -OO", "-B",
-                                    "-s", "-S", "-E", "-v",
-                                    "-b", "-q", "-R", "-I",
-                                    "-X dev", "-X utf8", "-X warn_default_encoding", "-X int_max_str_digits"},
+                                    "-d",
+                                    "-i",
+                                    "-i",
+                                    "-O or -OO",
+                                    "-B",
+                                    "-s",
+                                    "-S",
+                                    "-E",
+                                    "-v",
+                                    "-b",
+                                    "-q",
+                                    "-R",
+                                    "-I",
+                                    "-X dev",
+                                    "-X utf8",
+                                    "-X warn_default_encoding",
+                                    "-P",
+                                    "-X int_max_str_digits",
+                    },
                     false);
 
     static final StructSequence.BuiltinTypeDescriptor FLOAT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
@@ -562,6 +592,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         // tarballs, not git
         addBuiltinConstant("_git", factory.createTuple(new Object[]{T_GRAALPYTHON_ID, T_EMPTY_STRING, T_EMPTY_STRING}));
 
+        if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
+            addBuiltinConstant("_vpath", "");
+        }
+
         super.initialize(core);
 
         // we need these during core initialization, they are re-set in postInitialize
@@ -602,6 +636,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute(tsLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
         TruffleString pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
         sys.setAttribute(tsLiteral("pycache_prefix"), pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
+        sys.setAttribute(tsLiteral("_stdlib_dir"), stdlibHome);
 
         TruffleString strWarnoption = context.getOption(PythonOptions.WarnOptions);
         Object[] warnoptions;
@@ -615,7 +650,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute(tsLiteral("warnoptions"), factory.createList(warnoptions));
 
         Env env = context.getEnv();
-        TruffleString option = context.getOption(PythonOptions.PythonPath);
+        TruffleString pythonPath = context.getOption(PythonOptions.PythonPath);
 
         boolean capiSeparate = !capiHome.equalsUncached(coreHome, TS_ENCODING);
 
@@ -625,14 +660,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         if (capiSeparate) {
             defaultPathsLen++;
         }
-        if (!option.isEmpty()) {
+        if (!pythonPath.isEmpty()) {
             TruffleString sep = toTruffleStringUncached(context.getEnv().getPathSeparator());
-            TruffleString[] split = StringUtils.split(option, sep, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
+            TruffleString[] split = StringUtils.split(pythonPath, sep, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
                             TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
             path = new Object[split.length + defaultPathsLen];
-            for (int i = 0; i < split.length; ++i) {
-                path[i] = split[i];
-            }
+            System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
             path = new Object[defaultPathsLen];
@@ -662,6 +695,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0, // utf8_mode
                         PInt.intValue(context.getOption(PythonOptions.WarnDefaultEncodingFlag)), // warn_default_encoding
+                        context.getOption(PythonOptions.SafePathFlag), // safe_path
                         context.getOption(PythonOptions.IntMaxStrDigits) // int_max_str_digits
         ));
         sys.setAttribute(T___EXCEPTHOOK__, sys.getAttribute(T_EXCEPTHOOK));

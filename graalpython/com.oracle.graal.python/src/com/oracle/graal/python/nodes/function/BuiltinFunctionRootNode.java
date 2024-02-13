@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -246,13 +246,12 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         int minNumPosArgs = builtin.minNumOfPositionalArgs();
         int maxNumPosArgs = builtin.maxNumOfPositionalArgs();
         if (builtin.parameterNames().length > 0) {
-            assert builtin.parameterNames().length == arity : "Mismatch in parameter list length and arity for n-ary builtin " + nodeClass.getName();
             maxNumPosArgs = builtin.parameterNames().length;
         } else if (maxNumPosArgs == -1) {
             maxNumPosArgs = minNumPosArgs;
         }
         assert minNumPosArgs <= arity && minNumPosArgs <= maxNumPosArgs : "Invalid number of min arguments for a n-ary builtin " + nodeClass.getName();
-        assert maxNumPosArgs == arity : "Invalid number of max arguments for a n-ary builtin " + nodeClass.getName();
+        assert maxNumPosArgs + builtin.keywordOnlyNames().length == arity : "Invalid number of max arguments for a n-ary builtin " + nodeClass.getName();
         assert !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() : "Invalid varargs declaration for a n-ary builtin " + nodeClass.getName();
     }
 
@@ -261,7 +260,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     // (Note that this does not apply to PythonVarargsBuiltinNode which can be used with
     // varargs/kwargs builtins.)
     private static boolean canUseSpecialBuiltinNode(Builtin builtin) {
-        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() && !builtin.varArgsMarker() && builtin.keywordOnlyNames().length == 0;
+        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() && !builtin.varArgsMarker();
     }
 
     private static boolean usesSpecialBuiltinNode(Class<? extends PythonBuiltinBaseNode> clazz) {

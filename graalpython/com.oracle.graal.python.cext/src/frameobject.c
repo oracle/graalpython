@@ -40,7 +40,7 @@
  */
 
 #include "capi.h"
-
+#include "pycore_frame.h"
 
 void _PyFrame_SetLineNumber(PyFrameObject *frame, int line) {
 	set_PyFrameObject_f_lineno(frame, line);

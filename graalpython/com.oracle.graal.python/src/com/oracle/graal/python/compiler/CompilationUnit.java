@@ -255,9 +255,6 @@ public final class CompilationUnit {
         if (scope.isNested()) {
             flags |= PCode.CO_NESTED;
         }
-        if (cellvars.isEmpty() && freevars.isEmpty()) {
-            flags |= PCode.CO_NOFREE;
-        }
         if (scope.isModule()) {
             flags |= PCode.CO_GRAALPYHON_MODULE;
         }

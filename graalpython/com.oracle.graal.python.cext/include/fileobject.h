@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -44,7 +44,7 @@ PyAPI_DATA(int) Py_UTF8Mode;
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_FILEOBJECT_H
-#  include  "cpython/fileobject.h"
+#  include "cpython/fileobject.h"
 #  undef Py_CPYTHON_FILEOBJECT_H
 #endif
 

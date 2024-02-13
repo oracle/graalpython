@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PyDict_GetItem;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTuple_GetItem;
@@ -785,7 +786,16 @@ public abstract class CExtParseArgumentsNode {
             }
             int i = intValue((Number) rc);
             if (i == -1) {
-                throw converterr(raiseNode.get(inliningTarget), readOnly ? ErrorMessages.READ_ONLY_BYTELIKE_OBJ : ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
+                if (readOnly) {
+                    /*
+                     * CPython forgot a PyErr_Clear() on this particular branch. And they added a
+                     * test for that, so let's be bug-to-bug compatible.
+                     */
+                    PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
+                    throw threadState.reraiseCurrentException();
+                } else {
+                    throw converterr(raiseNode.get(inliningTarget), ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
+                }
             } else if (i == -2) {
                 throw converterr(raiseNode.get(inliningTarget), ErrorMessages.CONTIGUOUS_BUFFER, arg);
             }
@@ -1084,7 +1094,7 @@ public abstract class CExtParseArgumentsNode {
         static void doError(Node inliningTarget, @SuppressWarnings("unused") int statusCode,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached PRaiseNativeNode.Lazy raiseNode) throws ParseArgumentsException {
-            PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
+            PException currentException = getThreadStateNode.execute(inliningTarget).getCurrentException();
             boolean errOccurred = currentException != null;
             if (!errOccurred) {
                 // converter should have set exception

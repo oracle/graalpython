@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,39 +41,39 @@
 from . import test_tagged_unittests
 
 data = """
-test_1 (module) ... ok
-test2 (module) ... FAIL
+test_1 (module.test_1) ... ok
+test2 (module.test2) ... FAIL
 random output
-test_2 (module) ... skipped 'requires Windows'
-test_3 (module) ... skipped 'some
+test_2 (module.test_2) ... skipped 'requires Windows'
+test_3 (module.test_3) ... skipped 'some
 multiline reason'
 some unrelated output
-test_x (module)
+test_x (module.test_x)
 Some docstring that
 spans
 multiple
 lines ... ERROR
-test_y (module)
+test_y (module.test_y)
 Some docstring ... Some warning
 ok
 unrelated stuff
-test_z (module) ... ok
-testA (module) ... test_B (module) ... ok
-test_T (module) ... the test printed ok somewhere
+test_z (module.test_z) ... ok
+testA (module.testA) ... test_B (module.test_B) ... ok
+test_T (module.test_T) ... the test printed ok somewhere
 skipped 'foo'
-test_foo (module) ... test_bar (module) ... null
+test_foo (module.test_foo) ... test_bar (module.test_bar) ... null
 """
 
 expected = [
-    ('test_1', 'module', 'ok'),
-    ('test2', 'module', 'FAIL'),
-    ('test_2', 'module', "skipped 'requires Windows'"),
-    ('test_3', 'module', "skipped 'some\nmultiline reason'"),
-    ('test_x', 'module', 'ERROR'),
-    ('test_y', 'module', 'ok'),
-    ('test_z', 'module', 'ok'),
-    ('test_B', 'module', 'ok'),
-    ('test_T', 'module', "skipped 'foo'"),
+    ('module.test_1', 'ok'),
+    ('module.test2', 'FAIL'),
+    ('module.test_2', "skipped 'requires Windows'"),
+    ('module.test_3', "skipped 'some\nmultiline reason'"),
+    ('module.test_x', 'ERROR'),
+    ('module.test_y', 'ok'),
+    ('module.test_z', 'ok'),
+    ('module.test_B', 'ok'),
+    ('module.test_T', "skipped 'foo'"),
 ]
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,9 +92,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.StandardCharsets;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -115,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -129,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -136,9 +136,10 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -159,7 +160,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -173,6 +173,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
@@ -201,29 +202,18 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
     abstract static class Py_get_PyASCIIObject_state_ascii extends CApiUnaryBuiltinNode {
 
-        @TruffleBoundary
-        private static boolean doCheck(TruffleString value, CharsetEncoder asciiEncoder) {
-            asciiEncoder.reset();
-            return asciiEncoder.canEncode(value.toJavaStringUncached());
-        }
-
-        @CompilationFinal private CharsetEncoder asciiEncoder;
-
         @Specialization
         int get(PString object,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile storageProfile,
-                        @Cached StringMaterializeNode materializeNode) {
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             // important: avoid materialization of native sequences
             if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().isAsciiOnly() ? 1 : 0;
             }
 
-            if (asciiEncoder == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
-            }
-            return doCheck(materializeNode.execute(inliningTarget, object), asciiEncoder) ? 1 : 0;
+            TruffleString string = object.getMaterialized();
+            return PInt.intValue(getCodeRangeNode.execute(string, TS_ENCODING) == TruffleString.CodeRange.ASCII);
         }
     }
 
@@ -237,17 +227,37 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
+    abstract static class Py_get_PyASCIIObject_state_interned extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int get(PString object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+            return isInternedStringNode.execute(inliningTarget, object) ? 1 : 0;
+        }
+    }
+
+    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
     abstract static class Py_get_PyASCIIObject_state_kind extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int get(PString object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile storageProfile) {
+                        @Cached InlinedConditionProfile storageProfile,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             // important: avoid materialization of native sequences
             if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().getElementSize() & 0b111;
             }
-            return CStructs.wchar_t.size() & 0b111;
+            TruffleString string = object.getMaterialized();
+            TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
+            if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
+                return 1;
+            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
+                return 2;
+            } else {
+                return 4;
+            }
         }
     }
 
@@ -778,15 +788,56 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
     abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
+        private static final HiddenKey DATA_NATIVE_STORAGE = new HiddenKey("native_storage");
+
         @Specialization
         static Object get(PString object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached UnicodeAsWideCharNode asWideCharNode) {
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.WriteByteNode writeByteNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttribute) {
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
                 return object.getNativeCharSequence().getPtr();
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(inliningTarget, object, CStructs.wchar_t.size()));
+            TruffleString string = object.getMaterialized();
+            TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
+            TruffleString.Encoding encoding;
+            int charSize;
+            boolean isAscii = false;
+            if (range == TruffleString.CodeRange.ASCII) {
+                isAscii = true;
+                charSize = 1;
+                encoding = TruffleString.Encoding.US_ASCII;
+            } else if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
+                charSize = 1;
+                encoding = TruffleString.Encoding.ISO_8859_1;
+            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
+                charSize = 2;
+                encoding = TruffleString.Encoding.UTF_16;
+            } else {
+                charSize = 4;
+                encoding = TruffleString.Encoding.UTF_32;
+            }
+            string = switchEncodingNode.execute(string, encoding);
+            InternalByteArray byteArray = getInternalByteArrayNode.execute(string, encoding);
+            int byteLength = byteArray.getLength() + /* null terminator */ charSize;
+            Object ptr = allocateNode.alloc(byteLength);
+            writeByteNode.writeByteArray(ptr, byteArray.getArray(), byteArray.getLength(), byteArray.getOffset(), 0);
+            /*
+             * Set native char sequence, so we can just return the pointer the next time.
+             */
+            NativeCharSequence nativeSequence = new NativeCharSequence(ptr, byteArray.getLength() / charSize, charSize, isAscii);
+            object.setNativeCharSequence(nativeSequence);
+            /*
+             * Create a native sequence storage to manage the lifetime of the native memory.
+             * 
+             * TODO it would be nicer if the native char sequence could manage its own memory
+             */
+            writeAttribute.execute(object, DATA_NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));
+            return ptr;
         }
     }
 

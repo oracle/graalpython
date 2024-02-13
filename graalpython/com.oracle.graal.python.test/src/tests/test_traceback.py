@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -156,10 +156,7 @@ def test_reraise_direct_generator():
     )
 
 
-def test_reraise_direct_no_accumulate():
-    # This is a tricky corner case where sys.exc_info()[1].__traceback__ != sys.exc_info()[2] because e gets mutated by
-    # the inner exception block, but raise uses sys.exc_info which contains the unmodified traceback at the time the
-    # the exception was caught
+def test_reraise_direct_accumulate():
     def reraise():
         try:
             raise RuntimeError("test")
@@ -173,6 +170,7 @@ def test_reraise_direct_no_accumulate():
     assert_has_traceback(
         reraise,
         [
+            ('reraise', 'raise e'),
             ('reraise', 'raise RuntimeError("test")'),
         ]
     )
@@ -370,6 +368,7 @@ def test_finally():
     assert_has_traceback(
         test,
         [
+            ('test', 'raise sys.exc_info()[1]  # finally'),
             ('test', 'raise sys.exc_info()[1]  # except'),
             ('test', 'raise OSError("test")'),
         ]
@@ -416,6 +415,7 @@ def test_finally_generator():
         lambda: list(test()),
         [
             ('<lambda>', 'lambda: list(test()),'),
+            ('test', 'raise sys.exc_info()[1]  # finally'),
             ('test', 'raise sys.exc_info()[1]  # except'),
             ('test', 'raise OSError("test")'),
         ]

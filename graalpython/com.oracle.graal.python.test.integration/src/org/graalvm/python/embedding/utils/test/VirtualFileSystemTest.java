@@ -45,32 +45,21 @@ import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.PolyglotAccess;
-import org.graalvm.polyglot.io.IOAccess;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
+
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.PolyglotAccess;
+import org.graalvm.polyglot.io.IOAccess;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.junit.Test;
 
 public class VirtualFileSystemTest {
-
-    @Before
-    public void setUpTest() {
-        context = getContext();
-    }
-
-    @After
-    public void tearDown() {
-        context.close();
-    }
 
     private static final String VFS_PREFIX = "/org/graalvm/python/embedding/utils/test/vfs";
 
@@ -295,7 +284,7 @@ public class VirtualFileSystemTest {
                         assert len(f) == 0, 'expected no files'
 
                         f = listdir('/test_mount_point/')
-                        assert len(f) == 4, 'expected 4 files, got ' + str(len(f))
+                        assert len(f) == 5, 'expected 5 files, got ' + str(len(f))
 
                         assert 'dir1' in f, 'does not contain "dir1"'
                         assert 'emptydir' in f, 'does not contain "emptydir"'
@@ -336,7 +325,7 @@ public class VirtualFileSystemTest {
                             files.update(f)
                             dirs.update(d)
                         assert len(roots) == 4, 'expected 4 roots, got ' + str(len(roots))
-                        assert len(files) == 3, 'expected 3 files, got ' + str(len(files))
+                        assert len(files) == 4, 'expected 4 files, got ' + str(len(files))
                         assert len(dirs) == 3, 'expected 3 dirs, got ' + str(len(dirs))
                         """);
 
@@ -363,44 +352,67 @@ public class VirtualFileSystemTest {
                         """);
     }
 
+    @Test
+    public void fsOperationsCaseInsensitive() {
+        eval("""
+                        import os
+                        assert os.path.exists('/test_mount_point/SomeFile')
+                        assert os.path.exists('/test_mount_point/someFile')
+                        assert os.path.exists('/test_mount_point/somefile')
+                        assert not os.path.exists('/test_mount_point/somefile1')
+                        """, b -> b.caseInsensitive(true));
+    }
+
     private void eval(String s) {
+        eval(s, null);
+    }
+
+    private void eval(String s, Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
         String src;
         if (IS_WINDOWS) {
             src = s.replace(VFS_UNIX_MOUNT_POINT, "X:\\\\test_win_mount_point");
         } else {
             src = s;
         }
-        getContext().eval(PYTHON, src);
+        getContext(builderFunction).eval(PYTHON, src);
     }
 
-    Context context;
+    private Context cachedContext;
 
-    public Context getContext() {
-        if (context == null) {
-            VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
-                            vfsPrefix(VFS_PREFIX).//
-                            unixMountPoint(VFS_MOUNT_POINT).//
-                            windowsMountPoint(VFS_WIN_MOUNT_POINT).//
-                            resourceLoadingClass(VirtualFileSystemTest.class).build();
-            context = Context.newBuilder().//
-                            allowExperimentalOptions(false).//
-                            allowAllAccess(false).//
-                            allowHostAccess(HostAccess.ALL).//
-                            allowIO(IOAccess.newBuilder().//
-                                            allowHostSocketAccess(true).//
-                                            fileSystem(vfs).//
-                                            build()).//
-                            allowCreateThread(true).//
-                            allowNativeAccess(true).//
-                            allowPolyglotAccess(PolyglotAccess.ALL).//
-                            option("python.PosixModuleBackend", "java").//
-                            option("python.DontWriteBytecodeFlag", "true").//
-                            option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false").//
-                            option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE").//
-                            option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS")).//
-                            option("python.AlwaysRunExcepthook", "true").//
-                            option("python.ForceImportSite", "true").//
-                            option("engine.WarnInterpreterOnly", "false").build();
+    public Context getContext(Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
+        if (builderFunction == null && cachedContext != null) {
+            return cachedContext;
+        }
+        VirtualFileSystem.Builder builder = VirtualFileSystem.newBuilder().//
+                        vfsPrefix(VFS_PREFIX).//
+                        unixMountPoint(VFS_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).//
+                        resourceLoadingClass(VirtualFileSystemTest.class);
+        if (builderFunction != null) {
+            builder = builderFunction.apply(builder);
+        }
+        VirtualFileSystem vfs = builder.build();
+        Context context = Context.newBuilder().//
+                        allowExperimentalOptions(false).//
+                        allowAllAccess(false).//
+                        allowHostAccess(HostAccess.ALL).//
+                        allowIO(IOAccess.newBuilder().//
+                                        allowHostSocketAccess(true).//
+                                        fileSystem(vfs).//
+                                        build()).//
+                        allowCreateThread(true).//
+                        allowNativeAccess(true).//
+                        allowPolyglotAccess(PolyglotAccess.ALL).//
+                        option("python.PosixModuleBackend", "java").//
+                        option("python.DontWriteBytecodeFlag", "true").//
+                        option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false").//
+                        option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE").//
+                        option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS")).//
+                        option("python.AlwaysRunExcepthook", "true").//
+                        option("python.ForceImportSite", "true").//
+                        option("engine.WarnInterpreterOnly", "false").build();
+        if (builderFunction == null) {
+            cachedContext = context;
         }
         return context;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -168,7 +168,9 @@
 #define WITH_THREAD 1
 
 #ifndef MS_WINDOWS
+#define HAVE_PTHREAD_H
 #define HAVE_SYS_WAIT_H
+#define HAVE_SYS_TIME_H
 #define TIME_WITH_SYS_TIME 1
 #else
 #define HAVE_COPYSIGN 1

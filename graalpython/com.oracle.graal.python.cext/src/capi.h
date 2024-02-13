@@ -61,6 +61,7 @@
 #include "frameobject.h"
 #include "pycore_moduleobject.h"
 #include "pycore_pymem.h"
+#include "pycore_fileutils.h"
 #include "bytesobject.h"
 
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED

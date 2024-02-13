@@ -875,7 +875,7 @@ class FormatTests(unittest.TestCase):
         for format_spec in ([chr(x) for x in range(ord('a'), ord('z')+1)] +
                             [chr(x) for x in range(ord('A'), ord('Z')+1)]):
             
-            if not format_spec in 'eEfFgGn%rN':
+            if not format_spec in 'eEfFgGn%rNz':
                 self.assertRaises(ValueError, format, 0.0, format_spec)
                 self.assertRaises(ValueError, format, 1.0, format_spec)
                 self.assertRaises(ValueError, format, -1.0, format_spec)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareB
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
@@ -83,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -589,7 +587,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             byteArray.checkCanResize(inliningTarget, raiseNode);
-            appendNode.execute(inliningTarget, byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesLikeNoGeneralizationNode.SUPPLIER);
+            appendNode.execute(inliningTarget, byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesNodes.BytesLikeNoGeneralizationNode.SUPPLIER);
             return PNone.NONE;
         }
 
@@ -663,7 +661,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
         @NeverDefault
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(BytesLikeNoGeneralizationNode.SUPPLIER);
+            return SequenceStorageNodes.ExtendNode.create(BytesNodes.BytesLikeNoGeneralizationNode.SUPPLIER);
         }
     }
 
@@ -749,7 +747,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.translate(table, delete=b'')
     @Builtin(name = "translate", minNumOfPositionalArgs = 2, parameterNames = {"self", "table", "delete"})
     @GenerateNodeFactory
-    public abstract static class TranslateNode extends BytesBuiltins.BaseTranslateNode {
+    public abstract static class TranslateNode extends BytesNodes.BaseTranslateNode {
 
         @Specialization(guards = "isNoValue(delete)")
         static PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
@@ -835,25 +833,22 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
+    protected abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PByteArray self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookupDict,
+                        @Cached PyObjectGetStateNode getStateNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PythonObjectFactory factory) {
             byte[] bytes = getBytes.execute(inliningTarget, self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
-            Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
-            if (dict == PNone.NO_VALUE) {
-                dict = PNone.NONE;
-            }
+            Object state = getStateNode.execute(frame, inliningTarget, self);
             Object clazz = getClassNode.execute(inliningTarget, self);
-            return commonReduce(2, bytes, len, clazz, dict, factory, appendCodePointNode, toStringNode);
+            return commonReduce(2, bytes, len, clazz, state, factory, appendCodePointNode, toStringNode);
         }
     }
 

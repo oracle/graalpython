@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -23,6 +23,10 @@ struct _warnings_runtime_state {
 };
 
 extern int _PyWarnings_InitState(PyInterpreterState *interp);
+
+PyAPI_FUNC(PyObject*) _PyWarnings_Init(void);
+
+extern void _PyErr_WarnUnawaitedCoroutine(PyObject *coro);
 
 #ifdef __cplusplus
 }

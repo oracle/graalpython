@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,18 +46,18 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PSentinelIterator extends PythonBuiltinObject {
 
-    private final Object callTarget;
+    private final Object callable;
     private final Object sentinel;
     private boolean sentinelReached;
 
     public PSentinelIterator(Object cls, Shape instanceShape, Object callable, Object sentinel) {
         super(cls, instanceShape);
-        this.callTarget = callable;
+        this.callable = callable;
         this.sentinel = sentinel;
     }
 
-    public Object getCallTarget() {
-        return callTarget;
+    public Object getCallable() {
+        return callable;
     }
 
     public Object getSentinel() {

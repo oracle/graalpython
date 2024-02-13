@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -29,12 +29,28 @@ typedef struct {
 PyAPI_FUNC(PyObject *) _PyList_Extend(PyListObject *, PyObject *);
 PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE *out);
 
-/* Macro, trading safety for speed */
-
 /* Cast argument to PyListObject* type. */
-#define _PyList_CAST(op) (assert(PyList_Check(op)), (PyListObject *)(op))
+#define _PyList_CAST(op) \
+    (assert(PyList_Check(op)), _Py_CAST(PyListObject*, (op)))
 
-#define PyList_GET_ITEM(op, i) (PyList_GetItem((PyObject *)(op), (i)))
-PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject *, Py_ssize_t, PyObject *);
-#define PyList_SET_ITEM(op, i, v) (_PyList_SET_ITEM((PyObject *)(op), (i), (v)))
-#define PyList_GET_SIZE(op)    Py_SIZE(_PyList_CAST(op))
+// Macros and static inline functions, trading safety for speed
+
+static inline Py_ssize_t PyList_GET_SIZE(PyObject *op) {
+    PyListObject *list = _PyList_CAST(op);
+    return Py_SIZE(list);
+}
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
+#  define PyList_GET_SIZE(op) PyList_GET_SIZE(_PyObject_CAST(op))
+#endif
+
+#define PyList_GET_ITEM(op, index) (PyList_GetItem((PyObject*)(op), (index)))
+
+PyAPI_FUNC(void) PyTruffleList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value);
+static inline void
+PyList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
+    PyTruffleList_SET_ITEM(op, index, value);
+}
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
+#define PyList_SET_ITEM(op, index, value) \
+    PyList_SET_ITEM(_PyObject_CAST(op), index, _PyObject_CAST(value))
+#endif

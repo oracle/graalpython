@@ -727,6 +727,24 @@ class UrlParseTestCase(unittest.TestCase):
                         with self.assertRaises(ValueError):
                             p.port
 
+    def test_attributes_bad_scheme(self):
+        """Check handling of invalid schemes."""
+        for bytes in (False, True):
+            for parse in (urllib.parse.urlsplit, urllib.parse.urlparse):
+                for scheme in (".", "+", "-", "0", "http&", "६http"):
+                    with self.subTest(bytes=bytes, parse=parse, scheme=scheme):
+                        url = scheme + "://www.example.net"
+                        if bytes:
+                            if url.isascii():
+                                url = url.encode("ascii")
+                            else:
+                                continue
+                        p = parse(url)
+                        if bytes:
+                            self.assertEqual(p.scheme, b"")
+                        else:
+                            self.assertEqual(p.scheme, "")
+
     def test_attributes_without_netloc(self):
         # This example is straight from RFC 3261.  It looks like it
         # should allow the username, hostname, and port to be filled
@@ -1074,6 +1092,32 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertEqual(p2.scheme, 'tel')
         self.assertEqual(p2.path, '+31641044153')
 
+    def test_invalid_bracketed_hosts(self):
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[192.0.2.146]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[important.com:8000]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[v123r.IP]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[v12ae]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[v.IP]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[v123.]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[v]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[0439:23af::2309::fae7:1234]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@[0439:23af:2309::fae7:1234:2342:438e:192.0.2.146]/Path?Query')
+        self.assertRaises(ValueError, urllib.parse.urlsplit, 'Scheme://user@]v6a.ip[/Path')
+
+    def test_splitting_bracketed_hosts(self):
+        p1 = urllib.parse.urlsplit('scheme://user@[v6a.ip]/path?query')
+        self.assertEqual(p1.hostname, 'v6a.ip')
+        self.assertEqual(p1.username, 'user')
+        self.assertEqual(p1.path, '/path')
+        p2 = urllib.parse.urlsplit('scheme://user@[0439:23af:2309::fae7%test]/path?query')
+        self.assertEqual(p2.hostname, '0439:23af:2309::fae7%test')
+        self.assertEqual(p2.username, 'user')
+        self.assertEqual(p2.path, '/path')
+        p3 = urllib.parse.urlsplit('scheme://user@[0439:23af:2309::fae7:1234:192.0.2.146%test]/path?query')
+        self.assertEqual(p3.hostname, '0439:23af:2309::fae7:1234:192.0.2.146%test')
+        self.assertEqual(p3.username, 'user')
+        self.assertEqual(p3.path, '/path')
+
     def test_port_casting_failure_message(self):
         message = "Port could not be cast to integer value as 'oracle'"
         p1 = urllib.parse.urlparse('http://Server=sde; Service=sde:oracle')
@@ -1106,8 +1150,16 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertEqual(p1.params, 'phone-context=+1-914-555')
 
     def test_Quoter_repr(self):
-        quoter = urllib.parse.Quoter(urllib.parse._ALWAYS_SAFE)
+        quoter = urllib.parse._Quoter(urllib.parse._ALWAYS_SAFE)
         self.assertIn('Quoter', repr(quoter))
+
+    def test_clear_cache_for_code_coverage(self):
+        urllib.parse.clear_cache()
+
+    def test_urllib_parse_getattr_failure(self):
+        """Test that urllib.parse.__getattr__() fails correctly."""
+        with self.assertRaises(AttributeError):
+            unused = urllib.parse.this_does_not_exist
 
     def test_all(self):
         expected = []
@@ -1115,7 +1167,7 @@ class UrlParseTestCase(unittest.TestCase):
             'splitattr', 'splithost', 'splitnport', 'splitpasswd',
             'splitport', 'splitquery', 'splittag', 'splittype', 'splituser',
             'splitvalue',
-            'Quoter', 'ResultBase', 'clear_cache', 'to_bytes', 'unwrap',
+            'ResultBase', 'clear_cache', 'to_bytes', 'unwrap',
         }
         for name in dir(urllib.parse):
             if name.startswith('_') or name in undocumented:
@@ -1133,7 +1185,8 @@ class UrlParseTestCase(unittest.TestCase):
         hex_chars = {'{:04X}'.format(ord(c)) for c in illegal_chars}
         denorm_chars = [
             c for c in map(chr, range(128, sys.maxunicode))
-            if (hex_chars & set(unicodedata.decomposition(c).split()))
+            if unicodedata.decomposition(c)
+            and (hex_chars & set(unicodedata.decomposition(c).split()))
             and c not in illegal_chars
         ]
         # Sanity check that we found at least one such character
@@ -1307,6 +1360,12 @@ class Utility_Tests(unittest.TestCase):
 
 
 class DeprecationTest(unittest.TestCase):
+
+    def test_Quoter_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            old_class = urllib.parse.Quoter
+            self.assertIs(old_class, urllib.parse._Quoter)
+        self.assertIn('Quoter will be removed', str(cm.warning))
 
     def test_splittype_deprecation(self):
         with self.assertWarns(DeprecationWarning) as cm:

@@ -1,13 +1,13 @@
 Disassembly of <module>:
   1:0   -   3:20        0 LOAD_BUILD_CLASS
   1:0   -   3:20        1 MAKE_FUNCTION                     0    (Foo)
-  1:0   -   3:20        4 LOAD_STRING                       0    ('Foo')
+  1:0   -   3:20        4 LOAD_STRING                       1    ('Foo')
   1:0   -   3:20        6 COLLECTION_FROM_STACK             2    (Object[])
   1:0   -   3:20        8 CALL_FUNCTION_VARARGS
   1:0   -   3:20        9 STORE_NAME                        0    (Foo)
   4:0   -   6:21       11 LOAD_BUILD_CLASS
   4:0   -   6:21       12 MAKE_FUNCTION                     0    (Bar)
-  4:0   -   6:21       15 LOAD_STRING                       2    ('Bar')
+  4:0   -   6:21       15 LOAD_STRING                       3    ('Bar')
   4:10  -   4:13       17 LOAD_NAME                         0    (Foo)
   4:0   -   6:21       19 COLLECTION_FROM_STACK             3    (Object[])
   4:0   -   6:21       21 CALL_FUNCTION_VARARGS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -259,6 +259,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("__version__", "1.1.0");
         addBuiltinConstant("CFuncPtr", core.lookupType(PyCFuncPtr));
         addBuiltinConstant("ArgumentError", core.lookupType(ArgError));
+        addBuiltinConstant("CTYPES_MAX_ARGCOUNT", 1024);
     }
 
     @Override

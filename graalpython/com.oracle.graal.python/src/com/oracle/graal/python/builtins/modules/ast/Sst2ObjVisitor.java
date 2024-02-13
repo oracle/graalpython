@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -275,6 +275,17 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
     @Override
     public Object visit(StmtTy.Try node) {
         PythonObject o = factory.createPythonObject(state.clsTry);
+        o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
+        o.setAttribute(AstState.T_F_HANDLERS, seq2List(node.handlers));
+        o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
+        o.setAttribute(AstState.T_F_FINALBODY, seq2List(node.finalBody));
+        fillSourceRangeAttributes(o, node.getSourceRange());
+        return o;
+    }
+
+    @Override
+    public Object visit(StmtTy.TryStar node) {
+        PythonObject o = factory.createPythonObject(state.clsTryStar);
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_HANDLERS, seq2List(node.handlers));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));

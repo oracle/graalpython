@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -34,7 +34,7 @@ PyAPI_DATA(int) Py_LegacyWindowsStdioFlag;
 /* this is a wrapper around getenv() that pays attention to
    Py_IgnoreEnvironmentFlag.  It should be used for getting variables like
    PYTHONPATH and PYTHONHOME from the environment */
-#define Py_GETENV(s) (Py_IgnoreEnvironmentFlag ? NULL : getenv(s))
+PyAPI_DATA(char*) Py_GETENV(const char *name);
 
 #ifdef __cplusplus
 }

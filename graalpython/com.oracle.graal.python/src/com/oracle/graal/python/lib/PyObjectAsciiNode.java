@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
     @Specialization
     static TruffleString ascii(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectReprAsTruffleStringNode reprNode,
+                    @Cached(inline = false) TruffleString.GetCodeRangeNode getCodeRangeNode,
                     @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                     @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
                     @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
@@ -84,6 +85,9 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
                     @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
         // TODO GR-37220: rewrite using TruffleStringBuilder?
         TruffleString repr = reprNode.execute(frame, inliningTarget, obj);
+        if (getCodeRangeNode.execute(repr, TS_ENCODING) == TruffleString.CodeRange.ASCII) {
+            return repr;
+        }
         byte[] bytes = new byte[codePointLengthNode.execute(repr, TS_ENCODING) * 10];
         TruffleStringIterator it = createCodePointIteratorNode.execute(repr, TS_ENCODING);
         int j = 0;

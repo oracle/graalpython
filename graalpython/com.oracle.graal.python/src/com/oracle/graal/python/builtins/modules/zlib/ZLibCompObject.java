@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -118,6 +118,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         final int strategy;
 
         private byte[] inputData; // helper for copy operation
+        private int inputLen;
         private boolean canCopy; // to assist if copying is allowed
         private boolean readHeader;
 
@@ -150,24 +151,27 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         }
 
         @TruffleBoundary
-        public void setDeflaterInput(byte[] data) {
+        public void setDeflaterInput(byte[] data, int length) {
             assert stream instanceof Deflater;
             canCopy = inputData == null;
             inputData = data;
-            ((Deflater) stream).setInput(data);
+            inputLen = length;
+            ((Deflater) stream).setInput(data, 0, length);
         }
 
         @TruffleBoundary
-        public void setInflaterInput(byte[] data, Node node) {
+        public void setInflaterInput(byte[] data, int length, Node node) {
             assert stream instanceof Inflater;
             byte[] bytes = data;
             if (readHeader) {
                 readHeader = false;
                 int h = gzipHeader(data, node);
-                bytes = PythonUtils.arrayCopyOfRange(bytes, h, data.length);
+                bytes = PythonUtils.arrayCopyOfRange(bytes, h, length);
+                length = bytes.length;
             }
             canCopy = inputData == null;
             inputData = bytes;
+            inputLen = length;
             ((Inflater) stream).setInput(bytes);
         }
 
@@ -183,8 +187,8 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibCompress, deflater, level, wbits, strategy, zdict);
             if (inputData != null) {
                 // feed the new copy of deflater the same input data
-                ((JavaZlibCompObject) obj).setDeflaterInput(inputData);
-                deflater.deflate(new byte[inputData.length]);
+                ((JavaZlibCompObject) obj).setDeflaterInput(inputData, inputLen);
+                deflater.deflate(new byte[inputLen]);
             }
             return obj;
         }
@@ -200,7 +204,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibDecompress, inflater, wbits, zdict);
             if (inputData != null) {
                 try {
-                    ((JavaZlibCompObject) obj).setInflaterInput(inputData, node);
+                    ((JavaZlibCompObject) obj).setInflaterInput(inputData, inputLen, node);
                     inflater.setInput(inputData);
                     int n = inflater.inflate(new byte[ZLibModuleBuiltins.DEF_BUF_SIZE]);
                     if (!isRAW && n == 0 && inflater.needsDictionary() && zdict.length > 0) {

@@ -26,11 +26,11 @@
 *graalpython.lib-python.3.test.test_base64.BaseXYTestCase.test_decode_nonascii_str
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_decode
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_decodebytes
-*graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_decodestring_warns
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encode
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encodebytes
-*graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encodestring_warns
 *graalpython.lib-python.3.test.test_base64.TestMain.test_decode
 *graalpython.lib-python.3.test.test_base64.TestMain.test_encode_decode
 *graalpython.lib-python.3.test.test_base64.TestMain.test_encode_file
 *graalpython.lib-python.3.test.test_base64.TestMain.test_encode_from_stdin
+*graalpython.lib-python.3.test.test_base64.TestMain.test_prints_usage_with_help_flag
+*graalpython.lib-python.3.test.test_base64.TestMain.test_prints_usage_with_invalid_flag

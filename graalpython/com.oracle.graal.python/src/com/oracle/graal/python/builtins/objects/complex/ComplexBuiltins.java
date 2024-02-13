@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyCo
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
@@ -90,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicPro
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -127,6 +129,22 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ComplexBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___COMPLEX__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ComplexNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PComplex complex(PComplex self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyComplexCheckExactNode check,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            if (check.execute(inliningTarget, self)) {
+                return self;
+            } else {
+                return factory.get(inliningTarget).createComplex(self.getReal(), self.getImag());
+            }
+        }
     }
 
     @GenerateNodeFactory

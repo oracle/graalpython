@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -31,8 +31,8 @@ PyAPI_FUNC(PyObject *) PyMemoryView_FromObject(PyObject *base);
 PyAPI_FUNC(PyObject *) PyMemoryView_FromMemory(char *mem, Py_ssize_t size,
                                                int flags);
 #endif
-#ifndef Py_LIMITED_API
-PyAPI_FUNC(PyObject *) PyMemoryView_FromBuffer(Py_buffer *info);
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030b0000
+PyAPI_FUNC(PyObject *) PyMemoryView_FromBuffer(const Py_buffer *info);
 #endif
 PyAPI_FUNC(PyObject *) PyMemoryView_GetContiguous(PyObject *base,
                                                   int buffertype,

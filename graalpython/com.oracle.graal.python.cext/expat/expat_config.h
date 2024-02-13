@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -22,5 +22,9 @@
 #define XML_NS 1
 #define XML_DTD 1
 #define XML_CONTEXT_BYTES 1024
+
+// bpo-30947: Python uses best available entropy sources to
+// call XML_SetHashSalt(), expat entropy sources are not needed
+#define XML_POOR_ENTROPY 1
 
 #endif /* EXPAT_CONFIG_H */

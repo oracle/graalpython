@@ -215,6 +215,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
+import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -980,10 +981,10 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {
-        return trace(new PTraceback(getLanguage(), frame, lineno, next));
+        return trace(new PTraceback(getLanguage(), frame, lineno, -1, next));
     }
 
-    public final PTraceback createTraceback(PFrame frame, int lineno, int lasti, PTraceback next) {
+    public final PTraceback createTracebackWithLasti(PFrame frame, int lineno, int lasti, PTraceback next) {
         return trace(new PTraceback(getLanguage(), frame, lineno, lasti, next));
     }
 
@@ -1177,10 +1178,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, codeUnit));
     }
 
-    public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, TruffleString[] names, TruffleString[] varnames,
-                    TruffleString[] freevars, TruffleString[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
-                        filename, name, firstlineno, linetable));
+    public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals,
+                    int stacksize, int flags, Object[] constants,
+                    TruffleString[] names, TruffleString[] varnames,
+                    TruffleString[] freevars, TruffleString[] cellvars,
+                    TruffleString filename, TruffleString name, TruffleString qualname,
+                    int firstlineno, byte[] linetable) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature,
+                        nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
+                        filename, name, qualname, firstlineno, linetable));
     }
 
     public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
@@ -1541,18 +1547,27 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, getShape(PythonBuiltinClassType.ContextVarsToken)));
     }
 
-    public final PGenericAlias createGenericAlias(Object cls, Object origin, Object arguments) {
+    public final PGenericAlias createGenericAlias(Object cls, Object origin, Object arguments, boolean starred) {
         PTuple argumentsTuple;
         if (arguments instanceof PTuple) {
             argumentsTuple = (PTuple) arguments;
         } else {
             argumentsTuple = createTuple(new Object[]{arguments});
         }
-        return trace(new PGenericAlias(cls, getShape(cls), origin, argumentsTuple));
+        return trace(new PGenericAlias(cls, getShape(cls), origin, argumentsTuple, starred));
+    }
+
+    public final PGenericAlias createGenericAlias(Object origin, Object arguments, boolean starred) {
+        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments, starred);
     }
 
     public final PGenericAlias createGenericAlias(Object origin, Object arguments) {
-        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments);
+        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments, false);
+    }
+
+    public final PGenericAliasIterator createGenericAliasIterator(PGenericAlias object) {
+        PythonBuiltinClassType type = PythonBuiltinClassType.PGenericAliasIterator;
+        return trace(new PGenericAliasIterator(type, getShape(type), object));
     }
 
     public final PUnionType createUnionType(Object[] args) {

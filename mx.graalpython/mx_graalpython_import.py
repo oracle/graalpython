@@ -38,10 +38,10 @@
 # SOFTWARE.
 
 import abc
+import argparse
 import os
 import shutil
 import sys
-import argparse
 from textwrap import dedent
 
 import mx
@@ -130,11 +130,12 @@ CPYTHON_SOURCES_MAPPING = {
 
     # C API
     "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
+    # Different copyright
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
     "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
     "graalpython/com.oracle.graal.python.cext/modules/_sha3": CopyFrom("Modules/_sha3"),
-    "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c": CopyFrom("Modules/_sre.c"),
+    "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_mmap.c": CopyFrom("Modules/mmapmodule.c"),
@@ -145,28 +146,24 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom(
         "Objects/clinic/memoryobject.c.h"),
     "graalpython/com.oracle.graal.python.cext/modules": CopyFromWithOverrides("Modules"),
+
     "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
-    "graalpython/com.oracle.graal.python.cext/src/capsule.c": CopyFrom("Objects/capsule.c"),
-    "graalpython/com.oracle.graal.python.cext/src/complexobject.c": CopyFrom("Objects/complexobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/floatobject.c": CopyFrom("Objects/floatobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/sliceobject.c": CopyFrom("Objects/sliceobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/unicodectype.c": CopyFrom("Objects/unicodectype.c"),
-    "graalpython/com.oracle.graal.python.cext/src/unicodeobject.c": CopyFrom("Objects/unicodeobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h": CopyFrom("Objects/unicodetype_db.h"),
-    "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
     "graalpython/com.oracle.graal.python.cext/src/getcompiler.c": CopyFrom("Python/getcompiler.c"),
     "graalpython/com.oracle.graal.python.cext/src/getversion.c": CopyFrom("Python/getversion.c"),
     "graalpython/com.oracle.graal.python.cext/src/mysnprintf.c": CopyFrom("Python/mysnprintf.c"),
     "graalpython/com.oracle.graal.python.cext/src/mystrtoul.c": CopyFrom("Python/mystrtoul.c"),
-    "graalpython/com.oracle.graal.python.cext/src/longobject.c": CopyFrom("Objects/longobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/moduleobject.c": CopyFrom("Objects/moduleobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/object.c": CopyFrom("Objects/object.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrcmp.c": CopyFrom("Python/pystrcmp.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrtod.c": CopyFrom("Python/pystrtod.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrhex.c": CopyFrom("Python/pystrhex.c"),
-    "graalpython/com.oracle.graal.python.cext/src/thread.c": CopyFrom("Python/thread.c"),
-    "graalpython/com.oracle.graal.python.cext/src/tupleobject.c": CopyFrom("Objects/tupleobject.c"),
-    "graalpython/com.oracle.graal.python.cext/src/typeobject.c": CopyFrom("Objects/typeobject.c"),
+    "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
+    # These files take functions from CPython, but they don't follow the same structure, so they are impossible
+    # to meaningfully merge
+    "graalpython/com.oracle.graal.python.cext/src/tupleobject.c": Ignore(),
+    "graalpython/com.oracle.graal.python.cext/src/typeobject.c": Ignore(),
+    "graalpython/com.oracle.graal.python.cext/src/thread.c": Ignore(),
+    "graalpython/com.oracle.graal.python.cext/src/call.c": Ignore(),
+
+    "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 
     # Just few functions are taken from CPython
     "graalpython/python-libposix/src/fork_exec.c": Ignore(),
@@ -182,11 +179,11 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py": Ignore(),
     "graalpython/com.oracle.graal.python.pegparser.generator/pegjava/java_generator.py": Ignore(),
 
+    "graalpython/com.oracle.graal.python.frozen/freeze_modules.py": CopyFrom("Tools/scripts/freeze_modules.py"),
+
     # Others
     # Test files don't need to be updated, they inline some unittest code only
     "graalpython/com.oracle.graal.python.test/src/tests": Ignore(),
-    # The following files are not copies, they just contain parts
-    "graalpython/com.oracle.graal.python.frozen/freeze_modules.py": Ignore(),
 }
 
 PYPY_SOURCES_MAPPING = {

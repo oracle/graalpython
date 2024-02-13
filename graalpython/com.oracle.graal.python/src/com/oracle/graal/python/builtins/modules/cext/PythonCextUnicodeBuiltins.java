@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
@@ -95,7 +96,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCall
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.GetErrorHandlerNode;
+import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
@@ -482,6 +483,16 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.CANT_COMPARE, left, right);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class PyUnicode_CompareWithASCIIString extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static int compare(TruffleString left, TruffleString right,
+                        @Cached TruffleString.CompareIntsUTF32Node compare) {
+            return compare.execute(left, right);
         }
     }
 
@@ -1124,7 +1135,7 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object doGeneric(TruffleString errors,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetErrorHandlerNode getErrorHandlerNode) {
+                        @Cached ErrorHandlers.GetErrorHandlerNode getErrorHandlerNode) {
             return getErrorHandlerNode.execute(inliningTarget, errors).getNativeValue();
         }
     }

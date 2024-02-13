@@ -417,12 +417,12 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PDict clear(PDict dict,
+        static PNone clear(PDict dict,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageClear clearNode) {
             HashingStorage newStorage = clearNode.execute(inliningTarget, dict.getDictStorage());
             dict.setDictStorage(newStorage);
-            return dict;
+            return PNone.NONE;
         }
     }
 

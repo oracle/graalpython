@@ -63,9 +63,13 @@ def input(module, prompt=None):
 
 
 class filter(object):
-    def __init__(self, predicateOrNone, iterable):
+    def __new__(cls, predicateOrNone, iterable, **kwargs):
+        if kwargs and cls.__init__ is object.__init__:
+            raise TypeError("filter takes no keyword arguments")
+        self = object.__new__(cls)
         self.predicateOrNone = predicateOrNone
         self.iterable = iter(iterable)
+        return self
 
     def __iter__(self):
         return self
@@ -79,3 +83,6 @@ class filter(object):
             else:
                 if self.predicateOrNone(item):
                     return item
+
+    def __reduce__(self):
+        return type(self), (self.predicateOrNone, self.iterable)

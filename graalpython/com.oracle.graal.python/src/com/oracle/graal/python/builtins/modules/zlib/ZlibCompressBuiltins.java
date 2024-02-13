@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,10 +60,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.JavaCompressNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -72,14 +70,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -88,6 +87,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = ZlibCompress)
@@ -97,52 +97,55 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         return ZlibCompressBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "compress", minNumOfPositionalArgs = 2, parameterNames = {"$self", ""})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "data"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    abstract static class CompressNode extends PythonBinaryBuiltinNode {
+    abstract static class CompressNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "self.isInitialized()")
-        static PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data,
+        @Specialization
+        static PBytes compress(VirtualFrame frame, ZLibCompObject self, Object buffer,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeCompressObj compressObj,
-                        @Shared @Cached PythonObjectFactory factory) {
-            synchronized (self) {
-                assert self.isInitialized();
-                byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
-                int len = data.getSequenceStorage().length();
-                return factory.createBytes(compressObj.execute(inliningTarget, self, PythonContext.get(inliningTarget), bytes, len));
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached CompressInnerNode innerNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            try {
+                if (!self.isInitialized()) {
+                    throw raiseNode.get(inliningTarget).raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+                }
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                return factory.createBytes(innerNode.execute(inliningTarget, self, bytes, len));
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
-        @Specialization(guards = {"self.isInitialized()", "!isBytes(data)"})
-        static PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeCompressObj compressObj,
-                        @Shared @Cached PythonObjectFactory factory) {
-            synchronized (self) {
-                assert self.isInitialized();
-                byte[] bytes = toBytes.execute(frame, data);
-                int len = bytes.length;
-                return factory.createBytes(compressObj.execute(inliningTarget, self, PythonContext.get(inliningTarget), bytes, len));
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class CompressInnerNode extends Node {
+            abstract byte[] execute(Node inliningTarget, Object self, byte[] bytes, int length);
+
+            @Specialization
+            static byte[] doNative(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, byte[] bytes, int length,
+                            @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
+                synchronized (self) {
+                    return compressObj.execute(inliningTarget, self, PythonContext.get(inliningTarget), bytes, length);
+                }
+            }
+
+            @Specialization
+            @TruffleBoundary
+            static byte[] doJava(ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int length) {
+                self.setDeflaterInput(bytes, length);
+                return JavaCompressNode.execute(self, Z_NO_FLUSH);
             }
         }
 
-        @Specialization(guards = "self.isInitialized()")
-        static PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, Object data,
-                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toBytes.execute(frame, data);
-            self.setDeflaterInput(bytes);
-            return JavaCompressNode.execute(self, Z_NO_FLUSH, factory);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!self.isInitialized()")
-        static PBytes error(ZLibCompObject self, Object data,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ZlibCompressBuiltinsClinicProviders.CompressNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -276,7 +279,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         @Specialization(guards = {"mode != Z_NO_FLUSH", "self.isInitialized()"})
         static PBytes doit(ZLibCompObject.JavaZlibCompObject self, int mode,
                         @Shared @Cached PythonObjectFactory factory) {
-            return ZlibNodes.JavaCompressNode.execute(self, mode, factory);
+            return factory.createBytes(ZlibNodes.JavaCompressNode.execute(self, mode));
         }
 
         @SuppressWarnings("unused")

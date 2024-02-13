@@ -6,6 +6,8 @@ import random
 import time
 import unittest
 import weakref
+from test import support
+from test.support import threading_helper
 
 try:
     from _testcapi import hamt
@@ -341,6 +343,7 @@ class ContextTest(unittest.TestCase):
         ctx1.run(ctx1_fun)
 
     @isolated_context
+    @threading_helper.requires_working_threading()
     def test_context_threads_1(self):
         cvar = contextvars.ContextVar('cvar')
 
@@ -568,6 +571,7 @@ class HamtTest(unittest.TestCase):
 
         self.assertEqual({k.name for k in h.keys()}, {'C', 'D', 'E'})
 
+    @support.requires_resource('cpu')
     def test_hamt_stress(self):
         COLLECTION_SIZE = 7000
         TEST_ITERS_EVERY = 647

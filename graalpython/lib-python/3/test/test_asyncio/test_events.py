@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+import types
 import errno
 import unittest
 from unittest import mock
@@ -30,6 +31,7 @@ from asyncio import coroutines
 from asyncio import events
 from asyncio import proactor_events
 from asyncio import selector_events
+from multiprocessing.util import _cleanup_tests as multiprocessing_cleanup_tests
 from test.test_asyncio import utils as test_utils
 from test import support
 from test.support import socket_helper
@@ -292,10 +294,11 @@ class EventLoopTestsMixin:
     # 15.6 msec, we use fairly long sleep times here (~100 msec).
 
     def test_run_until_complete(self):
+        delay = 0.100
         t0 = self.loop.time()
-        self.loop.run_until_complete(asyncio.sleep(0.1))
-        t1 = self.loop.time()
-        self.assertTrue(0.08 <= t1-t0 <= 0.8, t1-t0)
+        self.loop.run_until_complete(asyncio.sleep(delay))
+        dt = self.loop.time() - t0
+        self.assertGreaterEqual(dt, delay - test_utils.CLOCK_RES)
 
     def test_run_until_complete_stopped(self):
 
@@ -672,6 +675,7 @@ class EventLoopTestsMixin:
             self.assertEqual(port, expected)
             tr.close()
 
+    @socket_helper.skip_if_tcp_blackhole
     def test_create_connection_local_addr_skip_different_family(self):
         # See https://github.com/python/cpython/issues/86508
         port1 = socket_helper.find_unused_port()
@@ -693,6 +697,7 @@ class EventLoopTestsMixin:
         with self.assertRaises(OSError):
             self.loop.run_until_complete(f)
 
+    @socket_helper.skip_if_tcp_blackhole
     def test_create_connection_local_addr_nomatch_family(self):
         # See https://github.com/python/cpython/issues/86508
         port1 = socket_helper.find_unused_port()
@@ -779,14 +784,6 @@ class EventLoopTestsMixin:
 
     @unittest.skipIf(ssl is None, 'No ssl module')
     def test_ssl_connect_accepted_socket(self):
-        if (sys.platform == 'win32' and
-            sys.version_info < (3, 5) and
-            isinstance(self.loop, proactor_events.BaseProactorEventLoop)
-            ):
-            raise unittest.SkipTest(
-                'SSL not supported with proactor event loops before Python 3.5'
-                )
-
         server_context = test_utils.simple_server_sslcontext()
         client_context = test_utils.simple_client_sslcontext()
 
@@ -1262,6 +1259,7 @@ class EventLoopTestsMixin:
 
         server.close()
 
+    @socket_helper.skip_if_tcp_blackhole
     def test_server_close(self):
         f = self.loop.create_server(MyProto, '0.0.0.0', 0)
         server = self.loop.run_until_complete(f)
@@ -1680,12 +1678,9 @@ class EventLoopTestsMixin:
                 self.loop.stop()
             return res
 
-        start = time.monotonic()
         t = self.loop.create_task(main())
         self.loop.run_forever()
-        elapsed = time.monotonic() - start
 
-        self.assertLess(elapsed, 0.1)
         self.assertEqual(t.result(), 'cancelled')
         self.assertRaises(asyncio.CancelledError, f.result)
         if ov is not None:
@@ -1705,7 +1700,6 @@ class EventLoopTestsMixin:
         self.loop._run_once = _run_once
 
         async def wait():
-            loop = self.loop
             await asyncio.sleep(1e-2)
             await asyncio.sleep(1e-4)
             await asyncio.sleep(1e-6)
@@ -2232,8 +2226,7 @@ class HandleTests(test_utils.TestCase):
                         '<Handle cancelled>')
 
         # decorated function
-        with self.assertWarns(DeprecationWarning):
-            cb = asyncio.coroutine(noop)
+        cb = types.coroutine(noop)
         h = asyncio.Handle(cb, (), self.loop)
         self.assertEqual(repr(h),
                         '<Handle noop() at %s:%s>'
@@ -2254,17 +2247,15 @@ class HandleTests(test_utils.TestCase):
         self.assertRegex(repr(h), regex)
 
         # partial method
-        if sys.version_info >= (3, 4):
-            method = HandleTests.test_handle_repr
-            cb = functools.partialmethod(method)
-            filename, lineno = test_utils.get_function_source(method)
-            h = asyncio.Handle(cb, (), self.loop)
+        method = HandleTests.test_handle_repr
+        cb = functools.partialmethod(method)
+        filename, lineno = test_utils.get_function_source(method)
+        h = asyncio.Handle(cb, (), self.loop)
 
-            cb_regex = r'<function HandleTests.test_handle_repr .*>'
-            cb_regex = (r'functools.partialmethod\(%s, , \)\(\)' % cb_regex)
-            regex = (r'^<Handle %s at %s:%s>$'
-                     % (cb_regex, re.escape(filename), lineno))
-            self.assertRegex(repr(h), regex)
+        cb_regex = r'<function HandleTests.test_handle_repr .*>'
+        cb_regex = fr'functools.partialmethod\({cb_regex}, , \)\(\)'
+        regex = fr'^<Handle {cb_regex} at {re.escape(filename)}:{lineno}>$'
+        self.assertRegex(repr(h), regex)
 
     def test_handle_repr_debug(self):
         self.loop.get_debug.return_value = True
@@ -2390,10 +2381,6 @@ class TimerTests(unittest.TestCase):
         self.assertIsNone(h._callback)
         self.assertIsNone(h._args)
 
-        # when cannot be None
-        self.assertRaises(AssertionError,
-                          asyncio.TimerHandle, None, callback, args,
-                          self.loop)
 
     def test_timer_repr(self):
         self.loop.get_debug.return_value = False
@@ -2661,7 +2648,7 @@ class PolicyTests(unittest.TestCase):
         old_loop = policy.new_event_loop()
         policy.set_event_loop(old_loop)
 
-        self.assertRaises(AssertionError, policy.set_event_loop, object())
+        self.assertRaises(TypeError, policy.set_event_loop, object())
 
         loop = policy.new_event_loop()
         policy.set_event_loop(loop)
@@ -2677,7 +2664,7 @@ class PolicyTests(unittest.TestCase):
 
     def test_set_event_loop_policy(self):
         self.assertRaises(
-            AssertionError, asyncio.set_event_loop_policy, object())
+            TypeError, asyncio.set_event_loop_policy, object())
 
         old_policy = asyncio.get_event_loop_policy()
 
@@ -2747,6 +2734,8 @@ class GetEventLoopTestsMixin:
             # ProcessPoolExecutor is not functional when the
             # multiprocessing.synchronize module cannot be imported.
             support.skip_if_broken_multiprocessing_synchronize()
+
+            self.addCleanup(multiprocessing_cleanup_tests)
 
             async def main():
                 pool = concurrent.futures.ProcessPoolExecutor()

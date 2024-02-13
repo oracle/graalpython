@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -156,7 +155,6 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -839,16 +837,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
     }
 
     static void deallocWarn(VirtualFrame frame, PFileIO self,
-                    WarningsModuleBuiltins.WarnNode warn,
-                    PythonLanguage language,
-                    PythonContext context) {
+                    WarningsModuleBuiltins.WarnNode warn) {
         if (self.getFD() >= 0 && self.isCloseFD()) {
-            PythonThreadState threadState = context.getThreadState(language);
-            PException exc = threadState.getCurrentException();
-            warn.resourceWarning(frame, self, 1, UNCLOSED_FILE, self);
-            /* Spurious errors can appear at shutdown */
-            /* (mq) we aren't doing WriteUnraisable as WarnNode will take care of it */
-            threadState.setCurrentException(exc);
+            try {
+                warn.resourceWarning(frame, self, 1, UNCLOSED_FILE, self);
+            } catch (PException e) {
+                /* Spurious errors can appear at shutdown */
+                /* (mq) we aren't doing WriteUnraisable as WarnNode will take care of it */
+            }
         }
     }
 
@@ -938,11 +934,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 rawIOException = e;
             }
-            try {
-                deallocWarn(frame, self, warnNode, PythonLanguage.get(inliningTarget), context);
-            } catch (PException e) {
-                // ignore
-            }
+            deallocWarn(frame, self, warnNode);
             try {
                 internalClose(frame, self, posixClose);
             } catch (PException ee) {
@@ -1063,9 +1055,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DeallocWarnNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object deallocWarn(VirtualFrame frame, PFileIO self,
+        static Object deallocWarn(VirtualFrame frame, PFileIO self,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            FileIOBuiltins.deallocWarn(frame, self, warnNode, getLanguage(), getContext());
+            FileIOBuiltins.deallocWarn(frame, self, warnNode);
             return PNone.NONE;
         }
     }

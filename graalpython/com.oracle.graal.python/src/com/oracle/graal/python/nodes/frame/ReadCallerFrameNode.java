@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,12 +73,22 @@ public final class ReadCallerFrameNode extends Node {
             }
         },
         /**
-         * Skips any internal code frames including internal Python level frames.
+         * Skips any internal code frames including internal Python level frames of functions
+         * annotated with @builtin.
          */
         SKIP_PYTHON_INTERNAL {
             @Override
             public boolean skip(RootNode rootNode) {
                 return PRootNode.isPythonInternal(rootNode);
+            }
+        },
+        /**
+         * Skips any internal frames including Python frames from internal modules in lib-graalpy.
+         */
+        SKIP_INTERNAL {
+            @Override
+            public boolean skip(RootNode rootNode) {
+                return (rootNode != null && rootNode.isInternal()) || PRootNode.isPythonInternal(rootNode);
             }
         },
         /**

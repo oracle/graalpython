@@ -228,15 +228,3 @@ void PyMem_RawFree(void *ptr) {
 void PyMem_Free(void *ptr) {
 	_PyObject_Free(ptr);
 }
-
-PyObject *
-_PyObject_GC_Malloc(size_t basicsize)
-{
-    return PyObject_Malloc(basicsize);
-}
-
-PyObject *
-_PyObject_GC_Calloc(size_t basicsize)
-{
-    return PyMem_RawCalloc(1, basicsize);
-}

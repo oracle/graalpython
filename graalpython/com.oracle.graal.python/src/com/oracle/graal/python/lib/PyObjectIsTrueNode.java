@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,6 +95,10 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Node inliningTarget, Object object);
 
     protected abstract Object executeObject(Frame frame, Node inliningTarget, Object object);
+
+    public static boolean executeUncached(Object object) {
+        return getUncached().execute(null, null, object);
+    }
 
     @Specialization
     static boolean doBoolean(boolean object) {

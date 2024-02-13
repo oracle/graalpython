@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNod
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -56,7 +57,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
     private Object[] arguments;
@@ -66,7 +66,7 @@ public final class PFrame extends PythonBuiltinObject {
     private Node location;
     private RootCallTarget callTarget;
     private int line = -2;
-    private int lasti = -1;
+    private int bci = -1;
 
     /*
      * when emitting trace events, the line number will not be correct by default, so it has be
@@ -234,15 +234,7 @@ public final class PFrame extends PythonBuiltinObject {
             if (location == null) {
                 line = -1;
             } else if (location instanceof PBytecodeRootNode) {
-                return ((PBytecodeRootNode) location).bciToLine(lasti);
-            } else {
-                SourceSection sourceSection = location.getEncapsulatingSourceSection();
-                if (sourceSection == null) {
-                    return -1;
-                } else {
-                    // The location can change, so we shouldn't cache the value
-                    return sourceSection.getStartLine();
-                }
+                return ((PBytecodeRootNode) location).bciToLine(bci);
             }
         }
         return line;
@@ -288,15 +280,25 @@ public final class PFrame extends PythonBuiltinObject {
         return location;
     }
 
-    /**
-     * Last bytecode instruction. Since we don't have bytecode this is -1 by default, but can be set
-     * to a different value to distinguish started generators from unstarted
-     */
-    public int getLasti() {
-        return lasti;
+    public int getBci() {
+        return bci;
     }
 
-    public void setLasti(int lasti) {
-        this.lasti = lasti;
+    public void setBci(int bci) {
+        this.bci = bci;
+    }
+
+    public int getLasti() {
+        return bciToLasti(bci);
+    }
+
+    @TruffleBoundary
+    public int bciToLasti(int bci) {
+        if (location instanceof PBytecodeRootNode bytecodeRootNode) {
+            return bytecodeRootNode.bciToLasti(bci);
+        } else if (location instanceof PBytecodeGeneratorRootNode generatorRootNode) {
+            return generatorRootNode.getBytecodeRootNode().bciToLasti(bci);
+        }
+        return -1;
     }
 }

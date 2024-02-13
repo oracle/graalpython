@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -449,7 +450,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 readCallerNode = insert(ReadCallerFrameNode.create());
             }
-            return readCallerNode.executeWith(frame, stackLevel);
+            return readCallerNode.executeWith(PArguments.getCurrentFrameInfo(frame), ReadCallerFrameNode.FrameSelector.SKIP_INTERNAL, stackLevel);
         }
 
         // _Warnings_GetState split up

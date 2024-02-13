@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
@@ -275,8 +276,20 @@ public enum CFields {
     PyTypeObject__tp_finalize(destructor),
     PyTypeObject__tp_vectorcall(vectorcallfunc),
 
+    PyHeapTypeObject__as_async(PyAsyncMethods),
+    PyHeapTypeObject__as_number(PyNumberMethods),
+    PyHeapTypeObject__as_mapping(PyMappingMethods),
+    PyHeapTypeObject__as_sequence(PySequenceMethods),
+    PyHeapTypeObject__as_buffer(PyBufferProcs),
+    PyHeapTypeObject__ht_name(PyObjectPtr),
+    PyHeapTypeObject__ht_slots(PyObjectPtr),
+    PyHeapTypeObject__ht_qualname(PyObjectPtr),
+    PyHeapTypeObject__ht_module(PyObjectPtr),
+
     PyBytesObject__ob_shash(Py_hash_t),
-    PyBytesObject__ob_sval(CHAR),
+    PyBytesObject__ob_sval(CHAR_PTR),
+
+    PyByteArrayObject__ob_start(CHAR_PTR),
 
     PyListObject__ob_item(PyObjectPtr),
     PyListObject__allocated(Py_ssize_t),

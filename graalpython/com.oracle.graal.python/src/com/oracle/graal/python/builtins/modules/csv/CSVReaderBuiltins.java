@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -164,15 +164,6 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     line = castToStringNode.execute(inliningTarget, lineObj);
                 } catch (CannotCastException e) {
                     throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(inliningTarget, lineObj));
-                }
-
-                // TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of
-                // bytes?
-                // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and
-                // line.index(0) >=0:
-                // raise Error("line contains NULL byte")
-                if (byteIndexOfCodePointNode.execute(line, 0, 0, line.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.LINE_CONTAINS_NULL_BYTE);
                 }
 
                 self.lineNum++;

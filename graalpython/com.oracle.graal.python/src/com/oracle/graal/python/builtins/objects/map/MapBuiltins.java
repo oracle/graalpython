@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.map;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -51,24 +50,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.GetNextNode;
-import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
 public final class MapBuiltins extends PythonBuiltins {
@@ -76,33 +71,6 @@ public final class MapBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MapBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 3, takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
-        @Specialization(guards = "args.length == 0")
-        static PNone doOne(VirtualFrame frame, PMap self, Object func, Object iterable, @SuppressWarnings("unused") Object[] args,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
-            self.setFunction(func);
-            self.setIterators(new Object[]{getIter.execute(frame, inliningTarget, iterable)});
-            return PNone.NONE;
-        }
-
-        @Specialization(replaces = "doOne")
-        static PNone doGeneric(VirtualFrame frame, PMap self, Object func, Object iterable, Object[] args,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
-            self.setFunction(func);
-            Object[] iterators = new Object[args.length + 1];
-            iterators[0] = getIter.execute(frame, inliningTarget, iterable);
-            for (int i = 0; i < args.length; i++) {
-                iterators[i + 1] = getIter.execute(frame, inliningTarget, args[i]);
-            }
-            self.setIterators(iterators);
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)

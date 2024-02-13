@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -416,6 +416,10 @@ public class NodeFactory {
 
     public StmtTy createTry(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
         return new StmtTy.Try(body, handlers, orElse, finalBody, sourceRange);
+    }
+
+    public StmtTy.TryStar createTryStar(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+        return new StmtTy.TryStar(body, handlers, orElse, finalBody, sourceRange);
     }
 
     public ExceptHandlerTy createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {

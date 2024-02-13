@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,18 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -73,7 +59,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent of CPython's {@code PyMapping_Check}.
  */
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyMappingCheckNode extends PNodeWithContext {
@@ -99,61 +84,14 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doArray(@SuppressWarnings("unused") PArray object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doMemoryView(@SuppressWarnings("unused") PMemoryView object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doMappingproxy(@SuppressWarnings("unused") PMappingproxy object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doRange(@SuppressWarnings("unused") PRange object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doDeque(@SuppressWarnings("unused") PDeque object) {
-        return false;
-    }
-
-    @Specialization
-    static boolean doSet(@SuppressWarnings("unused") PBaseSet object) {
-        return false;
-    }
-
-    protected static boolean cannotBeMapping(Object object) {
-        return object instanceof PDeque || object instanceof PBaseSet;
-    }
-
-    protected static boolean isKnownMapping(Object object) {
-        return object instanceof PDict || isJavaString(object) || object instanceof TruffleString || object instanceof PSequence || object instanceof PArray ||
-                        object instanceof PMemoryView || object instanceof PRange || object instanceof PMappingproxy;
-    }
-
-    @Specialization(guards = {"!isKnownMapping(object)", "!cannotBeMapping(object)"})
-    static boolean doPythonObject(Node inliningTarget, PythonObject object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupGetItem") @Cached(parameters = "GetItem", inline = false) LookupCallableSlotInMRONode lookupGetItem) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        return lookupGetItem.execute(type) != PNone.NO_VALUE;
-    }
-
-    @Specialization(guards = {"!isKnownMapping(object)", "!cannotBeMapping(object)"}, replaces = "doPythonObject")
     static boolean doGeneric(Node inliningTarget, Object object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupGetItem") @Cached(parameters = "GetItem", inline = false) LookupCallableSlotInMRONode lookupGetItem,
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                    @Cached LazyInteropLibrary lazyLib) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
-            return lib.hasHashEntries(object);
+            return lazyLib.get(inliningTarget).hasHashEntries(object);
         }
-        return lookupGetItem.execute(type) != PNone.NO_VALUE;
+        return (getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.MP_SUBSCRIPT) != 0;
     }
 }

@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNod
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -2468,13 +2469,22 @@ public final class StringBuiltins extends PythonBuiltins {
         static TruffleString doString(VirtualFrame frame, Object self, Object idx,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringCheckedNode castToString,
+                        @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString str = castToString.cast(inliningTarget, self, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETITEM__, "str", self);
             int len = codePointLengthNode.execute(str, TS_ENCODING);
-            int index = asSizeNode.executeExact(frame, inliningTarget, idx);
+            int index;
+            try {
+                index = asSizeNode.executeExact(frame, inliningTarget, idx);
+            } catch (PException e) {
+                if (!indexCheckNode.execute(inliningTarget, idx)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.STRING_INDICES_MUST_BE_INTEGERS_NOT_P, idx);
+                }
+                throw e;
+            }
             if (index < 0) {
                 index += len;
             }

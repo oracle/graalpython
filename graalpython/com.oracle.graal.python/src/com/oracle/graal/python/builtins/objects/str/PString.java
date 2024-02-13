@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -106,6 +106,10 @@ public final class PString extends PSequence {
     public NativeCharSequence getNativeCharSequence() {
         assert isNativeCharSequence();
         return nativeCharSequence;
+    }
+
+    public void setNativeCharSequence(NativeCharSequence nativeCharSequence) {
+        this.nativeCharSequence = nativeCharSequence;
     }
 
     @Override

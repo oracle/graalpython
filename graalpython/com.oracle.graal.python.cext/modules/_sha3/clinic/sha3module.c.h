@@ -16,7 +16,6 @@ PyDoc_STRVAR(py_sha3_new__doc__,
 static PyObject *
 py_sha3_new_impl(PyTypeObject *type, PyObject *data, int usedforsecurity);
 
-/*
 static PyObject *
 py_sha3_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
@@ -30,7 +29,7 @@ py_sha3_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     PyObject *data = NULL;
     int usedforsecurity = 1;
 
-    fastargs = _PyArg_UnpackKeywords(_PyTuple_CAST(args)->ob_item, nargs, kwargs, NULL, &_parser, 0, 1, 0, argsbuf);
+    fastargs = _PyArg_UnpackKeywords(PySequence_Fast_ITEMS(args), nargs, kwargs, NULL, &_parser, 0, 1, 0, argsbuf);
     if (!fastargs) {
         goto exit;
     }
@@ -52,19 +51,6 @@ skip_optional_kwonly:
 
 exit:
     return return_value;
-}
-*/
-
-static PyObject *
-py_sha3_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
-{
-    static const char * const _keywords[] = {"data", "usedforsecurity", NULL};
-    PyObject *data = NULL;
-    int usedforsecurity = 1;
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", _keywords, &data, &usedforsecurity)) {
-        return NULL;
-    }
-    return py_sha3_new_impl(type, data, usedforsecurity);
 }
 
 PyDoc_STRVAR(_sha3_sha3_224_copy__doc__,

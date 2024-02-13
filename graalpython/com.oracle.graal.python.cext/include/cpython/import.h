@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,15 +11,12 @@ PyMODINIT_FUNC PyInit__imp(void);
 
 PyAPI_FUNC(int) _PyImport_IsInitialized(PyInterpreterState *);
 
-PyAPI_FUNC(PyObject *) _PyImport_GetModuleId(struct _Py_Identifier *name);
+PyAPI_FUNC(PyObject *) _PyImport_GetModuleId(_Py_Identifier *name);
 PyAPI_FUNC(int) _PyImport_SetModule(PyObject *name, PyObject *module);
 PyAPI_FUNC(int) _PyImport_SetModuleString(const char *name, PyObject* module);
 
 PyAPI_FUNC(void) _PyImport_AcquireLock(void);
 PyAPI_FUNC(int) _PyImport_ReleaseLock(void);
-
-/* Obsolete since 3.5, will be removed in 3.11. */
-Py_DEPRECATED(3.10) PyAPI_FUNC(PyObject *) _PyImport_FindExtensionObject(PyObject *, PyObject *);
 
 PyAPI_FUNC(int) _PyImport_FixupBuiltin(
     PyObject *mod,
@@ -40,6 +37,8 @@ struct _frozen {
     const char *name;                 /* ASCII encoded string */
     const unsigned char *code;
     int size;
+    int is_package;
+    PyObject *(*get_code)(void);
 };
 
 /* Embedding apps may change this pointer to point to their favorite

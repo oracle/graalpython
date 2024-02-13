@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -114,9 +114,9 @@ public abstract class LoadCExtException extends Exception {
 
         public PException reraise(VirtualFrame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode) {
             if (cause != null) {
-                throw raiseNode.get(inliningTarget).raiseImportErrorWithCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
+                throw raiseNode.get(inliningTarget).raiseImportErrorWithModuleAndCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
             }
-            throw raiseNode.get(inliningTarget).raiseImportError(frame, name, path, formatString, formatArgs);
+            throw raiseNode.get(inliningTarget).raiseImportErrorWithModule(frame, name, path, formatString, formatArgs);
         }
     }
 }

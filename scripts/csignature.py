@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,27 +37,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# This script parses gcc output on the sibling "incl.c" and generates a list of
+# This script parses gcc output on the embedded source and generates a list of
 # C API functions that can be stored in CAPIFunctions.txt to automatically
 # check the consistency of the C API implementation in GraalPy.
 #
+# Pip dependencies: pycparser pycparser-fake-libc
 # Just run it in this folder e.g python csignature.py > ../graalpython/com.oracle.graal.python.cext/CAPIFunctions.txt
 #
 # Make sure to use the exact same CPython version as we are targeting
 
-from pycparser import c_ast, parse_file, c_generator
-import sysconfig
-import re
 import os
+import re
+import subprocess
+import sysconfig
+import tempfile
 
-inc = sysconfig.get_config_var("INCLUDEPY")
-# used the fake clib headers from pycparser source tree
-fakeclib = os.path.join(os.path.dirname(__file__), 'pycparser', 'utils', 'fake_libc_include')
-# define some things to avoid code that pycparser cannot parse
-fakedefs = "-D_POSIX_THREADS -D__GNUC__=1"
-os.system(f"gcc -I {inc} -I {fakeclib} {fakedefs} -E incl.c > pysymbols.c")
-gen = c_generator.CGenerator()
-ast = parse_file("pysymbols.c")
+import pycparser_fake_libc
+from pycparser import c_ast, parse_file, c_generator
+
+source = """\
+#define __attribute__(x)
+#define _POSIX_THREADS
+
+#include <Python.h>
+#include <frameobject.h>
+#include <datetime.h>
+#include <structmember.h>
+"""
+
+include_path = sysconfig.get_config_var("INCLUDEPY")
+with tempfile.NamedTemporaryFile('w') as f:
+    f.write(source)
+    f.flush()
+    cpp_args = ['-I', pycparser_fake_libc.directory, '-I', include_path]
+    ast = parse_file(f.name, use_cpp=True, cpp_args=cpp_args)
+
+lib_path = os.path.join(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY'))
+out = subprocess.check_output(['nm', '--defined-only', '--just-symbols', lib_path], text=True)
+exported_symbols = out.rstrip().splitlines()
 
 
 def cleanup(str):
@@ -68,20 +85,28 @@ def cleanup(str):
 
 
 class FuncDeclVisitor(c_ast.NodeVisitor):
+    def __init__(self):
+        self.gen = c_generator.CGenerator()
+        self.results = []
+
     def visit_Decl(self, node):
         if isinstance(node.type, c_ast.FuncDecl):
-            ret = cleanup(gen.visit(node.type.type))
+            if node.name not in exported_symbols:
+                return
+            ret = cleanup(self.gen.visit(node.type.type))
             for p in node.type.args.params:
                 # erase parameter names
                 if not isinstance(p, c_ast.EllipsisParam):
                     t = p.type
-                    while isinstance(t, c_ast.PtrDecl) or isinstance(t, c_ast.FuncDecl) or isinstance(t, c_ast.ArrayDecl):
+                    while isinstance(t, (c_ast.PtrDecl, c_ast.FuncDecl, c_ast.ArrayDecl)):
                         t = t.type
                     t.declname = None
-            args = [cleanup(gen.visit(p)) for p in node.type.args.params]
+            args = [cleanup(self.gen.visit(p)) for p in node.type.args.params]
             args = "|".join(args)
-            print(f"{node.name};{ret};{args}")
+            self.results.append(f"{node.name};{ret};{args}")
 
 
 v = FuncDeclVisitor()
 v.visit(ast)
+for line in sorted(v.results):
+    print(line)

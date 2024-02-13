@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -19,8 +19,6 @@
 #define DECIMAL_MASK 0x02
 #define DIGIT_MASK 0x04
 #define LOWER_MASK 0x08
-#define LINEBREAK_MASK 0x10
-#define SPACE_MASK 0x20
 #define TITLE_MASK 0x40
 #define UPPER_MASK 0x80
 #define XID_START_MASK 0x100

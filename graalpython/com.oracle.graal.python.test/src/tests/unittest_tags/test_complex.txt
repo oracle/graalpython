@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_complex.ComplexTest.test___complex__
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_abs
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_boolcontext
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_conjugate
@@ -5,7 +6,6 @@
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_constructor_special_numbers
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_divmod
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_divmod_zero_division
-*graalpython.lib-python.3.test.test_complex.ComplexTest.test_file
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_floordiv
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_floordiv_zero_division
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_format
@@ -25,4 +25,3 @@
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_richcompare_boundaries
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_truediv
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_underscores
-*graalpython.lib-python.3.test.test_complex.TestMain.test_main

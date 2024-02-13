@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,28 @@ from . import CPyExtTestCase, CPyExtFunction
 __dir__ = __file__.rpartition("/")[0]
 
 
+def example_generator():
+    # Some random code to make sure we excercise the bytecode index translation
+    a = 1
+    if a == 2:
+        yield 2
+    yield 1
+
+
+gen = example_generator()
+next(gen)
+example_generator_frame = gen.gi_frame
+
+
 def example_function():
     return 1
+
+
+def reference_PyCode_Addr2Line(args):
+    code, lasti = args
+    if lasti >= 0:
+        return list(code.co_positions())[lasti // 2][0]
+    return code.co_firstlineno
 
 
 class DummyClass():
@@ -85,20 +105,22 @@ class TestCodeobject(CPyExtTestCase):
                 3, 4, 0,
                 b"", tuple(), tuple(),
                 ("a", "b", "c"), tuple(), tuple(),
-                "filename", "name", 1,
-                b"",
+                "filename", "name", "module.name",
+                1,
+                b"", b"",
             ),
         ),
         resultspec="O",
         resulttype="PyCodeObject*",
-        argspec="iiiiiOOOOOOOOiO",
+        argspec="iiiiiOOOOOOOOOiOO",
         arguments=[
             "int argcount", "int kwonlyargcount",
             "int nlocals", "int stacksize", "int flags",
             "PyObject* code", "PyObject* consts", "PyObject* names",
             "PyObject* varnames", "PyObject* freevars", "PyObject* cellvars",
-            "PyObject* filename", "PyObject* name", "int firstlineno",
-            "PyObject* lnotab",
+            "PyObject* filename", "PyObject* name", "PyObject* qualname",
+            "int firstlineno",
+            "PyObject* linetable", "PyObject* exceptiontable",
         ],
         cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
     )
@@ -111,35 +133,41 @@ class TestCodeobject(CPyExtTestCase):
                 3, 4, 0,
                 b"", tuple(), tuple(),
                 ("a", "b", "c"), tuple(), tuple(),
-                "filename", "name", 1,
-                b"",
+                "filename", "name", "module.name",
+                1,
+                b"", b"",
             ),
         ),
         resultspec="O",
         resulttype="PyCodeObject*",
-        argspec="iiiiiiOOOOOOOOiO",
+        argspec="iiiiiiOOOOOOOOOiOO",
         arguments=[
             "int argcount", "int posonlyargcount", "int kwonlyargcount",
             "int nlocals", "int stacksize", "int flags",
             "PyObject* code", "PyObject* consts", "PyObject* names",
             "PyObject* varnames", "PyObject* freevars", "PyObject* cellvars",
-            "PyObject* filename", "PyObject* name", "int firstlineno",
-            "PyObject* lnotab",
+            "PyObject* filename", "PyObject* name", "PyObject* qualname",
+            "int firstlineno",
+            "PyObject* lnotab", "PyObject* exceptiontable",
         ],
         cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
     )
 
     test_PyCode_Addr2Line = CPyExtFunction(
-        lambda args: example_function.__code__.co_firstlineno + 1,
+        reference_PyCode_Addr2Line,
         lambda: (
-            (example_function.__code__,),
+            (example_function.__code__, -1),
+            # CPython return firstlineno for 0, which doesn't make much sense
+            # (example_function.__code__, 0),
+            (example_generator.__code__, example_generator_frame.f_lasti),
         ),
-        code='''int wrap_PyCode_Addr2Line(PyObject* code) {
-                return PyCode_Addr2Line((PyCodeObject*)code, 0);
+        code='''
+            int wrap_PyCode_Addr2Line(PyObject* code, int lasti) {
+                return PyCode_Addr2Line((PyCodeObject*)code, lasti);
             }
             ''',
         resultspec="i",
-        argspec="O",
-        arguments=["PyObject* code"],
+        argspec="Oi",
+        arguments=["PyObject* code", "int bci"],
         callfunction="wrap_PyCode_Addr2Line",
     )

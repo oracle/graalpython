@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,17 +163,8 @@ public abstract class BuiltinMethodDescriptor {
         this.minNumOfPositionalArgs = builtinAnnotation.minNumOfPositionalArgs();
     }
 
-    protected final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
+    public final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
         return factory;
-    }
-
-    public final <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean isSameFactory(Class<T> builtinNodeFactoryClass) {
-        // The assertion is possibly not strictly necessary, but this situation should get an
-        // attention: it can be dangerous to rely only on factory identity for reverse operations,
-        // because the factory cannot be used to create a functional node, we may also need to swap
-        // the arguments.
-        assert !getBuiltinAnnotation().reverseOperation() : this;
-        return builtinNodeFactoryClass.isInstance(getFactory());
     }
 
     public final boolean isDescriptorOf(PBuiltinFunction fun) {

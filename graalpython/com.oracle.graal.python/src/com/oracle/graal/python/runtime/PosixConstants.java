@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -728,6 +728,13 @@ public final class PosixConstants {
             Registry registry = new Registry();
             if (IS_LINUX) {
                 PosixConstantsLinux.getConstants(registry);
+                // FIXME GR-51845 hardcoded constants that differ on aarch64
+                String arch = System.getProperty("os.arch");
+                if ("aarch64".equals(arch)) {
+                    registry.constants.put("O_DIRECT", 0x00010000);
+                    registry.constants.put("O_DIRECTORY", 0x00004000);
+                    registry.constants.put("O_TMPFILE", 0x00404000);
+                }
             } else if (IS_DARWIN) {
                 PosixConstantsDarwin.getConstants(registry);
             } else {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -98,7 +98,7 @@ PyAPI_FUNC(void) PyMem_Free(void *ptr);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_PYMEM_H
-#  include  "cpython/pymem.h"
+#  include "cpython/pymem.h"
 #  undef Py_CPYTHON_PYMEM_H
 #endif
 

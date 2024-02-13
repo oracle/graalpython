@@ -144,7 +144,7 @@ class TestPyObject(CPyExtTestCase):
         argspec="OOO",
         callfunction="wrap_PyObject_Call",
     )
-    test__PyObject_CallNoArg = CPyExtFunction(
+    test_PyObject_CallNoArgs = CPyExtFunction(
         lambda args: args[0](),
         lambda: (
             (dict, ),

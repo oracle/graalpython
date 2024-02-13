@@ -1,7 +1,7 @@
 Disassembly of <module>:
   1:0   -   1:60        0 MAKE_FUNCTION                     0    (<listcomp>)
-  1:18  -   1:27        3 LOAD_CONST_COLLECTION             2    ([1, 2, 3] type int into list)
-  1:29  -   1:38        6 LOAD_CONST_COLLECTION             3    ([4, 5, 6] type int into list)
+  1:18  -   1:27        3 LOAD_CONST_COLLECTION             1    ([1, 2, 3] type int into list)
+  1:29  -   1:38        6 LOAD_CONST_COLLECTION             2    ([4, 5, 6] type int into list)
   1:17  -   1:39        9 COLLECTION_FROM_STACK             2    (list)
   1:0   -   1:60       11 GET_ITER
   1:0   -   1:60       12 CALL_COMPREHENSION

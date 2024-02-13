@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,7 @@ public final class PythonCextWeakrefBuiltins {
         @Specialization
         static Object refType(Object object, Object callback,
                         @Cached ReferenceTypeNode referenceType) {
-            return referenceType.execute(null, PythonBuiltinClassType.PReferenceType, object, callback);
+            return referenceType.execute(PythonBuiltinClassType.PReferenceType, object, callback);
         }
     }
 

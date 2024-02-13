@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,7 +6,7 @@
 #ifndef Py_UNICODEOBJECT_H
 #define Py_UNICODEOBJECT_H
 
-#include <stdarg.h>
+#include <stdarg.h>               // va_list
 
 /*
 
@@ -117,7 +117,7 @@ PyAPI_DATA(PyTypeObject) PyUnicode_Type;
 PyAPI_DATA(PyTypeObject) PyUnicodeIter_Type;
 
 #define PyUnicode_Check(op) \
-                 PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_UNICODE_SUBCLASS)
+    PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_UNICODE_SUBCLASS)
 #define PyUnicode_CheckExact(op) Py_IS_TYPE(op, &PyUnicode_Type)
 
 /* --- Constants ---------------------------------------------------------- */
@@ -273,10 +273,6 @@ PyAPI_FUNC(PyObject *) PyUnicode_InternFromString(
 // PyUnicode_InternImmortal() is deprecated since Python 3.10
 // and will be removed in Python 3.12. Use PyUnicode_InternInPlace() instead.
 Py_DEPRECATED(3.10) PyAPI_FUNC(void) PyUnicode_InternImmortal(PyObject **);
-
-/* Use only if you know it's a string */
-#define PyUnicode_CHECK_INTERNED(op) \
-    (((PyASCIIObject *)(op))->state.interned)
 
 /* --- wchar_t support for platforms which support it --------------------- */
 
@@ -1048,7 +1044,7 @@ PyAPI_FUNC(int) PyUnicode_IsIdentifier(PyObject *s);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_UNICODEOBJECT_H
-#  include  "cpython/unicodeobject.h"
+#  include "cpython/unicodeobject.h"
 #  undef Py_CPYTHON_UNICODEOBJECT_H
 #endif
 

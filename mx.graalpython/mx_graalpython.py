@@ -609,6 +609,8 @@ def update_unittest_tags(args):
     darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
 
     tag_exclusions = [
+        # Tests for bytecode optimizations. We don't have the same bytecode, ignore the whole suite
+        'graalpython.lib-python.3.test.test_peepholer.*'
         # This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
         'graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module',
         # The following two try to read bytecode and fail randomly as our co_code is changing
@@ -692,25 +694,25 @@ def update_unittest_tags(args):
         # Disabled because of fatal error in Sulong (GR-47592)
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers*',
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers*',
-        # TODO try to reenable when GR-48530 is fixed
-        'graalpython.lib-python.3.test.test_decimal.*',
         # GR-48555 race condition when exitting right after join
         'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
         # GC-related transients
         'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
         # Flaky buffer capi tests
-        '*graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_assign_multidim',
+        'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_assign_multidim',
         # Too unreliable in the CI
         'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_many_processes',
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_many_processes',
+        'test.test_multiprocessing_spawn.test_processes.WithProcessesTestProcess.test_many_processes',
         # Transiently ends up with 2 processes
-        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
+        'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
+        'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_killed_child',
+        'test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_idle_thread_reuse',
         # Transient lists differ error GR-49936
         'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim',
         'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_redundant_suboffsets',
         'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_multidim',
         # Transient failure to delete semaphore on process death
-        'graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_sigkill',
+        'test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigkill',
     ]
 
     result_tags = linux_tags & darwin_tags
@@ -1347,6 +1349,7 @@ def graalpython_gate_runner(args, tasks):
             "test_multiprocessing_graalpy.py", # import _winapi
             "test_patched_pip.py",
             "test_pathlib.py",
+            "test_pdb.py", # Tends to hit GR-41935
             "test_posix.py", # import posix
             "test_pyio.py",
             "test_signal.py",
@@ -3073,6 +3076,7 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
 
         args[:0] = [
             f"--python.PyCachePrefix={pycache_dir}",
+            "--python.DisableFrozenModules",
             "-B",
             "-S"
         ]

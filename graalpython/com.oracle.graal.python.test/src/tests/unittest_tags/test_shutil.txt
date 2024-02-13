@@ -211,7 +211,6 @@
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_relative_cmd
 *graalpython.lib-python.3.test.test_shutil.TestWhichBytes.test_relative_path
 *graalpython.lib-python.3.test.test_shutil.TestZeroCopyMACOS.test_non_existent_src
-*graalpython.lib-python.3.test.test_shutil.TestZeroCopyMACOS.test_same_file
 *graalpython.lib-python.3.test.test_shutil.TestZeroCopySendfile.test_big_chunk
 *graalpython.lib-python.3.test.test_shutil.TestZeroCopySendfile.test_blocksize_arg
 *graalpython.lib-python.3.test.test_shutil.TestZeroCopySendfile.test_cant_get_size

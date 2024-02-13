@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -454,7 +454,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
                 for (int i = 0; i < nread; i++) {
                     byte b = buffer[i];
-                    appendNode.execute(inliningTarget, res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
+                    appendNode.execute(inliningTarget, res, b, BytesNodes.BytesLikeNoGeneralizationNode.SUPPLIER);
                     if (b == '\n') {
                         self.setPos(self.getPos() + i + 1);
                         break outer;

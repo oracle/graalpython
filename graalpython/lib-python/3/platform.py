@@ -5,7 +5,7 @@
 
     If called from the command line, it prints the platform
     information concatenated as single string to stdout. The output
-    format is useable as part of a filename.
+    format is usable as part of a filename.
 
 """
 #    This module is maintained by Marc-Andre Lemburg <mal@egenix.com>.
@@ -116,7 +116,6 @@ import collections
 import os
 import re
 import sys
-import subprocess
 import functools
 import itertools
 
@@ -169,7 +168,7 @@ def libc_ver(executable=None, lib='', version='', chunksize=16384):
 
         Note that the function has intimate knowledge of how different
         libc versions add symbols to the executable and thus is probably
-        only useable for executables compiled using gcc.
+        only usable for executables compiled using gcc.
 
         The file is read and scanned in chunks of chunksize bytes.
 
@@ -190,12 +189,12 @@ def libc_ver(executable=None, lib='', version='', chunksize=16384):
     if sys.implementation.name == "graalpy":
         if executable == sys.executable and not os.path.exists(executable):
             return lib, version
+
     V = _comparable_version
-    if hasattr(os.path, 'realpath'):
-        # Python 2.2 introduced os.path.realpath(); it is used
-        # here to work around problems with Cygwin not being
-        # able to open symlinks for reading
-        executable = os.path.realpath(executable)
+    # We use os.path.realpath()
+    # here to work around problems with Cygwin not being
+    # able to open symlinks for reading
+    executable = os.path.realpath(executable)
     with open(executable, 'rb') as f:
         binary = f.read(chunksize)
         pos = 0
@@ -286,6 +285,7 @@ def _syscmd_ver(system='', release='', version='',
                                            stdin=subprocess.DEVNULL,
                                            stderr=subprocess.DEVNULL,
                                            text=True,
+                                           encoding="locale",
                                            shell=True)
         except (OSError, subprocess.CalledProcessError) as why:
             #print('Command %s failed: %s' % (cmd, why))
@@ -618,7 +618,10 @@ def _syscmd_file(target, default=''):
         # XXX Others too ?
         return default
 
-    import subprocess
+    try:
+        import subprocess
+    except ImportError:
+        return default
     target = _follow_symlinks(target)
     # "file" output is locale dependent: force the usage of the C locale
     # to get deterministic behavior.
@@ -758,10 +761,15 @@ class _Processor:
         Fall back to `uname -p`
         """
         try:
+            import subprocess
+        except ImportError:
+            return None
+        try:
             return subprocess.check_output(
                 ['uname', '-p'],
                 stderr=subprocess.DEVNULL,
                 text=True,
+                encoding="utf8",
             ).strip()
         except (OSError, subprocess.CalledProcessError):
             pass

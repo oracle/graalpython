@@ -351,6 +351,210 @@ SyntaxError: invalid syntax
 Traceback (most recent call last):
 SyntaxError: invalid syntax
 
+>>> def foo(/,a,b=,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: at least one argument must precede /
+
+>>> def foo(a,/,/,b,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> def foo(a,/,a1,/,b,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> def foo(a=1,/,/,*b,/,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> def foo(a,/,a1=1,/,b,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> def foo(a,*b,c,/,d,e):
+...    pass
+Traceback (most recent call last):
+SyntaxError: / must be ahead of *
+
+>>> def foo(a=1,*b,c=3,/,d,e):
+...    pass
+Traceback (most recent call last):
+SyntaxError: / must be ahead of *
+
+>>> def foo(a,*b=3,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: var-positional argument cannot have default value
+
+>>> def foo(a,*b: int=,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: var-positional argument cannot have default value
+
+>>> def foo(a,**b=3):
+...    pass
+Traceback (most recent call last):
+SyntaxError: var-keyword argument cannot have default value
+
+>>> def foo(a,**b: int=3):
+...    pass
+Traceback (most recent call last):
+SyntaxError: var-keyword argument cannot have default value
+
+>>> def foo(a,*a, b, **c, d):
+...    pass
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> def foo(a,*a, b, **c, d=4):
+...    pass
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> def foo(a,*a, b, **c, *d):
+...    pass
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> def foo(a,*a, b, **c, **d):
+...    pass
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> def foo(a=1,/,**b,/,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> def foo(*b,*d):
+...    pass
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> def foo(a,*b,c,*d,*e,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> def foo(a,b,/,c,*b,c,*d,*e,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> def foo(a,b,/,c,*b,c,*d,**e):
+...    pass
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> def foo(a=1,/*,b,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: expected comma between / and *
+
+>>> def foo(a=1,d=,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: expected default value expression
+
+>>> def foo(a,d=,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: expected default value expression
+
+>>> def foo(a,d: int=,c):
+...    pass
+Traceback (most recent call last):
+SyntaxError: expected default value expression
+
+>>> lambda /,a,b,c: None
+Traceback (most recent call last):
+SyntaxError: at least one argument must precede /
+
+>>> lambda a,/,/,b,c: None
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> lambda a,/,a1,/,b,c: None
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> lambda a=1,/,/,*b,/,c: None
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> lambda a,/,a1=1,/,b,c: None
+Traceback (most recent call last):
+SyntaxError: / may appear only once
+
+>>> lambda a,*b,c,/,d,e: None
+Traceback (most recent call last):
+SyntaxError: / must be ahead of *
+
+>>> lambda a=1,*b,c=3,/,d,e: None
+Traceback (most recent call last):
+SyntaxError: / must be ahead of *
+
+>>> lambda a=1,/*,b,c: None
+Traceback (most recent call last):
+SyntaxError: expected comma between / and *
+
+>>> lambda a,*b=3,c: None
+Traceback (most recent call last):
+SyntaxError: var-positional argument cannot have default value
+
+>>> lambda a,**b=3: None
+Traceback (most recent call last):
+SyntaxError: var-keyword argument cannot have default value
+
+>>> lambda a, *a, b, **c, d: None
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> lambda a,*a, b, **c, d=4: None
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> lambda a,*a, b, **c, *d: None
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> lambda a,*a, b, **c, **d: None
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> lambda a=1,/,**b,/,c: None
+Traceback (most recent call last):
+SyntaxError: arguments cannot follow var-keyword argument
+
+>>> lambda *b,*d: None
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> lambda a,*b,c,*d,*e,c: None
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> lambda a,b,/,c,*b,c,*d,*e,c: None
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> lambda a,b,/,c,*b,c,*d,**e: None
+Traceback (most recent call last):
+SyntaxError: * argument may appear only once
+
+>>> lambda a=1,d=,c: None
+Traceback (most recent call last):
+SyntaxError: expected default value expression
+
+>>> lambda a,d=,c: None
+Traceback (most recent call last):
+SyntaxError: expected default value expression
+
 >>> import ast; ast.parse('''
 ... def f(
 ...     *, # type: int
@@ -919,6 +1123,55 @@ Missing ':' before suites:
    Traceback (most recent call last):
    SyntaxError: cannot assign to attribute here. Maybe you meant '==' instead of '='?
 
+
+Missing parens after function definition
+
+   >>> def f:
+   Traceback (most recent call last):
+   SyntaxError: expected '('
+
+   >>> async def f:
+   Traceback (most recent call last):
+   SyntaxError: expected '('
+
+Parenthesized arguments in function definitions
+
+   >>> def f(x, (y, z), w):
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: Function parameters cannot be parenthesized
+
+   >>> def f((x, y, z, w)):
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: Function parameters cannot be parenthesized
+
+   >>> def f(x, (y, z, w)):
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: Function parameters cannot be parenthesized
+
+   >>> def f((x, y, z), w):
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: Function parameters cannot be parenthesized
+
+   >>> lambda x, (y, z), w: None
+   Traceback (most recent call last):
+   SyntaxError: Lambda expression parameters cannot be parenthesized
+
+   >>> lambda (x, y, z, w): None
+   Traceback (most recent call last):
+   SyntaxError: Lambda expression parameters cannot be parenthesized
+
+   >>> lambda x, (y, z, w): None
+   Traceback (most recent call last):
+   SyntaxError: Lambda expression parameters cannot be parenthesized
+
+   >>> lambda (x, y, z), w: None
+   Traceback (most recent call last):
+   SyntaxError: Lambda expression parameters cannot be parenthesized
+
 Custom error messages for try blocks that are not followed by except/finally
 
    >>> try:
@@ -926,6 +1179,48 @@ Custom error messages for try blocks that are not followed by except/finally
    ...
    Traceback (most recent call last):
    SyntaxError: expected 'except' or 'finally' block
+
+Custom error message for try block mixing except and except*
+
+   >>> try:
+   ...    pass
+   ... except TypeError:
+   ...    pass
+   ... except* ValueError:
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: cannot have both 'except' and 'except*' on the same 'try'
+
+   >>> try:
+   ...    pass
+   ... except* TypeError:
+   ...    pass
+   ... except ValueError:
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: cannot have both 'except' and 'except*' on the same 'try'
+
+   >>> try:
+   ...    pass
+   ... except TypeError:
+   ...    pass
+   ... except TypeError:
+   ...    pass
+   ... except* ValueError:
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: cannot have both 'except' and 'except*' on the same 'try'
+
+   >>> try:
+   ...    pass
+   ... except* TypeError:
+   ...    pass
+   ... except* TypeError:
+   ...    pass
+   ... except ValueError:
+   ...    pass
+   Traceback (most recent call last):
+   SyntaxError: cannot have both 'except' and 'except*' on the same 'try'
 
 Ensure that early = are not matched by the parser as invalid comparisons
    >>> f(2, 4, x=34); 1 $ 2
@@ -1059,7 +1354,23 @@ Specialized indentation errors:
 
    >>> try:
    ...     something()
+   ... except* A:
+   ... pass
+   Traceback (most recent call last):
+   IndentationError: expected an indented block after 'except*' statement on line 3
+
+   >>> try:
+   ...     something()
    ... except A:
+   ...     pass
+   ... finally:
+   ... pass
+   Traceback (most recent call last):
+   IndentationError: expected an indented block after 'finally' statement on line 5
+
+   >>> try:
+   ...     something()
+   ... except* A:
    ...     pass
    ... finally:
    ... pass
@@ -1167,6 +1478,48 @@ raise a custom exception
    ...   pass
    Traceback (most recent call last):
    SyntaxError: multiple exception types must be parenthesized
+
+
+   >>> try:
+   ...   pass
+   ... except* A, B:
+   ...   pass
+   Traceback (most recent call last):
+   SyntaxError: multiple exception types must be parenthesized
+
+   >>> try:
+   ...   pass
+   ... except* A, B, C:
+   ...   pass
+   Traceback (most recent call last):
+   SyntaxError: multiple exception types must be parenthesized
+
+   >>> try:
+   ...   pass
+   ... except* A, B, C as blech:
+   ...   pass
+   Traceback (most recent call last):
+   SyntaxError: multiple exception types must be parenthesized
+
+   >>> try:
+   ...   pass
+   ... except* A, B, C as blech:
+   ...   pass
+   ... finally:
+   ...   pass
+   Traceback (most recent call last):
+   SyntaxError: multiple exception types must be parenthesized
+
+Custom exception for 'except*' without an exception type
+
+   >>> try:
+   ...   pass
+   ... except* A as a:
+   ...   pass
+   ... except*:
+   ...   pass
+   Traceback (most recent call last):
+   SyntaxError: expected one or more exception types
 
 
 >>> f(a=23, a=234)
@@ -1307,9 +1660,188 @@ Corner-cases that used to crash:
     ...     ...
     Traceback (most recent call last):
     SyntaxError: positional patterns follow keyword patterns
+
+Uses of the star operator which should fail:
+
+A[:*b]
+
+    >>> A[:*b]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[:(*b)]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: cannot use starred expression here
+    >>> A[:*b] = 1
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> del A[:*b]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[*b:]
+
+    >>> A[*b:]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[(*b):]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: cannot use starred expression here
+    >>> A[*b:] = 1
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> del A[*b:]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[*b:*b]
+
+    >>> A[*b:*b]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[(*b:*b)]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[*b:*b] = 1
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> del A[*b:*b]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[*(1:2)]
+
+    >>> A[*(1:2)]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[*(1:2)] = 1
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> del A[*(1:2)]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[*:] and A[:*]
+
+    >>> A[*:]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[:*]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[*]
+
+    >>> A[*]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[**]
+
+    >>> A[**]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+A[**b]
+
+    >>> A[**b]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> A[**b] = 1
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> del A[**b]
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+def f(x: *b)
+
+    >>> def f6(x: *b): pass
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> def f7(x: *b = 1): pass
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+**kwargs: *a
+
+    >>> def f8(**kwargs: *a): pass
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+x: *b
+
+    >>> x: *b
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+    >>> x: *b = 1
+    Traceback (most recent call last):
+        ...
+    SyntaxError: invalid syntax
+
+Invalid bytes literals:
+
+   >>> b"Ā"
+   Traceback (most recent call last):
+      ...
+       b"Ā"
+        ^^^
+   SyntaxError: bytes can only contain ASCII literal characters
+
+   >>> b"абвгде"
+   Traceback (most recent call last):
+      ...
+       b"абвгде"
+        ^^^^^^^^
+   SyntaxError: bytes can only contain ASCII literal characters
+
+   >>> b"abc ъющый"  # first 3 letters are ascii
+   Traceback (most recent call last):
+      ...
+       b"abc ъющый"
+        ^^^^^^^^^^^
+   SyntaxError: bytes can only contain ASCII literal characters
+
+   >>> f(**x, *y)
+   Traceback (most recent call last):
+   SyntaxError: iterable argument unpacking follows keyword argument unpacking
+
+   >>> f(**x, *)
+   Traceback (most recent call last):
+   SyntaxError: iterable argument unpacking follows keyword argument unpacking
+
+   >>> f(x, *:)
+   Traceback (most recent call last):
+   SyntaxError: invalid syntax
 """
 
 import re
+import doctest
 import unittest
 
 from test import support
@@ -1492,6 +2024,16 @@ class SyntaxTestCase(unittest.TestCase):
                           "Generator expression must be parenthesized",
                           lineno=1, end_lineno=1, offset=11, end_offset=53)
 
+    def test_except_then_except_star(self):
+        self._check_error("try: pass\nexcept ValueError: pass\nexcept* TypeError: pass",
+                          r"cannot have both 'except' and 'except\*' on the same 'try'",
+                          lineno=3, end_lineno=3, offset=1, end_offset=8)
+
+    def test_except_star_then_except(self):
+        self._check_error("try: pass\nexcept* ValueError: pass\nexcept TypeError: pass",
+                          r"cannot have both 'except' and 'except\*' on the same 'try'",
+                          lineno=3, end_lineno=3, offset=1, end_offset=7)
+
     def test_empty_line_after_linecont(self):
         # See issue-40847
         s = r"""\
@@ -1519,7 +2061,8 @@ def fib(n):
     a, b = 0, 1
 """
         try:
-            self.assertEqual(compile(s1, '<string>', 'exec'), compile(s2, '<string>', 'exec'))
+            compile(s1, '<string>', 'exec')
+            compile(s2, '<string>', 'exec')
         except SyntaxError:
             self.fail("Indented statement over multiple lines is valid")
 
@@ -1600,12 +2143,20 @@ func(
 """
         self._check_error(code, "parenthesis '\\)' does not match opening parenthesis '\\['")
 
+        # Examples with dencodings
+        s = b'# coding=latin\n(aaaaaaaaaaaaaaaaa\naaaaaaaaaaa\xb5'
+        self._check_error(s, "'\(' was never closed")
+
     def test_error_string_literal(self):
 
         self._check_error("'blech", "unterminated string literal")
         self._check_error('"blech', "unterminated string literal")
         self._check_error("'''blech", "unterminated triple-quoted string literal")
         self._check_error('"""blech', "unterminated triple-quoted string literal")
+
+    def test_invisible_characters(self):
+        self._check_error('print\x17("Hello")', "invalid non-printable character")
+        self._check_error(b"with(0,,):\n\x01", "invalid non-printable character")
 
     def test_match_call_does_not_raise_syntax_error(self):
         code = """
@@ -1684,10 +2235,10 @@ while 1:
             compile(source, "<string>", "exec")
 
 
-def test_main():
-    support.run_unittest(SyntaxTestCase)
-    from test import test_syntax
-    support.run_doctest(test_syntax, verbosity=True)
+def load_tests(loader, tests, pattern):
+    tests.addTest(doctest.DocTestSuite())
+    return tests
+
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

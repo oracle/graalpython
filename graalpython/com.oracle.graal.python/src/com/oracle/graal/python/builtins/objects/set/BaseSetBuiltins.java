@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -88,7 +87,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -224,7 +223,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey getIterKey,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PyObjectGetStateNode getStateNode,
                         @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getDictStorage();
             int len = lenNode.execute(inliningTarget, storage);
@@ -236,11 +235,8 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 keysArray[i] = getIterKey.execute(inliningTarget, storage, it);
             }
             PTuple contents = factory.createTuple(new Object[]{factory.createList(keysArray)});
-            Object dict = lookup.execute(frame, inliningTarget, self, T___DICT__);
-            if (dict == PNone.NO_VALUE) {
-                dict = PNone.NONE;
-            }
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents, dict});
+            Object state = getStateNode.execute(frame, inliningTarget, self);
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents, state});
         }
     }
 

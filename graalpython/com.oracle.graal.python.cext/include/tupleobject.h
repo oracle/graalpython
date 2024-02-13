@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -41,7 +41,7 @@ PyAPI_FUNC(PyObject *) PyTuple_Pack(Py_ssize_t, ...);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_TUPLEOBJECT_H
-#  include  "cpython/tupleobject.h"
+#  include "cpython/tupleobject.h"
 #  undef Py_CPYTHON_TUPLEOBJECT_H
 #endif
 

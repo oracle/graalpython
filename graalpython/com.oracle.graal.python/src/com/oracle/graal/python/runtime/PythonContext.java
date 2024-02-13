@@ -130,6 +130,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -140,6 +142,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -196,6 +201,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
@@ -278,11 +284,14 @@ public final class PythonContext extends Python3Core {
 
         WeakReference<PLock> sentinelLock;
 
-        /* corresponds to 'PyThreadState.curexc_*' */
-        PException currentException;
+        /* corresponds to 'PyThreadState.curexc_value' */
+        private PException currentException;
 
-        /* corresponds to 'PyThreadState.exc_*' */
-        PException caughtException = PException.NO_EXCEPTION;
+        /* corresponds to 'PyThreadState.curexc_traceback' */
+        private LazyTraceback currentTraceback;
+
+        /* corresponds to 'PyThreadState.exc_info' */
+        private PException caughtException = PException.NO_EXCEPTION;
 
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
@@ -376,8 +385,48 @@ public final class PythonContext extends Python3Core {
             return currentException;
         }
 
+        public void clearCurrentException() {
+            this.currentException = null;
+            this.currentTraceback = null;
+        }
+
         public void setCurrentException(PException currentException) {
             this.currentException = currentException;
+            if (currentException.getEscapedException() instanceof PBaseException pythonException) {
+                this.currentTraceback = pythonException.getTraceback();
+            } else {
+                Object tb = ExceptionNodes.GetTracebackNode.executeUncached(currentException.getEscapedException());
+                this.currentTraceback = tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null;
+            }
+        }
+
+        public void setCurrentException(PException currentException, LazyTraceback currentTraceback) {
+            this.currentException = currentException;
+            this.currentTraceback = currentTraceback;
+        }
+
+        public PException reraiseCurrentException() {
+            syncTracebackToException();
+            PException exception = currentException.getExceptionForReraise(false);
+            clearCurrentException();
+            throw exception;
+        }
+
+        public void syncTracebackToException() {
+            if (currentException.getUnreifiedException() instanceof PBaseException pythonException) {
+                pythonException.setTraceback(currentTraceback);
+            } else {
+                PTraceback materialized = currentTraceback != null ? MaterializeLazyTracebackNode.executeUncached(currentTraceback) : null;
+                ExceptionNodes.SetTracebackNode.executeUncached(currentException.getUnreifiedException(), materialized != null ? materialized : PNone.NONE);
+            }
+        }
+
+        public LazyTraceback getCurrentTraceback() {
+            return currentTraceback;
+        }
+
+        public void setCurrentTraceback(LazyTraceback currentTraceback) {
+            this.currentTraceback = currentTraceback;
         }
 
         public PException getCaughtException() {
@@ -545,6 +594,10 @@ public final class PythonContext extends Python3Core {
 
         public abstract PythonThreadState execute(Node inliningTarget, PythonContext context);
 
+        public final PythonThreadState execute(Node inliningTarget) {
+            return execute(inliningTarget, null);
+        }
+
         public final PythonThreadState executeCached(PythonContext context) {
             return execute(this, context);
         }
@@ -553,36 +606,12 @@ public final class PythonContext extends Python3Core {
             return executeCached(null);
         }
 
-        public final void setCaughtExceptionCached(PythonContext context, PException exception) {
-            executeCached(context).caughtException = exception;
-        }
-
-        public final void setCaughtException(Node inliningTarget, PException exception) {
-            execute(inliningTarget, null).caughtException = exception;
-        }
-
-        public final PException getCurrentException(Node inliningTarget, PythonContext context) {
-            return execute(inliningTarget, context).currentException;
-        }
-
-        public final PException getCurrentException(Node inliningTarget) {
-            return execute(inliningTarget, null).currentException;
-        }
-
         public final void setTopFrameInfoCached(PythonContext context, PFrame.Reference topframeref) {
             executeCached(context).topframeref = topframeref;
         }
 
         public final void clearTopFrameInfoCached(PythonContext context) {
             executeCached(context).topframeref = null;
-        }
-
-        public final void setCurrentException(Node inliningTarget, PythonContext context, PException exception) {
-            execute(inliningTarget, context).currentException = exception;
-        }
-
-        public final void setCurrentException(Node inliningTarget, PException exception) {
-            execute(inliningTarget, null).currentException = exception;
         }
 
         @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
@@ -762,6 +791,9 @@ public final class PythonContext extends Python3Core {
     private int minIntBitLengthOverLimit;
     private static final double LOG2_10 = Math.log(10) / Math.log(2);
 
+    // Used by CPython tests to selectively enable or disable frozen modules.
+    private TriState overrideFrozenModules = TriState.UNDEFINED;
+
     // the full module name for package imports
     private TruffleString pyPackageContext;
 
@@ -769,9 +801,6 @@ public final class PythonContext extends Python3Core {
     private final PythonNativePointer nativeNull = new PythonNativePointer(null);
 
     public RootCallTarget signatureContainer;
-
-    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
-    }
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;
@@ -816,6 +845,14 @@ public final class PythonContext extends Python3Core {
     public void setIntMaxStrDigits(int intMaxStrDigits) {
         this.intMaxStrDigits = intMaxStrDigits;
         this.minIntBitLengthOverLimit = computeMinIntBitLengthOverLimit(intMaxStrDigits);
+    }
+
+    public TriState getOverrideFrozenModules() {
+        return overrideFrozenModules;
+    }
+
+    public void setOverrideFrozenModules(TriState overrideFrozenModules) {
+        this.overrideFrozenModules = overrideFrozenModules;
     }
 
     @TruffleBoundary
@@ -1373,18 +1410,6 @@ public final class PythonContext extends Python3Core {
         return out;
     }
 
-    public void setCurrentException(PythonLanguage language, PException e) {
-        getThreadState(language).currentException = e;
-    }
-
-    public PException getCurrentException(PythonLanguage lang) {
-        return getThreadState(lang).currentException;
-    }
-
-    public void setCaughtException(PythonLanguage lang, PException e) {
-        getThreadState(lang).caughtException = e;
-    }
-
     public PFrame.Reference peekTopFrameInfo(PythonLanguage lang) {
         return getThreadState(lang).topframeref;
     }
@@ -1508,7 +1533,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public void addSysPath0() {
-        if (!getOption(PythonOptions.IsolateFlag)) {
+        if (!getOption(PythonOptions.SafePathFlag)) {
             TruffleString path0 = computeSysPath0();
             if (path0 != null) {
                 PythonModule sys = lookupBuiltinModule(T_SYS);
@@ -1633,7 +1658,7 @@ public final class PythonContext extends Python3Core {
             patchPackagePaths(T_STD_LIB_PLACEHOLDER, getStdlibHome());
         }
 
-        applyToAllThreadStates(ts -> ts.currentException = null);
+        applyToAllThreadStates(ts -> ts.clearCurrentException());
         isInitialized = true;
     }
 

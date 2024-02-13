@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_LANGLE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
@@ -48,7 +50,7 @@ import java.io.InputStream;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFrozenModule {
-    private final TruffleString name;
+    private final TruffleString originalName;
     private final byte[] code;
     private final boolean isPackage;
 
@@ -64,12 +66,12 @@ public final class PythonFrozenModule {
         return null;
     }
 
-    public PythonFrozenModule(String symbol, String name, boolean isPackage) {
-        this(toTruffleStringUncached(name), getByteCode(symbol), isPackage);
+    public PythonFrozenModule(String symbol, String originalName, boolean isPackage) {
+        this(toTruffleStringUncached(originalName), getByteCode(symbol), isPackage);
     }
 
-    private PythonFrozenModule(TruffleString name, byte[] code, boolean isPackage) {
-        this.name = name;
+    private PythonFrozenModule(TruffleString originalName, byte[] code, boolean isPackage) {
+        this.originalName = originalName;
         this.code = code;
         this.isPackage = isPackage;
     }
@@ -78,12 +80,16 @@ public final class PythonFrozenModule {
         if (flag == isPackage) {
             return this;
         } else {
-            return new PythonFrozenModule(name, code, flag);
+            TruffleString origName = originalName;
+            if (isPackage) {
+                origName = T_LANGLE.concatUncached(originalName, TS_ENCODING, false);
+            }
+            return new PythonFrozenModule(origName, code, flag);
         }
     }
 
-    public TruffleString getName() {
-        return name;
+    public TruffleString getOriginalName() {
+        return originalName;
     }
 
     public byte[] getCode() {

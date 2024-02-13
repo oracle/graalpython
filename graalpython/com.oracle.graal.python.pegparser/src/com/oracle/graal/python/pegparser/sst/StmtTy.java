@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -380,6 +380,26 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] finalBody;   // nullable
 
         public Try(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+            super(sourceRange);
+            this.body = body;
+            this.handlers = handlers;
+            this.orElse = orElse;
+            this.finalBody = finalBody;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class TryStar extends StmtTy {
+        public final StmtTy[] body;   // nullable
+        public final ExceptHandlerTy[] handlers;   // nullable
+        public final StmtTy[] orElse;   // nullable
+        public final StmtTy[] finalBody;   // nullable
+
+        public TryStar(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
             super(sourceRange);
             this.body = body;
             this.handlers = handlers;

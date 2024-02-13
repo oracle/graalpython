@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,7 +97,7 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
             public Object execute(VirtualFrame frame) {
                 PythonContext context = PythonContext.get(this);
                 getThreadStateNode.setTopFrameInfoCached(context, PFrame.Reference.EMPTY);
-                getThreadStateNode.setCaughtExceptionCached(context, PException.NO_EXCEPTION);
+                getThreadStateNode.executeCached(context).setCaughtException(PException.NO_EXCEPTION);
 
                 Object callable = frame.getArguments()[0];
                 Object[] arguments = (Object[]) frame.getArguments()[1];
@@ -112,7 +112,7 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
                     throw e;
                 } finally {
                     getThreadStateNode.clearTopFrameInfoCached(context);
-                    getThreadStateNode.setCaughtExceptionCached(context, null);
+                    getThreadStateNode.executeCached(context).setCaughtException(null);
                 }
             }
 

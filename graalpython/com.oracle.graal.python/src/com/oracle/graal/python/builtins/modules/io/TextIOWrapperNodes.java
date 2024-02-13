@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -804,7 +804,7 @@ public abstract class TextIOWrapperNodes {
         @Specialization
         static void init(VirtualFrame frame, Node inliningTarget, PTextIO self, Object buffer, Object encodingArg,
                         TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
-                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetPreferredEncoding getPreferredEncoding,
+                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetEncodingNode getEncodingNode,
                         @Cached(inline = false) CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
                         @Cached SetEncoderNode setEncoderNode,
                         @Cached SetDecoderNode setDecoderNode,
@@ -847,7 +847,7 @@ public abstract class TextIOWrapperNodes {
             // TODO: find file encoding using system nl_langinfo
             if (encoding == null && !self.hasEncoding()) {
                 try {
-                    self.setEncoding(getPreferredEncoding.execute(frame));
+                    self.setEncoding(getEncodingNode.execute(frame));
                 } catch (Exception e) {
                     self.setEncoding(T_ASCII);
                 }

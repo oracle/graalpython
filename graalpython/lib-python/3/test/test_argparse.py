@@ -1,5 +1,7 @@
 # Author: Steven J. Bethard <steven.bethard@gmail.com>.
 
+import contextlib
+import functools
 import inspect
 import io
 import operator
@@ -11,6 +13,7 @@ import textwrap
 import tempfile
 import unittest
 import argparse
+import warnings
 
 from test.support import os_helper
 from unittest import mock
@@ -34,17 +37,46 @@ class StdIOBuffer(io.TextIOWrapper):
         return self.buffer.raw.getvalue().decode('utf-8')
 
 
+class StdStreamTest(unittest.TestCase):
+
+    def test_skip_invalid_stderr(self):
+        parser = argparse.ArgumentParser()
+        with (
+            contextlib.redirect_stderr(None),
+            mock.patch('argparse._sys.exit')
+        ):
+            parser.exit(status=0, message='foo')
+
+    def test_skip_invalid_stdout(self):
+        parser = argparse.ArgumentParser()
+        for func in (
+            parser.print_usage,
+            parser.print_help,
+            functools.partial(parser.parse_args, ['-h'])
+        ):
+            with (
+                self.subTest(func=func),
+                contextlib.redirect_stdout(None),
+                # argparse uses stderr as a fallback
+                StdIOBuffer() as mocked_stderr,
+                contextlib.redirect_stderr(mocked_stderr),
+                mock.patch('argparse._sys.exit'),
+            ):
+                func()
+                self.assertRegex(mocked_stderr.getvalue(), r'usage:')
+
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
         # The tests assume that line wrapping occurs at 80 columns, but this
         # behaviour can be overridden by setting the COLUMNS environment
         # variable.  To ensure that this width is used, set COLUMNS to 80.
-        env = os_helper.EnvironmentVarGuard()
+        env = self.enterContext(os_helper.EnvironmentVarGuard())
         env['COLUMNS'] = '80'
-        self.addCleanup(env.__exit__)
 
 
+@os_helper.skip_unless_working_chmod
 class TempDirMixin(object):
 
     def setUp(self):
@@ -766,6 +798,25 @@ class TestOptionalsActionAppendWithDefault(ParserTestCase):
         ('', NS(baz=['X'])),
         ('--baz a', NS(baz=['X', 'a'])),
         ('--baz a --baz b', NS(baz=['X', 'a', 'b'])),
+    ]
+
+
+class TestConstActionsMissingConstKwarg(ParserTestCase):
+    """Tests that const gets default value of None when not provided"""
+
+    argument_signatures = [
+        Sig('-f', action='append_const'),
+        Sig('--foo', action='append_const'),
+        Sig('-b', action='store_const'),
+        Sig('--bar', action='store_const')
+    ]
+    failures = ['-f v', '--foo=bar', '--foo bar']
+    successes = [
+        ('', NS(f=None, foo=None, b=None, bar=None)),
+        ('-f', NS(f=[None], foo=None, b=None, bar=None)),
+        ('--foo', NS(f=None, foo=[None], b=None, bar=None)),
+        ('-b', NS(f=None, foo=None, b=None, bar=None)),
+        ('--bar', NS(f=None, foo=None, b=None, bar=None)),
     ]
 
 
@@ -1703,8 +1754,7 @@ class WFile(object):
         return self.name == other.name
 
 
-@unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                 "non-root user required")
+@os_helper.skip_if_dac_override
 class TestFileTypeW(TempDirMixin, ParserTestCase):
     """Test the FileType option/argument type for writing files"""
 
@@ -1726,8 +1776,8 @@ class TestFileTypeW(TempDirMixin, ParserTestCase):
         ('-x - -', NS(x=eq_stdout, spam=eq_stdout)),
     ]
 
-@unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                 "non-root user required")
+
+@os_helper.skip_if_dac_override
 class TestFileTypeX(TempDirMixin, ParserTestCase):
     """Test the FileType option/argument type for writing new files only"""
 
@@ -1747,8 +1797,7 @@ class TestFileTypeX(TempDirMixin, ParserTestCase):
     ]
 
 
-@unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                 "non-root user required")
+@os_helper.skip_if_dac_override
 class TestFileTypeWB(TempDirMixin, ParserTestCase):
     """Test the FileType option/argument type for writing binary files"""
 
@@ -1765,8 +1814,7 @@ class TestFileTypeWB(TempDirMixin, ParserTestCase):
     ]
 
 
-@unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                 "non-root user required")
+@os_helper.skip_if_dac_override
 class TestFileTypeXB(TestFileTypeX):
     "Test the FileType option/argument type for writing new binary files only"
 
@@ -2245,8 +2293,7 @@ class TestAddSubparsers(TestCase):
             main description
 
             positional arguments:
-              foo         
-
+              foo         \n
             options:
               -h, --help  show this help message and exit
         '''))
@@ -2262,8 +2309,7 @@ class TestAddSubparsers(TestCase):
             main description
 
             positional arguments:
-              {}          
-
+              {}          \n
             options:
               -h, --help  show this help message and exit
         '''))
@@ -3041,15 +3087,24 @@ class TestMutuallyExclusiveOptionalsAndPositionalsMixed(MEMixin, TestCase):
 
 class TestMutuallyExclusiveNested(MEMixin, TestCase):
 
+    # Nesting mutually exclusive groups is an undocumented feature
+    # that came about by accident through inheritance and has been
+    # the source of many bugs. It is deprecated and this test should
+    # eventually be removed along with it.
+
     def get_parser(self, required):
         parser = ErrorRaisingArgumentParser(prog='PROG')
         group = parser.add_mutually_exclusive_group(required=required)
         group.add_argument('-a')
         group.add_argument('-b')
-        group2 = group.add_mutually_exclusive_group(required=required)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            group2 = group.add_mutually_exclusive_group(required=required)
         group2.add_argument('-c')
         group2.add_argument('-d')
-        group3 = group2.add_mutually_exclusive_group(required=required)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            group3 = group2.add_mutually_exclusive_group(required=required)
         group3.add_argument('-e')
         group3.add_argument('-f')
         return parser
@@ -3321,6 +3376,7 @@ class TestHelpFormattingMetaclass(type):
             def _test(self, tester, parser_text):
                 expected_text = getattr(tester, self.func_suffix)
                 expected_text = textwrap.dedent(expected_text)
+                tester.maxDiff = None
                 tester.assertEqual(expected_text, parser_text)
 
             def test_format(self, tester):
@@ -3400,9 +3456,8 @@ class TestShortColumns(HelpTestCase):
     but we don't want any exceptions thrown in such cases. Only ugly representation.
     '''
     def setUp(self):
-        env = os_helper.EnvironmentVarGuard()
+        env = self.enterContext(os_helper.EnvironmentVarGuard())
         env.set("COLUMNS", '15')
-        self.addCleanup(env.__exit__)
 
     parser_signature            = TestHelpBiggerOptionals.parser_signature
     argument_signatures         = TestHelpBiggerOptionals.argument_signatures
@@ -3716,7 +3771,7 @@ class TestHelpUsage(HelpTestCase):
           -w W [W ...]          w
           -x [X ...]            x
           --foo, --no-foo       Whether to foo
-          --bar, --no-bar       Whether to bar (default: True)
+          --bar, --no-bar       Whether to bar
           -f, --foobar, --no-foobar, --barfoo, --no-barfoo
           --bazz, --no-bazz     Bazz!
 
@@ -4418,6 +4473,8 @@ class TestHelpArgumentDefaults(HelpTestCase):
         Sig('--bar', action='store_true', help='bar help'),
         Sig('--taz', action=argparse.BooleanOptionalAction,
             help='Whether to taz it', default=True),
+        Sig('--corge', action=argparse.BooleanOptionalAction,
+            help='Whether to corge it', default=argparse.SUPPRESS),
         Sig('--quux', help="Set the quux", default=42),
         Sig('spam', help='spam help'),
         Sig('badger', nargs='?', default='wooden', help='badger help'),
@@ -4427,8 +4484,8 @@ class TestHelpArgumentDefaults(HelpTestCase):
          [Sig('--baz', type=int, default=42, help='baz help')]),
     ]
     usage = '''\
-        usage: PROG [-h] [--foo FOO] [--bar] [--taz | --no-taz] [--quux QUUX]
-                    [--baz BAZ]
+        usage: PROG [-h] [--foo FOO] [--bar] [--taz | --no-taz] [--corge | --no-corge]
+                    [--quux QUUX] [--baz BAZ]
                     spam [badger]
         '''
     help = usage + '''\
@@ -4436,20 +4493,21 @@ class TestHelpArgumentDefaults(HelpTestCase):
         description
 
         positional arguments:
-          spam             spam help
-          badger           badger help (default: wooden)
+          spam                 spam help
+          badger               badger help (default: wooden)
 
         options:
-          -h, --help       show this help message and exit
-          --foo FOO        foo help - oh and by the way, None
-          --bar            bar help (default: False)
-          --taz, --no-taz  Whether to taz it (default: True)
-          --quux QUUX      Set the quux (default: 42)
+          -h, --help           show this help message and exit
+          --foo FOO            foo help - oh and by the way, None
+          --bar                bar help (default: False)
+          --taz, --no-taz      Whether to taz it (default: True)
+          --corge, --no-corge  Whether to corge it
+          --quux QUUX          Set the quux (default: 42)
 
         title:
           description
 
-          --baz BAZ        baz help (default: 42)
+          --baz BAZ            baz help (default: 42)
         '''
     version = ''
 
@@ -4798,6 +4856,19 @@ class TestConflictHandling(TestCase):
               -x X             NEW X
               --spam NEW_SPAM
             '''))
+
+    def test_subparser_conflict(self):
+        parser = argparse.ArgumentParser()
+        sp = parser.add_subparsers()
+        sp.add_parser('fullname', aliases=['alias'])
+        self.assertRaises(argparse.ArgumentError,
+                          sp.add_parser, 'fullname')
+        self.assertRaises(argparse.ArgumentError,
+                          sp.add_parser, 'alias')
+        self.assertRaises(argparse.ArgumentError,
+                          sp.add_parser, 'other', aliases=['fullname'])
+        self.assertRaises(argparse.ArgumentError,
+                          sp.add_parser, 'other', aliases=['alias'])
 
 
 # =============================

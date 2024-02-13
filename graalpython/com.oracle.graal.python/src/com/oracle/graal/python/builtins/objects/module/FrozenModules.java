@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -188,7 +188,11 @@ public final class FrozenModules {
         private static final PythonFrozenModule COLLECTIONS_ABC = new PythonFrozenModule("COLLECTIONS_ABC", "collections.abc", false);
         private static final PythonFrozenModule FUNCTOOLS = new PythonFrozenModule("FUNCTOOLS", "functools", false);
         private static final PythonFrozenModule COPYREG = new PythonFrozenModule("COPYREG", "copyreg", false);
-        private static final PythonFrozenModule RE = new PythonFrozenModule("RE", "re", false);
+        private static final PythonFrozenModule RE = new PythonFrozenModule("RE", "re", true);
+        private static final PythonFrozenModule RE__CASEFIX = new PythonFrozenModule("RE__CASEFIX", "re._casefix", false);
+        private static final PythonFrozenModule RE__COMPILER = new PythonFrozenModule("RE__COMPILER", "re._compiler", false);
+        private static final PythonFrozenModule RE__CONSTANTS = new PythonFrozenModule("RE__CONSTANTS", "re._constants", false);
+        private static final PythonFrozenModule RE__PARSER = new PythonFrozenModule("RE__PARSER", "re._parser", false);
         private static final PythonFrozenModule LOCALE = new PythonFrozenModule("LOCALE", "locale", false);
         private static final PythonFrozenModule RLCOMPLETER = new PythonFrozenModule("RLCOMPLETER", "rlcompleter", false);
         private static final PythonFrozenModule _COLLECTIONS_ABC = new PythonFrozenModule("_COLLECTIONS_ABC", "_collections_abc", false);
@@ -203,21 +207,28 @@ public final class FrozenModules {
         private static final PythonFrozenModule CONTEXTLIB = new PythonFrozenModule("CONTEXTLIB", "contextlib", false);
         private static final PythonFrozenModule WARNINGS = new PythonFrozenModule("WARNINGS", "warnings", false);
         private static final PythonFrozenModule INSPECT = new PythonFrozenModule("INSPECT", "inspect", false);
+        private static final PythonFrozenModule IMPORTLIB_UTIL = new PythonFrozenModule("IMPORTLIB_UTIL", "importlib.util", false);
+        private static final PythonFrozenModule IMPORTLIB_MACHINERY = new PythonFrozenModule("IMPORTLIB_MACHINERY", "importlib.machinery", false);
+        private static final PythonFrozenModule RUNPY = new PythonFrozenModule("RUNPY", "runpy", false);
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
-        private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
-        private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
-        private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", "graalpy.__graalpython__", false);
-        private static final PythonFrozenModule GRAALPY__INTEROP_BEHAVIOR = new PythonFrozenModule("GRAALPY__INTEROP_BEHAVIOR", "graalpy._interop_behavior", false);
-        private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", "graalpy._sre", false);
-        private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", "graalpy._struct", false);
-        private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", "graalpy._sysconfig", false);
-        private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", "graalpy._weakref", false);
-        private static final PythonFrozenModule GRAALPY_BUILTINS = new PythonFrozenModule("GRAALPY_BUILTINS", "graalpy.builtins", false);
-        private static final PythonFrozenModule GRAALPY_FUNCTION = new PythonFrozenModule("GRAALPY_FUNCTION", "graalpy.function", false);
-        private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", "graalpy.java", false);
-        private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", "graalpy.pip_hook", false);
-        private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", "graalpy.unicodedata", false);
-        private static final PythonFrozenModule GRAALPY_SULONG_SUPPORT = new PythonFrozenModule("GRAALPY_SULONG_SUPPORT", "graalpy.sulong_support", false);
+        private static final PythonFrozenModule __PHELLO__ = new PythonFrozenModule("__PHELLO__", "__phello__", true);
+        private static final PythonFrozenModule __PHELLO___HAM = new PythonFrozenModule("__PHELLO___HAM", "__phello__.ham", true);
+        private static final PythonFrozenModule __PHELLO___HAM_EGGS = new PythonFrozenModule("__PHELLO___HAM_EGGS", "__phello__.ham.eggs", false);
+        private static final PythonFrozenModule __PHELLO___SPAM = new PythonFrozenModule("__PHELLO___SPAM", "__phello__.spam", false);
+        private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", null, false);
+        private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", null, false);
+        private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
+        private static final PythonFrozenModule GRAALPY__INTEROP_BEHAVIOR = new PythonFrozenModule("GRAALPY__INTEROP_BEHAVIOR", null, false);
+        private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", null, false);
+        private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", null, false);
+        private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", null, false);
+        private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", null, false);
+        private static final PythonFrozenModule GRAALPY_BUILTINS = new PythonFrozenModule("GRAALPY_BUILTINS", null, false);
+        private static final PythonFrozenModule GRAALPY_FUNCTION = new PythonFrozenModule("GRAALPY_FUNCTION", null, false);
+        private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", null, false);
+        private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", null, false);
+        private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", null, false);
+        private static final PythonFrozenModule GRAALPY_SULONG_SUPPORT = new PythonFrozenModule("GRAALPY_SULONG_SUPPORT", null, false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -514,6 +525,16 @@ public final class FrozenModules {
                 return Map.COPYREG;
             case "re":
                 return Map.RE;
+            case "re.__init__":
+                return Map.RE.asPackage(false);
+            case "re._casefix":
+                return Map.RE__CASEFIX;
+            case "re._compiler":
+                return Map.RE__COMPILER;
+            case "re._constants":
+                return Map.RE__CONSTANTS;
+            case "re._parser":
+                return Map.RE__PARSER;
             case "locale":
                 return Map.LOCALE;
             case "rlcompleter":
@@ -544,6 +565,12 @@ public final class FrozenModules {
                 return Map.WARNINGS;
             case "inspect":
                 return Map.INSPECT;
+            case "importlib.util":
+                return Map.IMPORTLIB_UTIL;
+            case "importlib.machinery":
+                return Map.IMPORTLIB_MACHINERY;
+            case "runpy":
+                return Map.RUNPY;
             case "__hello__":
                 return Map.__HELLO__;
             case "__hello_alias__":
@@ -553,9 +580,17 @@ public final class FrozenModules {
             case "__phello_alias__.spam":
                 return Map.__HELLO__;
             case "__phello__":
-                return Map.__HELLO__.asPackage(true);
+                return Map.__PHELLO__;
+            case "__phello__.__init__":
+                return Map.__PHELLO__.asPackage(false);
+            case "__phello__.ham":
+                return Map.__PHELLO___HAM;
+            case "__phello__.ham.__init__":
+                return Map.__PHELLO___HAM.asPackage(false);
+            case "__phello__.ham.eggs":
+                return Map.__PHELLO___HAM_EGGS;
             case "__phello__.spam":
-                return Map.__HELLO__;
+                return Map.__PHELLO___SPAM;
             case "__hello_only__":
                 return Map.FROZEN_ONLY;
             case "_sysconfigdata":

@@ -49,6 +49,9 @@ except:
 if support.PGO:
     raise unittest.SkipTest("test is not helpful for PGO")
 
+if not support.has_subprocess_support:
+    raise unittest.SkipTest("test module requires subprocess")
+
 mswindows = (sys.platform == "win32")
 
 #
@@ -172,6 +175,14 @@ class ProcessTestCase(BaseTestCase):
                 [sys.executable, "-c", "print('BDFL')"])
         self.assertIn(b'BDFL', output)
 
+        with self.assertRaisesRegex(ValueError,
+                "stdout argument not allowed, it will be overridden"):
+            subprocess.check_output([], stdout=None)
+
+        with self.assertRaisesRegex(ValueError,
+                "check argument not allowed, it will be overridden"):
+            subprocess.check_output([], check=False)
+
     def test_check_output_nonzero(self):
         # check_call() function with non-zero return code
         with self.assertRaises(subprocess.CalledProcessError) as c:
@@ -258,6 +269,7 @@ class ProcessTestCase(BaseTestCase):
         self.assertIn('input', c.exception.args[0])
 
     @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
+    @support.requires_resource('walltime')
     def test_check_output_timeout(self):
         # check_output() function with timeout arg
         with self.assertRaises(subprocess.TimeoutExpired) as c:
@@ -269,8 +281,7 @@ class ProcessTestCase(BaseTestCase):
                      "time.sleep(3600)"],
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
-                    # Graalpython: increased timeout for jvm launcher startup
-                    timeout=20)
+                    timeout=3)
             self.fail("Expected TimeoutExpired.")
         self.assertEqual(c.exception.output, b'BDFL')
 
@@ -728,6 +739,8 @@ class ProcessTestCase(BaseTestCase):
             # However, this function is not yet in _winapi.
             p.stdin.write(b"pear")
             p.stdin.close()
+            p.stdout.close()
+            p.stderr.close()
         finally:
             p.kill()
             p.wait()
@@ -735,29 +748,36 @@ class ProcessTestCase(BaseTestCase):
     @unittest.skipUnless(fcntl and hasattr(fcntl, 'F_GETPIPE_SZ'),
                          'fcntl.F_GETPIPE_SZ required for test.')
     def test_pipesize_default(self):
-        p = subprocess.Popen(
+        proc = subprocess.Popen(
             [sys.executable, "-c",
              'import sys; sys.stdin.read(); sys.stdout.write("out"); '
              'sys.stderr.write("error!")'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, pipesize=-1)
-        try:
-            fp_r, fp_w = os.pipe()
+
+        with proc:
             try:
-                default_pipesize = fcntl.fcntl(fp_w, fcntl.F_GETPIPE_SZ)
-                for fifo in [p.stdin, p.stdout, p.stderr]:
-                    self.assertEqual(
-                        fcntl.fcntl(fifo.fileno(), fcntl.F_GETPIPE_SZ),
-                        default_pipesize)
+                fp_r, fp_w = os.pipe()
+                try:
+                    default_read_pipesize = fcntl.fcntl(fp_r, fcntl.F_GETPIPE_SZ)
+                    default_write_pipesize = fcntl.fcntl(fp_w, fcntl.F_GETPIPE_SZ)
+                finally:
+                    os.close(fp_r)
+                    os.close(fp_w)
+
+                self.assertEqual(
+                    fcntl.fcntl(proc.stdin.fileno(), fcntl.F_GETPIPE_SZ),
+                    default_read_pipesize)
+                self.assertEqual(
+                    fcntl.fcntl(proc.stdout.fileno(), fcntl.F_GETPIPE_SZ),
+                    default_write_pipesize)
+                self.assertEqual(
+                    fcntl.fcntl(proc.stderr.fileno(), fcntl.F_GETPIPE_SZ),
+                    default_write_pipesize)
+                # On other platforms we cannot test the pipe size (yet). But above
+                # code using pipesize=-1 should not crash.
             finally:
-                os.close(fp_r)
-                os.close(fp_w)
-            # On other platforms we cannot test the pipe size (yet). But above
-            # code using pipesize=-1 should not crash.
-            p.stdin.close()
-        finally:
-            p.kill()
-            p.wait()
+                proc.kill()
 
     def test_env(self):
         newenv = os.environ.copy()
@@ -1282,6 +1302,7 @@ class ProcessTestCase(BaseTestCase):
         with self.assertWarnsRegex(RuntimeWarning, 'line buffering'):
             self._test_bufsize_equal_one(line, b'', universal_newlines=False)
 
+    @support.requires_resource('cpu')
     def test_leaking_fds_on_error(self):
         # see bug #5179: Popen leaks file descriptors to PIPEs if
         # the child fails to execute; this will eventually exhaust
@@ -1544,6 +1565,22 @@ class ProcessTestCase(BaseTestCase):
         self.assertIsInstance(subprocess.Popen[bytes], types.GenericAlias)
         self.assertIsInstance(subprocess.CompletedProcess[str], types.GenericAlias)
 
+    @unittest.skipIf(not sysconfig.get_config_var("HAVE_VFORK"),
+                     "vfork() not enabled by configure.")
+    @mock.patch("subprocess._fork_exec")
+    def test__use_vfork(self, mock_fork_exec):
+        self.assertTrue(subprocess._USE_VFORK)  # The default value regardless.
+        mock_fork_exec.side_effect = RuntimeError("just testing args")
+        with self.assertRaises(RuntimeError):
+            subprocess.run([sys.executable, "-c", "pass"])
+        mock_fork_exec.assert_called_once()
+        self.assertTrue(mock_fork_exec.call_args.args[-1])
+        with mock.patch.object(subprocess, '_USE_VFORK', False):
+            with self.assertRaises(RuntimeError):
+                subprocess.run([sys.executable, "-c", "pass"])
+            self.assertFalse(mock_fork_exec.call_args_list[-1].args[-1])
+
+
 class RunFuncTestCase(BaseTestCase):
     def run_python(self, code, **kwargs):
         """Run Python code in a subprocess using subprocess.run"""
@@ -1617,6 +1654,7 @@ class RunFuncTestCase(BaseTestCase):
         self.assertIn('input', c.exception.args[0])
 
     @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
+    @support.requires_resource('walltime')
     def test_check_output_timeout(self):
         with self.assertRaises(subprocess.TimeoutExpired) as c:
             cp = self.run_python((
@@ -1626,8 +1664,7 @@ class RunFuncTestCase(BaseTestCase):
                      "time.sleep(3600)"),
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
-                    # Graalpython: increased timeout for jvm launcher startup
-                    timeout=20, stdout=subprocess.PIPE)
+                    timeout=3, stdout=subprocess.PIPE)
         self.assertEqual(c.exception.output, b'BDFL')
         # output is aliased to stdout
         self.assertEqual(c.exception.stdout, b'BDFL')
@@ -1667,6 +1704,14 @@ class RunFuncTestCase(BaseTestCase):
         args = [path, '-c', 'import sys; sys.exit(57)']
         res = subprocess.run(args)
         self.assertEqual(res.returncode, 57)
+
+    @unittest.skipUnless(mswindows, "Maybe test trigger a leak on Ubuntu")
+    def test_run_with_an_empty_env(self):
+        # gh-105436: fix subprocess.run(..., env={}) broken on Windows
+        args = [sys.executable, "-c", 'pass']
+        # Ignore subprocess errors - we only care that the API doesn't
+        # raise an OSError
+        subprocess.run(args, env={})
 
     def test_capture_output(self):
         cp = self.run_python(("import sys;"
@@ -1721,27 +1766,18 @@ class RunFuncTestCase(BaseTestCase):
                         msg="TimeoutExpired was delayed! Bad traceback:\n```\n"
                         f"{stacks}```")
 
-    @unittest.skipIf(not sysconfig.get_config_var("HAVE_VFORK"),
-                     "vfork() not enabled by configure.")
-    def test__use_vfork(self):
-        # Attempts code coverage within _posixsubprocess.c on the code that
-        # probes the subprocess module for the existence and value of this
-        # attribute in 3.10.5.
-        self.assertTrue(subprocess._USE_VFORK)  # The default value regardless.
-        with mock.patch.object(subprocess, "_USE_VFORK", False):
-            self.assertEqual(self.run_python("pass").returncode, 0,
-                             msg="False _USE_VFORK failed")
-
-        class RaisingBool:
-            def __bool__(self):
-                raise RuntimeError("force PyObject_IsTrue to return -1")
-
-        with mock.patch.object(subprocess, "_USE_VFORK", RaisingBool()):
-            self.assertEqual(self.run_python("pass").returncode, 0,
-                             msg="odd bool()-error _USE_VFORK failed")
-            del subprocess._USE_VFORK
-            self.assertEqual(self.run_python("pass").returncode, 0,
-                             msg="lack of a _USE_VFORK attribute failed")
+    def test_encoding_warning(self):
+        code = textwrap.dedent("""\
+            from subprocess import *
+            run("echo hello", shell=True, text=True)
+            check_output("echo hello", shell=True, text=True)
+            """)
+        cp = subprocess.run([sys.executable, "-Xwarn_default_encoding", "-c", code],
+                            capture_output=True)
+        lines = cp.stderr.splitlines()
+        self.assertEqual(len(lines), 2, lines)
+        self.assertTrue(lines[0].startswith(b"<string>:2: EncodingWarning: "))
+        self.assertTrue(lines[1].startswith(b"<string>:3: EncodingWarning: "))
 
 
 def _get_test_grp_name():
@@ -1831,7 +1867,7 @@ class POSIXProcessTestCase(BaseTestCase):
         def __del__(self):
             pass
 
-    @mock.patch("subprocess._posixsubprocess.fork_exec")
+    @mock.patch("subprocess._fork_exec")
     def test_exception_errpipe_normal(self, fork_exec):
         """Test error passing done through errpipe_write in the good case"""
         def proper_error(*args):
@@ -1848,7 +1884,7 @@ class POSIXProcessTestCase(BaseTestCase):
             with self.assertRaises(IsADirectoryError):
                 self.PopenNoDestructor(["non_existent_command"])
 
-    @mock.patch("subprocess._posixsubprocess.fork_exec")
+    @mock.patch("subprocess._fork_exec")
     def test_exception_errpipe_bad_data(self, fork_exec):
         """Test error passing done through errpipe_write where its not
         in the expected format"""
@@ -1902,13 +1938,31 @@ class POSIXProcessTestCase(BaseTestCase):
             output = subprocess.check_output(
                     [sys.executable, "-c", "import os; print(os.getsid(0))"],
                     start_new_session=True)
-        except OSError as e:
+        except PermissionError as e:
             if e.errno != errno.EPERM:
-                raise
+                raise  # EACCES?
         else:
             parent_sid = os.getsid(0)
             child_sid = int(output)
             self.assertNotEqual(parent_sid, child_sid)
+
+    @unittest.skipUnless(hasattr(os, 'setpgid') and hasattr(os, 'getpgid'),
+                         'no setpgid or getpgid on platform')
+    def test_process_group_0(self):
+        # For code coverage of calling setpgid().  We don't care if we get an
+        # EPERM error from it depending on the test execution environment, that
+        # still indicates that it was called.
+        try:
+            output = subprocess.check_output(
+                    [sys.executable, "-c", "import os; print(os.getpgid(0))"],
+                    process_group=0)
+        except PermissionError as e:
+            if e.errno != errno.EPERM:
+                raise  # EACCES?
+        else:
+            parent_pgid = os.getpgid(0)
+            child_pgid = int(output)
+            self.assertNotEqual(parent_pgid, child_pgid)
 
     @unittest.skipUnless(hasattr(os, 'setreuid'), 'no setreuid on platform')
     def test_user(self):
@@ -2140,7 +2194,7 @@ class POSIXProcessTestCase(BaseTestCase):
                                  preexec_fn=raise_it)
         except subprocess.SubprocessError as e:
             self.assertTrue(
-                    subprocess._posixsubprocess,
+                    subprocess._fork_exec,
                     "Expected a ValueError from the preexec_fn")
         except ValueError as e:
             self.assertIn("coconut", e.args[0])
@@ -2631,11 +2685,11 @@ class POSIXProcessTestCase(BaseTestCase):
                 preexec_fn=prepare)
         except ValueError as err:
             # Pure Python implementations keeps the message
-            self.assertIsNone(subprocess._posixsubprocess)
+            self.assertIsNone(subprocess._fork_exec)
             self.assertEqual(str(err), "surrogate:\uDCff")
         except subprocess.SubprocessError as err:
             # _posixsubprocess uses a default message
-            self.assertIsNotNone(subprocess._posixsubprocess)
+            self.assertIsNotNone(subprocess._fork_exec)
             self.assertEqual(str(err), "Exception occurred in preexec_fn.")
         else:
             self.fail("Expected ValueError or subprocess.SubprocessError")
@@ -2814,7 +2868,7 @@ class POSIXProcessTestCase(BaseTestCase):
     @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     @unittest.skipIf(sys.platform.startswith("freebsd") and
                      os.stat("/dev").st_dev == os.stat("/dev/fd").st_dev,
-                     "Requires fdescfs mounted on /dev/fd on FreeBSD.")
+                     "Requires fdescfs mounted on /dev/fd on FreeBSD")
     def test_close_fds_when_max_fd_is_lowered(self):
         """Confirm that issue21618 is fixed (may fail under valgrind)."""
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
@@ -3146,9 +3200,9 @@ class POSIXProcessTestCase(BaseTestCase):
                         True, (), cwd, env_list,
                         -1, -1, -1, -1,
                         1, 2, 3, 4,
-                        True, True,
+                        True, True, 0,
                         False, [], 0, -1,
-                        func)
+                        func, False)
                 # Attempt to prevent
                 # "TypeError: fork_exec() takes exactly N arguments (M given)"
                 # from passing the test.  More refactoring to have us start
@@ -3195,9 +3249,9 @@ class POSIXProcessTestCase(BaseTestCase):
                         True, fds_to_keep, None, [b"env"],
                         -1, -1, -1, -1,
                         1, 2, 3, 4,
-                        True, True,
+                        True, True, 0,
                         None, None, None, -1,
-                        None)
+                        None, True)
                 self.assertIn('fds_to_keep', str(c.exception))
         finally:
             if not gc_enabled:
@@ -3300,6 +3354,7 @@ class POSIXProcessTestCase(BaseTestCase):
         with mock.patch.object(p, 'poll', new=lambda: None):
             p.returncode = None
             p.send_signal(signal.SIGTERM)
+        p.kill()
 
     def test_communicate_repeated_call_after_stdout_close(self):
         proc = subprocess.Popen([sys.executable, '-c',

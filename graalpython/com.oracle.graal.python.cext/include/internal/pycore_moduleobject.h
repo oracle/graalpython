@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,16 +16,24 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     PyObject *md_dict;
-    struct PyModuleDef *md_def;
+    PyModuleDef *md_def;
     void *md_state;
     PyObject *md_weaklist;
     // for logging purposes after md_dict is cleared
     PyObject *md_name;
 } PyModuleObject;
 
-PyAPI_FUNC(PyModuleDef*) _PyModule_GetDef(PyObject *mod);
-PyAPI_FUNC(void*) _PyModule_GetState(PyObject* mod);
-PyAPI_FUNC(PyObject*) _PyModule_GetDict(PyObject *mod);
+static inline PyModuleDef* _PyModule_GetDef(PyObject *mod) {
+    return PyModule_GetDef(mod);
+}
+
+static inline void* _PyModule_GetState(PyObject* mod) {
+    return PyModule_GetState(mod);
+}
+
+static inline PyObject* _PyModule_GetDict(PyObject *mod) {
+    return PyModule_GetDict(mod);
+}
 
 #ifdef __cplusplus
 }

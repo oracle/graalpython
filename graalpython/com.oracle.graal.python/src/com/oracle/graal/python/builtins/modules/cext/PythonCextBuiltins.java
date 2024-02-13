@@ -560,6 +560,26 @@ public final class PythonCextBuiltins {
         }
     }
 
+    public abstract static class CApi17BuiltinNode extends CApiBuiltinNode {
+        public abstract Object execute(Object arg0, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6, Object arg7, Object arg8, Object arg9, Object arg10, Object arg11,
+                        Object arg12, Object arg13, Object arg14, Object arg15, Object arg16);
+
+        @Override
+        public final Object execute(Object[] args) {
+            return execute(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16]);
+        }
+    }
+
+    public abstract static class CApi18BuiltinNode extends CApiBuiltinNode {
+        public abstract Object execute(Object arg0, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6, Object arg7, Object arg8, Object arg9, Object arg10, Object arg11,
+                        Object arg12, Object arg13, Object arg14, Object arg15, Object arg16, Object arg17);
+
+        @Override
+        public final Object execute(Object[] args) {
+            return execute(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17]);
+        }
+    }
+
     @ExportLibrary(InteropLibrary.class)
     public static final class CApiBuiltinExecutable implements TruffleObject {
 
@@ -1439,18 +1459,6 @@ public final class PythonCextBuiltins {
 
         int lookupDomain(int domain) {
             return getCApiContext().findOrCreateTraceMallocDomain(domain);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class _PyTraceMalloc_NewReference extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static int doCachedDomainIdx(Object pointerObject) {
-            // TODO(fa): implement; capture tracebacks in PyTraceMalloc_Track and update them
-            // here
-            return 0;
         }
     }
 

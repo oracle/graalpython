@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -33,7 +33,6 @@ PyObject * PyComplex_FromCComplex(Py_complex cval) {
 /* Submitted by Jim Hugunin */
 
 #include "Python.h"
-#include "structmember.h"         // PyMemberDef
 
 /* elementary operations on complex numbers */
 
@@ -189,14 +188,7 @@ c_powu(Py_complex x, long n)
 static Py_complex
 c_powi(Py_complex x, long n)
 {
-    Py_complex cn;
-
-    if (n > 100 || n < -100) {
-        cn.real = (double) n;
-        cn.imag = 0.;
-        return _Py_c_pow(x,cn);
-    }
-    else if (n > 0)
+    if (n > 0)
         return c_powu(x,n);
     else
         return _Py_c_quot(c_1, c_powu(x,-n));

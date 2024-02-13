@@ -216,6 +216,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Super("super", J_BUILTINS),
     PCode("code", Flags.PRIVATE_DERIVED_WODICT),
     PGenericAlias("GenericAlias", J_TYPES, Flags.PUBLIC_BASE_WODICT, GENERIC_ALIAS_M_FLAGS),
+    PGenericAliasIterator("generic_alias_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PUnionType("UnionType", J_TYPES, Flags.PUBLIC_DERIVED_WODICT, UNION_TYPE_M_FLAGS),
     PZip("zip", J_BUILTINS),
     PThread("start_new_thread", J__THREAD),
@@ -380,6 +381,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // everything after BaseException is considered to be an exception
     PBaseException("BaseException", J_BUILTINS, Flags.EXCEPTION),
+    PBaseExceptionGroup("BaseExceptionGroup", J_BUILTINS, Flags.EXCEPTION),
     SystemExit("SystemExit", J_BUILTINS, Flags.EXCEPTION),
     KeyboardInterrupt("KeyboardInterrupt", J_BUILTINS, Flags.EXCEPTION),
     GeneratorExit("GeneratorExit", J_BUILTINS, Flags.EXCEPTION),
@@ -716,6 +718,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         Boolean.base = PInt;
 
+        PBaseExceptionGroup.base = PBaseException;
         SystemExit.base = PBaseException;
         KeyboardInterrupt.base = PBaseException;
         GeneratorExit.base = PBaseException;

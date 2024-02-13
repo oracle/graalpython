@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -18,3 +18,6 @@ Py_GetVersion(void)
                   PY_VERSION, Py_GetBuildInfo(), Py_GetCompiler());
     return version;
 }
+
+// Export the Python hex version as a constant.
+const unsigned long Py_Version = PY_VERSION_HEX;

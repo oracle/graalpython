@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,14 @@
 
 // Integer.MAX_INT
 #define GRAALPYTHON_MAX_SIZE (INT_MAX)
+
+/* The following parameters are copied from zutil.h, version 0.95 */
+#define DEFLATED   8
+#if MAX_MEM_LEVEL >= 8
+#  define DEF_MEM_LEVEL 8
+#else
+#  define DEF_MEM_LEVEL  MAX_MEM_LEVEL
+#endif
 
 #ifndef NDEBUG
     #include <stdio.h>
@@ -558,14 +566,14 @@ static ssize_t arrange_output_buffer(zlib_stream *zst, ssize_t length)
 }
 
 // nfi_function: name('deflateOffHeap') map('zlib_stream*', 'POINTER')
-int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int level) {
+int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int level, int wbits) {
     LOG_INFO("zlib_deflate_off_heap(%p)\n", zst);
     int err, flush;
     ssize_t ibuflen = in_len, obuflen = buf_size;
 
     zst->zst.next_in = in;
     
-    err = deflateInit(&zst->zst, level);
+    err = deflateInit2(&zst->zst, level, DEFLATED, wbits, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY);
     if (err != Z_OK) {
         zst->error_function = DEFLATE_INIT_ERROR;
         return err;

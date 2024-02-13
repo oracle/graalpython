@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -96,9 +98,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -109,8 +112,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = ZLibModuleBuiltins.J_ZLIB)
@@ -492,85 +495,74 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.compress(data, level=-1)
-    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"", "level"})
-    @ArgumentClinic(name = "level", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.Z_DEFAULT_COMPRESSION", useDefaultForNone = true)
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data", "level", "wbits"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "level", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.Z_DEFAULT_COMPRESSION", useDefaultForNone = true)
+    @ArgumentClinic(name = "wbits", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
     @GenerateNodeFactory
-    public abstract static class CompressNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class CompressNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ZLibModuleBuiltinsClinicProviders.CompressNodeClinicProviderGen.INSTANCE;
         }
 
-        @NonIdempotent
-        protected boolean useNative() {
-            return getContext().getNFIZlibSupport().isAvailable();
-        }
-
-        @Specialization(guards = {"useNative()"})
-        static PBytes doNativeBytes(PBytesLike data, int level,
+        @Specialization
+        static PBytes compress(VirtualFrame frame, Object buffer, int level, int wbits,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeCompress nativeCompress,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toByte.execute(inliningTarget, data);
-            int len = data.getSequenceStorage().length();
-            byte[] resultArray = nativeCompress.execute(inliningTarget, bytes, len, level, PythonContext.get(inliningTarget));
-            return factory.createBytes(resultArray);
-        }
-
-        @Specialization(guards = {"useNative()", "!isBytes(data)"})
-        static PBytes doNativeObject(VirtualFrame frame, Object data, int level,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeCompress nativeCompress,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toBytesNode.execute(frame, data);
-            return factory.createBytes(nativeCompress.execute(inliningTarget, bytes, bytes.length, level, PythonContext.get(inliningTarget)));
-        }
-
-        @Specialization(guards = {"!useNative()"})
-        static PBytes doJava(VirtualFrame frame, Object data, int level,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Cached InlinedConditionProfile wrongLevelProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (wrongLevelProfile.profile(inliningTarget, level < -1 || 9 < level)) {
-                throw raiseNode.get(inliningTarget).raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached CompressInnerNode innerNode,
+                        @Cached PythonObjectFactory factory) {
+            try {
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, level, wbits);
+                return factory.createBytes(resultArray);
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
             }
-            byte[] array = toBytesNode.execute(frame, data);
-            return factory.createBytes(javaCompress(array, level));
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object error(VirtualFrame frame, Object data, Object level,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
-        }
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class CompressInnerNode extends Node {
+            abstract byte[] execute(Node inliningTarget, byte[] bytes, int length, int level, int wbits);
 
-        @TruffleBoundary
-        static byte[] javaCompress(byte[] array, int level) {
-            Deflater compresser = new Deflater(level);
-            compresser.setInput(array);
-            compresser.finish();
-            byte[] resultArray = new byte[DEF_BUF_SIZE];
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            while (!compresser.finished()) {
-                int howmany = compresser.deflate(resultArray);
-                baos.write(resultArray, 0, howmany);
+            @NonIdempotent
+            protected boolean useNative() {
+                return PythonContext.get(this).getNFIZlibSupport().isAvailable();
             }
-            compresser.end();
-            return baos.toByteArray();
+
+            @Specialization(guards = "useNative()")
+            static byte[] doNative(Node inliningTarget, byte[] bytes, int length, int level, int wbits,
+                            @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
+                return nativeCompress.execute(inliningTarget, bytes, length, level, wbits);
+            }
+
+            @Specialization(guards = "!useNative()")
+            @TruffleBoundary
+            static byte[] doJava(byte[] bytes, int length, int level, int wbits) {
+                Deflater compresser = new Deflater(level, wbits < 0 || wbits > (MAX_WBITS + 9));
+                compresser.setInput(bytes, 0, length);
+                compresser.finish();
+                byte[] resultArray = new byte[DEF_BUF_SIZE];
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                while (!compresser.finished()) {
+                    int howmany = compresser.deflate(resultArray);
+                    baos.write(resultArray, 0, howmany);
+                }
+                compresser.end();
+                return baos.toByteArray();
+            }
         }
     }
 
     // zlib.decompress(data, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"", "wbits", "bufsize"})
-    @ArgumentClinic(name = "wbits", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
-    @ArgumentClinic(name = "bufsize", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "ZLibModuleBuiltins.DEF_BUF_SIZE", useDefaultForNone = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data", "wbits", "bufsize"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "wbits", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
+    @ArgumentClinic(name = "bufsize", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "ZLibModuleBuiltins.DEF_BUF_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryClinicBuiltinNode {
 
@@ -579,80 +571,69 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.DecompressNodeClinicProviderGen.INSTANCE;
         }
 
-        @NonIdempotent
-        protected boolean useNative() {
-            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
-        }
-
-        @Specialization(guards = {"bufsize >= 0", "useNative()"})
-        static PBytes doNativeBytes(PBytesLike data, int wbits, int bufsize,
+        @Specialization
+        static PBytes decompress(VirtualFrame frame, Object buffer, int wbits, int bufsize,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toByte.execute(inliningTarget, data);
-            int len = data.getSequenceStorage().length();
-            return factory.createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(inliningTarget)));
-        }
-
-        @Specialization(guards = {"bufsize >= 0", "useNative()", "!isBytes(data)"})
-        static PBytes doNativeObject(VirtualFrame frame, Object data, int wbits, int bufsize,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached ToBytesNode toBytesNode,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bytes = toBytesNode.execute(frame, data);
-            int len = bytes.length;
-            return factory.createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(inliningTarget)));
-        }
-
-        @Specialization(guards = {"bufsize >= 0", "!useNative()"})
-        PBytes doJava(VirtualFrame frame, Object data, int wbits, int bufsize,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached DecompressInnerNode innerNode,
+                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            byte[] array = toBytesNode.execute(frame, data);
             try {
-                return factory.createBytes(javaDecompress(array, wbits, bufsize == 0 ? 1 : bufsize));
-            } catch (DataFormatException e) {
-                throw raiseNode.get(inliningTarget).raise(ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"bufsize >= 0"})
-        static PBytes doNative(PBytesLike data, int wbits, int bufsize,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object error(VirtualFrame frame, Object data, Object wbits, Object bufsize,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
-        }
-
-        @TruffleBoundary
-        byte[] javaDecompress(byte[] array, int wbits, int bufsize) throws DataFormatException {
-            // zlib can decompress all those formats:
-            // to (de-)compress deflate format, use wbits = -zlib.MAX_WBITS
-            // to (de-)compress zlib format, use wbits = zlib.MAX_WBITS
-            // to (de-)compress gzip format, use wbits = zlib.MAX_WBITS | 16
-            Inflater decompresser = new Inflater(wbits < 0 || (wbits & 16) == 16);
-            decompresser.setInput(array);
-            byte[] resultArray = new byte[bufsize];
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            while (!decompresser.finished()) {
-                int howmany = decompresser.inflate(resultArray);
-                if (howmany == 0 && decompresser.needsInput()) {
-                    throw PRaiseNode.raiseUncached(this, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
+                if (bufsize < 0) {
+                    throw raiseNode.get(inliningTarget).raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
                 }
-                baos.write(resultArray, 0, howmany);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, wbits, bufsize);
+                return factory.createBytes(resultArray);
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
             }
-            decompresser.end();
-            return baos.toByteArray();
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class DecompressInnerNode extends Node {
+            abstract byte[] execute(Node inliningTarget, byte[] bytes, int length, int wbits, int bufsize);
+
+            @NonIdempotent
+            protected boolean useNative() {
+                return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+            }
+
+            @Specialization(guards = "useNative()")
+            static byte[] doNative(Node inliningTarget, byte[] bytes, int length, int wbits, int bufsize,
+                            @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
+                return nativeDecompress.execute(inliningTarget, bytes, length, wbits, bufsize, PythonContext.get(inliningTarget));
+            }
+
+            @Specialization(guards = "!useNative()")
+            @TruffleBoundary
+            static byte[] doJava(Node inliningTarget, byte[] bytes, int length, int wbits, int bufsize) {
+                try {
+                    int bufsize1 = bufsize == 0 ? 1 : bufsize;
+                    // zlib can decompress all those formats:
+                    // to (de-)compress deflate format, use wbits = -zlib.MAX_WBITS
+                    // to (de-)compress zlib format, use wbits = zlib.MAX_WBITS
+                    // to (de-)compress gzip format, use wbits = zlib.MAX_WBITS | 16
+                    Inflater decompresser = new Inflater(wbits < 0 || (wbits & 16) == 16);
+                    decompresser.setInput(bytes, 0, length);
+                    byte[] resultArray = new byte[bufsize1];
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    while (!decompresser.finished()) {
+                        int howmany = decompresser.inflate(resultArray);
+                        if (howmany == 0 && decompresser.needsInput()) {
+                            throw PRaiseNode.raiseUncached(inliningTarget, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
+                        }
+                        baos.write(resultArray, 0, howmany);
+                    }
+                    decompresser.end();
+                    return baos.toByteArray();
+                } catch (DataFormatException e) {
+                    throw PRaiseNode.raiseUncached(inliningTarget, ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
+                }
+            }
         }
     }
 

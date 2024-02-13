@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
@@ -183,6 +184,7 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -1224,7 +1226,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private void checkSource(TruffleString source) throws PException {
             if (source.indexOfCodePointUncached(0, 0, source.codePointLengthUncached(TS_ENCODING), TS_ENCODING) > -1) {
-                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.SRC_CODE_CANNOT_CONTAIN_NULL_BYTES);
+                throw PConstructAndRaiseNode.getUncached().executeWithArgsOnly(null, SyntaxError, new Object[]{ErrorMessages.SRC_CODE_CANNOT_CONTAIN_NULL_BYTES});
             }
         }
 
@@ -1346,39 +1348,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(defaultValue)")
-        static Object getAttrNoDefault(VirtualFrame frame, Object primary, Object nameObj, @SuppressWarnings("unused") Object defaultValue,
+        static Object getAttrNoDefault(VirtualFrame frame, Object primary, Object name, @SuppressWarnings("unused") Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached CastToTruffleStringNode cast,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PyObjectGetAttr getAttr) {
-            TruffleString name = castName(inliningTarget, nameObj, cast, raiseNode);
             return getAttr.execute(frame, inliningTarget, primary, name);
         }
 
         @Specialization(guards = "!isNoValue(defaultValue)")
-        static Object getAttrWithDefault(VirtualFrame frame, Object primary, Object nameObj, Object defaultValue,
+        static Object getAttrWithDefault(VirtualFrame frame, Object primary, Object name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached CastToTruffleStringNode cast,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Cached InlinedConditionProfile noValueProfile,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            TruffleString name = castName(inliningTarget, nameObj, cast, raiseNode);
             Object result = lookupAttr.execute(frame, inliningTarget, primary, name);
             if (noValueProfile.profile(inliningTarget, result == NO_VALUE)) {
                 return defaultValue;
             } else {
                 return result;
             }
-        }
-
-        private static TruffleString castName(Node inliningTarget, Object nameObj, CastToTruffleStringNode cast, PRaiseNode.Lazy raiseNode) {
-            TruffleString name;
-            try {
-                name = cast.execute(inliningTarget, nameObj);
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING);
-            }
-            return name;
         }
     }
 

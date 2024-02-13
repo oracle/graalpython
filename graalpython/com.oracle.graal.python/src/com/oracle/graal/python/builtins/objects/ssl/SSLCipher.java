@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This file has been automatically generated using scripts/generate_ssl_data.py. Do not edit!
- * Generated using: OpenSSL 1.1.1s 1 Nov 2022 (Library: OpenSSL 1.1.1q FIPS 5 Jul 2022)
+ * Generated using: OpenSSL 1.1.1w 11 Sep 2023
  * 
  * This class represents OpenSSL metadata of all SSL/TLS cipher suites.
  **/

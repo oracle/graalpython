@@ -156,6 +156,7 @@ public abstract class BuiltinNames {
     public static final String J_HEX = "hex";
 
     public static final String J_NEXT = "next";
+    public static final TruffleString T_NEXT = tsLiteral(J_NEXT);
 
     public static final String J_ANY = "any";
 
@@ -475,4 +476,9 @@ public abstract class BuiltinNames {
     public static final String J__CODECS_TW = "_codecs_tw";
     public static final TruffleString T__CODECS_TW = tsLiteral(J__CODECS_TW);
 
+    public static final String J_COPYREG = "copyreg";
+    public static final TruffleString T_COPYREG = tsLiteral(J_COPYREG);
+
+    public static final String J_EXCEPTION_GROUP = "ExceptionGroup";
+    public static final TruffleString T_EXCEPTION_GROUP = tsLiteral(J_EXCEPTION_GROUP);
 }

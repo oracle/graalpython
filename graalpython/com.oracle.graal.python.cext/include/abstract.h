@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -874,7 +874,7 @@ PyAPI_FUNC(int) PyObject_SetDoc(PyObject* object, const char* doc);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_ABSTRACTOBJECT_H
-#  include  "cpython/abstract.h"
+#  include "cpython/abstract.h"
 #  undef Py_CPYTHON_ABSTRACTOBJECT_H
 #endif
 

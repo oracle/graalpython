@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,44 +11,6 @@ extern "C" {
 
 #ifndef Py_BUILD_CORE
 #  error "this header requires Py_BUILD_CORE define"
-#endif
-
-#include "pycore_interp.h"        // PyInterpreterState.small_ints
-#include "pycore_pystate.h"       // _PyThreadState_GET()
-
-/*
- * Default int base conversion size limitation: Denial of Service prevention.
- *
- * Chosen such that this isn't wildly slow on modern hardware and so that
- * everyone's existing deployed numpy test suite passes before
- * https://github.com/numpy/numpy/issues/22098 is widely available.
- *
- * $ python -m timeit -s 's = "1"*4300' 'int(s)'
- * 2000 loops, best of 5: 125 usec per loop
- * $ python -m timeit -s 's = "1"*4300; v = int(s)' 'str(v)'
- * 1000 loops, best of 5: 311 usec per loop
- * (zen2 cloud VM)
- *
- * 4300 decimal digits fits a ~14284 bit number.
- */
-#define _PY_LONG_DEFAULT_MAX_STR_DIGITS 4300
-/*
- * Threshold for max digits check.  For performance reasons int() and
- * int.__str__() don't checks values that are smaller than this
- * threshold.  Acts as a guaranteed minimum size limit for bignums that
- * applications can expect from CPython.
- *
- * % python -m timeit -s 's = "1"*640; v = int(s)' 'str(int(s))'
- * 20000 loops, best of 5: 12 usec per loop
- *
- * "640 digits should be enough for anyone." - gps
- * fits a ~2126 bit decimal number.
- */
-#define _PY_LONG_MAX_STR_DIGITS_THRESHOLD 640
-
-#if ((_PY_LONG_DEFAULT_MAX_STR_DIGITS != 0) && \
-   (_PY_LONG_DEFAULT_MAX_STR_DIGITS < _PY_LONG_MAX_STR_DIGITS_THRESHOLD))
-# error "_PY_LONG_DEFAULT_MAX_STR_DIGITS smaller than threshold."
 #endif
 
 // GraalVM change: use our own globals instead of interpreter state
@@ -64,6 +26,41 @@ static inline PyObject* _PyLong_GetZero(void)
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetOne(void)
 { return _PyTruffle_One; }
+
+static inline PyObject* _PyLong_FromUnsignedChar(unsigned char i)
+{
+    return PyLong_FromLong(i);
+}
+
+PyObject *_PyLong_Add(PyLongObject *left, PyLongObject *right);
+PyObject *_PyLong_Multiply(PyLongObject *left, PyLongObject *right);
+PyObject *_PyLong_Subtract(PyLongObject *left, PyLongObject *right);
+
+/* Used by Python/mystrtoul.c, _PyBytes_FromHex(),
+   _PyBytes_DecodeEscape(), etc. */
+PyAPI_DATA(unsigned char) _PyLong_DigitValue[256];
+
+/* Format the object based on the format_spec, as defined in PEP 3101
+   (Advanced String Formatting). */
+PyAPI_FUNC(int) _PyLong_FormatAdvancedWriter(
+    _PyUnicodeWriter *writer,
+    PyObject *obj,
+    PyObject *format_spec,
+    Py_ssize_t start,
+    Py_ssize_t end);
+
+PyAPI_FUNC(int) _PyLong_FormatWriter(
+    _PyUnicodeWriter *writer,
+    PyObject *obj,
+    int base,
+    int alternate);
+
+PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
+    _PyBytesWriter *writer,
+    char *str,
+    PyObject *obj,
+    int base,
+    int alternate);
 
 #ifdef __cplusplus
 }

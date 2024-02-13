@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+unsigned char _PyLong_DigitValue[];
+
 // partially taken from CPython 3.7.0 "Objects/longobject.c"
 PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
     int negative = 0, error_if_nonzero = 0;

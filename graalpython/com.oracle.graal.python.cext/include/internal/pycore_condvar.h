@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -25,7 +25,9 @@
  */
 #define Py_HAVE_CONDVAR
 
-#include <pthread.h>
+#ifdef HAVE_PTHREAD_H
+#  include <pthread.h>
+#endif
 
 #define PyMUTEX_T pthread_mutex_t
 #define PyCOND_T pthread_cond_t
@@ -65,7 +67,7 @@ typedef CRITICAL_SECTION PyMUTEX_T;
    with a Semaphore.
    Semaphores are available on Windows XP (2003 server) and later.
    We use a Semaphore rather than an auto-reset event, because although
-   an auto-resent event might appear to solve the lost-wakeup bug (race
+   an auto-reset event might appear to solve the lost-wakeup bug (race
    condition between releasing the outer lock and waiting) because it
    maintains state even though a wait hasn't happened, there is still
    a lost wakeup problem if more than one thread are interrupted in the

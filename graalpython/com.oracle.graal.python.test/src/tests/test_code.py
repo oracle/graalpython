@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,6 @@ def test_code_attributes():
     assert code.co_argcount == 3
     assert code.co_kwonlyargcount == 0
     assert code.co_nlocals == 6
-    assert code.co_stacksize >= code.co_nlocals
     assert code.co_flags & (1 << 5)
     assert not code.co_flags & (1 << 2)
     assert not code.co_flags & (1 << 3)
@@ -117,8 +116,10 @@ def test_code_copy():
         code.co_varnames,
         code.co_filename,
         code.co_name,
+        code.co_qualname,
         code.co_firstlineno,
         code.co_linetable,
+        code.co_exceptiontable,
         code.co_freevars,
         code.co_cellvars)
 
@@ -134,8 +135,10 @@ def test_code_copy():
     assert set(code.co_varnames) == set(code2.co_varnames)
     assert code.co_filename == code2.co_filename
     assert code.co_name == code2.co_name
+    assert code.co_qualname == code2.co_qualname
     assert code.co_firstlineno == code2.co_firstlineno
     assert code.co_linetable == code2.co_linetable
+    assert code.co_exceptiontable == code2.co_exceptiontable
     assert set(code.co_freevars) == set(code2.co_freevars)
     assert set(code.co_cellvars) == set(code2.co_cellvars)
 
@@ -172,13 +175,11 @@ def fn():
     code = compile(codestr, "<test>", "exec")
     assert "module doc" in code.co_consts
     assert 1 in code.co_consts
-    assert "fn" in code.co_consts
     assert "fn doc" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:
             code = const 
     assert "fn doc" in code.co_consts
-    assert "fn.<locals>.inner" in code.co_consts
     assert "this is fun" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:
@@ -199,13 +200,11 @@ def gen():
 
     code = compile(codestr, "<test>", "exec")
     assert "module doc" in code.co_consts
-    assert "gen" in code.co_consts
     assert "gen doc" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:
             code = const 
     assert "gen doc" in code.co_consts
-    assert "gen.<locals>.inner" in code.co_consts
     assert "this is fun" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:

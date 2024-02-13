@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -137,12 +137,13 @@ public abstract class SpecialAttributeNames {
     public static final String J___DICTOFFSET__ = "__dictoffset__";
 
     public static final String J___WEAKLISTOFFSET__ = "__weaklistoffset__";
+    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral(J___WEAKLISTOFFSET__);
+
+    public static final String J___WEAKREFOFFSET__ = "__weakrefoffset__";
 
     public static final String J___ITEMSIZE__ = "__itemsize__";
 
     public static final TruffleString T___WEAKREF__ = tsLiteral("__weakref__");
-
-    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral("__weaklistoffset__");
 
     public static final TruffleString T___ALL__ = tsLiteral("__all__");
 
@@ -161,6 +162,9 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___PARAMETERS__ = "__parameters__";
     public static final TruffleString T___PARAMETERS__ = tsLiteral(J___PARAMETERS__);
+
+    public static final String J___UNPACKED__ = "__unpacked__";
+    public static final TruffleString T___UNPACKED__ = tsLiteral(J___UNPACKED__);
 
     public static final String J___ORIG_CLASS__ = "__orig_class__";
     public static final TruffleString T___ORIG_CLASS__ = tsLiteral(J___ORIG_CLASS__);

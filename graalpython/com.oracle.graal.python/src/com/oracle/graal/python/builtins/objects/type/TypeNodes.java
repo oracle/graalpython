@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseExcep
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_bases;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
@@ -143,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -151,11 +153,12 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -177,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFla
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -198,6 +202,7 @@ import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToL
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -232,6 +237,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -730,6 +736,39 @@ public abstract class TypeNodes {
         @NeverDefault
         public static GetNameNode create() {
             return GetNameNodeGen.create();
+        }
+    }
+
+    // Equivalent of PyType_GetQualName
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class GetQualNameNode extends Node {
+        public abstract TruffleString execute(Node inliningTarget, Object type);
+
+        @Specialization
+        static TruffleString getQualName(PythonManagedClass clazz) {
+            return clazz.getQualName();
+        }
+
+        @Specialization
+        static TruffleString getQualName(Node inliningTarget, PythonAbstractNativeObject clazz,
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObjectNode,
+                        @Cached(inline = false) CStructAccess.ReadCharPtrNode readCharPtrNode,
+                        @Cached CastToTruffleStringNode cast) {
+            assert IsTypeNode.executeUncached(clazz);
+            long flags = getTypeFlagsNode.execute(clazz);
+            if ((flags & HEAPTYPE) != 0) {
+                Object qualname = readObjectNode.read(clazz, PyHeapTypeObject__ht_qualname);
+                try {
+                    return cast.execute(inliningTarget, qualname);
+                } catch (CannotCastException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot cast ht_qualname to string");
+                }
+            } else {
+                return readCharPtrNode.read(clazz, PyTypeObject__tp_name);
+            }
         }
     }
 
@@ -1262,11 +1301,11 @@ public abstract class TypeNodes {
         // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
         // NOT the same like the unsorted __slots__ attribute.
         for (int i = 0; i < aArray.length; ++i) {
-            if (aArray[i] instanceof TruffleString) {
-                aArray[i] = ((TruffleString) aArray[i]).toJavaStringUncached();
-            }
-            if (bArray[i] instanceof TruffleString) {
-                bArray[i] = ((TruffleString) bArray[i]).toJavaStringUncached();
+            try {
+                aArray[i] = CastToTruffleStringNode.executeUncached(aArray[i]).toJavaStringUncached();
+                bArray[i] = CastToTruffleStringNode.executeUncached(bArray[i]).toJavaStringUncached();
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("slots are not strings");
             }
         }
         Arrays.sort(bArray);
@@ -2017,6 +2056,7 @@ public abstract class TypeNodes {
                         @Cached GetObjectArrayNode getObjectArray,
                         @Cached PythonObjectFactory factory,
                         @Cached CastToListNode castToListNode,
+                        @Cached PyUnicodeCheckNode stringCheck,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
@@ -2067,7 +2107,7 @@ public abstract class TypeNodes {
             // 2.) copy the dictionary slots
             copyDictSlots(frame, inliningTarget, ctx, pythonClass, namespace, setHashingStorageItem,
                             getHashingStorageIterator, hashingStorageItNext, hashingStorageItKey, hashingStorageItKeyHash, hashingStorageItValue,
-                            constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode, getOrCreateDictNode, castToStringNode);
+                            constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode, getOrCreateDictNode, stringCheck, castToStringNode);
             if (!ctx.qualnameSet) {
                 pythonClass.setQualName(name);
             }
@@ -2104,8 +2144,8 @@ public abstract class TypeNodes {
                 // Make it into a list
                 SequenceStorage slotsStorage;
                 Object slotsObject = ctx.slotsObject;
-                if (ctx.slotsObject instanceof TruffleString) {
-                    slotsStorage = new ObjectSequenceStorage(new Object[]{ctx.slotsObject});
+                if (stringCheck.execute(inliningTarget, ctx.slotsObject)) {
+                    slotsStorage = new ObjectSequenceStorage(new Object[]{castToStringNode.execute(inliningTarget, ctx.slotsObject)});
                 } else if (ctx.slotsObject instanceof PTuple slotsTuple) {
                     slotsStorage = slotsTuple.getSequenceStorage();
                 } else if (ctx.slotsObject instanceof PList slotsList) {
@@ -2125,8 +2165,8 @@ public abstract class TypeNodes {
                     TruffleString slotName;
                     Object element = getItemNode.execute(inliningTarget, slotsStorage, i);
                     // Check valid slot name
-                    if (element instanceof TruffleString) {
-                        slotName = (TruffleString) element;
+                    if (stringCheck.execute(inliningTarget, element)) {
+                        slotName = castToStringNode.execute(inliningTarget, element);
                         if (!(boolean) isIdentifier.execute(frame, slotName)) {
                             throw raise.raise(TypeError, ErrorMessages.SLOTS_MUST_BE_IDENTIFIERS);
                         }
@@ -2279,7 +2319,7 @@ public abstract class TypeNodes {
          * <li>We need to set tp_dictoffset and tp_weaklistoffset and adjust the basicsize
          * accordingly</li>
          * </ol>
-         *
+         * <p>
          * Mostly based on type_new_descriptors
          */
         @TruffleBoundary
@@ -2330,7 +2370,8 @@ public abstract class TypeNodes {
                         HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageItNext, HashingStorageIteratorKey hashingStorageItKey,
                         HashingStorageIteratorKeyHash hashingStorageItKeyHash, HashingStorageIteratorValue hashingStorageItValue,
                         PConstructAndRaiseNode.Lazy constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
-                        EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode, CastToTruffleStringNode castToStringNode) {
+                        EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode, PyUnicodeCheckNode stringCheck,
+                        CastToTruffleStringNode castToStringNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2339,7 +2380,8 @@ public abstract class TypeNodes {
             while (hashingStorageItNext.execute(inliningTarget, namespaceStorage, it)) {
                 Object keyObj = hashingStorageItKey.execute(inliningTarget, namespaceStorage, it);
                 Object value = hashingStorageItValue.execute(inliningTarget, namespaceStorage, it);
-                if (keyObj instanceof TruffleString key) {
+                if (stringCheck.execute(inliningTarget, keyObj)) {
+                    TruffleString key = castToStringNode.execute(inliningTarget, keyObj);
                     if (equalNode.execute(T___SLOTS__, key, TS_ENCODING)) {
                         ctx.slotsObject = value;
                         continue;
@@ -2368,17 +2410,14 @@ public abstract class TypeNodes {
                         // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
                         // forcibly encodes the string as UTF-8, and raises an error if that is not
                         // possible.
-                        TruffleString doc = null;
-                        if (value instanceof TruffleString) {
-                            doc = (TruffleString) value;
-                        } else if (value instanceof PString) {
-                            doc = ((PString) value).getValueUncached();
-                        }
-                        if (doc != null) {
+                        try {
+                            TruffleString doc = castToStringNode.execute(inliningTarget, value);
                             if (!isValidNode.execute(doc, TS_ENCODING)) {
                                 throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", doc, 0, codePointLengthNode.execute(doc, TS_ENCODING),
                                                 "can't encode docstring");
                             }
+                        } catch (CannotCastException e) {
+                            // ignore
                         }
                         pythonClass.setAttribute(key, value);
                         continue;
@@ -2396,7 +2435,7 @@ public abstract class TypeNodes {
                         // don't populate this attribute
                         continue;
                     }
-                    if (typeDict == null) {
+                    if (typeDict == null && keyObj instanceof TruffleString) {
                         pythonClass.setAttribute(key, value);
                         continue;
                     }
@@ -2420,7 +2459,7 @@ public abstract class TypeNodes {
                 // the cast is ensured by the previous loop
                 // n.b.: passing the null frame here is fine, since the storage and index are known
                 // types
-                TruffleString slotName = (TruffleString) GetItemScalarNode.executeUncached(slotList, i);
+                TruffleString slotName = CastToTruffleStringNode.executeUncached(GetItemScalarNode.executeUncached(slotList, i));
                 if ((ctx.addDict && T___DICT__.equalsUncached(slotName, TS_ENCODING)) || (ctx.addWeak && T___WEAKREF__.equalsUncached(slotName, TS_ENCODING))) {
                     continue;
                 }
@@ -2698,6 +2737,66 @@ public abstract class TypeNodes {
                 }
             }
             return leftResolved == rightResolved;
+        }
+    }
+
+    /**
+     * Check whether a given function, method or slot descriptor is a specific builtin function.
+     * Used in cases where CPython compares slot for referential equality with a C function to check
+     * for overriding, for example {@code type->tp_init == object_init}. For object {@code __init__}
+     * in particular, there is a shortcut node {@link HasObjectInitNode}.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class CheckCallableIsSpecificBuiltinNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory);
+
+        public static boolean executeUncached(Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return TypeNodesFactory.CheckCallableIsSpecificBuiltinNodeGen.getUncached().execute(null, methodOrDescriptor, nodeFactory);
+        }
+
+        @Specialization
+        static boolean check(PBuiltinFunction function, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return function.getBuiltinNodeFactory() == nodeFactory;
+        }
+
+        @Specialization
+        static boolean check(PBuiltinMethod method, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return method.getBuiltinFunction().getBuiltinNodeFactory() == nodeFactory;
+        }
+
+        @Specialization
+        static boolean check(BuiltinMethodDescriptor descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return descriptor.getFactory() == nodeFactory;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean check(Object descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
+            return false;
+        }
+    }
+
+    /**
+     * Check whether given type didn't override default object {@code __init__}. Equivalent of
+     * CPython's {@code type->tp_init == object_init} check.
+     */
+    @GenerateInline(inlineByDefault = true)
+    @ImportStatic(SpecialMethodSlot.class)
+    public abstract static class HasObjectInitNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object type);
+
+        public final boolean executeCached(Object type) {
+            return execute(this, type);
+        }
+
+        @Specialization
+        static boolean check(Node inliningTarget, Object type,
+                        @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookup,
+                        @Cached CheckCallableIsSpecificBuiltinNode check) {
+            Object slot = lookup.execute(type);
+            return check.execute(inliningTarget, slot, ObjectBuiltinsFactory.InitNodeFactory.getInstance());
         }
     }
 }

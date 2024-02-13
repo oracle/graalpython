@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,6 +8,7 @@
 #endif
 
 PyAPI_FUNC(char *) Py_UniversalNewlineFgets(char *, int, FILE*, PyObject *);
+PyAPI_FUNC(char *) _Py_UniversalNewlineFgetsWithSize(char *, int, FILE*, PyObject *, size_t*);
 
 /* The std printer acts as a preliminary sys.stderr until the new io
    infrastructure is in place. */

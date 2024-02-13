@@ -30,6 +30,7 @@ import inspect
 import pprint
 import sys
 import builtins
+import pkgutil
 from asyncio import iscoroutinefunction
 from types import CodeType, ModuleType, MethodType
 from unittest.util import safe_repr
@@ -97,6 +98,12 @@ def _get_signature_object(func, as_instance, eat_self):
         func = func.__init__
         # Skip the `self` argument in __init__
         eat_self = True
+    elif isinstance(func, (classmethod, staticmethod)):
+        if isinstance(func, classmethod):
+            # Skip the `cls` argument of a class method
+            eat_self = True
+        # Use the original decorated method to extract the correct function signature
+        func = func.__func__
     elif not isinstance(func, FunctionTypes):
         # If we really want to model an instance of the passed type,
         # __call__ should be looked up, not __init__.
@@ -497,6 +504,9 @@ class NonCallableMock(Base):
 
     def _mock_add_spec(self, spec, spec_set, _spec_as_instance=False,
                        _eat_self=False):
+        if _is_instance_mock(spec):
+            raise InvalidSpecError(f'Cannot spec a Mock object. [object={spec!r}]')
+
         _spec_class = None
         _spec_signature = None
         _spec_asyncs = []
@@ -812,7 +822,7 @@ class NonCallableMock(Base):
 
 
     def _format_mock_failure_message(self, args, kwargs, action='call'):
-        message = 'expected %s not found.\nExpected: %s\nActual: %s'
+        message = 'expected %s not found.\nExpected: %s\n  Actual: %s'
         expected_string = self._format_mock_call_signature(args, kwargs)
         call_args = self.call_args
         actual_string = self._format_mock_call_signature(*call_args)
@@ -915,7 +925,7 @@ class NonCallableMock(Base):
         if self.call_args is None:
             expected = self._format_mock_call_signature(args, kwargs)
             actual = 'not called.'
-            error_message = ('expected call not found.\nExpected: %s\nActual: %s'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: %s'
                     % (expected, actual))
             raise AssertionError(error_message)
 
@@ -966,7 +976,7 @@ class NonCallableMock(Base):
                 raise AssertionError(
                     f'{problem}\n'
                     f'Expected: {_CallList(calls)}'
-                    f'{self._calls_repr(prefix="Actual").rstrip(".")}'
+                    f'{self._calls_repr(prefix="  Actual").rstrip(".")}'
                 ) from cause
             return
 
@@ -1224,6 +1234,11 @@ class Mock(CallableMixin, NonCallableMock):
       this is a new Mock (created on first access). See the
       `return_value` attribute.
 
+    * `unsafe`: By default, accessing any attribute whose name starts with
+      *assert*, *assret*, *asert*, *aseert* or *assrt* will raise an
+       AttributeError. Passing `unsafe=True` will allow access to
+      these attributes.
+
     * `wraps`: Item for the mock object to wrap. If `wraps` is not None then
       calling the Mock will pass the call through to the wrapped object
       (returning the real result). Attribute access on the mock will return a
@@ -1241,25 +1256,6 @@ class Mock(CallableMixin, NonCallableMock):
     Mocks can also be called with arbitrary keyword arguments. These will be
     used to set attributes on the mock after it is created.
     """
-
-
-def _dot_lookup(thing, comp, import_path):
-    try:
-        return getattr(thing, comp)
-    except AttributeError:
-        __import__(import_path)
-        return getattr(thing, comp)
-
-
-def _importer(target):
-    components = target.split('.')
-    import_path = components.pop(0)
-    thing = __import__(import_path)
-
-    for comp in components:
-        import_path += ".%s" % comp
-        thing = _dot_lookup(thing, comp, import_path)
-    return thing
 
 
 # _check_spec_arg_typos takes kwargs from commands like patch and checks that
@@ -1615,8 +1611,7 @@ def _get_target(target):
     except (TypeError, ValueError, AttributeError):
         raise TypeError(
             f"Need a valid target to patch. You supplied: {target!r}")
-    getter = lambda: _importer(target)
-    return getter, attribute
+    return partial(pkgutil.resolve_name, target), attribute
 
 
 def _patch_object(
@@ -1671,7 +1666,7 @@ def _patch_multiple(target, spec=None, create=False, spec_set=None,
     for choosing which methods to wrap.
     """
     if type(target) is str:
-        getter = lambda: _importer(target)
+        getter = partial(pkgutil.resolve_name, target)
     else:
         getter = lambda: target
 
@@ -1869,7 +1864,7 @@ class _patch_dict(object):
     def _patch_dict(self):
         values = self.values
         if isinstance(self.in_dict, str):
-            self.in_dict = _importer(self.in_dict)
+            self.in_dict = pkgutil.resolve_name(self.in_dict)
         in_dict = self.in_dict
         clear = self.clear
 
@@ -1970,7 +1965,7 @@ magic_methods = (
 )
 
 numerics = (
-    "add sub mul matmul div floordiv mod lshift rshift and xor or pow truediv"
+    "add sub mul matmul truediv floordiv mod lshift rshift and xor or pow"
 )
 inplace = ' '.join('i%s' % n for n in numerics.split())
 right = ' '.join('r%s' % n for n in numerics.split())
@@ -1982,7 +1977,7 @@ right = ' '.join('r%s' % n for n in numerics.split())
 _non_defaults = {
     '__get__', '__set__', '__delete__', '__reversed__', '__missing__',
     '__reduce__', '__reduce_ex__', '__getinitargs__', '__getnewargs__',
-    '__getstate__', '__setstate__', '__getformat__', '__setformat__',
+    '__getstate__', '__setstate__', '__getformat__',
     '__repr__', '__dir__', '__subclasses__', '__format__',
     '__getnewargs_ex__',
 }
@@ -2212,7 +2207,15 @@ class AsyncMockMixin(Base):
         self.__dict__['_mock_await_args'] = None
         self.__dict__['_mock_await_args_list'] = _CallList()
         code_mock = NonCallableMock(spec_set=CodeType)
-        code_mock.co_flags = inspect.CO_COROUTINE
+        code_mock.co_flags = (
+            inspect.CO_COROUTINE
+            + inspect.CO_VARARGS
+            + inspect.CO_VARKEYWORDS
+        )
+        code_mock.co_argcount = 0
+        code_mock.co_varnames = ('args', 'kwargs')
+        code_mock.co_posonlyargcount = 0
+        code_mock.co_kwonlyargcount = 0
         self.__dict__['__code__'] = code_mock
         self.__dict__['__name__'] = 'AsyncMock'
         self.__dict__['__defaults__'] = tuple()
@@ -2236,7 +2239,7 @@ class AsyncMockMixin(Base):
                 try:
                     result = next(effect)
                 except StopIteration:
-                    # It is impossible to propogate a StopIteration
+                    # It is impossible to propagate a StopIteration
                     # through coroutines because of PEP 479
                     raise StopAsyncIteration
                 if _is_exception(result):
@@ -2835,6 +2838,7 @@ FunctionTypes = (
 
 
 file_spec = None
+open_spec = None
 
 
 def _to_stream(read_data):
@@ -2891,8 +2895,12 @@ def mock_open(mock=None, read_data=''):
         import _io
         file_spec = list(set(dir(_io.TextIOWrapper)).union(set(dir(_io.BytesIO))))
 
+    global open_spec
+    if open_spec is None:
+        import _io
+        open_spec = list(set(dir(_io.open)))
     if mock is None:
-        mock = MagicMock(name='open', spec=open)
+        mock = MagicMock(name='open', spec=open_spec)
 
     handle = MagicMock(spec=file_spec)
     handle.__enter__.return_value = handle

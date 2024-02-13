@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -228,9 +228,13 @@ abstract class FormattingBuffer implements CharSequence {
         }
 
         public FormattingBuffer append(byte[] bytes) {
-            ensureCapacity(size, bytes.length);
-            System.arraycopy(bytes, 0, data, size, bytes.length);
-            size += bytes.length;
+            return append(bytes, 0, bytes.length);
+        }
+
+        public FormattingBuffer append(byte[] bytes, int offset, int len) {
+            ensureCapacity(size, len);
+            System.arraycopy(bytes, offset, data, size, len);
+            size += len;
             return this;
         }
 

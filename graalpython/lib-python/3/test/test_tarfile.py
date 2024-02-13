@@ -1,3 +1,4 @@
+import errno
 import sys
 import os
 import io
@@ -388,6 +389,18 @@ class CommonReadTest(ReadTest):
         with open(self.tarname, "rb") as fobj:
             self.assertTrue(tarfile.is_tarfile(io.BytesIO(fobj.read())))
 
+    def test_is_tarfile_keeps_position(self):
+        # Test for issue44289: tarfile.is_tarfile() modifies
+        # file object's current position
+        with open(self.tarname, "rb") as fobj:
+            tarfile.is_tarfile(fobj)
+            self.assertEqual(fobj.tell(), 0)
+
+        with open(self.tarname, "rb") as fobj:
+            file_like = io.BytesIO(fobj.read())
+            tarfile.is_tarfile(file_like)
+            self.assertEqual(file_like.tell(), 0)
+
     def test_empty_tarfile(self):
         # Test for issue6123: Allow opening empty archives.
         # This test checks if tarfile.open() is able to open an empty tar
@@ -631,6 +644,7 @@ class MiscReadTestBase(CommonReadTest):
                 data = f.read()
             self.assertEqual(sha256sum(data), sha256_regtype)
 
+    @os_helper.skip_unless_working_chmod
     def test_extractall(self):
         # Test if extractall() correctly restores directory permissions
         # and times (see issue1735).
@@ -662,6 +676,7 @@ class MiscReadTestBase(CommonReadTest):
             tar.close()
             os_helper.rmtree(DIR)
 
+    @os_helper.skip_unless_working_chmod
     def test_extract_directory(self):
         dirtype = "ustar/dirtype"
         DIR = os.path.join(TEMPDIR, "extractdir")
@@ -733,6 +748,18 @@ class MiscReadTestBase(CommonReadTest):
             with self.assertRaises(tarfile.ReadError):
                 tarfile.open(self.tarname)
 
+    def test_next_on_empty_tarfile(self):
+        fd = io.BytesIO()
+        tf = tarfile.open(fileobj=fd, mode="w")
+        tf.close()
+
+        fd.seek(0)
+        with tarfile.open(fileobj=fd, mode="r|") as tf:
+            self.assertEqual(tf.next(), None)
+
+        fd.seek(0)
+        with tarfile.open(fileobj=fd, mode="r") as tf:
+            self.assertEqual(tf.next(), None)
 
 class MiscReadTest(MiscReadTestBase, unittest.TestCase):
     test_fail_comp = None
@@ -880,6 +907,23 @@ class Bz2DetectReadTest(Bz2Test, DetectReadTest):
 
 class LzmaDetectReadTest(LzmaTest, DetectReadTest):
     pass
+
+
+class GzipBrokenHeaderCorrectException(GzipTest, unittest.TestCase):
+    """
+    See: https://github.com/python/cpython/issues/107396
+    """
+    def runTest(self):
+        f = io.BytesIO(
+            b'\x1f\x8b'  # header
+            b'\x08'  # compression method
+            b'\x04'  # flags
+            b'\0\0\0\0\0\0'  # timestamp, compression data, OS ID
+            b'\0\x01'  # size
+            b'\0\0\0\0\0'  # corrupt data (zeros)
+        )
+        with self.assertRaises(tarfile.ReadError):
+            tarfile.open(fileobj=f, mode='r|gz')
 
 
 class MemberReadTest(ReadTest, unittest.TestCase):
@@ -1030,7 +1074,7 @@ class LongnameTest:
                     os.mkdir(longdir)
                     tar.add(longdir)
                 finally:
-                    os.rmdir(longdir)
+                    os.rmdir(longdir.rstrip("/"))
             with tarfile.open(tmpname) as tar:
                 self.assertIsNotNone(tar.getmember(longdir))
                 self.assertIsNotNone(tar.getmember(longdir.removesuffix('/')))
@@ -1517,6 +1561,10 @@ class StreamWriteTest(WriteTestBase, unittest.TestCase):
 
     @unittest.skipUnless(sys.platform != "win32" and hasattr(os, "umask"),
                          "Missing umask implementation")
+    @unittest.skipIf(
+        support.is_emscripten or support.is_wasi,
+        "Emscripten's/WASI's umask is a stub."
+    )
     def test_file_mode(self):
         # Test for issue #8464: Create files with correct
         # permissions.
@@ -2446,16 +2494,17 @@ class CommandLineTest(unittest.TestCase):
         return script_helper.assert_python_failure('-m', 'tarfile', *args)
 
     def make_simple_tarfile(self, tar_name):
-        files = [support.findfile('tokenize_tests.txt'),
+        files = [support.findfile('tokenize_tests.txt',
+                                  subdir='tokenizedata'),
                  support.findfile('tokenize_tests-no-coding-cookie-'
-                                  'and-utf8-bom-sig-only.txt')]
+                                  'and-utf8-bom-sig-only.txt',
+                                  subdir='tokenizedata')]
         self.addCleanup(os_helper.unlink, tar_name)
         with tarfile.open(tar_name, 'w') as tf:
             for tardata in files:
                 tf.add(tardata, arcname=os.path.basename(tardata))
 
     def make_evil_tarfile(self, tar_name):
-        files = [support.findfile('tokenize_tests.txt')]
         self.addCleanup(os_helper.unlink, tar_name)
         with tarfile.open(tar_name, 'w') as tf:
             benign = tarfile.TarInfo('benign')
@@ -2536,9 +2585,11 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(rc, 1)
 
     def test_create_command(self):
-        files = [support.findfile('tokenize_tests.txt'),
+        files = [support.findfile('tokenize_tests.txt',
+                                  subdir='tokenizedata'),
                  support.findfile('tokenize_tests-no-coding-cookie-'
-                                  'and-utf8-bom-sig-only.txt')]
+                                  'and-utf8-bom-sig-only.txt',
+                                  subdir='tokenizedata')]
         for opt in '-c', '--create':
             try:
                 out = self.tarfilecmd(opt, tmpname, *files)
@@ -2549,9 +2600,11 @@ class CommandLineTest(unittest.TestCase):
                 os_helper.unlink(tmpname)
 
     def test_create_command_verbose(self):
-        files = [support.findfile('tokenize_tests.txt'),
+        files = [support.findfile('tokenize_tests.txt',
+                                  subdir='tokenizedata'),
                  support.findfile('tokenize_tests-no-coding-cookie-'
-                                  'and-utf8-bom-sig-only.txt')]
+                                  'and-utf8-bom-sig-only.txt',
+                                  subdir='tokenizedata')]
         for opt in '-v', '--verbose':
             try:
                 out = self.tarfilecmd(opt, '-c', tmpname, *files,
@@ -2563,7 +2616,7 @@ class CommandLineTest(unittest.TestCase):
                 os_helper.unlink(tmpname)
 
     def test_create_command_dotless_filename(self):
-        files = [support.findfile('tokenize_tests.txt')]
+        files = [support.findfile('tokenize_tests.txt', subdir='tokenizedata')]
         try:
             out = self.tarfilecmd('-c', dotlessname, *files)
             self.assertEqual(out, b'')
@@ -2574,7 +2627,7 @@ class CommandLineTest(unittest.TestCase):
 
     def test_create_command_dot_started_filename(self):
         tar_name = os.path.join(TEMPDIR, ".testtar")
-        files = [support.findfile('tokenize_tests.txt')]
+        files = [support.findfile('tokenize_tests.txt', subdir='tokenizedata')]
         try:
             out = self.tarfilecmd('-c', tar_name, *files)
             self.assertEqual(out, b'')
@@ -2584,9 +2637,11 @@ class CommandLineTest(unittest.TestCase):
             os_helper.unlink(tar_name)
 
     def test_create_command_compressed(self):
-        files = [support.findfile('tokenize_tests.txt'),
+        files = [support.findfile('tokenize_tests.txt',
+                                  subdir='tokenizedata'),
                  support.findfile('tokenize_tests-no-coding-cookie-'
-                                  'and-utf8-bom-sig-only.txt')]
+                                  'and-utf8-bom-sig-only.txt',
+                                  subdir='tokenizedata')]
         for filetype in (GzipTest, Bz2Test, LzmaTest):
             if not filetype.open:
                 continue
@@ -3238,6 +3293,18 @@ class ArchiveMaker:
         bio = io.BytesIO(self.contents)
         return tarfile.open(fileobj=bio, **kwargs)
 
+# Under WASI, `os_helper.can_symlink` is False to make
+# `skip_unless_symlink` skip symlink tests. "
+# But in the following tests we use can_symlink to *determine* which
+# behavior is expected.
+# Like other symlink tests, skip these on WASI for now.
+if support.is_wasi:
+    def symlink_test(f):
+        return unittest.skip("WASI: Skip symlink test for now")(f)
+else:
+    def symlink_test(f):
+        return f
+
 
 class TestExtractionFilters(unittest.TestCase):
 
@@ -3287,14 +3354,9 @@ class TestExtractionFilters(unittest.TestCase):
         path = pathlib.Path(os.path.normpath(self.destdir / name))
         self.assertIn(path, self.expected_paths)
         self.expected_paths.remove(path)
-
-        # When checking mode, ignore Windows (which can only set user read and
-        # user write bits). Newer versions of Python use `os_helper.can_chmod()`
-        # instead of hardcoding Windows.
-        if mode is not None and sys.platform != 'win32':
+        if mode is not None and os_helper.can_chmod():
             got = stat.filemode(stat.S_IMODE(path.stat().st_mode))
             self.assertEqual(got, mode)
-
         if type is None and isinstance(name, str) and name.endswith('/'):
             type = tarfile.DIRTYPE
         if symlink_to is not None:
@@ -3356,6 +3418,7 @@ class TestExtractionFilters(unittest.TestCase):
                         tarfile.AbsolutePathError,
                         """['"].*escaped.evil['"] has an absolute path""")
 
+    @symlink_test
     def test_parent_symlink(self):
         # Test interplaying symlinks
         # Inspired by 'dirsymlink2a' in jwilk/traversal-archives
@@ -3406,6 +3469,7 @@ class TestExtractionFilters(unittest.TestCase):
             with self.check_context(arc.open(), 'data'):
                 self.expect_file('parent/evil')
 
+    @symlink_test
     def test_parent_symlink2(self):
         # Test interplaying symlinks
         # Inspired by 'dirsymlink2b' in jwilk/traversal-archives
@@ -3492,6 +3556,7 @@ class TestExtractionFilters(unittest.TestCase):
                 self.expect_file('current/')
                 self.expect_file('parent/evil')
 
+    @symlink_test
     def test_absolute_symlink(self):
         # Test symlink to an absolute path
         # Inspired by 'dirsymlink' in jwilk/traversal-archives
@@ -3538,6 +3603,7 @@ class TestExtractionFilters(unittest.TestCase):
                 tarfile.AbsoluteLinkError,
                 "'parent' is a link to an absolute path")
 
+    @symlink_test
     def test_sly_relative0(self):
         # Inspired by 'relative0' in jwilk/traversal-archives
         with ArchiveMaker() as arc:
@@ -3572,6 +3638,7 @@ class TestExtractionFilters(unittest.TestCase):
                         + "'.*moo', which is outside "
                         + "the destination")
 
+    @symlink_test
     def test_sly_relative2(self):
         # Inspired by 'relative2' in jwilk/traversal-archives
         with ArchiveMaker() as arc:
@@ -3591,6 +3658,7 @@ class TestExtractionFilters(unittest.TestCase):
                     + """['"].*moo['"], which is outside the """
                     + "destination")
 
+    @symlink_test
     def test_deep_symlink(self):
         # Test that symlinks and hardlinks inside a directory
         # point to the correct file (`target` of size 3).
@@ -3614,6 +3682,7 @@ class TestExtractionFilters(unittest.TestCase):
                 else:
                     self.expect_file('linkdir/symlink', size=3)
 
+    @symlink_test
     def test_chains(self):
         # Test chaining of symlinks/hardlinks.
         # Symlinks are created before the files they point to.
@@ -3655,9 +3724,21 @@ class TestExtractionFilters(unittest.TestCase):
         tmp_filename = os.path.join(TEMPDIR, "tmp.file")
         with open(tmp_filename, 'w'):
             pass
-        os.chmod(tmp_filename, os.stat(tmp_filename).st_mode | stat.S_ISVTX)
-        have_sticky_files = (os.stat(tmp_filename).st_mode & stat.S_ISVTX)
-        os.unlink(tmp_filename)
+        try:
+            try:
+                os.chmod(tmp_filename,
+                         os.stat(tmp_filename).st_mode | stat.S_ISVTX)
+            except OSError as exc:
+                if exc.errno == getattr(errno, "EFTYPE", 0):
+                    # gh-108948: On FreeBSD, regular users cannot set
+                    # the sticky bit.
+                    self.skipTest("chmod() failed with EFTYPE: "
+                                  "regular users cannot set sticky bit")
+                else:
+                    raise
+            have_sticky_files = (os.stat(tmp_filename).st_mode & stat.S_ISVTX)
+        finally:
+            os.unlink(tmp_filename)
 
         os.mkdir(tmp_filename)
         os.chmod(tmp_filename, os.stat(tmp_filename).st_mode | stat.S_ISVTX)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,8 @@ public final class PTraceback extends PythonBuiltinObject {
     private PFrame frame;
     private PFrame.Reference frameInfo;
     private int lineno = UNKNOWN_LINE_NUMBER;
-    private int lasti;
+    private int bci = -1;
+    private int lasti = -1;
     private PTraceback next;
     private LazyTraceback lazyTraceback;
 
@@ -104,8 +105,16 @@ public final class PTraceback extends PythonBuiltinObject {
         return lineno;
     }
 
-    public int getLasti() {
+    public int getLasti(PFrame pFrame) {
+        if (lasti == -1 && bci >= 0) {
+            lasti = pFrame.bciToLasti(bci);
+        }
         return lasti;
+    }
+
+    public void setBci(int bci) {
+        this.bci = bci;
+        this.lasti = -1;
     }
 
     public LazyTraceback getLazyTraceback() {

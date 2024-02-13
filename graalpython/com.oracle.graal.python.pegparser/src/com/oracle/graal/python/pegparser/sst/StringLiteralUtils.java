@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.FExprParser;
@@ -205,6 +206,7 @@ public abstract class StringLiteralUtils {
     private static final class FormatStringParser {
         // error messages from parsing
         public static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "f-string: empty expression not allowed";
+        public static final String ERROR_MESSAGE_EXPRESSION_REQUIRED_BEFORE = "f-string: expression required before '%c'";
         public static final String ERROR_MESSAGE_NESTED_TOO_DEEPLY = "f-string: expressions nested too deeply";
         public static final String ERROR_MESSAGE_SINGLE_BRACE = "f-string: single '}' is not allowed";
         public static final String ERROR_MESSAGE_INVALID_CONVERSION = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
@@ -486,11 +488,13 @@ public abstract class StringLiteralUtils {
                         }
                         break;
                     case STATE_AFTER_OPEN_BRACE:
-                        if (ch == '}' || ch == '=') {
+                        if (ch == '}') {
                             errorCallback.onError(textSourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
                             return -1;
-                        }
-                        if (ch == '{' && toplevel) {
+                        } else if (ch == '=') {
+                            errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPRESSION_REQUIRED_BEFORE, '=');
+                            return -1;
+                        } else if (ch == '{' && toplevel) {
                             // '{' escaping works only when parsing the expression, not when parsing
                             // the
                             // format (i.e., when we are in the recursive call)
@@ -809,19 +813,18 @@ public abstract class StringLiteralUtils {
          * Return an expression Token or {@code null} on error.
          */
         private static Token createExpressionToken(ErrorCallback errorCallback, String text, SourceRange sourceRange, int start, int end) {
-            if (start >= end) {
-                errorCallback.onError(sourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
-                return null;
+            assert start <= end;
+            int s = start;
+            while (s < end && Character.isWhitespace(text.charAt(s))) {
+                s++;
             }
-            boolean onlyWhiteSpaces = true;
-            for (int index = start; index < end; index++) {
-                if (!Character.isWhitespace(text.charAt(index))) {
-                    onlyWhiteSpaces = false;
-                    break;
+            if (s == end) {
+                char c = text.charAt(s);
+                if (c == '!' || c == ':' || c == '=') {
+                    errorCallback.onError(sourceRange, ERROR_MESSAGE_EXPRESSION_REQUIRED_BEFORE, c);
+                } else {
+                    errorCallback.onError(sourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
                 }
-            }
-            if (onlyWhiteSpaces) {
-                errorCallback.onError(sourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
                 return null;
             }
             return new Token(TOKEN_TYPE_EXPRESSION, start, end);

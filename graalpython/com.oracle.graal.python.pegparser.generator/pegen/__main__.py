@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -14,10 +14,9 @@ import sys
 import time
 import token
 import traceback
-
 from typing import Tuple
 
-from pegen.build import Grammar, Parser, Tokenizer, ParserGenerator
+from pegen.build import Grammar, Parser, ParserGenerator, Tokenizer
 from pegen.validator import validate_grammar
 
 
@@ -104,7 +103,9 @@ c_parser.add_argument(
     "--optimized", action="store_true", help="Compile the extension in optimized mode"
 )
 c_parser.add_argument(
-    "--skip-actions", action="store_true", help="Suppress code emission for rule actions",
+    "--skip-actions",
+    action="store_true",
+    help="Suppress code emission for rule actions",
 )
 
 python_parser = subparsers.add_parser("python", help="Generate Python code")
@@ -118,7 +119,9 @@ python_parser.add_argument(
     help="Where to write the generated parser",
 )
 python_parser.add_argument(
-    "--skip-actions", action="store_true", help="Suppress code emission for rule actions",
+    "--skip-actions",
+    action="store_true",
+    help="Suppress code emission for rule actions",
 )
 
 
