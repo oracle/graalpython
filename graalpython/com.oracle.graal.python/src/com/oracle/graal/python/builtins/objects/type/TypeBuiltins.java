@@ -28,6 +28,9 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.HiddenAttr.BASICSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
+import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
@@ -44,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKREFOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
@@ -197,10 +199,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public final class TypeBuiltins extends PythonBuiltins {
 
-    public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(J___DICTOFFSET__);
-    public static final HiddenKey TYPE_WEAKLISTOFFSET = new HiddenKey(J___WEAKLISTOFFSET__);
-    public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(J___ITEMSIZE__);
-    public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(J___BASICSIZE__);
     public static final HiddenKey TYPE_ALLOC = new HiddenKey(J___ALLOC__);
     public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
     public static final HiddenKey TYPE_DEL = new HiddenKey("__del__");
@@ -216,7 +214,8 @@ public final class TypeBuiltins extends PythonBuiltins {
     public static final HashMap<String, HiddenKey> INITIAL_HIDDEN_TYPE_KEYS = new HashMap<>();
 
     static {
-        for (HiddenKey key : new HiddenKey[]{TYPE_DICTOFFSET, TYPE_ITEMSIZE, TYPE_BASICSIZE, TYPE_ALLOC, TYPE_DEALLOC, TYPE_DEL, TYPE_FREE, TYPE_CLEAR, TYPE_FLAGS, TYPE_VECTORCALL_OFFSET, TYPE_DOC}) {
+        for (HiddenKey key : new HiddenKey[]{DICTOFFSET.getKeyTodoRemoveThis(), ITEMSIZE.getKeyTodoRemoveThis(), BASICSIZE.getKeyTodoRemoveThis(), TYPE_ALLOC, TYPE_DEALLOC, TYPE_DEL, TYPE_FREE,
+                        TYPE_CLEAR, TYPE_FLAGS, TYPE_VECTORCALL_OFFSET, TYPE_DOC}) {
             INITIAL_HIDDEN_TYPE_KEYS.put(key.getName(), key);
         }
     }

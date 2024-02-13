@@ -56,11 +56,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_DICTOFFSET;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_WEAKLISTOFFSET;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -83,6 +79,10 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_F
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
+import static com.oracle.graal.python.nodes.HiddenAttr.BASICSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
+import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -182,6 +182,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -2506,7 +2507,7 @@ public abstract class TypeNodes {
         @Specialization
         long lookup(Object cls,
                         @Cached CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_basicsize, TYPE_BASICSIZE);
+            return lookup.execute(cls, PyTypeObject__tp_basicsize, BASICSIZE);
         }
     }
 
@@ -2521,9 +2522,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_BASICSIZE, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, BASICSIZE, value);
         }
     }
 
@@ -2538,9 +2539,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long lookup(Object cls,
+        static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_itemsize, TYPE_ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
+            return lookup.execute(cls, PyTypeObject__tp_itemsize, ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
         }
 
         private static int getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
@@ -2573,9 +2574,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_ITEMSIZE, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, ITEMSIZE, value);
         }
     }
 
@@ -2590,9 +2591,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long lookup(Object cls,
+        static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_dictoffset, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
+            return lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
         }
 
         private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
@@ -2618,9 +2619,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_DICTOFFSET, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, DICTOFFSET, value);
         }
     }
 
@@ -2635,9 +2636,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long lookup(Object cls,
+        static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_weaklistoffset, TYPE_WEAKLISTOFFSET, PythonBuiltinClassType::getWeaklistoffset);
+            return lookup.execute(cls, PyTypeObject__tp_weaklistoffset, WEAKLISTOFFSET, PythonBuiltinClassType::getWeaklistoffset);
         }
     }
 
@@ -2652,9 +2653,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_WEAKLISTOFFSET, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, WEAKLISTOFFSET, value);
         }
     }
 

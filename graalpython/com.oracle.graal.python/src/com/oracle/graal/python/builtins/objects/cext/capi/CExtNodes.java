@@ -135,6 +135,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -997,17 +998,17 @@ public abstract class CExtNodes {
     @GenerateInline(false) // footprint reduction 44 -> 26
     public abstract static class LookupNativeI64MemberFromBaseNode extends Node {
 
-        public final long execute(Object cls, CFields nativeMemberName, Object managedMemberName) {
+        public final long execute(Object cls, CFields nativeMemberName, HiddenAttr managedMemberName) {
             return execute(cls, nativeMemberName, managedMemberName, null);
         }
 
-        public abstract long execute(Object cls, CFields nativeMemberName, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback);
+        public abstract long execute(Object cls, CFields nativeMemberName, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback);
 
         @Specialization
-        static long doSingleContext(Object cls, CFields nativeMember, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
+        static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached HiddenAttr.ReadNode readAttrNode,  // TODO: this was createForceType()
                         @Cached CStructAccess.ReadI64Node getTypeMemberNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
@@ -1020,8 +1021,8 @@ public abstract class CExtNodes {
                 if (builtinCallback != null && current instanceof PythonBuiltinClass builtinClass) {
                     return builtinCallback.apply(builtinClass.getType());
                 } else if (PGuards.isManagedClass(current)) {
-                    Object attr = readAttrNode.execute(current, managedMemberName);
-                    if (attr != PNone.NO_VALUE) {
+                    Object attr = readAttrNode.execute(inliningTarget, (PythonObject) current, managedMemberName, null);
+                    if (attr != null) {
                         return asSizeNode.executeExact(null, inliningTarget, attr);
                     }
                 } else {
