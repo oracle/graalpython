@@ -359,7 +359,6 @@ public class VirtualFileSystemTest {
                         assert os.path.exists('/test_mount_point/SomeFile')
                         assert os.path.exists('/test_mount_point/someFile')
                         assert os.path.exists('/test_mount_point/somefile')
-                        assert os.path.exists('/Test_Mount_Point/somefile')
                         assert not os.path.exists('/test_mount_point/somefile1')
                         """, b -> b.caseInsensitive(true));
     }

@@ -47,7 +47,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
@@ -67,15 +66,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 
 import org.graalvm.polyglot.io.FileSystem;
@@ -216,20 +212,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     /*
      * Maps platform-specific paths to entries.
      */
-    private final TreeMap<String, Entry> vfsEntries = new TreeMap<>();
-
-    /*
-     * These use '/' as the separator and start with VFS_PREFIX, no trailing slashes.
-     */
-    private static Set<String> filesList;
+    private Map<String, BaseEntry> vfsEntries;
 
     /**
      * Class used to read resources with getResource(name). By default VirtualFileSystem.class.
      */
     private Class<?> resourceLoadingClass;
-
-    private static Set<String> dirsList;
-    private static Map<String, String> lowercaseToResourceMap;
 
     private final FileSystem delegate;
 
@@ -237,11 +225,43 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final char RESOURCE_SEPARATOR_CHAR = '/';
     private static final String RESOURCE_SEPARATOR = String.valueOf(RESOURCE_SEPARATOR_CHAR);
 
-    /*
-     * For files, `data` is a byte[], for directories it is a Path[] which contains
-     * platform-specific paths.
-     */
-    private static final record Entry(boolean isFile, Object data) {
+    private abstract class BaseEntry {
+        private final String platformPath;
+
+        private BaseEntry(String platformPath) {
+            this.platformPath = platformPath;
+        }
+
+        public String getPlatformPath() {
+            return platformPath;
+        }
+
+        public String getResourcePath() {
+            return platformPathToResourcePath(platformPath);
+        }
+    }
+
+    private final class FileEntry extends BaseEntry {
+        private byte[] data;
+
+        public FileEntry(String path) {
+            super(path);
+        }
+
+        public byte[] getData() throws IOException {
+            if (data == null) {
+                data = readResource(getResourcePath());
+            }
+            return data;
+        }
+    }
+
+    private final class DirEntry extends BaseEntry {
+        List<BaseEntry> entries = new ArrayList<>();
+
+        public DirEntry(String platformPath) {
+            super(platformPath);
+        }
     }
 
     /*
@@ -252,6 +272,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * accessible.
      */
     private final Path mountPoint;
+    private final String mountPointLowerCase;
 
     /**
      * The temporary directory where to extract files/directories to.
@@ -330,6 +351,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             mp = isWindows() ? windowsMountPoint : unixMountPoint;
         }
         this.mountPoint = Path.of(mp);
+        this.mountPointLowerCase = mp.toLowerCase(Locale.ROOT);
         if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
             throw new IllegalArgumentException("GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator");
         }
@@ -370,11 +392,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
         }
-        return mountPoint.resolve(path).toString();
+        String absolute = mountPoint.resolve(path).toString();
+        if (inputPath.endsWith(RESOURCE_SEPARATOR) && !absolute.endsWith(PLATFORM_SEPARATOR)) {
+            absolute += PLATFORM_SEPARATOR;
+        }
+        return absolute;
     }
 
-    private String platformPathToResourcePath(String inputPath) throws IOException {
-        String mountPointString = this.mountPoint.toString();
+    private String platformPathToResourcePath(String inputPath) {
+        String mountPointString = mountPoint.toString();
         String path = inputPath;
         assert path.startsWith(mountPointString);
         if (path.startsWith(mountPointString)) {
@@ -387,41 +413,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             path = path.substring(0, path.length() - RESOURCE_SEPARATOR.length());
         }
         path = vfsPrefix + path;
-        if (caseInsensitive) {
-            path = getLowercaseToResourceMap().get(path);
-        }
         return path;
     }
 
-    private Set<String> getFilesList() throws IOException {
-        if (filesList == null) {
-            initFilesAndDirsList();
-        }
-        return filesList;
+    private String toCaseComparable(String file) {
+        return caseInsensitive ? file.toLowerCase(Locale.ROOT) : file;
     }
 
-    private Set<String> getDirsList() throws IOException {
-        if (dirsList == null) {
-            initFilesAndDirsList();
-        }
-        return dirsList;
-    }
-
-    private Map<String, String> getLowercaseToResourceMap() throws IOException {
-        assert caseInsensitive;
-        if (lowercaseToResourceMap == null) {
-            initFilesAndDirsList();
-        }
-        return lowercaseToResourceMap;
-    }
-
-    private void initFilesAndDirsList() throws IOException {
-        filesList = new HashSet<>();
-        dirsList = new HashSet<>();
-        if (caseInsensitive) {
-            lowercaseToResourceMap = new HashMap<>();
-        }
-
+    private void initEntries() throws IOException {
+        vfsEntries = new HashMap<>();
         try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(filesListPath)) {
             if (stream == null) {
                 return;
@@ -429,50 +429,31 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             BufferedReader br = new BufferedReader(new InputStreamReader(stream));
             String line;
             while ((line = br.readLine()) != null) {
-                if (line.endsWith(RESOURCE_SEPARATOR)) {
-                    line = line.substring(0, line.length() - 1);
-                    dirsList.add(line);
-                } else {
-                    filesList.add(line);
+                String platformPath = resourcePathToPlatformPath(line);
+                int i = 0;
+                DirEntry parent = null;
+                while ((i = platformPath.indexOf(PLATFORM_SEPARATOR, i)) != -1) {
+                    String dir = platformPath.substring(0, i);
+                    String dirKey = toCaseComparable(dir);
+                    DirEntry dirEntry = (DirEntry) vfsEntries.get(dirKey);
+                    if (dirEntry == null) {
+                        dirEntry = new DirEntry(dir);
+                        vfsEntries.put(dirKey, dirEntry);
+                        if (parent != null) {
+                            parent.entries.add(dirEntry);
+                        }
+                    }
+                    parent = dirEntry;
+                    i++;
                 }
-                if (caseInsensitive) {
-                    lowercaseToResourceMap.put(line.toLowerCase(Locale.ROOT), line);
+                assert parent != null;
+                if (!platformPath.endsWith(PLATFORM_SEPARATOR)) {
+                    FileEntry fileEntry = new FileEntry(platformPath);
+                    vfsEntries.put(toCaseComparable(platformPath), fileEntry);
+                    parent.entries.add(fileEntry);
                 }
             }
         }
-    }
-
-    private Entry readDirEntry(String parentDir) throws IOException {
-        List<String> l = new ArrayList<>();
-
-        // find all files in parent dir
-        for (String file : getFilesList()) {
-            if (isParent(parentDir, file)) {
-                l.add(file);
-            }
-        }
-
-        // find all dirs in parent dir
-        for (String file : getDirsList()) {
-            if (isParent(parentDir, file)) {
-                l.add(file);
-            }
-        }
-
-        Path[] paths = new Path[l.size()];
-        for (int i = 0; i < paths.length; i++) {
-            paths[i] = Paths.get(resourcePathToPlatformPath(l.get(i)));
-        }
-        return new Entry(false, paths);
-    }
-
-    private static boolean isParent(String parentDir, String file) {
-        return file.length() > parentDir.length() && file.startsWith(parentDir) &&
-                        file.indexOf(RESOURCE_SEPARATOR_CHAR, parentDir.length() + 1) < 0;
-    }
-
-    Entry readFileEntry(String file) throws IOException {
-        return new Entry(true, readResource(file));
     }
 
     byte[] readResource(String path) throws IOException {
@@ -493,34 +474,18 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     private Path toAbsolutePathInternal(Path path) {
-        if (path.startsWith(mountPoint)) {
+        if (pathIsInVfs(path)) {
             return path;
         }
         return mountPoint.resolve(path);
     }
 
-    private Entry file(Path inputPath) throws IOException {
-        Path path = toAbsolutePathInternal(inputPath).normalize();
-        String pathString = path.toString();
-        String entryKey = caseInsensitive ? pathString.toLowerCase(Locale.ROOT) : pathString;
-        Entry e = vfsEntries.get(entryKey);
-        if (e == null) {
-            pathString = platformPathToResourcePath(pathString);
-            URL uri = pathString == null ? null : this.resourceLoadingClass.getResource(pathString);
-            if (uri != null) {
-                if (getDirsList().contains(pathString)) {
-                    e = readDirEntry(pathString);
-                } else {
-                    e = readFileEntry(pathString);
-                }
-                vfsEntries.put(entryKey, e);
-            } else {
-                if (getDirsList().contains(pathString)) {
-                    e = readDirEntry(pathString);
-                }
-            }
+    private BaseEntry getEntry(Path inputPath) throws IOException {
+        if (vfsEntries == null) {
+            initEntries();
         }
-        return e;
+        Path path = toAbsolutePathInternal(inputPath).normalize();
+        return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
     public String getPrefix() {
@@ -529,6 +494,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     public String getFileListPath() {
         return this.filesListPath;
+    }
+
+    private boolean pathIsInVfs(Path path) {
+        return toCaseComparable(path.normalize().toString()).startsWith(mountPointLowerCase);
     }
 
     /**
@@ -551,21 +520,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
              * Remove the mountPoint(X) (e.g. "graalpy_vfs(x)") prefix if given. Method 'file' is
              * able to handle relative paths and we need it to compute the extract path.
              */
-            Path relPath;
-            if (path.startsWith(mountPoint)) {
-                relPath = mountPoint.relativize(path);
-            } else {
-                relPath = path;
-            }
+            BaseEntry entry = getEntry(path);
+            Path relPath = mountPoint.relativize(Paths.get(entry.getPlatformPath()));
 
             // create target path
             Path xPath = extractDir.resolve(relPath);
             if (!Files.exists(xPath)) {
-                Entry e = file(relPath);
-                if (e == null) {
-                    return path;
-                }
-                if (e.isFile()) {
+                if (entry instanceof FileEntry fileEntry) {
                     // first create parent dirs
                     Path parent = xPath.getParent();
                     assert parent == null || Files.isDirectory(parent);
@@ -575,9 +536,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     Files.createDirectories(parent);
 
                     // write data extracted file
-                    Files.write(xPath, (byte[]) e.data());
-                } else {
+                    Files.write(xPath, fileEntry.getData());
+                } else if (entry instanceof DirEntry) {
                     Files.createDirectories(xPath);
+                } else {
+                    return path;
                 }
             }
 
@@ -603,11 +566,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     @Override
     public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
-        if (path.normalize().startsWith(mountPoint)) {
+        if (pathIsInVfs(path)) {
             if (modes.contains(AccessMode.WRITE)) {
                 throw new SecurityException("read-only filesystem");
             }
-            if (file(path) == null) {
+            if (getEntry(path) == null) {
                 throw new NoSuchFileException("no such file or directory");
             }
         } else if (delegate != null) {
@@ -619,7 +582,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-        if (delegate == null || dir.normalize().startsWith(mountPoint)) {
+        if (delegate == null || pathIsInVfs(dir)) {
             throw new SecurityException("read-only filesystem");
         } else {
             delegate.createDirectory(dir, attrs);
@@ -628,7 +591,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     @Override
     public void delete(Path path) throws IOException {
-        if (delegate == null || path.normalize().startsWith(mountPoint)) {
+        if (delegate == null || pathIsInVfs(path)) {
             throw new SecurityException("read-only filesystem");
         } else {
             delegate.delete(path);
@@ -637,16 +600,16 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        if (delegate != null && !path.normalize().startsWith(mountPoint)) {
+        if (delegate != null && !pathIsInVfs(path)) {
             return delegate.newByteChannel(path, options, attrs);
         }
 
         if (options.isEmpty() || (options.size() == 1 && options.contains(StandardOpenOption.READ))) {
-            final Entry e = file(path);
-            if (e == null) {
+            BaseEntry entry = getEntry(path);
+            if (entry == null) {
                 throw new FileNotFoundException("No such file or directory");
             }
-            if (!e.isFile) {
+            if (!(entry instanceof FileEntry fileEntry)) {
                 // this constructor is used since we rely on the error message to convert to the
                 // appropriate python error
                 throw new FileSystemException(path.toString(), null, "Is a directory");
@@ -654,7 +617,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             return new SeekableByteChannel() {
                 long position = 0;
 
-                byte[] bytes = (byte[]) e.data;
+                final byte[] bytes = fileEntry.getData();
 
                 @Override
                 public int read(ByteBuffer dst) throws IOException {
@@ -715,27 +678,27 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        if (delegate != null && !dir.normalize().startsWith(mountPoint)) {
+        if (delegate != null && !pathIsInVfs(dir)) {
             return delegate.newDirectoryStream(dir, filter);
         }
-        Entry e = file(dir);
-        if (e == null) {
+        BaseEntry entry = getEntry(dir);
+        if (entry instanceof FileEntry) {
+            throw new NotDirectoryException(dir.toString());
+        } else if (entry instanceof DirEntry dirEntry) {
+            return new DirectoryStream<>() {
+                @Override
+                public void close() throws IOException {
+                    // nothing to do
+                }
+
+                @Override
+                public Iterator<Path> iterator() {
+                    return dirEntry.entries.stream().map(e -> Path.of(e.getPlatformPath())).iterator();
+                }
+            };
+        } else {
             throw new NoSuchFileException(dir.toString());
         }
-        if (e.isFile) {
-            throw new NotDirectoryException(dir.toString());
-        }
-        return new DirectoryStream<>() {
-            @Override
-            public void close() throws IOException {
-                // nothing to do
-            }
-
-            @Override
-            public Iterator<Path> iterator() {
-                return Arrays.asList((Path[]) e.data).iterator();
-            }
-        };
     }
 
     @Override
@@ -762,11 +725,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
-        if (delegate != null && !path.normalize().startsWith(mountPoint)) {
+        if (delegate != null && !pathIsInVfs(path)) {
             return delegate.readAttributes(path, attributes, options);
         }
-        Entry e = file(path);
-        if (e == null) {
+        BaseEntry entry = getEntry(path);
+        if (entry == null) {
             throw new NoSuchFileException("no such file or directory");
         }
         HashMap<String, Object> attrs = new HashMap<>();
@@ -777,11 +740,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         attrs.put("creationTime", FileTime.fromMillis(0));
         attrs.put("lastModifiedTime", FileTime.fromMillis(0));
         attrs.put("lastAccessTime", FileTime.fromMillis(0));
-        attrs.put("isRegularFile", e.isFile);
-        attrs.put("isDirectory", !e.isFile);
+        attrs.put("isRegularFile", entry instanceof FileEntry);
+        attrs.put("isDirectory", entry instanceof DirEntry);
         attrs.put("isSymbolicLink", false);
         attrs.put("isOther", false);
-        attrs.put("size", (long) (e.isFile ? ((byte[]) e.data).length : 0));
+        attrs.put("size", (long) (entry instanceof FileEntry fileEntry ? fileEntry.getData().length : 0));
         attrs.put("mode", 0555);
         attrs.put("dev", 0L);
         attrs.put("nlink", 1);
