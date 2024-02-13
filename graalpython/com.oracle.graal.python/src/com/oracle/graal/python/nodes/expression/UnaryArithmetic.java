@@ -139,7 +139,7 @@ public enum UnaryArithmetic {
         }
 
         @NeverDefault
-        static LookupAndCallUnaryNode createCallNode(TruffleString name, Supplier<NoAttributeHandler> handler) {
+        public static LookupAndCallUnaryNode createCallNode(TruffleString name, Supplier<NoAttributeHandler> handler) {
             return LookupAndCallUnaryNode.create(name, handler);
         }
     }
@@ -155,25 +155,25 @@ public enum UnaryArithmetic {
     @GenerateCached
     public abstract static class PosNode extends UnaryArithmeticNode {
 
-        static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("+");
+        public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("+");
 
         @Specialization
-        static int pos(int arg) {
+        public static int pos(int arg) {
             return arg;
         }
 
         @Specialization
-        static long pos(long arg) {
+        public static long pos(long arg) {
             return arg;
         }
 
         @Specialization
-        static double pos(double arg) {
+        public static double pos(double arg) {
             return arg;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object arg,
+        public static Object doGeneric(VirtualFrame frame, Object arg,
                         @Cached(value = "createCallNode(T___POS__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
@@ -188,30 +188,30 @@ public enum UnaryArithmetic {
     @GenerateCached
     public abstract static class NegNode extends UnaryArithmeticNode {
 
-        static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("-");
+        public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("-");
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static int neg(int arg) {
+        public static int neg(int arg) {
             return Math.negateExact(arg);
         }
 
         @Specialization
-        static long negOvf(int arg) {
+        public static long negOvf(int arg) {
             return -((long) arg);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static long neg(long arg) {
+        public static long neg(long arg) {
             return Math.negateExact(arg);
         }
 
         @Specialization
-        static double neg(double arg) {
+        public static double neg(double arg) {
             return -arg;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object arg,
+        public static Object doGeneric(VirtualFrame frame, Object arg,
                         @Cached(value = "createCallNode(T___NEG__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
@@ -226,25 +226,25 @@ public enum UnaryArithmetic {
     @GenerateCached
     public abstract static class InvertNode extends UnaryArithmeticNode {
 
-        static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("~");
+        public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("~");
 
         @Specialization
-        static int invert(boolean arg) {
+        public static int invert(boolean arg) {
             return ~(arg ? 1 : 0);
         }
 
         @Specialization
-        static int invert(int arg) {
+        public static int invert(int arg) {
             return ~arg;
         }
 
         @Specialization
-        static long invert(long arg) {
+        public static long invert(long arg) {
             return ~arg;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object arg,
+        public static Object doGeneric(VirtualFrame frame, Object arg,
                         @Cached(value = "createCallNode(T___INVERT__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }

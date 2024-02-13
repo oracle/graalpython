@@ -76,11 +76,11 @@ public abstract class DictNodes {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isIdentical(self, other)")
-        static void updateSelf(VirtualFrame frame, PDict self, Object other) {
+        public static void updateSelf(VirtualFrame frame, PDict self, Object other) {
         }
 
         @Specialization(guards = "!mayHaveSideEffectingEq(self)")
-        static void updateDictNoSideEffects(PDict self, PDict other,
+        public static void updateDictNoSideEffects(PDict self, PDict other,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             // The contract is such that we iterate over 'other' and add its elements to 'self'. If
@@ -91,7 +91,7 @@ public abstract class DictNodes {
         }
 
         @Specialization(guards = "mayHaveSideEffectingEq(self)")
-        static void updateDictGeneric(VirtualFrame frame, PDict self, PDict other,
+        public static void updateDictGeneric(VirtualFrame frame, PDict self, PDict other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageTransferItem transferItem,
                         @Cached HashingStorageGetIterator getOtherIter,
@@ -112,7 +112,7 @@ public abstract class DictNodes {
         }
 
         @Specialization(guards = "!isDict(other)")
-        static void updateArg(VirtualFrame frame, PDict self, Object other,
+        public static void updateArg(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyObjectLookupAttr lookupKeys,
@@ -123,7 +123,7 @@ public abstract class DictNodes {
             self.setDictStorage(storage);
         }
 
-        protected static boolean isIdentical(PDict dict, Object other) {
+        public static boolean isIdentical(PDict dict, Object other) {
             return dict == other;
         }
 

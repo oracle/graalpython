@@ -225,7 +225,7 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
     }
 
     @InliningCutoff
-    private PException raiseNameNotDefined(PRaiseNode raiseNode, TruffleString attributeId) {
+    private static PException raiseNameNotDefined(PRaiseNode raiseNode, TruffleString attributeId) {
         throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
     }
 
@@ -241,7 +241,7 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
         return returnBuiltinFromConstantModule(attributeId, inliningTarget, raiseNode, isBuiltinProfile, readFromBuiltinsNode, builtins);
     }
 
-    private Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode.Lazy raiseNode, Node inliningTarget,
+    private static Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode.Lazy raiseNode, Node inliningTarget,
                     InlinedConditionProfile isBuiltinProfile, PythonModule builtins,
                     ReadAttributeFromObjectNode readFromBuiltinsNode) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);

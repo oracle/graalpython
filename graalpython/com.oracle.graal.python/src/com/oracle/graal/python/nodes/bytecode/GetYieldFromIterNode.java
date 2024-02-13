@@ -58,13 +58,13 @@ public abstract class GetYieldFromIterNode extends Node {
     public abstract Object execute(Frame frame, Object receiver);
 
     @Specialization
-    public Object getGeneratorOrCoroutine(PGenerator arg) {
+    public static Object getGeneratorOrCoroutine(PGenerator arg) {
         // TODO check if the generator in which the yield from is an iterable or normal coroutine
         return arg;
     }
 
     @Specialization
-    public Object getGeneric(Frame frame, Object arg,
+    public static Object getGeneric(Frame frame, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached IsBuiltinObjectExactProfile isCoro) {

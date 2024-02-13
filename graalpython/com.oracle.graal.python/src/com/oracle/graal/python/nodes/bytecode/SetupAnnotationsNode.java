@@ -79,7 +79,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
     public abstract void execute(Frame frame);
 
     @Specialization
-    void doLocals(VirtualFrame frame,
+    public static void doLocals(VirtualFrame frame,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile hasLocals,
                     @Cached SetupAnnotationsFromDictOrModuleNode setup) {
@@ -94,7 +94,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
+    public abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Node inliningTarget, Object locals);
 
         @Specialization

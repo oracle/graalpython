@@ -105,12 +105,12 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // Primitives
     @Specialization
-    static boolean doBB(boolean left, boolean right) {
+    public static boolean doBB(boolean left, boolean right) {
         return left == right;
     }
 
     @Specialization
-    static boolean doBP(boolean left, PInt right, @Bind("this") Node inliningTarget) {
+    public static boolean doBP(boolean left, PInt right, @Bind("this") Node inliningTarget) {
         Python3Core core = PythonContext.get(inliningTarget);
         if (left) {
             return right == core.getTrue();
@@ -120,17 +120,17 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     @Specialization
-    static boolean doII(int left, int right) {
+    public static boolean doII(int left, int right) {
         return left == right;
     }
 
     @Specialization
-    static boolean doIL(int left, long right) {
+    public static boolean doIL(int left, long right) {
         return left == right;
     }
 
     @Specialization
-    static boolean doIP(int left, PInt right,
+    public static boolean doIP(int left, PInt right,
                     @Bind("this") Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
@@ -145,17 +145,17 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     @Specialization
-    static boolean doLI(long left, int right) {
+    public static boolean doLI(long left, int right) {
         return left == right;
     }
 
     @Specialization
-    static boolean doLL(long left, long right) {
+    public static boolean doLL(long left, long right) {
         return left == right;
     }
 
     @Specialization
-    static boolean doLP(long left, PInt right,
+    public static boolean doLP(long left, PInt right,
                     @Bind("this") Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
@@ -170,26 +170,26 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     @Specialization
-    static boolean doDD(double left, double right) {
+    public static boolean doDD(double left, double right) {
         // n.b. we simulate that the primitive NaN is a singleton; this is required to make
         // 'nan = float("nan"); nan is nan' work
         return left == right || (Double.isNaN(left) && Double.isNaN(right));
     }
 
     @Specialization
-    static boolean doPB(PInt left, boolean right, @Bind("this") Node inliningTarget) {
+    public static boolean doPB(PInt left, boolean right, @Bind("this") Node inliningTarget) {
         return doBP(right, left, inliningTarget);
     }
 
     @Specialization
-    static boolean doPI(PInt left, int right,
+    public static boolean doPI(PInt left, int right,
                     @Bind("this") Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         return doIP(right, left, inliningTarget, isBuiltin);
     }
 
     @Specialization
-    static boolean doPL(PInt left, long right,
+    public static boolean doPL(PInt left, long right,
                     @Bind("this") Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         return doLP(right, left, inliningTarget, isBuiltin);
@@ -197,18 +197,18 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // types
     @Specialization
-    static boolean doCT(PythonBuiltinClass left, PythonBuiltinClassType right) {
+    public static boolean doCT(PythonBuiltinClass left, PythonBuiltinClassType right) {
         return left.getType() == right;
     }
 
     @Specialization
-    static boolean doTC(PythonBuiltinClassType left, PythonBuiltinClass right) {
+    public static boolean doTC(PythonBuiltinClassType left, PythonBuiltinClass right) {
         return right.getType() == left;
     }
 
     // native objects
     @Specialization
-    static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+    public static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                     @Bind("this") Node inliningTarget,
                     @Cached CExtNodes.PointerCompareNode pointerCompareNode) {
         return pointerCompareNode.execute(inliningTarget, ComparisonOp.EQ, left, right);
@@ -216,7 +216,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // code
     @Specialization
-    static boolean doCode(PCode left, PCode right,
+    public static boolean doCode(PCode left, PCode right,
                     @Bind("this") Node inliningTarget,
                     @Cached CodeNodes.GetCodeCallTargetNode getCt) {
         // Special case for code objects: Frames create them on-demand even if they refer to the
@@ -246,7 +246,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // none
     @Specialization
-    static boolean doObjectPNone(Object left, PNone right,
+    public static boolean doObjectPNone(Object left, PNone right,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -260,7 +260,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     @Specialization
-    static boolean doPNoneObject(PNone left, Object right,
+    public static boolean doPNoneObject(PNone left, Object right,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -269,7 +269,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // pstring (may be interned)
     @Specialization
-    static boolean doPString(PString left, PString right,
+    public static boolean doPString(PString left, PString right,
                     @Bind("this") Node inliningTarget,
                     @Cached StringNodes.StringMaterializeNode materializeNode,
                     @Cached StringNodes.IsInternedStringNode isInternedStringNode,
@@ -282,7 +282,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // everything else
     @Fallback
-    static boolean doOther(Object left, Object right,
+    public static boolean doOther(Object left, Object right,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {

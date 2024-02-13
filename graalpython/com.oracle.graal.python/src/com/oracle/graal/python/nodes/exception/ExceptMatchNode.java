@@ -83,7 +83,7 @@ public abstract class ExceptMatchNode extends Node {
     }
 
     @Specialization(guards = "!isPTuple(clause)")
-    static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
+    public static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @Cached GetClassNode getClassNode,
@@ -94,7 +94,7 @@ public abstract class ExceptMatchNode extends Node {
     }
 
     @Specialization(guards = {"!isPTuple(clause)", "!isPException(e)"}, limit = "1")
-    static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
+    public static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @CachedLibrary("clause") InteropLibrary clauseLib,
                     @Shared @Cached PRaiseNode raiseNode) {
@@ -114,7 +114,7 @@ public abstract class ExceptMatchNode extends Node {
     }
 
     @Specialization
-    static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
+    public static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
                     @Bind("this") Node inliningTarget,
                     @Cached ExceptMatchNode recursiveNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {

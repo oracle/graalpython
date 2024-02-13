@@ -78,7 +78,7 @@ public abstract class PyObjectStrAsTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static TruffleString doGeneric(VirtualFrame frame, Node inliningTarget, Object obj,
+    public static TruffleString doGeneric(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectStrAsObjectNode strNode,
                     @Cached CastToTruffleStringNode castToString) {
         try {

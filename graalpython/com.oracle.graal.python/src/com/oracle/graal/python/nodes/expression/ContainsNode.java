@@ -69,7 +69,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    static boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
+    public static boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
@@ -86,7 +86,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    static boolean doInt(VirtualFrame frame, int item, Object iter,
+    public static boolean doInt(VirtualFrame frame, int item, Object iter,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
@@ -102,7 +102,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    static boolean doLong(VirtualFrame frame, long item, Object iter,
+    public static boolean doLong(VirtualFrame frame, long item, Object iter,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
@@ -118,7 +118,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    static boolean doDouble(VirtualFrame frame, double item, Object iter,
+    public static boolean doDouble(VirtualFrame frame, double item, Object iter,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
@@ -134,7 +134,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization
-    static boolean doGeneric(VirtualFrame frame, Object item, Object iter,
+    public static boolean doGeneric(VirtualFrame frame, Object item, Object iter,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
