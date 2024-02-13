@@ -54,7 +54,7 @@ CATALOG_ALIAS = "tested_catalog"
 WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
 JBANG_CMD = os.environ.get('JBANG_CMD')
 ENV = os.environ.copy()
-USE_SHELL = 'win' in sys.platform
+USE_SHELL = 'win32' == sys.platform
 
 def run_cmd(cmd, env=ENV, cwd=None):
     print(f"\nExecuting: {cmd=}")

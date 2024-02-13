@@ -3310,8 +3310,8 @@ def update_hpy_import_cmd(args):
     tracker_file_dest = join(jni_project_dir, "src", "ctx_tracker.c")
     import_file(tracker_file_src, tracker_file_dest)
 
-    # tests go to 'com.oracle.graal.python.hpy.test/src/test'
-    test_files_dest = _hpy_test_root()
+    # tests go to 'com.oracle.graal.python.hpy.test/src/hpytest'
+    test_files_dest = join(mx.dependency(HPY_TEST_PROJECT).dir, "src", "hpytest")
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
 
