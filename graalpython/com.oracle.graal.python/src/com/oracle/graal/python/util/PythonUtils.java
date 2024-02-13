@@ -815,6 +815,14 @@ public final class PythonUtils {
         return data;
     }
 
+    public static ConditionProfile[] createConditionProfiles(int n) {
+        ConditionProfile[] profiles = new ConditionProfile[n];
+        for (int i = 0; i < profiles.length; i++) {
+            profiles[i] = ConditionProfile.create();
+        }
+        return profiles;
+    }
+
     public static final class NodeCounterWithLimit implements NodeVisitor {
         private int count;
         private final int limit;
