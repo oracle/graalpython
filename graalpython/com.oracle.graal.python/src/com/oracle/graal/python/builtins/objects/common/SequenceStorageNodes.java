@@ -1434,26 +1434,34 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class StorageToNativeNode extends Node {
 
-        public abstract NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length);
+        public abstract NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length, boolean createRef);
 
-        public abstract NativeSequenceStorage execute(Node inliningTarget, Object obj, int length);
+        public abstract NativeSequenceStorage execute(Node inliningTarget, Object obj, int length, boolean createRef);
+
+        public final NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length) {
+            return executeBytes(inliningTarget, obj, length, true);
+        }
+
+        public final NativeSequenceStorage execute(Node inliningTarget, Object obj, int length) {
+            return execute(inliningTarget, obj, length, true);
+        }
 
         @Specialization
-        static NativeSequenceStorage doByte(byte[] arr, int length,
+        static NativeByteSequenceStorage doByte(byte[] arr, int length, boolean createRef,
                         @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
                         @Cached(inline = false) CStructAccess.WriteByteNode write) {
             Object mem = alloc.alloc(arr.length + 1);
             write.writeByteArray(mem, arr);
-            return NativeByteSequenceStorage.create(mem, length, arr.length, true);
+            return NativeByteSequenceStorage.create(mem, length, arr.length, createRef);
         }
 
         @Specialization
-        static NativeSequenceStorage doObject(Object[] arr, int length,
+        static NativeSequenceStorage doObject(Object[] arr, int length, boolean createRef,
                         @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode write) {
             Object mem = alloc.alloc((arr.length + 1) * CStructAccess.POINTER_SIZE);
             write.writeArray(mem, arr);
-            return NativeObjectSequenceStorage.create(mem, length, arr.length, true);
+            return NativeObjectSequenceStorage.create(mem, length, arr.length, createRef);
         }
     }
 
