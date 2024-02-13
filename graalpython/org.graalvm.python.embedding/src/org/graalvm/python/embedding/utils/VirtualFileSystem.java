@@ -99,6 +99,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         private String unixMountPoint = "/graalpy_vfs";
         private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
         private HostIO allowHostIO = HostIO.READ_WRITE;
+        private boolean caseInsensitive = isWindows();
 
         private Class<?> resourceLoadingClass;
 
@@ -111,6 +112,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         public Builder vfsPrefix(String s) {
             vfsPrefix = s;
             filesListPath = vfsPrefix + "/fileslist.txt";
+            return this;
+        }
+
+        /**
+         * Sets the file system to be case-insensitive. Defaults to true on Windows and false
+         * elsewhere.
+         */
+        public Builder caseInsensitive(boolean value) {
+            caseInsensitive = value;
             return this;
         }
 
@@ -179,7 +189,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
 
         public VirtualFileSystem build() {
-            return new VirtualFileSystem(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass);
+            return new VirtualFileSystem(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
         }
     }
 
@@ -252,7 +262,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * A filter to determine if a path should be extracted (see {@link #shouldExtract(Path)}).
      */
     private final Predicate<Path> extractFilter;
-    private static final boolean caseInsensitive = isWindows();
+    private final boolean caseInsensitive;
 
     private static final class DeleteTempDir extends Thread {
         private final Path extractDir;
@@ -305,7 +315,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     String windowsMountPoint,
                     String unixMountPoint,
                     HostIO allowHostIO,
-                    Class<?> resourceLoadingClass) {
+                    Class<?> resourceLoadingClass,
+                    boolean caseInsensitive) {
         if (resourceLoadingClass != null) {
             this.resourceLoadingClass = resourceLoadingClass;
         } else {
@@ -313,6 +324,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
         this.vfsPrefix = resourcesPrefix;
         this.filesListPath = fileListResource;
+        this.caseInsensitive = caseInsensitive;
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
         if (mp == null) {
             mp = isWindows() ? windowsMountPoint : unixMountPoint;

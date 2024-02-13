@@ -5,3 +5,4 @@
 /org/graalvm/python/embedding/utils/test/vfs/emptydir/
 /org/graalvm/python/embedding/utils/test/vfs/file1
 /org/graalvm/python/embedding/utils/test/vfs/fileslist.txt
+/org/graalvm/python/embedding/utils/test/vfs/SomeFile
