@@ -2230,7 +2230,6 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -2419,8 +2418,7 @@ public abstract class GraalHPyNodes {
                 if (baseClass instanceof PythonClass pythonBaseClass) {
                     baseFlags = pythonBaseClass.getFlags();
                 } else {
-                    Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
-                    baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
+                    baseFlags = 0;
                 }
                 int baseBuiltinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(baseClass);
                 checkInheritanceConstraints(flags, baseFlags, builtinShape, baseBuiltinShape > GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY, raiseNode);

@@ -132,10 +132,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public abstract class GraalHPyDef {
 
-    public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
-    public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
-    public static final HiddenKey TYPE_HPY_BUILTIN_SHAPE = new HiddenKey("hpy_builtin_shape");
-
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;
     public static final int HPY_DEF_KIND_METH = 2;
