@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -143,7 +143,7 @@ typedef struct {
  *   structure that will serve as a specification of the module that should be
  *   created by the interpreter. HPy supports only multi-phase module
  *   initialization (PEP 451). Any module initialization code can be added
- *   to the HPy_mod_execute slot of the module if needed.
+ *   to the HPy_mod_exec slot of the module if needed.
  *
  * Example:
  *

@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -248,7 +248,15 @@ HPyStructSequence_New(HPyContext *ctx, HPy type, HPy_ssize_t nargs, HPy *args)
     tp = (PyTypeObject *)_h2py(type);
     name = PyUnicode_FromStringAndSize(s_n_fields, sizeof(s_n_fields));
     // CPython also accesses the dict directly
-    v = PyDict_GetItemWithError(tp->tp_dict, name);
+#if PY_VERSION_HEX >= 0x030C0000
+    PyObject *dict = PyType_GetDict(tp);
+#else
+    PyObject *dict = tp->tp_dict;
+#endif
+    v = PyDict_GetItemWithError(dict, name);
+#if PY_VERSION_HEX >= 0x030C0000
+    Py_DECREF(dict);
+#endif
     Py_DECREF(name);
     if (v == NULL && !PyErr_Occurred()) {
         goto type_error;
