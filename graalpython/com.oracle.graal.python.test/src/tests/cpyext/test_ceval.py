@@ -48,10 +48,12 @@ class TestCeval(CPyExtTestCase):
         super(TestCeval, self).compile_module(name)
 
     test_Py_EnterLeaveRecursiveCall = CPyExtFunction(
-        lambda args: None if args[0] < 1000 else RecursionError(args[1]),
+        # We don't know the exact limit on CPython since it uses the counter in
+        # the interpreter as well.
+        lambda args: None if args[0] < 800 else RecursionError(args[1]),
         lambda: (
             (1, ": one"),
-            (999, ": nine nine nine"),
+            (500, ": five hundred"),
             (10000, ": ten thousand"),
         ),
         code="""
