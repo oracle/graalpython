@@ -107,6 +107,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeAddressRange;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
@@ -510,7 +511,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_NewPresized", ret = PyObject, args = {Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_SetItemId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyErr_BadInternalCall", ret = Void, args = {ConstCharPtr, PrimitiveResult32}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "_PyErr_GetExcInfo", ret = Void, args = {PyThreadState, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyEval_SliceIndex", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyFrame_SetLineNumber", ret = Void, args = {PyFrameObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_FetchStopIterationValue", ret = Int, args = {PyObjectPtr}, call = CImpl)
@@ -1002,7 +1005,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_MergeEx", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDict_SizeOf", ret = Py_ssize_t, args = {PYDICTOBJECT_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_CheckSignals", ret = Int, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyErr_GetExcInfo", ret = Void, args = {PyThreadState, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_GetHandledException", ret = PyObject, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_GetTopmostException", ret = _PYERR_STACKITEM_PTR, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_ProgramDecodedTextObject", ret = PyObject, args = {PyObject, Int, ConstCharPtr}, call = NotImplemented)
