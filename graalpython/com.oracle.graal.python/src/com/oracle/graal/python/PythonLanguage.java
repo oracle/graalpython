@@ -621,7 +621,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (hasArguments) {
                 rootNode = new RootNodeWithArguments(this, rootNode);
             }
-            if (topLevel && context.isCoreInitialized()) {
+            if (topLevel) {
                 rootNode = new TopLevelExceptionHandler(this, rootNode, source);
             }
             return PythonUtils.getOrCreateCallTarget(rootNode);
