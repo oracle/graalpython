@@ -13,7 +13,9 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-// #include "pycore_pystate.h"       // _PyThreadState_GET()
+#if 0 // GraalPy change
+#include "pycore_pystate.h"       // _PyThreadState_GET()
+#endif // GraalPy change
 
 PyAPI_FUNC(PyObject *) _PyObject_Call_Prepend(
     PyThreadState *tstate,
@@ -95,8 +97,7 @@ _PyObject_VectorcallTstate(PyThreadState *tstate, PyObject *callable,
         return _PyObject_MakeTpCall(tstate, callable, args, nargs, kwnames);
     }
     res = func(callable, args, nargsf, kwnames);
-    // return _Py_CheckFunctionResult(tstate, callable, res, NULL);
-    return res;
+    return _Py_CheckFunctionResult(tstate, callable, res, NULL);
 }
 
 
@@ -109,9 +110,8 @@ _PyObject_CallNoArgsTstate(PyThreadState *tstate, PyObject *func) {
 // Private static inline function variant of public PyObject_CallNoArgs()
 static inline PyObject *
 _PyObject_CallNoArgs(PyObject *func) {
-    // PyThreadState *tstate = _PyThreadState_GET();
-    // return _PyObject_VectorcallTstate(tstate, func, NULL, 0, NULL);
-    return _PyObject_VectorcallTstate(NULL, func, NULL, 0, NULL);
+    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    return _PyObject_VectorcallTstate(tstate, func, NULL, 0, NULL);
 }
 
 

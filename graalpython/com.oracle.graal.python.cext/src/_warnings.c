@@ -176,13 +176,3 @@ exit:
     return ret;
 }
 
-PyObject* _PyErr_FormatFromCause(PyObject *exception, const char *format, ...) {
-	// dummy implementation that ignores the cause
-    va_list args;
-    va_start(args, format);
-    PyObject* formatted_msg = PyUnicode_FromFormatV(format, args);
-    va_end(args);
-    Graal_PyTruffleErr_CreateAndSetException(exception, formatted_msg);
-    return NULL;
-}
-

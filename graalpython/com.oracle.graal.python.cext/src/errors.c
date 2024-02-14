@@ -39,6 +39,15 @@
  * SOFTWARE.
  */
 #include "capi.h"
+#include "pycore_pyerrors.h"
+
+void
+_PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
+               PyObject *traceback)
+{
+    // GraalPy change: different implementation
+    PyErr_Restore(type, value, traceback);
+}
 
 #undef PyErr_BadInternalCall
 void PyErr_BadInternalCall(void) {
@@ -48,24 +57,65 @@ void PyErr_BadInternalCall(void) {
 #define PyErr_BadInternalCall() _PyErr_BadInternalCall(__FILE__, __LINE__)
 
 
-void PyErr_SetString(PyObject *exception, const char *string) {
+void
+_PyErr_SetString(PyThreadState *tstate, PyObject *exception,
+                 const char *string)
+{
     PyObject *value = PyUnicode_FromString(string);
-    PyErr_SetObject(exception, value);
+    if (value != NULL) {
+        _PyErr_SetObject(tstate, exception, value);
+        Py_DECREF(value);
+    }
 }
 
-void PyErr_SetObject(PyObject *exception, PyObject *value) {
+void
+PyErr_SetString(PyObject *exception, const char *string)
+{
+    // GraalPy change: don't get thread state
+    _PyErr_SetString(NULL, exception, string);
+}
+
+void
+_PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
+{
 	Graal_PyTruffleErr_CreateAndSetException(exception, value);
+}
+
+void
+PyErr_SetObject(PyObject *exception, PyObject *value)
+{
+    // GraalPy change: don't get thread state
+    _PyErr_SetObject(NULL, exception, value);
+}
+
+void
+_PyErr_Clear(PyThreadState *tstate)
+{
+    PyErr_Restore(NULL, NULL, NULL);
 }
 
 void PyErr_Clear(void) {
     PyErr_Restore(NULL, NULL, NULL);
 }
 
-void PyErr_SetNone(PyObject *exception) {
-	Graal_PyTruffleErr_CreateAndSetException(exception, Py_None);
+void
+_PyErr_SetNone(PyThreadState *tstate, PyObject *exception)
+{
+    _PyErr_SetObject(tstate, exception, (PyObject *)NULL);
 }
 
-void PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
+
+void
+PyErr_SetNone(PyObject *exception)
+{
+    // GraalPy change: don't get thread state
+    _PyErr_SetNone(NULL, exception);
+}
+
+void
+_PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
+             PyObject **p_traceback)
+{
     PyObject* result = GraalPyTruffleErr_Fetch();
     if(result == NULL) {
     	*p_type = NULL;
@@ -81,6 +131,14 @@ void PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) 
         Py_DecRef(result);
     }
 }
+
+void
+PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback)
+{
+    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    _PyErr_Fetch(tstate, p_type, p_value, p_traceback);
+}
+
 
 void PyErr_GetExcInfo(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
     PyObject* result = GraalPyTruffleErr_GetExcInfo();
@@ -110,10 +168,20 @@ int PyErr_BadArgument(void) {
     return 0;
 }
 
+
 // partially taken from CPython "Python/errors.c"
-PyObject * PyErr_NoMemory(void) {
+PyObject *
+_PyErr_NoMemory(PyThreadState *tstate)
+{
     PyErr_SetNone(PyExc_MemoryError);
     return NULL;
+}
+
+PyObject *
+PyErr_NoMemory(void)
+{
+    // GraalPy change: we don't use thread state
+    return _PyErr_NoMemory(NULL);
 }
 
 // taken from CPython "Python/errors.c"
@@ -121,23 +189,123 @@ int PyErr_ExceptionMatches(PyObject *exc) {
     return PyErr_GivenExceptionMatches(PyErr_Occurred(), exc);
 }
 
-NO_INLINE
-PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    PyObject* formatted_msg = PyUnicode_FromFormatV(fmt, args);
-    va_end(args);
-    Graal_PyTruffleErr_CreateAndSetException(exception, formatted_msg);
+static PyObject *
+_PyErr_FormatV(PyThreadState *tstate, PyObject *exception,
+               const char *format, va_list vargs)
+{
+    PyObject* string;
+
+    /* Issue #23571: PyUnicode_FromFormatV() must not be called with an
+       exception set, it calls arbitrary Python code like PyObject_Repr() */
+    _PyErr_Clear(tstate);
+
+    string = PyUnicode_FromFormatV(format, vargs);
+    if (string != NULL) {
+        _PyErr_SetObject(tstate, exception, string);
+        Py_DECREF(string);
+    }
     return NULL;
 }
 
-NO_INLINE
-PyObject* PyErr_FormatV(PyObject* exception, const char* fmt, va_list va) {
-    va_list args;
-    va_copy(args, va);
-    PyObject* formatted_msg = PyUnicode_FromFormatV(fmt, args);
-    va_end(args);
-    Graal_PyTruffleErr_CreateAndSetException(exception, formatted_msg);
+PyObject *
+PyErr_FormatV(PyObject *exception, const char *format, va_list vargs)
+{
+    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    return _PyErr_FormatV(tstate, exception, format, vargs);
+}
+
+
+NO_INLINE // GraalPy change: disallow bitcode inlining
+PyObject *
+_PyErr_Format(PyThreadState *tstate, PyObject *exception,
+              const char *format, ...)
+{
+    va_list vargs;
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    _PyErr_FormatV(tstate, exception, format, vargs);
+    va_end(vargs);
+    return NULL;
+}
+
+
+NO_INLINE // GraalPy change: disallow bitcode inlining
+PyObject *
+PyErr_Format(PyObject *exception, const char *format, ...)
+{
+    PyThreadState *tstate = NULL; // GrallPy change: don't get thread state
+    va_list vargs;
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    _PyErr_FormatV(tstate, exception, format, vargs);
+    va_end(vargs);
+    return NULL;
+}
+
+
+static PyObject *
+_PyErr_FormatVFromCause(PyThreadState *tstate, PyObject *exception,
+                        const char *format, va_list vargs)
+{
+    PyObject *exc, *val, *val2, *tb;
+
+    assert(_PyErr_Occurred(tstate));
+    _PyErr_Fetch(tstate, &exc, &val, &tb);
+    _PyErr_NormalizeException(tstate, &exc, &val, &tb);
+    if (tb != NULL) {
+        PyException_SetTraceback(val, tb);
+        Py_DECREF(tb);
+    }
+    Py_DECREF(exc);
+    assert(!_PyErr_Occurred(tstate));
+
+    _PyErr_FormatV(tstate, exception, format, vargs);
+
+    _PyErr_Fetch(tstate, &exc, &val2, &tb);
+    _PyErr_NormalizeException(tstate, &exc, &val2, &tb);
+    Py_INCREF(val);
+    PyException_SetCause(val2, val);
+    PyException_SetContext(val2, val);
+    _PyErr_Restore(tstate, exc, val2, tb);
+
+    return NULL;
+}
+
+NO_INLINE // GraalPy change: disallow bitcode inlining
+PyObject *
+_PyErr_FormatFromCauseTstate(PyThreadState *tstate, PyObject *exception,
+                             const char *format, ...)
+{
+    va_list vargs;
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    _PyErr_FormatVFromCause(tstate, exception, format, vargs);
+    va_end(vargs);
+    return NULL;
+}
+
+NO_INLINE // GraalPy change: disallow bitcode inlining
+PyObject *
+_PyErr_FormatFromCause(PyObject *exception, const char *format, ...)
+{
+    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    va_list vargs;
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    _PyErr_FormatVFromCause(tstate, exception, format, vargs);
+    va_end(vargs);
     return NULL;
 }
 
@@ -145,10 +313,20 @@ void PyErr_WriteUnraisable(PyObject *obj) {
     _PyErr_WriteUnraisableMsg(NULL, obj);
 }
 
-void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb) {
+void
+_PyErr_NormalizeException(PyThreadState *tstate, PyObject **exc,
+                          PyObject **val, PyObject **tb)
+{
     // (tfel): nothing to do here from our side, the exception is already
     // reified
     return;
+}
+
+void
+PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
+{
+    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    _PyErr_NormalizeException(tstate, exc, val, tb);
 }
 
 // taken from CPython "Python/errors.c"

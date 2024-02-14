@@ -161,7 +161,6 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/tupleobject.c": Ignore(),
     "graalpython/com.oracle.graal.python.cext/src/typeobject.c": Ignore(),
     "graalpython/com.oracle.graal.python.cext/src/thread.c": Ignore(),
-    "graalpython/com.oracle.graal.python.cext/src/call.c": Ignore(),
 
     "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 

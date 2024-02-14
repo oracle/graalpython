@@ -67,7 +67,7 @@ struct _Py_tuple_state {
 #endif
 };
 
-#define _PyTuple_ITEMS(op) (PySequence_FAST_ITEMS(op))
+#define _PyTuple_ITEMS(op) (PySequence_Fast_ITEMS(op))
 
 extern PyObject *_PyTuple_FromArray(PyObject *const *, Py_ssize_t);
 extern PyObject *_PyTuple_FromArraySteal(PyObject *const *, Py_ssize_t);
