@@ -720,6 +720,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public void finalizeCapi() {
         // TODO(fa): remove GIL acquisition (GR-51314)
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
