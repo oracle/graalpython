@@ -64,3 +64,14 @@ void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
 Py_ssize_t PyByteArray_Size(PyObject *self) {
     return PyByteArray_GET_SIZE(self);
 }
+
+PyObject* PyByteArray_FromStringAndSize(const char* str, Py_ssize_t sz) {
+    if (sz < 0) {
+        PyErr_SetString(PyExc_SystemError, "Negative size passed to PyByteArray_FromStringAndSize");
+        return NULL;
+    }
+    if (str != NULL) {
+        return GraalPyTruffleByteArray_FromStringAndSize(str, sz);
+    }
+    return GraalPyTruffle_ByteArray_EmptyWithCapacity(sz);
+}
