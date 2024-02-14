@@ -14461,7 +14461,7 @@ unicode_new_impl(PyTypeObject *type, PyObject *x, const char *encoding,
 }
 #endif // GraalPy change
 
-PyObject *
+PyObject * // GraalPy change: not static
 unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
 {
     // GraalPy change: temporarily define struct access macros
