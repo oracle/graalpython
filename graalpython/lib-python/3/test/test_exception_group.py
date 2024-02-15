@@ -2,6 +2,7 @@ import collections.abc
 import traceback
 import types
 import unittest
+from test.support import impl_detail
 
 
 class TestExceptionGroupTypeHierarchy(unittest.TestCase):
@@ -439,11 +440,13 @@ class DeepRecursionInSplitAndSubgroup(unittest.TestCase):
             e = ExceptionGroup('eg', [e])
         return e
 
+    @impl_detail("recursion", graalpy=False)
     def test_deep_split(self):
         e = self.make_deep_eg()
         with self.assertRaises(RecursionError):
             e.split(TypeError)
 
+    @impl_detail("recursion", graalpy=False)
     def test_deep_subgroup(self):
         e = self.make_deep_eg()
         with self.assertRaises(RecursionError):
