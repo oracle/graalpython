@@ -257,6 +257,19 @@ public final class PythonUtils {
     }
 
     /**
+     * Execute Arrays.fill and puts all exceptions on slow path.
+     */
+    public static void fill(Object[] array, int from, int to, Object value) {
+        try {
+            Arrays.fill(array, from, to, value);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes System.arraycopy and puts all exceptions on the slow path.
      */
     public static void arraycopy(Object src, int srcPos, Object dest, int destPos, int length) {
@@ -800,6 +813,14 @@ public final class PythonUtils {
         byte[] data = new byte[ascii.byteLength(Encoding.US_ASCII)];
         copyToByteArrayNode.execute(ascii, 0, data, 0, data.length, Encoding.US_ASCII);
         return data;
+    }
+
+    public static ConditionProfile[] createConditionProfiles(int n) {
+        ConditionProfile[] profiles = new ConditionProfile[n];
+        for (int i = 0; i < profiles.length; i++) {
+            profiles[i] = ConditionProfile.create();
+        }
+        return profiles;
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {

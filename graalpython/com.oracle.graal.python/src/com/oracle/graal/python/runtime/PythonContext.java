@@ -703,6 +703,7 @@ public final class PythonContext extends Python3Core {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
+    @CompilationFinal private boolean nativeAccessAllowed;
 
     private TruffleString soABI; // cache for soAPI
 
@@ -1182,6 +1183,7 @@ public final class PythonContext extends Python3Core {
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
+        this.nativeAccessAllowed = env.isNativeAccessAllowed();
     }
 
     private static final ContextReference<PythonContext> REFERENCE = ContextReference.create(PythonLanguage.class);
@@ -1343,7 +1345,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public boolean isNativeAccessAllowed() {
-        return env.isNativeAccessAllowed();
+        return nativeAccessAllowed;
     }
 
     public NFIZlibSupport getNFIZlibSupport() {
@@ -1374,6 +1376,7 @@ public final class PythonContext extends Python3Core {
         err = env.err();
         posixSupport.setEnv(env);
         optionValues = PythonOptions.createOptionValuesStorage(newEnv);
+        nativeAccessAllowed = newEnv.isNativeAccessAllowed();
     }
 
     /**

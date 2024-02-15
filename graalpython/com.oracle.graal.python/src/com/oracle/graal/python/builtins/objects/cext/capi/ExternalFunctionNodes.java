@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InitResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
@@ -65,17 +66,22 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -86,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -116,6 +123,10 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1016,6 +1027,9 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private ReleaseNativeSequenceStorageNode freeNode;
+
+        private boolean seenNativeArgsTupleStorage;
 
         public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1027,6 +1041,7 @@ public abstract class ExternalFunctionNodes {
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
+            this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
         }
 
         @Override
@@ -1034,14 +1049,17 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            return new Object[]{self, createArgsTupleNode.execute(factory, args), factory.createDict(kwargs)};
+            return new Object[]{self, createArgsTupleNode.execute(factory, args, seenNativeArgsTupleStorage), factory.createDict(kwargs)};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
+            boolean freed = MethVarargsRoot.releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
+            if (!seenNativeArgsTupleStorage && freed) {
+                seenNativeArgsTupleStorage = true;
+            }
             releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
@@ -1056,6 +1074,9 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
+        @Child private ReleaseNativeSequenceStorageNode freeNode;
+
+        private boolean seenNativeArgsTupleStorage;
 
         public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1066,20 +1087,62 @@ public abstract class ExternalFunctionNodes {
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
+            this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
-            return new Object[]{self, createArgsTupleNode.execute(factory, args)};
+            return new Object[]{self, createArgsTupleNode.execute(factory, args, seenNativeArgsTupleStorage)};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
+            // releaseNativeWrapperNode.execute(cArguments[1]);
+            boolean freed = releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
+            if (!seenNativeArgsTupleStorage && freed) {
+                seenNativeArgsTupleStorage = true;
+            }
+        }
+
+        static boolean releaseArgsTuple(Object argsTupleObject, ReleaseNativeSequenceStorageNode freeNode, boolean eagerNativeStorage) {
+            if (!PythonContext.get(freeNode).isNativeAccessAllowed()) {
+                return false;
+            }
+            try {
+                assert argsTupleObject instanceof PythonObjectNativeWrapper;
+                PythonObjectNativeWrapper argsTupleWrapper = (PythonObjectNativeWrapper) argsTupleObject;
+                Object argsTuple = argsTupleWrapper.getDelegate();
+                assert argsTuple instanceof PTuple;
+                SequenceStorage s = ((PTuple) argsTuple).getSequenceStorage();
+                /*
+                 * This assumes that the common case is that the args tuple is still owned by the
+                 * runtime. However, it could be that the C extension does 'Py_INCREF(argsTuple)'
+                 * and in this case, we must not free the memory. Further, since we assumed that we
+                 * may free the memory after the call returned, we also need to create a
+                 * NativeSequenceStorageReference such that the NativeSequenceStorage will not leak.
+                 */
+                boolean isNativeSequenceStorage = s instanceof NativeSequenceStorage;
+                if (isNativeSequenceStorage && eagerNativeStorage) {
+                    NativeSequenceStorage nativeSequenceStorage = (NativeSequenceStorage) s;
+                    if (argsTupleWrapper.getRefCount() == MANAGED_REFCNT) {
+                        // in this case, the runtime still exclusively owns the memory
+                        freeNode.execute(nativeSequenceStorage);
+                    } else {
+                        // the C ext also created a reference; no exclusive ownership
+                        CApiTransitions.registerNativeSequenceStorage(nativeSequenceStorage);
+                    }
+                } else {
+                    assert !isNativeSequenceStorage || ((NativeSequenceStorage) s).hasReference();
+                }
+                return isNativeSequenceStorage;
+            } catch (ClassCastException e) {
+                // cut exception edge
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Override
@@ -1923,11 +1986,11 @@ public abstract class ExternalFunctionNodes {
      */
     @GenerateInline(false)
     abstract static class CreateArgsTupleNode extends Node {
-        public abstract PTuple execute(PythonObjectFactory factory, Object[] args);
+        public abstract PTuple execute(PythonObjectFactory factory, Object[] args, boolean eagerNative);
 
-        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 16"}, limit = "3")
+        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "!eagerNative"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static PTuple doCachedLen(PythonObjectFactory factory, Object[] args,
+        static PTuple doCachedLen(PythonObjectFactory factory, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
                         @Cached("args.length") int cachedLen,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
 
@@ -1937,14 +2000,37 @@ public abstract class ExternalFunctionNodes {
             return factory.createTuple(args);
         }
 
-        @Specialization(replaces = "doCachedLen")
-        static PTuple doGeneric(PythonObjectFactory factory, Object[] args,
-                        @Cached MaterializePrimitiveNode materializePrimitiveNode) {
+        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "eagerNative"}, limit = "1", replaces = "doCachedLen")
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+        static PTuple doCachedLenEagerNative(PythonObjectFactory factory, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("args.length") int cachedLen,
+                        @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes,
+                        @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
 
-            for (int i = 0; i < args.length; i++) {
+            for (int i = 0; i < cachedLen; i++) {
+                args[i] = materializePrimitiveNodes[i].execute(factory, args[i]);
+            }
+            return factory.createTuple(storageToNativeNode.execute(inliningTarget, args, cachedLen, false));
+        }
+
+        @Specialization(replaces = {"doCachedLen", "doCachedLenEagerNative"})
+        static PTuple doGeneric(PythonObjectFactory factory, Object[] args, boolean eagerNative,
+                        @Bind("this") Node inliningTarget,
+                        @Cached MaterializePrimitiveNode materializePrimitiveNode,
+                        @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
+
+            int n = args.length;
+            for (int i = 0; i < n; i++) {
                 args[i] = materializePrimitiveNode.execute(factory, args[i]);
             }
-            return factory.createTuple(args);
+            SequenceStorage storage;
+            if (eagerNative) {
+                storage = storageToNativeNode.execute(inliningTarget, args, n, false);
+            } else {
+                storage = new ObjectSequenceStorage(args);
+            }
+            return factory.createTuple(storage);
         }
 
         static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
@@ -1953,6 +2039,69 @@ public abstract class ExternalFunctionNodes {
                 materializePrimitiveNodes[i] = MaterializePrimitiveNodeGen.create();
             }
             return materializePrimitiveNodes;
+        }
+
+        static PythonToNativeNode[] createPythonToNativeNodes(int length) {
+            PythonToNativeNode[] pythonToNativeNodes = new PythonToNativeNode[length];
+            for (int i = 0; i < length; i++) {
+                pythonToNativeNodes[i] = PythonToNativeNodeGen.create();
+            }
+            return pythonToNativeNodes;
+        }
+    }
+
+    @GenerateInline(false)
+    @ImportStatic(PythonUtils.class)
+    abstract static class ReleaseNativeSequenceStorageNode extends Node {
+
+        abstract void execute(NativeSequenceStorage storage);
+
+        @Specialization(guards = {"storage.length() == cachedLen", "cachedLen <= 8"}, limit = "1")
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+        static void doObjectCachedLen(NativeObjectSequenceStorage storage,
+                        @Cached("storage.length()") int cachedLen,
+                        @Cached(value = "createConditionProfiles(cachedLen)", dimensions = 1) ConditionProfile[] objectWrapperProfiles,
+                        @Cached(value = "createConditionProfiles(cachedLen)", dimensions = 1) ConditionProfile[] nativeObjectProfiles,
+                        @Shared @Cached CStructAccess.ReadPointerNode readNode,
+                        @Shared @Cached ToPythonWrapperNode toPythonWrapperNode,
+                        @Shared @Cached PCallCapiFunction callDecrefNode,
+                        @Shared @Cached CStructAccess.FreeNode freeNode) {
+            for (int i = 0; i < cachedLen; i++) {
+                Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
+                PythonNativeWrapper pythonNativeWrapper = toPythonWrapperNode.executeWrapper(elementPointer, false);
+                if (objectWrapperProfiles[i].profile(pythonNativeWrapper instanceof PythonAbstractObjectNativeWrapper)) {
+                    ((PythonAbstractObjectNativeWrapper) pythonNativeWrapper).decRef();
+                } else if (nativeObjectProfiles[i].profile(pythonNativeWrapper == null)) {
+                    assert NativeToPythonNode.executeUncached(elementPointer) instanceof PythonAbstractNativeObject;
+                    callDecrefNode.call(NativeCAPISymbol.FUN_DECREF, elementPointer);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("NativeObjectSequenceStorage contains non-object element");
+                }
+            }
+            // in this case, the runtime still exclusively owns the memory
+            freeNode.free(storage.getPtr());
+        }
+
+        @Specialization(replaces = "doObjectCachedLen")
+        static void doObjectGeneric(NativeObjectSequenceStorage storage,
+                        @Shared @Cached CStructAccess.ReadPointerNode readNode,
+                        @Shared @Cached ToPythonWrapperNode toPythonWrapperNode,
+                        @Shared @Cached PCallCapiFunction callDecrefNode,
+                        @Shared @Cached CStructAccess.FreeNode freeNode) {
+            for (int i = 0; i < storage.length(); i++) {
+                Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
+                PythonNativeWrapper pythonNativeWrapper = toPythonWrapperNode.executeWrapper(elementPointer, false);
+                if (pythonNativeWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                    objectNativeWrapper.decRef();
+                } else if (pythonNativeWrapper == null) {
+                    assert NativeToPythonNode.executeUncached(elementPointer) instanceof PythonAbstractNativeObject;
+                    callDecrefNode.call(NativeCAPISymbol.FUN_DECREF, elementPointer);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("NativeObjectSequenceStorage contains non-object element");
+                }
+            }
+            // in this case, the runtime still exclusively owns the memory
+            freeNode.free(storage.getPtr());
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ public final class TruffleObjectNativeWrapper extends PythonAbstractObjectNative
     }
 
     public static TruffleObjectNativeWrapper wrap(Object foreignObject) {
+        assert foreignObject != null : "attempting to wrap Java null";
         assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
         return new TruffleObjectNativeWrapper(foreignObject);
     }

@@ -1318,6 +1318,18 @@ class TestObject(object):
                 return set_value(self, value);
             }
 
+            static PyObject* from_args_tuple(PyObject* self, PyObject *args) {
+                PyObject *result;
+                if (Py_SIZE(args) > 0) {
+                    result = PyTuple_GET_ITEM(args, 0);
+                } else {
+                    result = Py_None;
+                }
+                Py_INCREF(result);
+                (void) set_value(self, args);
+                return result;
+            }
+
             static PyObject* get_value(PyObject* self) {
                 ValueObject *value_obj = (ValueObject *) self;
                 PyObject *res = value_obj->value;
@@ -1349,6 +1361,7 @@ class TestObject(object):
            tp_methods='''
            {"set_value", (PyCFunction)set_value, METH_O, NULL},
            {"from_tuple", (PyCFunction)from_tuple, METH_O, NULL},
+           {"from_args_tuple", (PyCFunction)from_args_tuple, METH_VARARGS, NULL},
            {"get_value", (PyCFunction)get_value, METH_NOARGS, NULL},
            {"clear_value", (PyCFunction)clear_value, METH_NOARGS, NULL},
            {"own_a_lot", (PyCFunction)own_a_lot, METH_O, NULL}
@@ -1387,6 +1400,16 @@ class TestObject(object):
 
         dummy = object()
         obj.own_a_lot(dummy)
+
+        obj = ValueType()
+        dummy = object()
+        obj.from_args_tuple(1, 2, 3)
+        # do it a second time; this time we will eagerly create a native storage
+        obj.from_args_tuple(1, 2, 3, "hello", "world", dummy)
+        value = obj.get_value()
+        assert value == (1, 2, 3, "hello", "world", dummy)
+        obj.clear_value()
+        assert value == (1, 2, 3, "hello", "world", dummy)
 
     def test_async_slots(self):
         import asyncio, types, functools

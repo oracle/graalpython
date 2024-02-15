@@ -56,7 +56,7 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PyDict_GetItem;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTuple_GetItem;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTruffleTuple_GetItem;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -958,7 +958,7 @@ public abstract class CExtParseArgumentsNode {
         static Object doNoKeywords(ParserState state, Object kwds, TruffleString[] kwdnames, boolean keywordsOnly,
                         @Bind("this") Node inliningTarget,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
-                        @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
+                        @Shared("getItemNode") @Cached PyTruffleTuple_GetItem getItemNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode.Lazy raiseNode) {
 
             Object out = null;
@@ -979,7 +979,7 @@ public abstract class CExtParseArgumentsNode {
         Object doGeneric(ParserState state, Object kwds, TruffleString[] kwdnames, boolean keywordsOnly,
                         @Bind("this") Node inliningTarget,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
-                        @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
+                        @Shared("getItemNode") @Cached PyTruffleTuple_GetItem getItemNode,
                         @Cached PyDict_GetItem getDictItemNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode.Lazy raiseNode) {
 

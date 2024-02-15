@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.RepeatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode;
@@ -633,6 +632,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static NativeSequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadByteNode readNode,
                         @Shared @Cached StorageToNativeNode storageToNativeNode) {
 
@@ -640,11 +640,12 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readNode.readArrayElement(storage.getPtr(), i);
             }
-            return storageToNativeNode.execute(newArray, length);
+            return storageToNativeNode.execute(inliningTarget, newArray, length);
         }
 
         @Specialization
         protected static NativeSequenceStorage doNativeObject(NativeObjectSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadPointerNode readNode,
                         @Shared @Cached StorageToNativeNode storageToNativeNode,
                         @Cached NativeToPythonNode toJavaNode) {
@@ -652,7 +653,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = toJavaNode.execute(readNode.readArrayElement(storage.getPtr(), i));
             }
-            return storageToNativeNode.execute(newArray, length);
+            return storageToNativeNode.execute(inliningTarget, newArray, length);
         }
 
         @NeverDefault
@@ -1429,31 +1430,38 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class StorageToNativeNode extends Node {
 
-        public abstract NativeSequenceStorage execute(Object obj, int length);
+        public abstract NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length, boolean createRef);
+
+        public abstract NativeSequenceStorage execute(Node inliningTarget, Object obj, int length, boolean createRef);
+
+        public final NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length) {
+            return executeBytes(inliningTarget, obj, length, true);
+        }
+
+        public final NativeSequenceStorage execute(Node inliningTarget, Object obj, int length) {
+            return execute(inliningTarget, obj, length, true);
+        }
 
         @Specialization
-        static NativeSequenceStorage doByte(byte[] arr, int length,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Cached CStructAccess.WriteByteNode write) {
+        static NativeByteSequenceStorage doByte(byte[] arr, int length, boolean createRef,
+                        @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Cached(inline = false) CStructAccess.WriteByteNode write) {
             Object mem = alloc.alloc(arr.length + 1);
             write.writeByteArray(mem, arr);
-            return NativeByteSequenceStorage.create(mem, length, arr.length, true);
+            return NativeByteSequenceStorage.create(mem, length, arr.length, createRef);
         }
 
         @Specialization
-        static NativeSequenceStorage doObject(Object[] arr, int length,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Cached CStructAccess.WriteObjectNewRefNode write) {
+        static NativeSequenceStorage doObject(Object[] arr, int length, boolean createRef,
+                        @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode write) {
             Object mem = alloc.alloc((arr.length + 1) * CStructAccess.POINTER_SIZE);
             write.writeArray(mem, arr);
-            return NativeObjectSequenceStorage.create(mem, length, arr.length, true);
-        }
-
-        public static StorageToNativeNode getUncached() {
-            return StorageToNativeNodeGen.getUncached();
+            return NativeObjectSequenceStorage.create(mem, length, arr.length, createRef);
         }
     }
 

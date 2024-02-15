@@ -418,6 +418,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_tss_is_created", ret = Int, args = {PY_TSS_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyThread_tss_set", ret = Int, args = {PY_TSS_T_PTR, Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyTuple_Pack", ret = PyObject, args = {Py_ssize_t, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyTuple_GetItem", ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyType_FromModuleAndSpec", ret = PyObject, args = {PyObject, PY_TYPE_SPEC, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_FromSpec", ret = PyObject, args = {PY_TYPE_SPEC}, call = CImpl)
     @CApiBuiltin(name = "PyType_FromSpecWithBases", ret = PyObject, args = {PY_TYPE_SPEC, PyObject}, call = CImpl)

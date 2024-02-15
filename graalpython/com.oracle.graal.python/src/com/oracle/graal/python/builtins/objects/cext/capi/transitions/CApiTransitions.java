@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -504,6 +505,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
                         @Cached InlinedConditionProfile isVarObjectProfile,
                         @Cached InlinedExactClassProfile wrapperProfile,
@@ -522,12 +524,18 @@ public abstract class CApiTransitions {
                 Object type = getClassNode.execute(inliningTarget, delegate);
 
                 // allocate a native stub object (C type: PyObject)
-                boolean isVarObject = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
-                Object nativeObjectStub = allocateNode.alloc(isVarObject ? CStructs.PyVarObject : CStructs.PyObject);
+                boolean isTuple = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
+                Object nativeObjectStub = allocateNode.alloc(isTuple ? CStructs.GraalPyVarObject : CStructs.PyObject);
                 writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
                 writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
-                if (isVarObject) {
-                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, ((PTuple) delegate).getSequenceStorage().length());
+                if (isTuple) {
+                    SequenceStorage sequenceStorage = ((PTuple) delegate).getSequenceStorage();
+                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, sequenceStorage.length());
+                    Object obItemPtr = 0L;
+                    if (sequenceStorage instanceof NativeSequenceStorage nativeSequenceStorage) {
+                        obItemPtr = nativeSequenceStorage.getPtr();
+                    }
+                    writePointerNode.write(nativeObjectStub, CFields.GraalPyVarObject__ob_item, obItemPtr);
                 }
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long pointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
@@ -1140,6 +1148,7 @@ public abstract class CApiTransitions {
     private static final int TP_REFCNT_OFFSET = 0;
 
     private static long addNativeRefCount(long pointer, long refCntDelta) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
@@ -1151,6 +1160,7 @@ public abstract class CApiTransitions {
     }
 
     private static long subNativeRefCount(long pointer, long refCntDelta) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
@@ -1162,6 +1172,7 @@ public abstract class CApiTransitions {
     }
 
     public static long readNativeRefCount(long pointer) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         assert refCount == IMMORTAL_REFCNT || (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value for %016x (%d %016x)\n", pointer, refCount, refCount);
         if (LOGGER.isLoggable(Level.FINEST)) {

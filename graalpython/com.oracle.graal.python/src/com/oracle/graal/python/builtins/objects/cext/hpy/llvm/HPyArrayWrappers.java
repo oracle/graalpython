@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -215,6 +217,7 @@ abstract class HPyArrayWrappers {
 
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(PythonUtils.class)
     abstract static class HPyCloseArrayWrapperNode extends Node {
 
         public abstract void execute(Node inliningTarget, HPyArrayWrapper wrapper);
@@ -224,7 +227,7 @@ abstract class HPyArrayWrappers {
         static void doCachedLen(Node inliningTarget, HPyArrayWrapper wrapper,
                         @Cached("wrapper.delegate.length") int cachedLen,
                         @Exclusive @Cached HPyCloseHandleNode closeHandleNode,
-                        @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
+                        @Cached(value = "createConditionProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
                         @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             for (int i = 0; i < cachedLen; i++) {
                 Object element = wrapper.delegate[i];
@@ -256,13 +259,6 @@ abstract class HPyArrayWrappers {
             }
         }
 
-        static ConditionProfile[] createProfiles(int n) {
-            ConditionProfile[] profiles = new ConditionProfile[n];
-            for (int i = 0; i < profiles.length; i++) {
-                profiles[i] = ConditionProfile.create();
-            }
-            return profiles;
-        }
     }
 
     /**

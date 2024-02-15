@@ -112,6 +112,9 @@ class TestPyObject(CPyExtTestCase):
         lambda args: 1 if isinstance(*args) else 0,
         lambda: (
             (1, int),
+            ("hello", str),
+            (True, bool),
+            (True, int),
         ),
         argspec="OO",
         arguments=["PyObject* op", "PyTypeObject* type"],

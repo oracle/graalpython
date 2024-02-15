@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -188,12 +188,12 @@ public abstract class ArrayNodes {
         public abstract NativeByteSequenceStorage execute(Node inliningTarget, PArray array);
 
         @Specialization
-        NativeByteSequenceStorage toNative(PArray array,
-                        @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+        static NativeByteSequenceStorage toNative(Node inliningTarget, PArray array,
+                        @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             if (array.getSequenceStorage() instanceof NativeByteSequenceStorage storage) {
                 return storage;
             } else if (array.getSequenceStorage() instanceof ByteSequenceStorage storage) {
-                NativeByteSequenceStorage nativeStorage = (NativeByteSequenceStorage) storageToNativeNode.execute(storage.getInternalByteArray(), storage.length());
+                NativeByteSequenceStorage nativeStorage = storageToNativeNode.executeBytes(inliningTarget, storage.getInternalByteArray(), storage.length());
                 array.setSequenceStorage(nativeStorage);
                 return nativeStorage;
             } else {

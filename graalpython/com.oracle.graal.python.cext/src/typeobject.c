@@ -1524,6 +1524,45 @@ PyType_GetModuleState(PyTypeObject *type)
     return _PyModule_GetState(m);
 }
 
+/* type test with subclassing support */
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+static inline int
+type_is_subtype_base_chain(PyTypeObject *a, PyTypeObject *b)
+{
+    do {
+        if (a == b)
+            return 1;
+        a = a->tp_base;
+    } while (a != NULL);
+
+    return (b == &PyBaseObject_Type);
+}
+
+static inline int
+type_is_subtype_mro(PyTypeObject *a, PyTypeObject *b)
+{
+    PyObject *mro;
+
+    mro = a->tp_mro;
+    if (mro != NULL) {
+        /* Deal with multiple inheritance without recursion
+           by walking the MRO tuple */
+        Py_ssize_t i, n;
+        assert(PyTuple_Check(mro));
+        n = PyTuple_GET_SIZE(mro);
+        for (i = 0; i < n; i++) {
+            if (PyTuple_GET_ITEM(mro, i) == (PyObject *)b)
+                return 1;
+        }
+        return 0;
+    }
+    else
+        /* a is not completely initialized yet; follow tp_base */
+        return type_is_subtype_base_chain(a, b);
+}
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+
 int
 PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b)
 {
@@ -1543,10 +1582,14 @@ PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b)
         return PyType_FastSubclass(a, Py_TPFLAGS_UNICODE_SUBCLASS);
     } else if (b == &PyDict_Type) {
         return PyType_FastSubclass(a, Py_TPFLAGS_DICT_SUBCLASS);
-    } else if (b == PyExc_BaseException) {
+    } else if ((PyObject *)b == PyExc_BaseException) {
         return PyType_FastSubclass(a, Py_TPFLAGS_BASE_EXC_SUBCLASS);
     } else if (is_builtin_type(a) && !is_builtin_type(b)) {
         return 0;
     }
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return GraalPyTruffleType_IsSubtype(a, b);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return type_is_subtype_mro(a, b);
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }

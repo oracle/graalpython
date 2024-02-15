@@ -57,6 +57,7 @@ public enum CStructs {
     PyByteArrayObject,
     PyListObject,
     PyVarObject,
+    GraalPyVarObject,
     PyMemoryViewObject,
     Py_buffer,
     PyDateTime_CAPI,

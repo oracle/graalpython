@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -89,8 +92,21 @@ public final class PythonCextTupleBuiltins {
 
         @Specialization
         static PTuple doGeneric(long size,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[(int) size]);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!PInt.isIntRange(size)) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.MemoryError);
+            }
+            Object[] data = new Object[(int) size];
+            /*
+             * We need to fill the empty object array with 'PNone.NO_VALUE' because it may be that
+             * the tuple is accessed with 'PyTuple_GET_ITEM' before all elements are initialized and
+             * the corresponding storage-to-native transition would then fail because of the Java
+             * nulls.
+             */
+            PythonUtils.fill(data, 0, data.length, PNone.NO_VALUE);
+            return factory.createTuple(data);
         }
     }
 
@@ -192,8 +208,8 @@ public final class PythonCextTupleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
-    public abstract static class PyTuple_GetItem extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Ignored)
+    public abstract static class PyTruffleTuple_GetItem extends CApiBinaryBuiltinNode {
 
         public abstract Object execute(PTuple tuple, long key);
 
@@ -208,20 +224,13 @@ public final class PythonCextTupleBuiltins {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
+            assert result != null : "tuple must not contain Java null";
             Object promotedValue = promoteNode.execute(inliningTarget, result);
             if (promotedValue != null) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 tuple.setSequenceStorage(sequenceStorage);
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
-            }
-            if (result == null) {
-                /*
-                 * This can happen when the tuple is not fully initialized. Such tuple is not valid,
-                 * but the C code sometimes uses PyTuple_GET_ITEM to Py_XDECREF the items on error
-                 * paths when they failed to populate the tuple.
-                 */
-                return getNativeNull(inliningTarget);
             }
             return result;
         }
