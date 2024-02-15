@@ -162,6 +162,7 @@ public abstract class TupleNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class GetTupleStorage extends Node {
         public abstract SequenceStorage execute(Node inliningTarget, Object tuple);
 
@@ -178,6 +179,7 @@ public abstract class TupleNodes {
     }
 
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class GetNativeTupleStorage extends Node {
         public abstract NativeObjectSequenceStorage execute(PythonAbstractNativeObject tuple);
 

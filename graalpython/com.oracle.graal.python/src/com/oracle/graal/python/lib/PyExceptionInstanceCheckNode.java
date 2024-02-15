@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -50,6 +51,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline
@@ -67,11 +69,21 @@ public abstract class PyExceptionInstanceCheckNode extends Node {
         return true;
     }
 
-    @Fallback
-    static boolean doOther(Node inliningTarget, Object object,
+    @Specialization
+    static boolean doNative(Node inliningTarget, PythonAbstractNativeObject object,
                     @Cached GetClassNode getClassNode,
                     @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         // May be native or interop
         return isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PBaseException);
+    }
+
+    @Specialization
+    static boolean doInterop(@SuppressWarnings("unused") AbstractTruffleException exception) {
+        return true;
+    }
+
+    @Fallback
+    static boolean doOther(@SuppressWarnings("unused") Object exception) {
+        return false;
     }
 }

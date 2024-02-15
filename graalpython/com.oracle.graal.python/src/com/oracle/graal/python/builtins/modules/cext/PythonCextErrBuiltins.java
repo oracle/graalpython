@@ -53,7 +53,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.exception.PBaseException.T_CODE;
-import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TRACEBACK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TYPE;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyErrExceptionMatchesNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -111,9 +112,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -125,14 +125,12 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextErrBuiltins {
@@ -433,61 +431,12 @@ public final class PythonCextErrBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyErr_GivenExceptionMatches extends CApiBinaryBuiltinNode {
-        public abstract int executeInt(Object err, Object exc);
 
-        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(this, exc, getClassNode, isSubtypeNode)"}, limit = "1")
+        @Specialization
         static int matches(Object err, Object exc,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached TupleBuiltins.LenNode lenNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached PyErr_GivenExceptionMatches matchesNode,
-                        @Cached InlinedLoopConditionProfile loopProfile) {
-            int len = (int) lenNode.execute(null, exc);
-            loopProfile.profileCounted(inliningTarget, len);
-            for (int i = 0; loopProfile.profile(inliningTarget, i < len); i++) {
-                Object e = getItemNode.execute(null, exc, i);
-                if (matchesNode.executeInt(err, e) != 0) {
-                    return 1;
-                }
-            }
-            return 0;
-        }
-
-        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"}, limit = "1")
-        static int matches(Object errArg, Object exc,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached IsInstanceNode isInstanceNode,
-                        @Cached IsTypeNode isTypeNode,
-                        @Cached IsSubClassNode isSubClassNode,
-                        @Cached IsNode isNode,
-                        @Cached InlinedBranchProfile isBaseExceptionProfile,
-                        @Cached InlinedConditionProfile isExceptionProfile) {
-            if (errArg == PNone.NO_VALUE || exc == PNone.NO_VALUE) {
-                // maybe caused by "import exceptions" that failed early on
-                return intValue(false);
-            }
-            Object err = errArg;
-            if (isInstanceNode.executeWith(null, errArg, PythonBuiltinClassType.PBaseException)) {
-                isBaseExceptionProfile.enter(inliningTarget);
-                err = getClassNode.execute(inliningTarget, err);
-            }
-            if (isExceptionProfile.profile(inliningTarget, isExceptionClass(inliningTarget, err, isTypeNode, isSubClassNode) && isExceptionClass(inliningTarget, exc, isTypeNode, isSubClassNode))) {
-                return intValue(isSubClassNode.executeWith(null, err, exc));
-            } else {
-                return intValue(isNode.execute(exc, err));
-            }
-        }
-
-        protected boolean isTupleSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
-        }
-
-        private static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
-            return isTypeNode.execute(inliningTarget, obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
+                        @Cached PyErrExceptionMatchesNode matchesNode) {
+            return PInt.intValue(matchesNode.execute(inliningTarget, err, exc));
         }
     }
 
@@ -520,7 +469,8 @@ public final class PythonCextErrBuiltins {
         @TruffleBoundary
         @Specialization
         Object raise(int set_sys_last_vars,
-                        @Cached PyErr_GivenExceptionMatches matchesNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile exceptionProfile,
                         @Cached PyErr_Occurred errOccuredNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached IsInstanceNode isInstanceNode,
@@ -534,7 +484,7 @@ public final class PythonCextErrBuiltins {
 
             Object err = errOccuredNode.execute();
             PythonModule sys = getCore().getSysModule();
-            if (err != nativeNull && matchesNode.executeInt(err, PythonBuiltinClassType.SystemExit) != 0) {
+            if (err != nativeNull && exceptionProfile.profileObject(inliningTarget, err, PythonBuiltinClassType.SystemExit)) {
                 handleSystemExit(excInfoNode, getItemNode, isInstanceNode, restoreNode, (SysModuleBuiltins) sys.getBuiltins(), writeFileNode, exitNode);
             }
             Object fetched = fetchNode.execute(null);
