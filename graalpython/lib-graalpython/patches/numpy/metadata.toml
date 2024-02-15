@@ -44,6 +44,12 @@ patch = 'numpy-1.23.1.patch'
 dist-type = 'sdist'
 
 [[rules]]
+# Currently used by oldest-supported-numpy
+version = '== 1.23.2'
+patch = 'numpy-1.23.2.patch'
+dist-type = 'sdist'
+
+[[rules]]
 # pin 1.23.5
 install-priority = 10
 version = '== 1.23.5'
