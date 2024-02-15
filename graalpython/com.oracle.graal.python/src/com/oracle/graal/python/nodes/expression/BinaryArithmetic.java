@@ -349,22 +349,30 @@ public enum BinaryArithmetic {
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("/");
 
         @Specialization
-        public static double doII(int x, int y, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doII(int x, int y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             return doDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization
-        public static double doLD(long x, double y, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doLD(long x, double y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             return doDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization
-        public static double doDL(double x, long y, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doDL(double x, long y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             return doDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization
-        public static double doDD(double x, double y, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doDD(double x, double y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(y == 0.0, inliningTarget, raiseNode);
             return x / y;
         }
@@ -382,13 +390,17 @@ public enum BinaryArithmetic {
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("//");
 
         @Specialization
-        public static int doII(int left, int right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorDiv(left, right);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        public static long doLL(long left, long right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+        public static long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             if (left == Long.MIN_VALUE && right == -1) {
                 throw OverflowException.INSTANCE;
             }
@@ -397,19 +409,25 @@ public enum BinaryArithmetic {
         }
 
         @Specialization
-        public static double doDL(double left, long right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doDL(double left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floor(left / right);
         }
 
         @Specialization
-        public static double doDD(double left, double right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doDD(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return Math.floor(left / right);
         }
 
         @Specialization
-        public static double doLD(long left, double right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doLD(long left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return Math.floor(left / right);
         }
@@ -427,31 +445,41 @@ public enum BinaryArithmetic {
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("%");
 
         @Specialization
-        public static int doII(int left, int right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization
-        public static long doLL(long left, long right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization
-        public static double doDL(double left, long right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doDL(double left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
             return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
-        public static double doDD(double left, double right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doDD(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
-        public static double doLD(long left, double right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+        public static double doLD(long left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return FloatBuiltins.ModNode.mod(left, right);
         }
@@ -612,35 +640,45 @@ public enum BinaryArithmetic {
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("divmod");
 
         @Specialization
-        public static PTuple doLL(int left, int right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
+        public static PTuple doLL(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
         @Specialization
-        public static PTuple doLL(long left, long right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
+        public static PTuple doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
         @Specialization
-        public static PTuple doDL(double left, long right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
+        public static PTuple doDL(double left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
-        public static PTuple doDD(double left, double right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
+        public static PTuple doDD(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
-        public static PTuple doLD(long left, double right, @Bind("this") Node inliningTarget, @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
+        public static PTuple doLD(long left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
