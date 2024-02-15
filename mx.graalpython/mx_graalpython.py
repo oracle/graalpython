@@ -2102,6 +2102,7 @@ def _python_checkpatchfiles():
             'numpy-1.22.2.patch',
             'numpy-1.22.4.patch',
             'numpy-1.23.1.patch',
+            'numpy-1.23.2.patch',
             'numpy-1.23.4.patch',
             'numpy-1.23.5.patch',
             # pythran started putting the while license text in the field. It's MIT
