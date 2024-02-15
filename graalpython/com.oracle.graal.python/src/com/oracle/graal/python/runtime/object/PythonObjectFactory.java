@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValueIterato
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -1021,6 +1022,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PBaseException createBaseException(Object cls, Object[] data) {
         return trace(new PBaseException(cls, getShape(cls), data));
+    }
+
+    public final PBaseExceptionGroup createBaseExceptionGroup(Object cls, TruffleString message, Object[] exceptions, Object[] args) {
+        return trace(new PBaseExceptionGroup(cls, getShape(cls), message, exceptions, createTuple(args)));
     }
 
     /*

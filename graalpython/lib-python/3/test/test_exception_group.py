@@ -22,7 +22,8 @@ class TestExceptionGroupTypeHierarchy(unittest.TestCase):
 
 class BadConstructorArgs(unittest.TestCase):
     def test_bad_EG_construction__too_many_args(self):
-        MSG = r'BaseExceptionGroup.__new__\(\) takes exactly 2 arguments'
+        # GraalPy change: relax error message requirement
+        MSG = r'BaseExceptionGroup.__new__\(\) .*argument'
         with self.assertRaisesRegex(TypeError, MSG):
             ExceptionGroup('no errors')
         with self.assertRaisesRegex(TypeError, MSG):

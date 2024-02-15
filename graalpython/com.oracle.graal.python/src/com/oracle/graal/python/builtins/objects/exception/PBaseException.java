@@ -84,7 +84,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PBaseException extends PythonObject {
+public class PBaseException extends PythonObject {
     public static final TruffleString T_CODE = tsLiteral("code");
 
     private PTuple args; // can be null for lazily generated message

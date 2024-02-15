@@ -45,6 +45,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTION_GROUP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -60,12 +63,16 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseExceptionGroup)
 public class BaseExceptionGroupBuiltins extends PythonBuiltins {
@@ -89,6 +96,61 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         PDict dict = factory.createDict(dictStorage);
         Object exceptionGroupType = CallNode.getUncached().execute(typeBuiltin, T_EXCEPTION_GROUP, bases, dict);
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);
+    }
+
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class StrNode extends PythonUnaryBuiltinNode {
+
+        private static final TruffleString T1 = tsLiteral(" (");
+        private static final TruffleString T2 = tsLiteral(" sub-exception");
+
+        @Specialization
+        static TruffleString str(PBaseExceptionGroup self,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.AppendIntNumberNode appendIntNumberNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(builder, self.getMessage());
+            appendStringNode.execute(builder, T1);
+            appendIntNumberNode.execute(builder, self.getExceptions().length);
+            appendStringNode.execute(builder, T2);
+            if (self.getExceptions().length > 1) {
+                appendCodePointNode.execute(builder, 's');
+            }
+            appendCodePointNode.execute(builder, ')');
+            return toStringNode.execute(builder);
+        }
+    }
+
+    @Builtin(name = "message", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class MessageNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static TruffleString message(PBaseExceptionGroup self) {
+            return self.getMessage();
+        }
+    }
+
+    @Builtin(name = "exceptions", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ExceptionsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object exceptions(PBaseExceptionGroup self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(self.getExceptions());
+        }
+    }
+
+    @Builtin(name = "derive", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class DeriveNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object derive(VirtualFrame frame, PBaseExceptionGroup self, Object exceptions,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, PythonBuiltinClassType.PBaseException, self.getMessage(), exceptions);
+        }
     }
 
     @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
