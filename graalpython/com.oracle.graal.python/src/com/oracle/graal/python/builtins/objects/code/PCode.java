@@ -84,6 +84,8 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeLocation;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -470,23 +472,19 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public int bciToLine(int bci) {
+    public int lastiToLine(int lasti) {
         RootNode funcRootNode = rootNodeForExtraction(getRootNode());
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-            throw new UnsupportedOperationException("not implemented");
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
+                // Emulate CPython's fixed 2-word instructions.
+                BytecodeLocation location = BytecodeLocation.fromInstructionIndex((lasti + 1) / 2, bytecodeNode);
+                return location.findSourceLocation().getStartLine();
+            }
         } else if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
-            return bytecodeRootNode.bciToLine(bci);
+            return bytecodeRootNode.bciToLine(bytecodeRootNode.lastiToBci(lasti));
         }
         return -1;
-    }
-
-    @TruffleBoundary
-    public int lastiToBci(int lasti) {
-        RootNode funcRootNode = rootNodeForExtraction(getRootNode());
-        if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
-            return bytecodeRootNode.lastiToBci(lasti);
-        }
-        return lasti;
     }
 
     public TruffleString getName() {

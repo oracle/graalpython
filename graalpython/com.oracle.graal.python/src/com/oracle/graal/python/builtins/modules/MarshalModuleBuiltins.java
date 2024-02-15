@@ -1329,6 +1329,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private BytecodeCodeUnit readBytecodeCodeUnit() {
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                throw new AssertionError(
+                                "Attempted to deserialize a code object from the manual bytecode interpreter, but the DSL interpreter is enabled. Consider clearing or setting a different pycache folder.");
+            }
+
             int fileVersion = readByte();
             if (fileVersion != Compiler.BYTECODE_VERSION) {
                 throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, fileVersion);
@@ -1369,6 +1374,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private BytecodeDSLCodeUnit readBytecodeDSLCodeUnit() {
+            if (!PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                throw new AssertionError(
+                                "Attempted to deserialize a code object from the Bytecode DSL interpreter, but the manual interpreter is enabled. Consider clearing or setting a different pycache folder.");
+            }
+
             byte[] serialized = readBytes();
             TruffleString name = readString();
             TruffleString qualname = readString();

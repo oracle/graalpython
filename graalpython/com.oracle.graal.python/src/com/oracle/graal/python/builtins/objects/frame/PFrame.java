@@ -290,6 +290,10 @@ public final class PFrame extends PythonBuiltinObject {
         return location;
     }
 
+    public BytecodeNode getBytecodeNode() {
+        return (location instanceof BytecodeNode bytecodeNode) ? bytecodeNode : null;
+    }
+
     public int getBci() {
         return bci;
     }
@@ -299,14 +303,16 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public int getLasti() {
-        return bciToLasti(bci);
+        return bciToLasti(bci, location);
     }
 
     @TruffleBoundary
-    public int bciToLasti(int bci) {
+    public static int bciToLasti(int bci, Node location) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            // TODO implement
-            throw new UnsupportedOperationException("not implemented");
+            if (location instanceof BytecodeNode bytecodeNode) {
+                // Emulate CPython's fixed 2-word instructions.
+                return bytecodeNode.findInstructionIndex(bci) * 2;
+            }
         } else {
             if (location instanceof PBytecodeRootNode bytecodeRootNode) {
                 return bytecodeRootNode.bciToLasti(bci);
