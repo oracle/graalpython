@@ -40,6 +40,17 @@
  */
 package org.graalvm.python.maven.plugin;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
@@ -54,16 +65,6 @@ import org.eclipse.aether.graph.Dependency;
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
@@ -93,6 +94,18 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private static final String EXCLUDE_PREFIX = "exclude:";
 
+    private static final String NATIVE_IMAGE_RESOURCES_CONFIG = """
+        {
+          "resources": {
+            "includes": [
+              {"pattern": "$vfs/.*"}
+            ]
+          }
+        }
+        """.replace("$vfs", VFS_ROOT);
+
+    private static final String NATIVE_IMAGE_ARGS = "Args = -H:-CopyLanguageResources";
+
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     MavenProject project;
 
@@ -114,10 +127,38 @@ public class ManageResourcesMojo extends AbstractMojo {
         return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
     }
 
+    static Path getVenvDirectory(MavenProject project) {
+        return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_VENV);
+    }
+
+    static Path getMetaInfDirectory(MavenProject project) {
+        return Path.of(project.getBuild().getOutputDirectory(), "META-INF", "native-image", GRAALPY_GROUP_ID, GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
+    }
+
     public void execute() throws MojoExecutionException {
         manageHome();
         manageVenv();
         listGraalPyResources();
+        manageNativeImageConfig();
+    }
+
+    private void manageNativeImageConfig() throws MojoExecutionException {
+        Path metaInf = getMetaInfDirectory(project);
+        // XXX remove resource-config.json and native-image.properties from archetype
+        Path resourceConfig = metaInf.resolve("resource-config.json");
+        try {
+            Files.createDirectories(resourceConfig.getParent());
+            Files.writeString(resourceConfig, NATIVE_IMAGE_RESOURCES_CONFIG, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException  e) {
+            throw new MojoExecutionException(String.format("failed to write %s", resourceConfig), e);
+        }
+        Path nativeImageProperties = metaInf.resolve("native-image.properties");
+        try {
+            Files.createDirectories(nativeImageProperties.getParent());
+            Files.writeString(nativeImageProperties, NATIVE_IMAGE_ARGS, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException  e) {
+            throw new MojoExecutionException(String.format("failed to write %s", nativeImageProperties), e);
+        }
     }
 
     public static class PythonHome {
@@ -267,10 +308,6 @@ public class ManageResourcesMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to write tag file %s", tag), e);
         }
-    }
-
-    static Path getVenvDirectory(MavenProject project) {
-        return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_VENV);
     }
 
     private void installWantedPackages(Path venvDirectory, List<String> installedPackages) throws MojoExecutionException {
