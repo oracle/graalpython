@@ -1610,4 +1610,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ITEM_D_OF_SECOND_ARGUMENT_EXCEPTIONS_IS_NOT_AN_EXCEPTION = tsLiteral("Item %d of second argument (exceptions) is not an exception");
     public static final TruffleString CANNOT_NEST_BASE_EXCEPTIONS_IN_AN_EXCEPTION_GROUP = tsLiteral("Cannot nest BaseExceptions in an ExceptionGroup");
     public static final TruffleString CANNOT_NEST_BASE_EXCEPTIONS_IN_N = tsLiteral("Cannot nest BaseExceptions in '%N'");
+    public static final TruffleString DERIVE_MUST_RETURN_AN_INSTANCE_OF_BASE_EXCEPTION_GROUP = tsLiteral("derive must return an instance of BaseExceptionGroup");
+    public static final TruffleString EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES = tsLiteral("expected a function, exception type or tuple of exception types");
 }
