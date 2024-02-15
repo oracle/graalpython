@@ -199,6 +199,10 @@ public final class PException extends AbstractTruffleException {
         return catchBci;
     }
 
+    public BytecodeNode getBytecodeNode() {
+        return bytecodeNode;
+    }
+
     public int getCatchLine() {
         if (rootNode == null) {
             return -1;

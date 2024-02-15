@@ -81,6 +81,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
@@ -348,13 +349,23 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
+                List<PTuple> lines = new ArrayList<>();
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    // TODO implement
-                    throw new UnsupportedOperationException("not implemented");
+                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNode();
+                    for (Instruction instruction : rootNode.getIntrospectionData().getInstructions()) {
+                        SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
+                        lines.add(factory.createTuple(new int[]{
+                                        section.getStartLine(),
+                                        section.getEndLine(),
+                                        // 1-based inclusive to 0-based inclusive
+                                        section.getStartColumn() - 1,
+                                        // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
+                                        section.getEndColumn()
+                        }));
+                    }
                 } else {
                     BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
                     SourceMap map = bytecodeCo.getSourceMap();
-                    List<PTuple> lines = new ArrayList<>();
                     if (map != null && map.startLineMap.length > 0) {
                         byte[] bytecode = bytecodeCo.code;
                         for (int i = 0; i < bytecode.length;) {
@@ -362,8 +373,8 @@ public final class CodeBuiltins extends PythonBuiltins {
                             i += OpCodes.fromOpCode(bytecode[i]).length();
                         }
                     }
-                    tuple = factory.createTuple(lines.toArray());
                 }
+                tuple = factory.createTuple(lines.toArray());
             } else {
                 tuple = factory.createEmptyTuple();
             }

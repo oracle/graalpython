@@ -137,13 +137,13 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
                         next = factory.createTraceback(pFrame, pFrame.getLine(), next);
-                        next.setBci(pFrame.getBci());
+                        next.setLocation(pFrame.getBci(), pFrame.getBytecodeNode());
                         pyIndex++;
                     }
                 }
             }
             if (lazyTraceback.catchingFrameWantedForTraceback()) {
-                tb.setBci(pException.getCatchBci());
+                tb.setLocation(pException.getCatchBci(), pException.getBytecodeNode());
                 tb.setLineno(pException.getCatchLine());
                 tb.setNext(next);
             } else {
