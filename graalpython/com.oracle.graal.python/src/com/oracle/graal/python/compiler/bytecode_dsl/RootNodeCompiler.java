@@ -80,7 +80,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     private final Map<String, BytecodeLocal> freeLocals;
     private final Scope scope;
     private final CompilationScope scopeType;
-    private final GeneratorOrCoroutineKind generatorOrCoroutineKind;
 
     private final boolean isInteractive;
     private final EnumSet<FutureFeature> futureFeatures;
@@ -103,7 +102,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         this.freeLocals = new HashMap<>();
         this.scope = ctx.scopeEnvironment.lookupScope(rootNode);
         this.scopeType = getScopeType(scope, rootNode);
-        this.generatorOrCoroutineKind = GeneratorOrCoroutineKind.getKind(scope);
 
         this.isInteractive = rootNode instanceof ModTy.Interactive;
         this.futureFeatures = futureFeatures;
@@ -546,34 +544,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
         }
         return null;
-    }
-
-    /**
-     * To compile a generator/coroutine function f, we build a separate root node f' that executes
-     * the body of f. We compile f itself to code that creates and returns a generator/coroutine
-     * that uses f'.
-     *
-     * All of the locals are allocated and stored in f'. Since the generator/coroutine is created
-     * using f's argument array, arguments are transparently forwarded to f' (there's no need for
-     * closures).
-     */
-    private enum GeneratorOrCoroutineKind {
-        NONE,
-        GENERATOR,
-        COROUTINE,
-        ASYNC_GENERATOR;
-
-        static GeneratorOrCoroutineKind getKind(Scope scope) {
-            if (scope.isGenerator() && scope.isCoroutine()) {
-                return ASYNC_GENERATOR;
-            } else if (scope.isGenerator()) {
-                return GENERATOR;
-            } else if (scope.isCoroutine()) {
-                return COROUTINE;
-            } else {
-                return NONE;
-            }
-        }
     }
 
     @Override

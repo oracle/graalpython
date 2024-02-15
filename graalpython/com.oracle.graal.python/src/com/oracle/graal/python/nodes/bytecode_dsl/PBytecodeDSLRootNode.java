@@ -392,8 +392,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @TruffleBoundary
     public int bciToLine(int bci, BytecodeNode bytecodeNode) {
-        SourceSection sourceSection = null;
+        return getSourceSectionForLocation(bci, bytecodeNode).getStartLine();
+    }
 
+    @TruffleBoundary
+    public SourceSection getSourceSectionForLocation(BytecodeLocation location) {
+        return getSourceSectionForLocation(location.getBytecodeIndex(), location.getBytecodeNode());
+    }
+
+    @TruffleBoundary
+    public SourceSection getSourceSectionForLocation(int bci, BytecodeNode bytecodeNode) {
+        SourceSection sourceSection = null;
         if (bytecodeNode != null) {
             BytecodeLocation bytecodeLocation = bytecodeNode.getBytecodeLocation(bci);
             if (bytecodeLocation != null) {
@@ -409,7 +418,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
              */
             sourceSection = getSourceSection();
         }
-        return sourceSection.getStartLine();
+
+        return sourceSection;
     }
 
     @Override
