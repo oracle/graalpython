@@ -45,8 +45,12 @@ import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_M
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICTOFFSET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ITEMSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ALLOC__;
 
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -74,6 +78,17 @@ public final class HiddenAttr {
     public static final HiddenAttr WEAKLISTOFFSET = new HiddenAttr(J___WEAKLISTOFFSET__);
     public static final HiddenAttr ITEMSIZE = new HiddenAttr(J___ITEMSIZE__);
     public static final HiddenAttr BASICSIZE = new HiddenAttr(J___BASICSIZE__);
+    public static final HiddenAttr ALLOC = new HiddenAttr(J___ALLOC__);
+    public static final HiddenAttr DEALLOC = new HiddenAttr("__dealloc__");
+    public static final HiddenAttr DEL = new HiddenAttr("__del__");
+    public static final HiddenAttr FREE = new HiddenAttr("__free__");
+    public static final HiddenAttr CLEAR = new HiddenAttr("__clear__");
+    public static final HiddenAttr AS_BUFFER = new HiddenAttr("__tp_as_buffer__");
+    public static final HiddenAttr FLAGS = new HiddenAttr(J___FLAGS__);
+    public static final HiddenAttr VECTORCALL_OFFSET = new HiddenAttr(J___VECTORCALLOFFSET__);
+    public static final HiddenAttr GETBUFFER = new HiddenAttr("__getbuffer__");
+    public static final HiddenAttr RELEASEBUFFER = new HiddenAttr("__releasebuffer__");
+    public static final HiddenAttr DOC = new HiddenAttr(J___DOC__);
 
     public static final HiddenAttr WEAKLIST = new HiddenAttr("__weaklist__");           // _weakref
     public static final HiddenAttr WEAK_REF_QUEUE = new HiddenAttr("weakRefQueue");     // _weakref
@@ -112,6 +127,15 @@ public final class HiddenAttr {
 
     public HiddenKey getKeyTodoRemoveThis() {
         return key;
+    }
+
+    public String getName() {
+        return key.getName();
+    }
+
+    @Override
+    public String toString() {
+        return getName();
     }
 
     @GenerateInline(inlineByDefault = true)
@@ -195,6 +219,11 @@ public final class HiddenAttr {
         @NeverDefault
         public static WriteNode create() {
             return WriteNodeGen.create();
+        }
+
+        @NeverDefault
+        public static WriteNode getUncached() {
+            return WriteNodeGen.getUncached();
         }
     }
 }

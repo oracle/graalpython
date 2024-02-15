@@ -26,11 +26,20 @@
 
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.HiddenAttr.ALLOC;
 import static com.oracle.graal.python.nodes.HiddenAttr.BASICSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.CLEAR;
+import static com.oracle.graal.python.nodes.HiddenAttr.DEALLOC;
+import static com.oracle.graal.python.nodes.HiddenAttr.DEL;
 import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
+import static com.oracle.graal.python.nodes.HiddenAttr.DOC;
+import static com.oracle.graal.python.nodes.HiddenAttr.FLAGS;
+import static com.oracle.graal.python.nodes.HiddenAttr.FREE;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.VECTORCALL_OFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
@@ -46,7 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKREFOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
@@ -57,7 +65,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_MRO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
@@ -134,6 +141,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -199,24 +207,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public final class TypeBuiltins extends PythonBuiltins {
 
-    public static final HiddenKey TYPE_ALLOC = new HiddenKey(J___ALLOC__);
-    public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
-    public static final HiddenKey TYPE_DEL = new HiddenKey("__del__");
-    public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
-    public static final HiddenKey TYPE_CLEAR = new HiddenKey("__clear__");
-    public static final HiddenKey TYPE_AS_BUFFER = new HiddenKey("__tp_as_buffer__");
-    public static final HiddenKey TYPE_FLAGS = new HiddenKey(J___FLAGS__);
-    public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey(J___VECTORCALLOFFSET__);
-    public static final HiddenKey TYPE_GETBUFFER = new HiddenKey("__getbuffer__");
-    public static final HiddenKey TYPE_RELEASEBUFFER = new HiddenKey("__releasebuffer__");
-    private static final HiddenKey TYPE_DOC = new HiddenKey(J___DOC__);
-
     public static final HashMap<String, HiddenKey> INITIAL_HIDDEN_TYPE_KEYS = new HashMap<>();
 
     static {
-        for (HiddenKey key : new HiddenKey[]{DICTOFFSET.getKeyTodoRemoveThis(), ITEMSIZE.getKeyTodoRemoveThis(), BASICSIZE.getKeyTodoRemoveThis(), TYPE_ALLOC, TYPE_DEALLOC, TYPE_DEL, TYPE_FREE,
-                        TYPE_CLEAR, TYPE_FLAGS, TYPE_VECTORCALL_OFFSET, TYPE_DOC}) {
-            INITIAL_HIDDEN_TYPE_KEYS.put(key.getName(), key);
+        for (HiddenAttr attr : new HiddenAttr[]{DICTOFFSET, ITEMSIZE, BASICSIZE, ALLOC, DEALLOC, DEL, FREE, CLEAR, FLAGS, VECTORCALL_OFFSET, DOC}) {
+            INITIAL_HIDDEN_TYPE_KEYS.put(attr.getName(), attr.getKeyTodoRemoveThis());
         }
     }
 
@@ -228,7 +223,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant(TYPE_DOC, //
+        addBuiltinConstant(DOC, //
                         "type(object_or_name, bases, dict)\n" + //
                                         "type(object) -> the object's type\n" + //
                                         "type(name, bases, dict) -> a new type");
@@ -249,7 +244,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object moduleNameObj = readModuleNode.executeObject(frame, self);
             Object qualNameObj = readQualNameNode.executeObject(frame, self);
             TruffleString moduleName = null;
-            if (moduleNameObj != PNone.NO_VALUE) {
+            if (moduleNameObj != NO_VALUE) {
                 try {
                     moduleName = castToStringNode.execute(inliningTarget, moduleNameObj);
                 } catch (CannotCastException e) {
@@ -278,7 +273,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             if (IsBuiltinClassExactProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
-                return self.getAttribute(TYPE_DOC);
+                return HiddenAttr.ReadNode.executeUncached(self, DOC, NO_VALUE);
             } else {
                 return self.getAttribute(T___DOC__);
             }
@@ -304,7 +299,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!isPythonBuiltinClass(self)"})
         static Object setDoc(PythonClass self, Object value) {
             self.setAttribute(T___DOC__, value);
-            return PNone.NO_VALUE;
+            return NO_VALUE;
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "isKindOfBuiltinClass(self)"})
@@ -463,7 +458,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
                         @Cached(inline = false) CallTernaryMethodNode callGet) {
             Object getMethod = lookupGet.execute(getClassNode.execute(inliningTarget, descriptor));
-            if (getMethod != PNone.NO_VALUE) {
+            if (getMethod != NO_VALUE) {
                 return callGet.execute(frame, getMethod, descriptor, PNone.NONE, type);
             }
             return descriptor;
@@ -601,7 +596,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         private Object op(VirtualFrame frame, Node inliningTarget, Object self, Object[] arguments, PKeyword[] keywords, GetClassNode getInstanceClassNode,
                         InlinedConditionProfile hasInit, InlinedConditionProfile gotInitResult, BindNew bindNew, PRaiseNode.Lazy raiseNode) {
             Object newMethod = lookupNew.execute(self);
-            assert newMethod != PNone.NO_VALUE;
+            assert newMethod != NO_VALUE;
             Object[] newArgs = PythonUtils.prependArgument(self, arguments);
             Object newInstance = dispatchNew.execute(frame, bindNew.execute(frame, inliningTarget, newMethod, self), newArgs, keywords);
             callInit(inliningTarget, newInstance, self, frame, arguments, keywords, getInstanceClassNode, hasInit, gotInitResult, raiseNode);
@@ -613,10 +608,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object newInstanceKlass = getInstanceClassNode.execute(inliningTarget, newInstance);
             if (isSubType(newInstanceKlass, self)) {
                 Object initMethod = getInitNode().execute(frame, newInstanceKlass, newInstance);
-                if (hasInit.profile(inliningTarget, initMethod != PNone.NO_VALUE)) {
+                if (hasInit.profile(inliningTarget, initMethod != NO_VALUE)) {
                     Object[] initArgs = PythonUtils.prependArgument(newInstance, arguments);
                     Object initResult = getDispatchNode().execute(frame, initMethod, initArgs, keywords);
-                    if (gotInitResult.profile(inliningTarget, initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
+                    if (gotInitResult.profile(inliningTarget, initResult != PNone.NONE && initResult != NO_VALUE)) {
                         throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
                     }
                 }
@@ -690,17 +685,17 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
             Object get = null;
-            if (descr != PNone.NO_VALUE) {
+            if (descr != NO_VALUE) {
                 // acts as a branch profile
                 Object dataDescClass = getDescClassNode.execute(inliningTarget, descr);
                 get = lookupGet(dataDescClass);
                 if (PGuards.isCallableOrDescriptor(get)) {
-                    Object delete = PNone.NO_VALUE;
+                    Object delete = NO_VALUE;
                     Object set = lookupSet(dataDescClass);
-                    if (set == PNone.NO_VALUE) {
+                    if (set == NO_VALUE) {
                         delete = lookupDelete(dataDescClass);
                     }
-                    if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
+                    if (set != NO_VALUE || delete != NO_VALUE) {
                         isDescProfile.enter(inliningTarget);
                         // Only override if __get__ is defined, too, for compatibility with CPython.
                         if (invokeGet == null) {
@@ -712,10 +707,10 @@ public final class TypeBuiltins extends PythonBuiltins {
                 }
             }
             Object value = readAttribute(object, key);
-            if (value != PNone.NO_VALUE) {
+            if (value != NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);
                 Object valueGet = lookupValueGet(value);
-                if (valueGet == PNone.NO_VALUE) {
+                if (valueGet == NO_VALUE) {
                     return value;
                 } else if (PGuards.isCallableOrDescriptor(valueGet)) {
                     if (invokeValueGet == null) {
@@ -725,9 +720,9 @@ public final class TypeBuiltins extends PythonBuiltins {
                     return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
                 }
             }
-            if (descr != PNone.NO_VALUE) {
+            if (descr != NO_VALUE) {
                 hasDescProfile.enter(inliningTarget);
-                if (get == PNone.NO_VALUE) {
+                if (get == NO_VALUE) {
                     return descr;
                 } else if (PGuards.isCallableOrDescriptor(get)) {
                     if (invokeGet == null) {
@@ -1188,7 +1183,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object module = readAttrNode.execute(cls, T___MODULE__);
-            if (module == PNone.NO_VALUE) {
+            if (module == NO_VALUE) {
                 throw raiseNode.get(inliningTarget).raise(AttributeError);
             }
             return module;
@@ -1214,7 +1209,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             // see function 'typeobject.c: type_module'
             if ((getFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
                 Object module = readAttr.execute(cls, T___MODULE__);
-                if (module == PNone.NO_VALUE) {
+                if (module == NO_VALUE) {
                     throw raiseNode.get(inliningTarget).raise(AttributeError);
                 }
                 return module;
@@ -1384,7 +1379,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             // Avoid returning this descriptor
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 Object result = readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__);
-                if (result != PNone.NO_VALUE) {
+                if (result != NO_VALUE) {
                     return result;
                 }
             }
@@ -1414,8 +1409,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
-                if (readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__) != PNone.NO_VALUE) {
-                    writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, PNone.NO_VALUE);
+                if (readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__) != NO_VALUE) {
+                    writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, NO_VALUE);
                     self.setAbstractClass(false);
                     return PNone.NONE;
                 }
@@ -1453,7 +1448,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             PSet names = factory.createSet();
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, klass, T___DICT__);
-            if (ns != PNone.NO_VALUE) {
+            if (ns != NO_VALUE) {
                 callNode.execute(frame, updateCallable, ns);
             }
             Object basesAttr = getBasesNode.execute(frame, klass);
@@ -1502,7 +1497,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
-            if (annotations == PNone.NO_VALUE) {
+            if (annotations == NO_VALUE) {
                 annotations = factory.get(inliningTarget).createDict();
                 try {
                     write.execute(self, T___ANNOTATIONS__, annotations);
@@ -1521,11 +1516,11 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             try {
-                write.execute(self, T___ANNOTATIONS__, PNone.NO_VALUE);
+                write.execute(self, T___ANNOTATIONS__, NO_VALUE);
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
             }
-            if (annotations == PNone.NO_VALUE) {
+            if (annotations == NO_VALUE) {
                 throw raiseNode.get(inliningTarget).raise(AttributeError, new Object[]{T___ANNOTATIONS__});
             }
             return PNone.NONE;

@@ -127,6 +127,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -182,7 +183,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -1123,8 +1123,8 @@ public abstract class GraalHPyNodes {
                 for (int i = 0; i < methodNames.length; i++) {
                     Object methodName;
                     TruffleString methodNameStr;
-                    if (methodNames[i] instanceof HiddenKey) {
-                        methodNameStr = fromJavaStringNode.execute(((HiddenKey) methodNames[i]).getName(), TS_ENCODING);
+                    if (methodNames[i] instanceof HiddenAttr ha) {
+                        methodNameStr = fromJavaStringNode.execute(ha.getName(), TS_ENCODING);
                         methodName = methodNames[i];
                     } else {
                         methodNameStr = (TruffleString) methodNames[i];

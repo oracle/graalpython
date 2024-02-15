@@ -210,6 +210,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
+            assert !(key instanceof HiddenKey);
             return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }

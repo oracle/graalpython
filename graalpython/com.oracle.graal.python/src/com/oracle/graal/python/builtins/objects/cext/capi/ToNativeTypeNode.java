@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ALLOC;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
@@ -77,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
@@ -87,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
@@ -98,7 +97,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.object.HiddenKey;
 
 public abstract class ToNativeTypeNode {
 
@@ -198,7 +196,7 @@ public abstract class ToNativeTypeNode {
         return mem;
     }
 
-    private static Object lookup(PythonManagedClass clazz, CFields member, HiddenKey hiddenName) {
+    private static Object lookup(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
         Object result = LookupNativeMemberInMRONodeGen.getUncached().execute(clazz, member, hiddenName);
         if (result == PNone.NO_VALUE) {
             return PythonContext.get(null).getNativeNull().getPtr();
@@ -206,7 +204,7 @@ public abstract class ToNativeTypeNode {
         return result;
     }
 
-    private static long lookupSize(PythonManagedClass clazz, CFields member, HiddenKey hiddenName) {
+    private static long lookupSize(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
         return LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, member, hiddenName);
     }
 
@@ -279,8 +277,8 @@ public abstract class ToNativeTypeNode {
         Object asMapping = hasMappingMethods(clazz) ? allocatePyMappingMethods(clazz) : nullValue;
         Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, TypeBuiltins.TYPE_AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, TypeBuiltins.TYPE_DEALLOC));
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, TypeBuiltins.TYPE_VECTORCALL_OFFSET));
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
+        writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_setattr, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, asAsync);
@@ -338,7 +336,7 @@ public abstract class ToNativeTypeNode {
         // TODO properly implement 'tp_dictoffset' for builtin classes
         writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNodeGen.getUncached().execute(null, clazz));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_init, lookup(clazz, SlotMethodDef.TP_INIT));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, TYPE_ALLOC));
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, HiddenAttr.ALLOC));
         // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
         // expects to get the function
         Object newFunction = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.New).execute(clazz);
@@ -346,8 +344,8 @@ public abstract class ToNativeTypeNode {
             newFunction = ((PDecoratedMethod) newFunction).getCallable();
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_new, ManagedMethodWrappers.createKeywords(newFunction));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, TypeBuiltins.TYPE_FREE));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, TypeBuiltins.TYPE_CLEAR));
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
         if (clazz.basesTuple == null) {
             clazz.basesTuple = factory.createTuple(GetBaseClassesNode.executeUncached(clazz));
@@ -361,7 +359,7 @@ public abstract class ToNativeTypeNode {
         PDict subclasses = GetSubclassesNode.executeUncached(clazz);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(subclasses));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_weaklist, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, TypeBuiltins.TYPE_DEL));
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, HiddenAttr.DEL));
         writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_finalize, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_vectorcall, nullValue);
