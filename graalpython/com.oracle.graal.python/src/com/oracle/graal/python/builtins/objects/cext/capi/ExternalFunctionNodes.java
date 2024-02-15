@@ -1109,6 +1109,9 @@ public abstract class ExternalFunctionNodes {
         }
 
         static boolean releaseArgsTuple(Object argsTupleObject, ReleaseNativeSequenceStorageNode freeNode, boolean eagerNativeStorage) {
+            if (!PythonContext.get(freeNode).isNativeAccessAllowed()) {
+                return false;
+            }
             try {
                 assert argsTupleObject instanceof PythonObjectNativeWrapper;
                 PythonObjectNativeWrapper argsTupleWrapper = (PythonObjectNativeWrapper) argsTupleObject;
