@@ -118,6 +118,7 @@ public final class HiddenAttr {
     public static final HiddenAttr PROMOTED_STEP = new HiddenAttr("promoted_step");     // PythonCextSlotBuiltins
     public static final HiddenAttr PROMOTED_STOP = new HiddenAttr("promoted_stop");     // PythonCextSlotBuiltins
     public static final HiddenAttr METHODS_FLAGS = new HiddenAttr("__methods_flags__"); // GetMethodsFlagsNode
+    public static final HiddenAttr NATIVE_STORAGE = new HiddenAttr("native_storage");
 
     private final HiddenKey key;
 

@@ -91,6 +91,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
 import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
+import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_STORAGE;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
@@ -788,16 +789,15 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
     abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
-        private static final HiddenKey DATA_NATIVE_STORAGE = new HiddenKey("native_storage");
-
         @Specialization
         static Object get(PString object,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteByteNode writeByteNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttribute) {
+                        @Cached HiddenAttr.WriteNode writeAttribute) {
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
                 return object.getNativeCharSequence().getPtr();
@@ -836,7 +836,7 @@ public final class PythonCextSlotBuiltins {
              * 
              * TODO it would be nicer if the native char sequence could manage its own memory
              */
-            writeAttribute.execute(object, DATA_NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));
+            writeAttribute.execute(inliningTarget, object, NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));
             return ptr;
         }
     }

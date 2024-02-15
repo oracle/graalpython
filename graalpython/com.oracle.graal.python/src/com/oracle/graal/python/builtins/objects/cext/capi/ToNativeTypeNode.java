@@ -75,7 +75,7 @@ import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
@@ -275,7 +275,7 @@ public abstract class ToNativeTypeNode {
         Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue);
         Object asSequence = hasSequenceMethods(clazz) ? allocatePySequenceMethods(clazz, nullValue) : nullValue;
         Object asMapping = hasMappingMethods(clazz) ? allocatePyMappingMethods(clazz) : nullValue;
-        Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, TypeBuiltins.TYPE_AS_BUFFER);
+        Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
         writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
