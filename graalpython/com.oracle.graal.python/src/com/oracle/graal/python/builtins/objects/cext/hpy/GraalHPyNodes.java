@@ -62,6 +62,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -807,7 +808,7 @@ public abstract class GraalHPyNodes {
             this(key, value, null);
         }
 
-        void write(WriteAttributeToObjectNode writeAttributeToObjectNode, ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType) {
+        void write(Node inliningTarget, WritePropertyNode writePropertyNode, ReadPropertyNode readPropertyNode, Object enclosingType) {
             for (HPyProperty prop = this; prop != null; prop = prop.next) {
                 /*
                  * Do not overwrite existing attributes. Reason: Different slots may map to the same
@@ -819,16 +820,58 @@ public abstract class GraalHPyNodes {
                  * that we cannot easily do the same since we have two separate sets of slots: HPy
                  * slots and legacy slots. Right now, the HPy slots have precedence.
                  */
-                if (!keyExists(readAttributeFromObjectNode, enclosingType, prop.key)) {
-                    writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+                if (!keyExists(inliningTarget, readPropertyNode, enclosingType, prop.key)) {
+                    writePropertyNode.execute(inliningTarget, enclosingType, prop.key, prop.value);
                 }
             }
         }
 
-        static boolean keyExists(ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType, Object key) {
+        static boolean keyExists(Node inliningTarget, ReadPropertyNode readPropertyNode, Object enclosingType, Object key) {
+            return readPropertyNode.execute(inliningTarget, enclosingType, key) != PNone.NO_VALUE;
+        }
+
+        static boolean keyExists(ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType, TruffleString key) {
             return readAttributeFromObjectNode.execute(enclosingType, key) != PNone.NO_VALUE;
         }
 
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class ReadPropertyNode extends Node {
+        abstract Object execute(Node inliningTarget, Object receiver, Object key);
+
+        @Specialization
+        static Object doHiddenAttr(Node inliningTarget, PythonAbstractObject receiver, HiddenAttr key,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            return readNode.execute(inliningTarget, receiver, key, PNone.NO_VALUE);
+        }
+
+        @Fallback
+        static Object doOther(Object receiver, Object key,
+                        @Cached(inline = false) ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+            return readAttributeFromObjectNode.execute(receiver, key);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class WritePropertyNode extends Node {
+        abstract void execute(Node inliningTarget, Object receiver, Object key, Object value);
+
+        @Specialization
+        static void doHiddenAttr(Node inliningTarget, PythonAbstractObject receiver, HiddenAttr key, Object value,
+                        @Cached HiddenAttr.WriteNode writeNode) {
+            writeNode.execute(inliningTarget, receiver, key, value);
+        }
+
+        @Fallback
+        static void doOther(Object receiver, Object key, Object value,
+                        @Cached(inline = false) WriteAttributeToObjectNode writeAttributeToObjectNode) {
+            writeAttributeToObjectNode.execute(receiver, key, value);
+        }
     }
 
     /**
@@ -1184,6 +1227,8 @@ public abstract class GraalHPyNodes {
                         @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached ReadAttributeFromObjectNode readAttributeToObjectNode,
+                        @Cached ReadPropertyNode readPropertyNode,
+                        @Cached WritePropertyNode writePropertyNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -1213,7 +1258,7 @@ public abstract class GraalHPyNodes {
                         if (property == null) {
                             break;
                         }
-                        property.write(writeAttributeToObjectNode, readAttributeToObjectNode, enclosingType);
+                        property.write(inliningTarget, writePropertyNode, readPropertyNode, enclosingType);
                     }
                     break;
                 case Py_tp_methods:
@@ -2221,8 +2266,9 @@ public abstract class GraalHPyNodes {
                         @Cached IsTypeNode isTypeNode,
                         @Cached HasSameConstructorNode hasSameConstructorNode,
                         @Cached CStructAccess.ReadI64Node getMetaSizeNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached ReadPropertyNode readPropertyNode,
+                        @Cached WritePropertyNode writePropertyNode,
                         @Cached PyObjectCallMethodObjArgs callCreateTypeNode,
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached HPyAddMemberNode addMemberNode,
@@ -2360,7 +2406,7 @@ public abstract class GraalHPyNodes {
                         }
 
                         if (property != null) {
-                            property.write(writeAttributeToObjectNode, readAttributeFromObjectNode, newType);
+                            property.write(inliningTarget, writePropertyNode, readPropertyNode, newType);
                         }
                     }
                 }
