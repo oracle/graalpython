@@ -314,19 +314,6 @@ public abstract class ExternalFunctionNodes {
 
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class WrappedPointerToPythonNode extends CExtToJavaNode {
-        @Specialization
-        static Object doIt(Object object) {
-            if (object instanceof PythonNativeWrapper) {
-                return ((PythonNativeWrapper) object).getDelegate();
-            } else {
-                return object;
-            }
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
     public abstract static class ToPythonStringNode extends CExtToJavaNode {
         @Specialization
         static Object doIt(Object object,

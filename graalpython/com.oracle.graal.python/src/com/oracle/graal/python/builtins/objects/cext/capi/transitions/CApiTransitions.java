@@ -1310,10 +1310,11 @@ public abstract class CApiTransitions {
         }
     }
 
-    public static final class WrappedPointerToPythonNode extends CExtToJavaNode {
-
-        @Override
-        public Object execute(Object object) {
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class WrappedPointerToPythonNode extends CExtToJavaNode {
+        @Specialization
+        static Object doIt(Object object) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else {
