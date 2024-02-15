@@ -668,8 +668,6 @@ public abstract class CApiTransitions {
         return value;
     }
 
-    private static final InteropLibrary LIB = InteropLibrary.getUncached();
-
     /**
      * Resolves a native handle to the corresponding {@link PythonNativeWrapper}. This node assumes
      * that {@code pointer} points to handle space (i.e.
