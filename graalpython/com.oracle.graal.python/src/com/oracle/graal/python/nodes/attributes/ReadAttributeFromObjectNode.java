@@ -41,6 +41,8 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -210,7 +212,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
-            assert !(key instanceof HiddenKey);
+            if (key instanceof HiddenKey hk) {
+                transferToInterpreter();
+                throw shouldNotReachHere("Attempt to access HiddenKey " + hk + " from a native object");
+            }
             return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }
