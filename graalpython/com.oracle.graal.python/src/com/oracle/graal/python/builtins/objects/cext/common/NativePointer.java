@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,8 +72,6 @@ public final class NativePointer implements TruffleObject {
     /**
      * Returns an object representing a {@code NULL} pointer. This may also be used if
      * {@link PythonContext#isNativeAccessAllowed()} is {@code false}.
-     *
-     * @return
      */
     public static NativePointer createNull() {
         return new NativePointer();

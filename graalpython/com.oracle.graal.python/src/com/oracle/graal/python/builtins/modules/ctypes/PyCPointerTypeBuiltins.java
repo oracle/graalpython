@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -197,7 +197,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
             parg.tag = 'P';
             parg.pffi_type = ffi_type_pointer;
             parg.obj = cdata;
-            parg.valuePointer = cdata.b_ptr;
+            parg.valuePointer = cdata.b_ptr.createReference();
             return parg;
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -184,7 +184,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
 
-        @Specialization(guards = {"args.length <= 1", "isTuple(args)"})
+        @Specialization(guards = {"args.length == 1", "isTuple(args)"})
         static Object fromNativeLibrary(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached PyCFuncPtrFromDllNode pyCFuncPtrFromDllNode) {
             return pyCFuncPtrFromDllNode.execute(frame, type, args);
@@ -234,7 +234,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"}, limit = "1")
+        @Specialization(guards = {"args.length > 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"}, limit = "1")
         static Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
