@@ -374,6 +374,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
+    /**
+     * A generic source cache for all kinds of {@link Source} objects. For example, this should be
+     * used to cache the sources created from NFI signature strings to ensure code sharing.
+     */
+    private final ConcurrentHashMap<Object, Source> sourceCache = new ConcurrentHashMap<>();
+
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
     }
@@ -1048,5 +1054,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static IndirectCallData createIndirectCallData(Node node) {
         CompilerAsserts.neverPartOfCompilation();
         return get(node).indirectCallDataMap.computeIfAbsent(node, n -> new IndirectCallData(node));
+    }
+
+    public Source getOrCreateSource(Function<Object, Source> rootNodeFunction, Object key) {
+        CompilerAsserts.neverPartOfCompilation();
+        return sourceCache.computeIfAbsent(key, rootNodeFunction);
     }
 }
