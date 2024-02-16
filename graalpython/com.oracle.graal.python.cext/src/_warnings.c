@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -174,15 +174,5 @@ exit:
     Py_XDECREF(module);
     Py_XDECREF(filename);
     return ret;
-}
-
-PyObject* _PyErr_FormatFromCause(PyObject *exception, const char *format, ...) {
-	// dummy implementation that ignores the cause
-    va_list args;
-    va_start(args, format);
-    PyObject* formatted_msg = PyUnicode_FromFormatV(format, args);
-    va_end(args);
-    Graal_PyTruffleErr_CreateAndSetException(exception, formatted_msg);
-    return NULL;
 }
 

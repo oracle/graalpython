@@ -17,7 +17,7 @@
 /* --- Internal Unicode Operations ---------------------------------------- */
 
 #ifndef USE_UNICODE_WCHAR_CACHE
-#  define USE_UNICODE_WCHAR_CACHE 1
+#  define USE_UNICODE_WCHAR_CACHE 0 // GraalPy change
 #endif /* USE_UNICODE_WCHAR_CACHE */
 
 /* Since splitting on whitespace is an important use case, and

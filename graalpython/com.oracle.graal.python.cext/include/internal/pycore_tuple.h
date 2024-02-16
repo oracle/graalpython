@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -67,7 +67,7 @@ struct _Py_tuple_state {
 #endif
 };
 
-#define _PyTuple_ITEMS(op) (PySequence_FAST_ITEMS(op))
+#define _PyTuple_ITEMS(op) (PySequence_Fast_ITEMS(op))
 
 extern PyObject *_PyTuple_FromArray(PyObject *const *, Py_ssize_t);
 extern PyObject *_PyTuple_FromArraySteal(PyObject *const *, Py_ssize_t);

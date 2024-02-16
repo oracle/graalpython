@@ -58,10 +58,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TRACEBACK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_VALUE;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_MODULE_CLASS;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -327,19 +325,6 @@ public final class PythonCextErrBuiltins {
 
         protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
             return isTypeNode.execute(inliningTarget, obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, Int}, call = Direct)
-    abstract static class _PyErr_BadInternalCall extends CApiBinaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object raiseNone(Object filename, int lineno) {
-            if (filename == PNone.NONE) {
-                throw PRaiseNode.raiseUncached(this, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
-            } else {
-                throw PRaiseNode.raiseUncached(this, SystemError, S_S_BAD_ARG_TO_INTERNAL_FUNC, filename, lineno);
-            }
         }
     }
 

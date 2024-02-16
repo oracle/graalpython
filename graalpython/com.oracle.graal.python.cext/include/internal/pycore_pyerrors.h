@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,7 +24,8 @@ extern void _PyErr_FiniTypes(PyInterpreterState *);
 
 static inline PyObject* _PyErr_Occurred(PyThreadState *tstate)
 {
-    return PyErr_Occured();
+    // GraalPy change
+    return PyErr_Occurred();
 }
 
 static inline void _PyErr_ClearExcState(_PyErr_StackItem *exc_state)
