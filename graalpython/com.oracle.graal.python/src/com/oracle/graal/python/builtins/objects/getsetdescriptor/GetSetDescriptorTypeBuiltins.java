@@ -116,7 +116,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getKey().getName(), getName.execute(inliningTarget, descr.getType()));
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getAttr().getName(), getName.execute(inliningTarget, descr.getType()));
         }
     }
 
@@ -149,7 +149,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrGetNode getNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
             return getNode.execute(frame, descr, obj);
         }
     }
@@ -171,7 +171,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrSetNode setNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
             return setNode.execute(frame, descr, obj, value);
         }
     }
@@ -194,7 +194,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrDeleteNode deleteNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
             return deleteNode.execute(frame, descr, obj);
         }
     }

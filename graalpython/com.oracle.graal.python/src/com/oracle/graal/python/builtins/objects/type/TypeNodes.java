@@ -245,7 +245,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -2189,8 +2188,8 @@ public abstract class TypeNodes {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                         }
-                        HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
-                        HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
+                        HiddenAttr hiddenSlotAttr = HiddenAttr.createTypeAttrForSlot(toJavaStringNode.execute(mangledName));
+                        HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotAttr, pythonClass);
                         pythonClass.setAttribute(mangledName, slotDesc);
                     }
                 }
@@ -2265,11 +2264,6 @@ public abstract class TypeNodes {
                             l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
                             WeakRefModuleBuiltinsFactory.class);
             setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, factory);
-        }
-
-        @TruffleBoundary
-        private static HiddenKey createTypeKey(String name) {
-            return PythonLanguage.get(null).typeHiddenKeys.computeIfAbsent(name, HiddenKey::new);
         }
 
         private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {

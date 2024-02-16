@@ -199,7 +199,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -207,11 +206,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public final class TypeBuiltins extends PythonBuiltins {
 
-    public static final HashMap<String, HiddenKey> INITIAL_HIDDEN_TYPE_KEYS = new HashMap<>();
+    public static final HashMap<String, HiddenAttr> INITIAL_HIDDEN_TYPE_ATTRS = new HashMap<>();
 
     static {
         for (HiddenAttr attr : new HiddenAttr[]{DICTOFFSET, ITEMSIZE, BASICSIZE, ALLOC, DEALLOC, DEL, FREE, CLEAR, FLAGS, VECTORCALL_OFFSET, DOC}) {
-            INITIAL_HIDDEN_TYPE_KEYS.put(attr.getName(), attr.getKeyTodoRemoveThis());
+            INITIAL_HIDDEN_TYPE_ATTRS.put(attr.getName(), attr);
         }
     }
 

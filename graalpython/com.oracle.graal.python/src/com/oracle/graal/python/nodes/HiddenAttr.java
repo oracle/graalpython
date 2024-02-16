@@ -52,11 +52,13 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALL
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ALLOC__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteNodeGen;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -140,6 +142,11 @@ public final class HiddenAttr {
     @Override
     public String toString() {
         return getName();
+    }
+
+    @TruffleBoundary
+    public static HiddenAttr createTypeAttrForSlot(String name) {
+        return PythonLanguage.get(null).typeHiddenAttrs.computeIfAbsent(name, HiddenAttr::new);
     }
 
     @GenerateInline(inlineByDefault = true)

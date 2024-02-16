@@ -132,7 +132,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -371,7 +370,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
-    public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
+    public final ConcurrentHashMap<String, HiddenAttr> typeHiddenAttrs = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_ATTRS);
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
