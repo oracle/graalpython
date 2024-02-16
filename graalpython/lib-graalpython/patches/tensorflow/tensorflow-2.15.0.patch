@@ -337,10 +337,10 @@ index 00000000000..2b3824c8765
 +            print('Wheel:\n\t' + find_tf_whl(args.whl_path))
 +
 +        if not args.no_install:
-+            run(PIP + ["install", "--force-reinstall", os.path.join(whl_path, find_tf_whl(args.whl_path))])
++            run(PIP + ["install", "--force-reinstall", os.path.join(args.whl_path, find_tf_whl(args.whl_path))])
 +
 +    if args.test:
-+        populate_cached_wheels(invalidate=args.no_pipreq)
++        populate_cached_wheels(skip_if_exist=args.no_pipreq)
 +        if not os.path.exists(TRACK_DIR):
 +            os.mkdir(TRACK_DIR)
 +        BAZEL_TEST = [
