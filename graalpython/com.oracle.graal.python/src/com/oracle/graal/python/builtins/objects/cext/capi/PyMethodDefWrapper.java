@@ -45,9 +45,9 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
 
+import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
@@ -65,7 +65,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -93,17 +93,19 @@ public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, Tru
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefWrapper.class);
 
-    private static Object getMethFromBuiltinFunction(PBuiltinFunction object) {
+    private static Object getMethFromBuiltinFunction(CApiContext cApiContext, PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
+                LOGGER.warning("re-creating PyMethodDef for native function " + object);
                 return kwDefaults[i].getValue();
             }
         }
-        return createCallTargetWrapper(object.getCallTarget(), object.getFlags());
+        return PyCFunctionWrapper.createCallTargetWrapper(cApiContext, object);
     }
 
-    public static PyMethodDefWrapper create(PBuiltinFunction builtinFunction) {
+    @TruffleBoundary
+    public static Object create(CApiContext cApiContext, PBuiltinFunction builtinFunction) {
         Object docObj = builtinFunction.getAttribute(SpecialAttributeNames.T___DOC__);
         TruffleString doc;
         if (docObj instanceof PNone) {
@@ -115,41 +117,31 @@ public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, Tru
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-        return new PyMethodDefWrapper(builtinFunction.getName(), getMethFromBuiltinFunction(builtinFunction), builtinFunction.getFlags(), doc);
+        PyMethodDefWrapper pyMethodDef = new PyMethodDefWrapper(builtinFunction.getName(), getMethFromBuiltinFunction(cApiContext, builtinFunction), builtinFunction.getFlags(), doc);
+        Object result = cApiContext.getOrAllocateNativePyMethodDef(pyMethodDef);
+        // store the PyMethodDef pointer to the built-in function object for fast access
+        DynamicObjectLibrary dylib = DynamicObjectLibrary.getFactory().getUncached(builtinFunction);
+        dylib.put(builtinFunction, PythonCextMethodBuiltins.METHOD_DEF_PTR, result);
+        return result;
     }
 
-    public static PyMethodDefWrapper create(PBuiltinMethod builtinMethod) {
-        return create(builtinMethod.getBuiltinFunction());
+    public static Object create(CApiContext cApiContext, PBuiltinMethod builtinMethod) {
+        return create(cApiContext, builtinMethod.getBuiltinFunction());
     }
 
     // TODO(fa): we probably need constructor methods for PFunction and PMethod as well
 
     /**
-     * Creates a wrapper for a {@link CallTarget} that can go to native. The flags are required to
-     * determine the signature.
-     */
-    private static Object createCallTargetWrapper(CallTarget ct, int flags) {
-        CompilerAsserts.neverPartOfCompilation();
-        PyProcsWrapper wrapper;
-        if (CExtContext.isMethNoArgs(flags)) {
-            wrapper = PyProcsWrapper.createUnaryFuncWrapper(ct);
-        } else if (CExtContext.isMethO(flags)) {
-            wrapper = PyProcsWrapper.createBinaryFuncWrapper(ct);
-        } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-            wrapper = PyProcsWrapper.createVarargKeywordWrapper(ct);
-        } else if (CExtContext.isMethVarargs(flags)) {
-            wrapper = PyProcsWrapper.createVarargWrapper(ct);
-        } else {
-            throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
-        }
-        if (wrapper.isReplacingWrapper()) {
-            return wrapper.getReplacement(InteropLibrary.getUncached());
-        }
-        return wrapper;
-    }
-
-    /**
      * Allocates a native {@code PyMethodDef} struct and initializes it.
+     *
+     * <pre>
+     * struct PyMethodDef {
+     *     const char  *ml_name;
+     *     PyCFunction ml_meth;
+     *     int ml_flags;
+     *     const char  *ml_doc;
+     * };
+     * </pre>
      *
      * @return The pointer object of the allocated struct.
      */

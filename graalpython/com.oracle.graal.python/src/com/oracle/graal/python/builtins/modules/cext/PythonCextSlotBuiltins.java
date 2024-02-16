@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
@@ -303,15 +304,13 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         @TruffleBoundary
         static Object get(Object object) {
-            PyMethodDefWrapper pyMethodDef;
+            CApiContext cApiContext = getCApiContext(null);
             if (object instanceof PBuiltinFunction builtinFunction) {
-                pyMethodDef = PyMethodDefWrapper.create(builtinFunction);
+                return PyMethodDefWrapper.create(cApiContext, builtinFunction);
             } else if (object instanceof PBuiltinMethod builtinMethod) {
-                pyMethodDef = PyMethodDefWrapper.create(builtinMethod);
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
+                return PyMethodDefWrapper.create(cApiContext, builtinMethod);
             }
-            return getCApiContext(null).getOrAllocateNativePyMethodDef(pyMethodDef);
+            throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
         }
     }
 
@@ -596,7 +595,7 @@ public final class PythonCextSlotBuiltins {
              * Note: 'PBuiltinFunction' is the only Java class we use to represent a
              * 'method_descriptor' (CPython type 'PyMethodDescr_Type').
              */
-            return getCApiContext(null).getOrAllocateNativePyMethodDef(PyMethodDefWrapper.create(builtinFunction));
+            return PyMethodDefWrapper.create(getCApiContext(null), builtinFunction);
         }
     }
 
