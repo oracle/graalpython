@@ -170,8 +170,9 @@ public final class PythonCextTypeBuiltins {
         static PDict doGeneric(PythonNativeClass nativeClass) {
             PythonLanguage language = PythonLanguage.get(null);
             Store nativeTypeStore = new Store(language.getEmptyShape());
-            DynamicObjectLibrary.getUncached().put(nativeTypeStore, PythonNativeClass.INSTANCESHAPE, language.getShapeForClass(nativeClass));
-            return PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
+            PDict dict = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
+            HiddenAttr.WriteNode.executeUncached(dict, HiddenAttr.INSTANCESHAPE, language.getShapeForClass(nativeClass));
+            return dict;
         }
     }
 

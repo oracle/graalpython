@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * A simple wrapper around types objects created through the Python C API that can be cast to
@@ -50,8 +49,6 @@ import com.oracle.truffle.api.object.HiddenKey;
  * but our copy should just never become stale.
  */
 public interface PythonNativeClass extends PythonAbstractClass, PythonNativeObject {
-
-    public static final HiddenKey INSTANCESHAPE = new HiddenKey("instanceshape");
 
     Object getPtr();
 

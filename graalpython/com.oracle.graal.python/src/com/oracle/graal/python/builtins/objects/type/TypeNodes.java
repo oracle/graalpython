@@ -119,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -1839,21 +1838,19 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getTpDictNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
+                        @Cached HiddenAttr.ReadNode readAttrNode) {
             Object tpDictObj = getTpDictNode.readFromObj(clazz, CFields.PyTypeObject__tp_dict);
             if (tpDictObj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) tpDictObj).getInstanceShape();
             }
-            if (tpDictObj instanceof PDict) {
-                HashingStorage dictStorage = ((PDict) tpDictObj).getDictStorage();
-                if (dictStorage instanceof DynamicObjectStorage) {
-                    Object instanceShapeObj = lib.getOrDefault(((DynamicObjectStorage) dictStorage).getStore(), PythonNativeClass.INSTANCESHAPE, PNone.NO_VALUE);
-                    if (instanceShapeObj != PNone.NO_VALUE) {
-                        return (Shape) instanceShapeObj;
-                    }
-                    throw CompilerDirectives.shouldNotReachHere("instanceshape object is not a shape");
+            if (tpDictObj instanceof PDict dict) {
+                Object instanceShapeObj = readAttrNode.execute(inliningTarget, dict, HiddenAttr.INSTANCESHAPE, PNone.NO_VALUE);
+                if (instanceShapeObj != PNone.NO_VALUE) {
+                    return (Shape) instanceShapeObj;
                 }
+                throw CompilerDirectives.shouldNotReachHere("instanceshape object is not a shape");
             }
             // TODO(fa): track unique shape per native class in language?
             throw CompilerDirectives.shouldNotReachHere("custom dicts for native classes are unsupported");
