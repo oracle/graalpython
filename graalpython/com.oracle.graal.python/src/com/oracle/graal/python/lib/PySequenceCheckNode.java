@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_SEQUENCE_CHECK;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -93,7 +93,7 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
     static boolean doNative(PythonAbstractNativeObject object,
                     @Cached(inline = false) PythonToNativeNode toSulongNode,
                     @Cached(inline = false) PCallCapiFunction callCapiFunction) {
-        return ((int) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object))) != 0;
+        return ((int) callCapiFunction.call(FUN_PY_SEQUENCE_CHECK, toSulongNode.execute(object))) != 0;
     }
 
     @Fallback
