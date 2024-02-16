@@ -193,6 +193,13 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
 
     /**
+     * Table of all requested {@code PyMethodDef} structures. We keep them in this table because in
+     * CPython, those are usually statically allocated (or at least immortal) and once hand out a
+     * pointer for a {@code PyMethodDef}, we need to ensure that it stays valid until the end.
+     */
+    private final HashMap<PyMethodDefWrapper, Object> methodDefinitions = new HashMap<>(4);
+
+    /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
      * objects alive. This is necessary because NFI will {@code dlclose} the library (and thus
      * {@code munmap} all code) if the library object is no longer reachable. However, it can happen
@@ -672,6 +679,10 @@ public final class CApiContext extends CExtContext {
                 // Shutdown already in progress, let it do the finalization then
             }
         }
+        // free all allocated PyMethodDef structures
+        for (Object pyMethodDefPointer : methodDefinitions.values()) {
+            PyMethodDefWrapper.free(pyMethodDefPointer);
+        }
     }
 
     @TruffleBoundary
@@ -841,5 +852,16 @@ public final class CApiContext extends CExtContext {
             slotWrappers[idx] = wrapper;
         }
         return wrapper;
+    }
+
+    @TruffleBoundary
+    public Object getOrAllocateNativePyMethodDef(PyMethodDefWrapper pyMethodDef) {
+        Object pyMethodDefPointer = methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefWrapper::allocate);
+        assert CApiContext.isPointerObject(pyMethodDefPointer);
+        return pyMethodDefPointer;
+    }
+
+    public static boolean isPointerObject(Object object) {
+        return object.getClass() == NativePointer.class || object.getClass().getSimpleName().contains("NFIPointer") || object.getClass().getSimpleName().contains("LLVMPointer");
     }
 }

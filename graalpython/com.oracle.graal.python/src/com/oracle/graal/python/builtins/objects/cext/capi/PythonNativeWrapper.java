@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -150,7 +149,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         } else {
             result = pointer;
             if (lib.isPointer(pointer)) {
-                assert pointer.getClass() == NativePointer.class || pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
+                assert CApiContext.isPointerObject(pointer);
                 try {
                     CApiTransitions.createReference(this, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {

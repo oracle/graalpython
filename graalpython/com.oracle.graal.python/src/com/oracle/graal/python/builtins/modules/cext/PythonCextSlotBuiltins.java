@@ -301,14 +301,17 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject}, call = Ignored)
     abstract static class Py_get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonObject object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            Object methodDefPtr = readNode.execute(inliningTarget, object, METHOD_DEF_PTR, null);
-            if (methodDefPtr != null) {
-                return methodDefPtr;
+        @TruffleBoundary
+        static Object get(Object object) {
+            PyMethodDefWrapper pyMethodDef;
+            if (object instanceof PBuiltinFunction builtinFunction) {
+                pyMethodDef = PyMethodDefWrapper.create(builtinFunction);
+            } else if (object instanceof PBuiltinMethod builtinMethod) {
+                pyMethodDef = PyMethodDefWrapper.create(builtinMethod);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
             }
-            return new PyMethodDefWrapper(object);
+            return getCApiContext(null).getOrAllocateNativePyMethodDef(pyMethodDef);
         }
     }
 
@@ -587,8 +590,13 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonObject object) {
-            return new PyMethodDefWrapper(object);
+        @TruffleBoundary
+        static Object get(PBuiltinFunction builtinFunction) {
+            /*
+             * Note: 'PBuiltinFunction' is the only Java class we use to represent a
+             * 'method_descriptor' (CPython type 'PyMethodDescr_Type').
+             */
+            return getCApiContext(null).getOrAllocateNativePyMethodDef(PyMethodDefWrapper.create(builtinFunction));
         }
     }
 

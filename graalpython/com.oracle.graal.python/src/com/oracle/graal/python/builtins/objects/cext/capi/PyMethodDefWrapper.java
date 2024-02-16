@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,45 +44,54 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Wrapper object for {@code PyMethodDef}.
+ * Helper class to allocate, initialize, and free a {@code PyMethodDef} struct.
+ * <p>
+ * In CPython, {@code PyMethodDef} is a definition for how to create built-in function or method
+ * objects. Previously, this class used to be a wrapper for our classes representing
+ * {@code builtin_function_or_method} (i.e. {@link PBuiltinFunction}, {@link PBuiltinMethod}, and
+ * {@link com.oracle.graal.python.builtins.objects.method.PMethod}) but there is no point in keeping
+ * a bi-direction connection between the method/function objects and the {@code PyMethodDef}. It is
+ * not possible to resolve a {@code PyMethodDef} to an object. Furthermore, {@code PyMethodDef}
+ * structures are mainly static and if not, they are assumed to be immortal in CPython. Therefore, a
+ * {@code PyMethodDef} we *MUST NOT* keep a reference to any runtime objects because they would
+ * leak.
+ * </p>
+ * 
+ * @param name The name of the function or method object.
+ * @param meth A reference to the executable function. In CPython, this is a function pointer of
+ *            type {@code PyCFunction}. In our case, it can either be a native function pointer or a
+ *            {@link CallTarget}
+ * @param flags The method flags effectively determining the function's signature.
+ * @param doc The doc string for the function or method object.
  */
-@ExportLibrary(InteropLibrary.class)
-public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
+public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, TruffleString doc) {
 
-    public PyMethodDefWrapper(PythonObject delegate) {
-        super(delegate, true);
-    }
-
-    private static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
-        return getMethFromBuiltinFunction(object.getBuiltinFunction());
-    }
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefWrapper.class);
 
     private static Object getMethFromBuiltinFunction(PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
@@ -91,30 +100,45 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
                 return kwDefaults[i].getValue();
             }
         }
-        return createFunctionWrapper(object);
+        return createCallTargetWrapper(object.getCallTarget(), object.getFlags());
     }
 
-    private static Object getMeth(PythonObject object) {
-        if (object instanceof PBuiltinMethod) {
-            return getMethFromBuiltinMethod((PBuiltinMethod) object);
-        } else if (object instanceof PBuiltinFunction) {
-            return getMethFromBuiltinFunction((PBuiltinFunction) object);
+    public static PyMethodDefWrapper create(PBuiltinFunction builtinFunction) {
+        Object docObj = builtinFunction.getAttribute(SpecialAttributeNames.T___DOC__);
+        TruffleString doc;
+        if (docObj instanceof PNone) {
+            doc = null;
+        } else {
+            try {
+                doc = CastToTruffleStringNode.executeUncached(docObj);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
-        return createFunctionWrapper(object);
+        return new PyMethodDefWrapper(builtinFunction.getName(), getMethFromBuiltinFunction(builtinFunction), builtinFunction.getFlags(), doc);
     }
 
-    @TruffleBoundary
-    private static Object createFunctionWrapper(PythonObject object) {
-        int flags = getFlags(object);
+    public static PyMethodDefWrapper create(PBuiltinMethod builtinMethod) {
+        return create(builtinMethod.getBuiltinFunction());
+    }
+
+    // TODO(fa): we probably need constructor methods for PFunction and PMethod as well
+
+    /**
+     * Creates a wrapper for a {@link CallTarget} that can go to native. The flags are required to
+     * determine the signature.
+     */
+    private static Object createCallTargetWrapper(CallTarget ct, int flags) {
+        CompilerAsserts.neverPartOfCompilation();
         PyProcsWrapper wrapper;
         if (CExtContext.isMethNoArgs(flags)) {
-            wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
+            wrapper = PyProcsWrapper.createUnaryFuncWrapper(ct);
         } else if (CExtContext.isMethO(flags)) {
-            wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
+            wrapper = PyProcsWrapper.createBinaryFuncWrapper(ct);
         } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-            wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
+            wrapper = PyProcsWrapper.createVarargKeywordWrapper(ct);
         } else if (CExtContext.isMethVarargs(flags)) {
-            wrapper = PyProcsWrapper.createVarargWrapper(object);
+            wrapper = PyProcsWrapper.createVarargWrapper(ct);
         } else {
             throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
@@ -124,85 +148,48 @@ public final class PyMethodDefWrapper extends PythonStructNativeWrapper {
         return wrapper;
     }
 
-    private static int getFlags(PythonObject object) {
-        if (object instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) object).getFlags();
-        } else if (object instanceof PBuiltinMethod) {
-            return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
-        }
-        return 0;
-    }
-
+    /**
+     * Allocates a native {@code PyMethodDef} struct and initializes it.
+     *
+     * @return The pointer object of the allocated struct.
+     */
     @TruffleBoundary
-    private Object allocateReplacementObject() {
-        PythonObject obj = (PythonObject) getDelegate();
-
+    Object allocate() {
         CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
         CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
         CStructAccess.WriteIntNode writeIntNode = CStructAccessFactory.WriteIntNodeGen.getUncached();
-        PythonAbstractObject.PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
-        CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
+
+        assert name != null;
+        Object nameWrapper;
+        try {
+            nameWrapper = new CStringWrapper(name);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+
+        Object docWrapper;
+        if (doc == null) {
+            docWrapper = PythonContext.get(null).getNativeNull().getPtr();
+        } else {
+            try {
+                docWrapper = new CStringWrapper(doc);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
         Object mem = allocNode.alloc(CStructs.PyMethodDef);
-
-        Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
-
-        Object name = getAttrNode.execute(null, obj, SpecialAttributeNames.T___NAME__);
-        if (PGuards.isPNone(name)) {
-            name = nullValue;
-        } else {
-            try {
-                name = new CStringWrapper(castToStringNode.execute(null, name));
-            } catch (CannotCastException e) {
-                // fall through
-            }
-        }
-        writePointerNode.write(mem, PyMethodDef__ml_name, name);
-
-        writePointerNode.write(mem, PyMethodDef__ml_meth, getMeth(obj));
-        writeIntNode.write(mem, PyMethodDef__ml_flags, getFlags(obj));
-
-        Object doc = getAttrNode.execute(null, obj, T___DOC__);
-        if (PGuards.isPNone(doc)) {
-            doc = nullValue;
-        } else {
-            try {
-                doc = new CStringWrapper(castToStringNode.execute(null, doc));
-            } catch (CannotCastException e) {
-                doc = nullValue;
-            }
-        }
-        writePointerNode.write(mem, PyMethodDef__ml_doc, doc);
-
+        writePointerNode.write(mem, PyMethodDef__ml_name, nameWrapper);
+        writePointerNode.write(mem, PyMethodDef__ml_meth, meth);
+        writeIntNode.write(mem, PyMethodDef__ml_flags, flags);
+        writePointerNode.write(mem, PyMethodDef__ml_doc, docWrapper);
+        LOGGER.fine(() -> String.format("Allocated PyMethodDef(%s, %s, %d, %s) at %s", name, meth, flags, doc, PythonUtils.formatPointer(mem)));
         return mem;
     }
 
-    @Override
-    public Object getReplacement(InteropLibrary lib) {
-        if (replacement == null) {
-            replacement = registerReplacement(allocateReplacementObject(), lib);
-        }
-        return replacement;
-    }
-
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
-
-    @ExportMessage
-    long asPointer() throws UnsupportedMessageException {
-        if (!isNative()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-        return getNativePointer();
-    }
-
-    @ExportMessage
-    void toNative() {
-        if (!isNative()) {
-            getReplacement(InteropLibrary.getUncached());
-            assert isNative();
-        }
+    static void free(Object pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        LOGGER.fine("Freeing PyMethodDef at %s");
+        // TODO(fa): also free 'ml_meth'
+        FreeNode.executeUncached(pointer);
     }
 }
