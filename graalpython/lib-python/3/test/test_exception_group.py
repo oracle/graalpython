@@ -2,6 +2,7 @@ import collections.abc
 import traceback
 import types
 import unittest
+from test.support import impl_detail
 
 
 class TestExceptionGroupTypeHierarchy(unittest.TestCase):
@@ -22,7 +23,8 @@ class TestExceptionGroupTypeHierarchy(unittest.TestCase):
 
 class BadConstructorArgs(unittest.TestCase):
     def test_bad_EG_construction__too_many_args(self):
-        MSG = r'BaseExceptionGroup.__new__\(\) takes exactly 2 arguments'
+        # GraalPy change: relax error message requirement
+        MSG = r'BaseExceptionGroup.__new__\(\) .*argument'
         with self.assertRaisesRegex(TypeError, MSG):
             ExceptionGroup('no errors')
         with self.assertRaisesRegex(TypeError, MSG):
@@ -438,11 +440,13 @@ class DeepRecursionInSplitAndSubgroup(unittest.TestCase):
             e = ExceptionGroup('eg', [e])
         return e
 
+    @impl_detail("recursion", graalpy=False)
     def test_deep_split(self):
         e = self.make_deep_eg()
         with self.assertRaises(RecursionError):
             e.split(TypeError)
 
+    @impl_detail("recursion", graalpy=False)
     def test_deep_subgroup(self):
         e = self.make_deep_eg()
         with self.assertRaises(RecursionError):

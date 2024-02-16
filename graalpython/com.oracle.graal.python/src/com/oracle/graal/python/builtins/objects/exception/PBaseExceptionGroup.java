@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,52 +38,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.builtins.objects.exception;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateInline
-@GenerateCached(false)
-@GenerateUncached
-public abstract class PyExceptionInstanceCheckNode extends Node {
-    public abstract boolean execute(Node inliningTarget, Object object);
+public class PBaseExceptionGroup extends PBaseException {
+    private final TruffleString message;
+    private final Object[] exceptions;
 
-    public static boolean executeUncached(Object object) {
-        return PyExceptionInstanceCheckNodeGen.getUncached().execute(null, object);
+    public PBaseExceptionGroup(Object cls, Shape instanceShape, TruffleString message, Object[] exceptions, PTuple args) {
+        super(cls, instanceShape, null, args);
+        this.message = message;
+        this.exceptions = exceptions;
     }
 
-    @Specialization
-    static boolean doManaged(@SuppressWarnings("unused") PBaseException exception) {
-        return true;
+    public Object[] getExceptions() {
+        return exceptions;
     }
 
-    @Specialization
-    static boolean doNative(Node inliningTarget, PythonAbstractNativeObject object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
-        // May be native or interop
-        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PBaseException);
-    }
-
-    @Specialization
-    static boolean doInterop(@SuppressWarnings("unused") AbstractTruffleException exception) {
-        return true;
-    }
-
-    @Fallback
-    static boolean doOther(@SuppressWarnings("unused") Object exception) {
-        return false;
+    public TruffleString getMessage() {
+        return message;
     }
 }

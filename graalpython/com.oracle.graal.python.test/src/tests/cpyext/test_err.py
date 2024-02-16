@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -342,17 +342,21 @@ class TestPyErr(CPyExtTestCase):
     test_PyErr_GivenExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
+            (ValueError(), ValueError),
             (ValueError, ValueError),
+            (ValueError(), BaseException),
             (ValueError, BaseException),
-            (ValueError, KeyError),
-            (ValueError, (KeyError, SystemError, OverflowError)),
+            (ValueError(), KeyError),
+            (ValueError(), (KeyError, SystemError, OverflowError)),
+            (ValueError(), (KeyError, SystemError, ValueError)),
             (ValueError, (KeyError, SystemError, ValueError)),
-            (ValueError, Dummy),
-            (ValueError, Dummy()),
-            (ValueError, ExceptionSubclass),
+            (ValueError(), Dummy),
+            (ValueError(), Dummy()),
+            (ValueError(), ExceptionSubclass),
+            (ExceptionSubclass(), ExceptionSubclass),
             (ExceptionSubclass, ExceptionSubclass),
-            (ExceptionSubclass, Exception),
-            (ExceptionSubclass, ValueError),
+            (ExceptionSubclass(), Exception),
+            (ExceptionSubclass(), ValueError),
         ),
         resultspec="i",
         argspec='OO',

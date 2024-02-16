@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ZIP;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTION_GROUP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GETSET_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MEMBER_DESCRIPTOR;
@@ -134,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -190,11 +192,13 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -221,6 +225,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -2990,6 +2995,76 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object argsTuple = args.length > 0 ? factory.createTuple(args) : factory.createEmptyTuple();
             Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));
             return toPythonNode.execute(checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), nativeResult));
+        }
+    }
+
+    @Builtin(name = "BaseExceptionGroup", constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        static Object doManaged(VirtualFrame frame, Object cls, Object messageObj, Object exceptionsObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
+                        @Cached TupleNodes.ConstructTupleNode toTupleNode,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassProfile exceptionProfile,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassProfile baseExceptionProfile,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString message;
+            try {
+                message = castToStringNode.execute(inliningTarget, messageObj);
+            } catch (CannotCastException ex) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "BaseExceptionGroup", 1, "str", messageObj);
+            }
+            if (!sequenceCheckNode.execute(inliningTarget, exceptionsObj)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SECOND_ARGUMENT_EXCEPTIONS_MUST_BE_A_SEQUENCE);
+            }
+            PTuple exceptionsTuple = toTupleNode.execute(frame, exceptionsObj);
+            Object[] exceptions = toArrayNode.execute(inliningTarget, exceptionsTuple.getSequenceStorage());
+            if (exceptions.length == 0) {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SECOND_ARGUMENT_EXCEPTIONS_MUST_BE_A_NON_EMPTY_SEQUENCE);
+            }
+            PythonContext context = PythonContext.get(inliningTarget);
+            Object exceptionGroupType = getAttr.execute(inliningTarget, context.getBuiltins(), T_EXCEPTION_GROUP);
+            boolean nestedBaseExceptions = false;
+            loopConditionProfile.profileCounted(inliningTarget, exceptions.length);
+            for (int i = 0; loopConditionProfile.inject(inliningTarget, i < exceptions.length); i++) {
+                Object exceptionType = getClassNode.execute(inliningTarget, exceptions[i]);
+                if (exceptionProfile.profileClass(inliningTarget, exceptionType, PythonBuiltinClassType.Exception)) {
+                    continue;
+                }
+                if (baseExceptionProfile.profileClass(inliningTarget, exceptionType, PythonBuiltinClassType.PBaseException)) {
+                    nestedBaseExceptions = true;
+                } else {
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ITEM_D_OF_SECOND_ARGUMENT_EXCEPTIONS_IS_NOT_AN_EXCEPTION, i);
+                }
+            }
+            if (isSameTypeNode.execute(inliningTarget, cls, PythonBuiltinClassType.PBaseExceptionGroup)) {
+                if (!nestedBaseExceptions) {
+                    /*
+                     * All nested exceptions are Exception subclasses, wrap them in an
+                     * ExceptionGroup
+                     */
+                    cls = exceptionGroupType;
+                }
+            } else if (isSameTypeNode.execute(inliningTarget, cls, exceptionGroupType)) {
+                if (nestedBaseExceptions) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_NEST_BASE_EXCEPTIONS_IN_AN_EXCEPTION_GROUP);
+                }
+            } else {
+                /* user-defined subclass */
+                if (nestedBaseExceptions && exceptionProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.Exception)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_NEST_BASE_EXCEPTIONS_IN_N, cls);
+                }
+            }
+            return factory.createBaseExceptionGroup(cls, message, exceptions, new Object[]{messageObj, exceptionsObj});
         }
     }
 

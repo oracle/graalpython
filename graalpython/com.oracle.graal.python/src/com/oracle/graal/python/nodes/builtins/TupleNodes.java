@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -162,6 +162,7 @@ public abstract class TupleNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class GetTupleStorage extends Node {
         public abstract SequenceStorage execute(Node inliningTarget, Object tuple);
 
@@ -178,6 +179,7 @@ public abstract class TupleNodes {
     }
 
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class GetNativeTupleStorage extends Node {
         public abstract NativeObjectSequenceStorage execute(PythonAbstractNativeObject tuple);
 

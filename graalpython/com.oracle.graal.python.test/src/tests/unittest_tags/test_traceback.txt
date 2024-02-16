@@ -63,6 +63,12 @@
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_context
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_context_suppression
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_bad__str__
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_basic
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_cause
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_context_with_context
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_depth_limit
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_nested
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_width_limit
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_modulename
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_modulename_not_unicode
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_qualname
@@ -109,6 +115,12 @@
 *graalpython.lib-python.3.test.test_traceback.TestTracebackException.test_smoke
 *graalpython.lib-python.3.test.test_traceback.TestTracebackException.test_traceback_header
 *graalpython.lib-python.3.test.test_traceback.TestTracebackException.test_unhashable
+*graalpython.lib-python.3.test.test_traceback.TestTracebackException_ExceptionGroups.test_comparison
+*graalpython.lib-python.3.test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_construction
+*graalpython.lib-python.3.test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_format
+*graalpython.lib-python.3.test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_format_exception_only
+*graalpython.lib-python.3.test.test_traceback.TestTracebackException_ExceptionGroups.test_max_group_depth
+*graalpython.lib-python.3.test.test_traceback.TestTracebackException_ExceptionGroups.test_max_group_width
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_base_exception
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_caret
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_encoded_file
@@ -125,6 +137,7 @@
 *graalpython.lib-python.3.test.test_traceback.TracebackCases.test_signatures
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_basic_caret
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_byte_offset_multiline
+*graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_caret_exception_group
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators_two_char
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators_with_spaces_and_parenthesis
@@ -139,6 +152,7 @@
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_specialization_with_syntax_error
 *graalpython.lib-python.3.test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_very_long_line
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_capi
+*graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_traceback
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_format_stack
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_capi
 *graalpython.lib-python.3.test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_python
