@@ -75,7 +75,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
     public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static TruffleString ascii(VirtualFrame frame, Node inliningTarget, Object obj,
+    public static TruffleString ascii(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectReprAsTruffleStringNode reprNode,
                     @Cached(inline = false) TruffleString.GetCodeRangeNode getCodeRangeNode,
                     @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,

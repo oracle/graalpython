@@ -390,7 +390,7 @@ public final class ListBuiltins extends PythonBuiltins {
         public abstract PNone execute(VirtualFrame frame, PList list, Object source);
 
         @Specialization
-        PNone extendSequence(VirtualFrame frame, PList list, Object iterable,
+        public static PNone extendSequence(VirtualFrame frame, PList list, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {

@@ -2008,7 +2008,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object format(VirtualFrame frame, Object obj, Object formatSpec,
+        public static Object format(VirtualFrame frame, Object obj, Object formatSpec,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(Format)") LookupAndCallBinaryNode callFormat,
                         @Cached InlinedConditionProfile formatIsNoValueProfile,

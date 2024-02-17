@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -60,33 +60,33 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
     @GenerateCached
     public abstract static class YesNode extends CoerceToBooleanNode {
         @Specialization
-        static boolean doBoolean(boolean operand) {
+        public static boolean doBoolean(boolean operand) {
             return operand;
         }
 
         @Specialization
-        static boolean doInteger(int operand) {
+        public static boolean doInteger(int operand) {
             return operand != 0;
         }
 
         @Specialization
-        static boolean doLong(long operand) {
+        public static boolean doLong(long operand) {
             return operand != 0L;
         }
 
         @Specialization
-        static boolean doDouble(double operand) {
+        public static boolean doDouble(double operand) {
             return operand != 0;
         }
 
         @Specialization
-        static boolean doString(TruffleString operand) {
+        public static boolean doString(TruffleString operand) {
             return !operand.isEmpty();
         }
 
         @Megamorphic
         @Specialization
-        static boolean doObject(VirtualFrame frame, Node inliningTarget, Object object,
+        public static boolean doObject(VirtualFrame frame, Node inliningTarget, Object object,
                         @Cached PyObjectIsTrueNode isTrue) {
             return isTrue.execute(frame, inliningTarget, object);
         }
@@ -96,33 +96,33 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
     @GenerateCached
     public abstract static class NotNode extends CoerceToBooleanNode {
         @Specialization
-        static boolean doBool(boolean operand) {
+        public static boolean doBool(boolean operand) {
             return !operand;
         }
 
         @Specialization
-        static boolean doInteger(int operand) {
+        public static boolean doInteger(int operand) {
             return operand == 0;
         }
 
         @Specialization
-        static boolean doLong(long operand) {
+        public static boolean doLong(long operand) {
             return operand == 0L;
         }
 
         @Specialization
-        static boolean doDouble(double operand) {
+        public static boolean doDouble(double operand) {
             return operand == 0;
         }
 
         @Specialization
-        static boolean doString(TruffleString operand) {
+        public static boolean doString(TruffleString operand) {
             return operand.isEmpty();
         }
 
         @Megamorphic
         @Specialization
-        static boolean doObject(VirtualFrame frame, Node inliningTarget, Object object,
+        public static boolean doObject(VirtualFrame frame, Node inliningTarget, Object object,
                         @Cached PyObjectIsTrueNode isTrue) {
             return !isTrue.execute(frame, inliningTarget, object);
         }

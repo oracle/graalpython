@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,7 +78,7 @@ public abstract class PyObjectStrAsTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static TruffleString doGeneric(VirtualFrame frame, Node inliningTarget, Object obj,
+    public static TruffleString doGeneric(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectStrAsObjectNode strNode,
                     @Cached CastToTruffleStringNode castToString) {
         try {

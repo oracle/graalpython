@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,12 +62,14 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -166,13 +168,13 @@ public enum BinaryArithmetic {
         }
 
         @NeverDefault
-        static LookupAndCallBinaryNode createCallNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
+        public static LookupAndCallBinaryNode createCallNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
             assert slot.getReverse() != null;
             return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
         }
 
         @NeverDefault
-        static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
+        public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
             return LookupAndCallBinaryNode.createBinaryOp(slot, slot.getReverse(), handler);
         }
 
@@ -196,44 +198,44 @@ public enum BinaryArithmetic {
 
     public abstract static class AddNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("+");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("+");
 
         public abstract int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException;
 
         public abstract double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException;
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static int add(int left, int right) {
+        public static int add(int left, int right) {
             return Math.addExact(left, right);
         }
 
         @Specialization
-        static long doIIOvf(int x, int y) {
+        public static long doIIOvf(int x, int y) {
             return x + (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static long addLong(long left, long right) {
+        public static long addLong(long left, long right) {
             return Math.addExact(left, right);
         }
 
         @Specialization
-        static double doDD(double left, double right) {
+        public static double doDD(double left, double right) {
             return left + right;
         }
 
         @Specialization
-        static double doDL(double left, long right) {
+        public static double doDL(double left, long right) {
             return left + right;
         }
 
         @Specialization
-        static double doLD(long left, double right) {
+        public static double doLD(long left, double right) {
             return left + right;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createPyNumberAdd(NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
@@ -246,40 +248,40 @@ public enum BinaryArithmetic {
 
     public abstract static class SubNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("-");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("-");
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static int doII(int x, int y) throws ArithmeticException {
+        public static int doII(int x, int y) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
         @Specialization
-        static long doIIOvf(int x, int y) {
+        public static long doIIOvf(int x, int y) {
             return x - (long) y;
         }
 
         @Specialization
-        static double doDD(double left, double right) {
+        public static double doDD(double left, double right) {
             return left - right;
         }
 
         @Specialization
-        static double doDL(double left, long right) {
+        public static double doDL(double left, long right) {
             return left - right;
         }
 
         @Specialization
-        static double doLD(long left, double right) {
+        public static double doLD(long left, double right) {
             return left - right;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static long doLL(long x, long y) throws ArithmeticException {
+        public static long doLL(long x, long y) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(Sub, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -288,40 +290,40 @@ public enum BinaryArithmetic {
 
     public abstract static class MulNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("*");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("*");
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static int doII(int x, int y) throws ArithmeticException {
+        public static int doII(int x, int y) throws ArithmeticException {
             return Math.multiplyExact(x, y);
         }
 
         @Specialization(replaces = "doII")
-        static long doIIL(int x, int y) {
+        public static long doIIL(int x, int y) {
             return x * (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static long doLL(long x, long y) {
+        public static long doLL(long x, long y) {
             return Math.multiplyExact(x, y);
         }
 
         @Specialization
-        static double doDL(double left, long right) {
+        public static double doDL(double left, long right) {
             return left * right;
         }
 
         @Specialization
-        static double doLD(long left, double right) {
+        public static double doLD(long left, double right) {
             return left * right;
         }
 
         @Specialization
-        static double doDD(double left, double right) {
+        public static double doDD(double left, double right) {
             return left * right;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createPyNumberMultiply(NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
@@ -329,56 +331,54 @@ public enum BinaryArithmetic {
 
     public abstract static class BinaryArithmeticRaiseNode extends BinaryArithmeticNode {
 
-        @Child private PRaiseNode raiseNode;
-
-        private final PRaiseNode ensureRaise() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
-        protected final void raiseIntDivisionByZero(boolean cond) {
+        protected static void raiseIntDivisionByZero(boolean cond, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
             if (cond) {
-                throw ensureRaise().raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
             }
         }
 
-        protected final void raiseDivisionByZero(boolean cond) {
+        protected static void raiseDivisionByZero(boolean cond, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
             if (cond) {
-                throw ensureRaise().raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
         }
     }
 
     public abstract static class TrueDivNode extends BinaryArithmeticRaiseNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("/");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("/");
 
         @Specialization
-        final double divII(int x, int y) {
-            return divDD(x, y);
+        public static double doII(int x, int y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            return doDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization
-        final double doDD(long x, double y) {
-            return divDD(x, y);
+        public static double doLD(long x, double y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            return doDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization
-        final double doDL(double x, long y) {
-            return divDD(x, y);
+        public static double doDL(double x, long y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            return doDD(x, y, inliningTarget, raiseNode);
         }
 
         @Specialization
-        final double divDD(double x, double y) {
-            raiseDivisionByZero(y == 0.0);
+        public static double doDD(double x, double y,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(y == 0.0, inliningTarget, raiseNode);
             return x / y;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(TrueDiv, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -387,43 +387,53 @@ public enum BinaryArithmetic {
 
     public abstract static class FloorDivNode extends BinaryArithmeticRaiseNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("//");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("//");
 
         @Specialization
-        final int doII(int left, int right) {
-            raiseIntDivisionByZero(right == 0);
+        public static int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorDiv(left, right);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        final long doLL(long left, long right) throws OverflowException {
+        public static long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             if (left == Long.MIN_VALUE && right == -1) {
                 throw OverflowException.INSTANCE;
             }
-            raiseIntDivisionByZero(right == 0);
+            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorDiv(left, right);
         }
 
         @Specialization
-        final double doDL(double left, long right) {
-            raiseDivisionByZero(right == 0);
+        public static double doDL(double left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floor(left / right);
         }
 
         @Specialization
-        final double doDD(double left, double right) {
-            raiseDivisionByZero(right == 0.0);
+        public static double doDD(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return Math.floor(left / right);
         }
 
         @Specialization
-        final double doLD(long left, double right) {
-            raiseDivisionByZero(right == 0.0);
+        public static double doLD(long left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return Math.floor(left / right);
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(FloorDiv, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -432,40 +442,50 @@ public enum BinaryArithmetic {
 
     public abstract static class ModNode extends BinaryArithmeticRaiseNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("%");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("%");
 
         @Specialization
-        final int doII(int left, int right) {
-            raiseIntDivisionByZero(right == 0);
+        public static int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization
-        final long doLL(long left, long right) {
-            raiseIntDivisionByZero(right == 0);
+        public static long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization
-        final double doDL(double left, long right) {
-            raiseDivisionByZero(right == 0);
+        public static double doDL(double left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
             return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
-        final double doDD(double left, double right) {
-            raiseDivisionByZero(right == 0.0);
+        public static double doDD(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
-        final double doLD(long left, double right) {
-            raiseDivisionByZero(right == 0.0);
+        public static double doLD(long left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createCallNode(Mod, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
@@ -473,10 +493,10 @@ public enum BinaryArithmetic {
 
     public abstract static class LShiftNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("<<");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("<<");
 
         @Specialization(guards = {"right < 32", "right >= 0"}, rewriteOn = OverflowException.class)
-        static int doII(int left, int right) throws OverflowException {
+        public static int doII(int left, int right) throws OverflowException {
             int result = left << right;
             if (left != result >> right) {
                 throw OverflowException.INSTANCE;
@@ -485,7 +505,7 @@ public enum BinaryArithmetic {
         }
 
         @Specialization(guards = {"right < 64", "right >= 0"}, rewriteOn = OverflowException.class)
-        static long doLL(long left, long right) throws OverflowException {
+        public static long doLL(long left, long right) throws OverflowException {
             long result = left << right;
             if (left != result >> right) {
                 throw OverflowException.INSTANCE;
@@ -494,7 +514,7 @@ public enum BinaryArithmetic {
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(LShift, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -503,20 +523,20 @@ public enum BinaryArithmetic {
 
     public abstract static class RShiftNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler(">>");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler(">>");
 
         @Specialization(guards = {"right < 32", "right >= 0"})
-        static int doIISmall(int left, int right) {
+        public static int doIISmall(int left, int right) {
             return left >> right;
         }
 
         @Specialization(guards = {"right < 64", "right >= 0"})
-        static long doIISmall(long left, long right) {
+        public static long doIISmall(long left, long right) {
             return left >> right;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(RShift, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -525,20 +545,20 @@ public enum BinaryArithmetic {
 
     public abstract static class BitAndNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("&");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("&");
 
         @Specialization
-        static int op(int left, int right) {
+        public static int op(int left, int right) {
             return left & right;
         }
 
         @Specialization
-        static long op(long left, long right) {
+        public static long op(long left, long right) {
             return left & right;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createBinaryOp(And, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
@@ -547,20 +567,20 @@ public enum BinaryArithmetic {
 
     public abstract static class BitOrNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("|");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("|");
 
         @Specialization
-        static int op(int left, int right) {
+        public static int op(int left, int right) {
             return left | right;
         }
 
         @Specialization
-        static long op(long left, long right) {
+        public static long op(long left, long right) {
             return left | right;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // (mq) TODO: use 'createBinaryOp' once 'type(int | str)' is avoided
                         // during forzen module build.
                         @Cached("createCallNode(Or, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
@@ -571,20 +591,20 @@ public enum BinaryArithmetic {
 
     public abstract static class BitXorNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("^");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("^");
 
         @Specialization
-        static int op(int left, int right) {
+        public static int op(int left, int right) {
             return left ^ right;
         }
 
         @Specialization
-        static long op(long left, long right) {
+        public static long op(long left, long right) {
             return left ^ right;
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createBinaryOp(Xor, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
@@ -593,10 +613,10 @@ public enum BinaryArithmetic {
 
     public abstract static class MatMulNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("@");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("@");
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(MatMul, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -605,10 +625,10 @@ public enum BinaryArithmetic {
 
     public abstract static class PowNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: ternary_op is not implemented (GR-<2????>)
                         @Cached("createCallNode(Pow, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
@@ -617,45 +637,55 @@ public enum BinaryArithmetic {
 
     public abstract static class DivModNode extends BinaryArithmeticRaiseNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("divmod");
+        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("divmod");
 
         @Specialization
-        final PTuple doLL(int left, int right,
+        public static PTuple doLL(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseIntDivisionByZero(right == 0);
+            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
         @Specialization
-        final PTuple doLL(long left, long right,
+        public static PTuple doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseIntDivisionByZero(right == 0);
+            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
         @Specialization
-        final PTuple doDL(double left, long right,
+        public static PTuple doDL(double left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(right == 0);
+            raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
-        final PTuple doDD(double left, double right,
+        public static PTuple doDD(double left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(right == 0.0);
+            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
-        final PTuple doLD(long left, double right,
+        public static PTuple doLD(long left, double right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(right == 0.0);
+            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
             return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(DivMod, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);

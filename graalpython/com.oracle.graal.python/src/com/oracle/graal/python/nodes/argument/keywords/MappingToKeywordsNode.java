@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,7 +82,7 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
     public abstract PKeyword[] execute(VirtualFrame frame, Node inliningTarget, Object starargs) throws SameDictKeyException, NonMappingException;
 
     @Specialization(guards = "hasBuiltinDictIter(inliningTarget, starargs, getClassNode, lookupIter)", limit = "1")
-    static PKeyword[] doDict(VirtualFrame frame, Node inliningTarget, PDict starargs,
+    public static PKeyword[] doDict(VirtualFrame frame, Node inliningTarget, PDict starargs,
                     @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
                     @Exclusive @Cached HashingStorageToKeywords convert) {
@@ -90,7 +90,7 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
     }
 
     @Fallback
-    static PKeyword[] doMapping(VirtualFrame frame, Node inliningTarget, Object starargs,
+    public static PKeyword[] doMapping(VirtualFrame frame, Node inliningTarget, Object starargs,
                     @Cached(inline = false) ConcatDictToStorageNode concatDictToStorageNode,
                     @Exclusive @Cached HashingStorageToKeywords convert) throws SameDictKeyException, NonMappingException {
         HashingStorage storage = concatDictToStorageNode.execute(frame, EmptyStorage.INSTANCE, starargs);

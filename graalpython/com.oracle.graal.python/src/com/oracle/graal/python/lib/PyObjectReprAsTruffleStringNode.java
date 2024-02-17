@@ -76,7 +76,7 @@ public abstract class PyObjectReprAsTruffleStringNode extends PNodeWithContext {
     public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static TruffleString repr(VirtualFrame frame, Node inliningTarget, Object obj,
+    public static TruffleString repr(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectReprAsObjectNode reprNode,
                     @Cached CastToTruffleStringNode cast) {
         return cast.execute(inliningTarget, reprNode.execute(frame, inliningTarget, obj));

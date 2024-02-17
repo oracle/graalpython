@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -323,16 +323,16 @@ public abstract class ListNodes {
         public abstract void execute(PList list, Object value);
 
         @NeverDefault
-        static BranchProfile[] getUpdateStoreProfile() {
+        public static BranchProfile[] getUpdateStoreProfile() {
             return new BranchProfile[1];
         }
 
-        static BranchProfile[] getUpdateStoreProfileUncached() {
+        public static BranchProfile[] getUpdateStoreProfileUncached() {
             return DISABLED;
         }
 
         @Specialization
-        void appendObjectGeneric(PList list, Object value,
+        public static void appendObjectGeneric(PList list, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,7 +79,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
     public abstract void execute(Frame frame);
 
     @Specialization
-    void doLocals(VirtualFrame frame,
+    public static void doLocals(VirtualFrame frame,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile hasLocals,
                     @Cached SetupAnnotationsFromDictOrModuleNode setup) {
@@ -94,7 +94,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
+    public abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Node inliningTarget, Object locals);
 
         @Specialization

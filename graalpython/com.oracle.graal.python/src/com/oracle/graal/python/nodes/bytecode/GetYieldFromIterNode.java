@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,13 +58,13 @@ public abstract class GetYieldFromIterNode extends Node {
     public abstract Object execute(Frame frame, Object receiver);
 
     @Specialization
-    public Object getGeneratorOrCoroutine(PGenerator arg) {
+    public static Object getGeneratorOrCoroutine(PGenerator arg) {
         // TODO check if the generator in which the yield from is an iterable or normal coroutine
         return arg;
     }
 
     @Specialization
-    public Object getGeneric(Frame frame, Object arg,
+    public static Object getGeneric(Frame frame, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached IsBuiltinObjectExactProfile isCoro) {
