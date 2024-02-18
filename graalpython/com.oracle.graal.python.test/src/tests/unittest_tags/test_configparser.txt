@@ -50,6 +50,7 @@
 *graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_strange_options
 *graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_weird_errors
 *graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_write
+*graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseInvalidInterpolationType.test_error_on_wrong_type_for_interpolation
 *graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_add_section_default
 *graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_basic
 *graalpython.lib-python.3.test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_basic_from_dict
@@ -210,6 +211,7 @@
 *graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_inconsistent_converters_state
 *graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_interpolation_depth_error
 *graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_interpolation_validation
+*graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_legacyinterpolation_deprecation
 *graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_parsing_error
 *graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_readfp_deprecation
 *graalpython.lib-python.3.test.test_configparser.CoverageOneHundredTestCase.test_safeconfigparser_deprecation

@@ -1,0 +1,11 @@
+*graalpython.lib-python.3.test.test_peepholer.TestBuglets.test_bpo_42057
+*graalpython.lib-python.3.test.test_peepholer.TestBuglets.test_bpo_45773_pop_jump_if_false
+*graalpython.lib-python.3.test.test_peepholer.TestBuglets.test_bpo_45773_pop_jump_if_true
+*graalpython.lib-python.3.test.test_peepholer.TestBuglets.test_bug_11510
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_condition_with_binop_with_bools
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_elim_jump_to_return
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_format_combinations
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_format_errors
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_format_misc
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_if_with_if_expression
+*graalpython.lib-python.3.test.test_peepholer.TestTranforms.test_trailing_nops

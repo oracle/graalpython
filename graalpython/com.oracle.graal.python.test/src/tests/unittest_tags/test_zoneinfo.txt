@@ -13,6 +13,7 @@
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZDataTests.test_time_variable_offset
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZDataTests.test_unambiguous
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZDataTests.test_utc
+*graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZStrTest.test_extreme_tzstr
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZStrTest.test_invalid_tzstr
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZStrTest.test_tzstr_from_utc
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.CTZStrTest.test_tzstr_localized
@@ -118,6 +119,7 @@
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZDataTests.test_time_variable_offset
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZDataTests.test_unambiguous
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZDataTests.test_utc
+*graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZStrTest.test_extreme_tzstr
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZStrTest.test_invalid_tzstr
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZStrTest.test_tzstr_from_utc
 *graalpython.lib-python.3.test.test_zoneinfo.test_zoneinfo.TZStrTest.test_tzstr_localized

@@ -12,7 +12,10 @@
 *graalpython.lib-python.3.test.test_generators.FinalizationTest.test_refcycle
 *graalpython.lib-python.3.test.test_generators.GeneratorStackTraceTest.test_send_with_yield_from
 *graalpython.lib-python.3.test.test_generators.GeneratorStackTraceTest.test_throw_with_yield_from
+*graalpython.lib-python.3.test.test_generators.GeneratorTest.test_ag_frame_f_back
 *graalpython.lib-python.3.test.test_generators.GeneratorTest.test_copy
+*graalpython.lib-python.3.test.test_generators.GeneratorTest.test_cr_frame_f_back
+*graalpython.lib-python.3.test.test_generators.GeneratorTest.test_gi_frame_f_back
 *graalpython.lib-python.3.test.test_generators.GeneratorTest.test_name
 *graalpython.lib-python.3.test.test_generators.GeneratorTest.test_pickle
 *graalpython.lib-python.3.test.test_generators.GeneratorTest.test_send_non_none_to_new_gen

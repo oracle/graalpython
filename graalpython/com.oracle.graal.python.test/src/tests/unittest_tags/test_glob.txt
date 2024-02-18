@@ -11,5 +11,6 @@
 *graalpython.lib-python.3.test.test_glob.GlobTests.test_glob_nested_directory
 *graalpython.lib-python.3.test.test_glob.GlobTests.test_glob_one_directory
 *graalpython.lib-python.3.test.test_glob.GlobTests.test_glob_symlinks
+*graalpython.lib-python.3.test.test_glob.GlobTests.test_hidden_glob
 *graalpython.lib-python.3.test.test_glob.GlobTests.test_recursive_glob
 *graalpython.lib-python.3.test.test_glob.SymlinkLoopGlobTests.test_selflink

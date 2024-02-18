@@ -18,11 +18,13 @@
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_delimiter_override
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_escapes
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_flags_override
+*graalpython.lib-python.3.test.test_string.TestTemplate.test_get_identifiers
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_idpattern_override
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_idpattern_override_inside_outside
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_idpattern_override_inside_outside_invalid_unbraced
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_invalid_placeholders
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_invalid_with_no_lines
+*graalpython.lib-python.3.test.test_string.TestTemplate.test_is_valid
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_keyword_arguments
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_keyword_arguments_safe
 *graalpython.lib-python.3.test.test_string.TestTemplate.test_pattern_override

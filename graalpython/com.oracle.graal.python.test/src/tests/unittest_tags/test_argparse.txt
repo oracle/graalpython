@@ -1,3 +1,5 @@
+*graalpython.lib-python.3.test.test_argparse.StdStreamTest.test_skip_invalid_stderr
+*graalpython.lib-python.3.test.test_argparse.StdStreamTest.test_skip_invalid_stdout
 *graalpython.lib-python.3.test.test_argparse.TestActionExtend.test_failures_many_groups_listargs
 *graalpython.lib-python.3.test.test_argparse.TestActionExtend.test_failures_many_groups_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestActionExtend.test_failures_no_groups_listargs
@@ -10,6 +12,7 @@
 *graalpython.lib-python.3.test.test_argparse.TestActionExtend.test_successes_no_groups_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestActionExtend.test_successes_one_group_listargs
 *graalpython.lib-python.3.test.test_argparse.TestActionExtend.test_successes_one_group_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestActionRegistration.test
 *graalpython.lib-python.3.test.test_argparse.TestActionUserDefined.test_failures_many_groups_listargs
 *graalpython.lib-python.3.test.test_argparse.TestActionUserDefined.test_failures_many_groups_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestActionUserDefined.test_failures_no_groups_listargs
@@ -145,6 +148,19 @@
 *graalpython.lib-python.3.test.test_argparse.TestConflictHandling.test_bad_type
 *graalpython.lib-python.3.test.test_argparse.TestConflictHandling.test_conflict_error
 *graalpython.lib-python.3.test.test_argparse.TestConflictHandling.test_resolve_error
+*graalpython.lib-python.3.test.test_argparse.TestConflictHandling.test_subparser_conflict
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_failures_many_groups_listargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_failures_many_groups_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_failures_no_groups_listargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_failures_no_groups_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_failures_one_group_listargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_failures_one_group_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_successes_many_groups_listargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_successes_many_groups_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_successes_no_groups_listargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_successes_no_groups_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_successes_one_group_listargs
+*graalpython.lib-python.3.test.test_argparse.TestConstActionsMissingConstKwarg.test_successes_one_group_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestDefaultSuppress.test_failures_many_groups_listargs
 *graalpython.lib-python.3.test.test_argparse.TestDefaultSuppress.test_failures_many_groups_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestDefaultSuppress.test_failures_no_groups_listargs
@@ -209,6 +225,7 @@
 *graalpython.lib-python.3.test.test_argparse.TestFileTypeDefaults.test_successes_no_groups_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestFileTypeDefaults.test_successes_one_group_listargs
 *graalpython.lib-python.3.test.test_argparse.TestFileTypeDefaults.test_successes_one_group_sysargs
+*graalpython.lib-python.3.test.test_argparse.TestFileTypeMissingInitialization.test
 *graalpython.lib-python.3.test.test_argparse.TestFileTypeOpenArgs.test_open_args
 *graalpython.lib-python.3.test.test_argparse.TestFileTypeR.test_failures_many_groups_listargs
 *graalpython.lib-python.3.test.test_argparse.TestFileTypeR.test_failures_many_groups_sysargs
@@ -462,6 +479,12 @@
 *graalpython.lib-python.3.test.test_argparse.TestHelpUsagePositionalsWrap.test_print_file_usage
 *graalpython.lib-python.3.test.test_argparse.TestHelpUsagePositionalsWrap.test_print_help
 *graalpython.lib-python.3.test.test_argparse.TestHelpUsagePositionalsWrap.test_print_usage
+*graalpython.lib-python.3.test.test_argparse.TestHelpUsageWithParentheses.test_format_help
+*graalpython.lib-python.3.test.test_argparse.TestHelpUsageWithParentheses.test_format_usage
+*graalpython.lib-python.3.test.test_argparse.TestHelpUsageWithParentheses.test_print_file_help
+*graalpython.lib-python.3.test.test_argparse.TestHelpUsageWithParentheses.test_print_file_usage
+*graalpython.lib-python.3.test.test_argparse.TestHelpUsageWithParentheses.test_print_help
+*graalpython.lib-python.3.test.test_argparse.TestHelpUsageWithParentheses.test_print_usage
 *graalpython.lib-python.3.test.test_argparse.TestHelpVariableExpansion.test_format_help
 *graalpython.lib-python.3.test.test_argparse.TestHelpVariableExpansion.test_format_usage
 *graalpython.lib-python.3.test.test_argparse.TestHelpVariableExpansion.test_print_file_help
@@ -504,6 +527,7 @@
 *graalpython.lib-python.3.test.test_argparse.TestHelpWrappingShortNames.test_print_file_usage
 *graalpython.lib-python.3.test.test_argparse.TestHelpWrappingShortNames.test_print_help
 *graalpython.lib-python.3.test.test_argparse.TestHelpWrappingShortNames.test_print_usage
+*graalpython.lib-python.3.test.test_argparse.TestImportStar.test
 *graalpython.lib-python.3.test.test_argparse.TestImportStar.test_all_exports_everything_but_modules
 *graalpython.lib-python.3.test.test_argparse.TestIntermixedArgs.test_basic
 *graalpython.lib-python.3.test.test_argparse.TestIntermixedArgs.test_exclusive
@@ -1666,6 +1690,7 @@
 *graalpython.lib-python.3.test.test_argparse.TestTypeFunctionCalledOnDefault.test_no_double_type_conversion_of_default
 *graalpython.lib-python.3.test.test_argparse.TestTypeFunctionCalledOnDefault.test_type_function_call_with_non_string_default
 *graalpython.lib-python.3.test.test_argparse.TestTypeFunctionCalledOnDefault.test_type_function_call_with_string_default
+*graalpython.lib-python.3.test.test_argparse.TestTypeRegistration.test
 *graalpython.lib-python.3.test.test_argparse.TestTypeUserDefined.test_failures_many_groups_listargs
 *graalpython.lib-python.3.test.test_argparse.TestTypeUserDefined.test_failures_many_groups_sysargs
 *graalpython.lib-python.3.test.test_argparse.TestTypeUserDefined.test_failures_no_groups_listargs

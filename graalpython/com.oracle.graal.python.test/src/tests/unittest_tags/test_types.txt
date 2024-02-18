@@ -77,6 +77,7 @@
 *graalpython.lib-python.3.test.test_types.TypesTests.test_numeric_types
 *graalpython.lib-python.3.test.test_types.TypesTests.test_slot_wrapper_types
 *graalpython.lib-python.3.test.test_types.TypesTests.test_strings
+*graalpython.lib-python.3.test.test_types.TypesTests.test_traceback_and_frame_types
 *graalpython.lib-python.3.test.test_types.TypesTests.test_truth_values
 *graalpython.lib-python.3.test.test_types.TypesTests.test_type_function
 *graalpython.lib-python.3.test.test_types.TypesTests.test_zero_division
@@ -88,6 +89,7 @@
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_reference_cycle
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_Alias
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_IO
+*graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_Literal
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_NamedTuple
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_NewType
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_Protocol

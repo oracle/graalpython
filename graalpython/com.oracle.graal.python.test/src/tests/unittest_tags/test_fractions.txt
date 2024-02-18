@@ -16,6 +16,7 @@
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testInit
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testInitFromDecimal
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testInitFromFloat
+*graalpython.lib-python.3.test.test_fractions.FractionTest.testIntGuaranteesIntReturn
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testLargeArithmetic
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testLimitDenominator
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testMixedArithmetic
@@ -25,6 +26,7 @@
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testMixingWithDecimal
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testRound
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testStringification
+*graalpython.lib-python.3.test.test_fractions.FractionTest.testSupportsInt
 *graalpython.lib-python.3.test.test_fractions.FractionTest.test_as_integer_ratio
 *graalpython.lib-python.3.test.test_fractions.FractionTest.test_copy_deepcopy_pickle
 *graalpython.lib-python.3.test.test_fractions.FractionTest.test_int_subclass

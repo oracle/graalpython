@@ -56,6 +56,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_move_to_end
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_move_to_end_issue25406
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_ordered_dict_items_result_gc
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_overridden_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_override_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_pickle_recursive
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_pop
@@ -107,6 +108,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_move_to_end
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_move_to_end_issue25406
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_ordered_dict_items_result_gc
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_overridden_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_override_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_pickle_recursive
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_pop
@@ -127,6 +129,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_views
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_weakref_list_is_not_traversed
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_yaml_linkage
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictWithSlotsCopyingTests.test_copying
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonSubclassMappingTests.test_bool
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonSubclassMappingTests.test_constructor
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonSubclassMappingTests.test_get
@@ -141,6 +144,9 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonSubclassMappingTests.test_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonSubclassMappingTests.test_values
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonSubclassMappingTests.test_write
+*graalpython.lib-python.3.test.test_ordered_dict.CSimpleLRUCacheTests.test_add_after_full
+*graalpython.lib-python.3.test.test_ordered_dict.CSimpleLRUCacheTests.test_change_order_on_get
+*graalpython.lib-python.3.test.test_ordered_dict.CSimpleLRUCacheTests.test_popitem
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonGeneralMappingTests.test_bool
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonGeneralMappingTests.test_constructor
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonGeneralMappingTests.test_get
@@ -185,6 +191,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_move_to_end
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_move_to_end_issue25406
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_ordered_dict_items_result_gc
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_overridden_init
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_override_update
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_pickle_recursive
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_pop
@@ -233,6 +240,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_move_to_end
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_move_to_end_issue25406
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_ordered_dict_items_result_gc
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_overridden_init
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_override_update
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_pickle_recursive
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_pop
@@ -251,6 +259,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_update
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_views
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_yaml_linkage
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictWithSlotsCopyingTests.test_copying
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonSubclassMappingTests.test_bool
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonSubclassMappingTests.test_constructor
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonSubclassMappingTests.test_get
@@ -265,3 +274,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonSubclassMappingTests.test_update
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonSubclassMappingTests.test_values
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonSubclassMappingTests.test_write
+*graalpython.lib-python.3.test.test_ordered_dict.PySimpleLRUCacheTests.test_add_after_full
+*graalpython.lib-python.3.test.test_ordered_dict.PySimpleLRUCacheTests.test_change_order_on_get
+*graalpython.lib-python.3.test.test_ordered_dict.PySimpleLRUCacheTests.test_pop
+*graalpython.lib-python.3.test.test_ordered_dict.PySimpleLRUCacheTests.test_popitem

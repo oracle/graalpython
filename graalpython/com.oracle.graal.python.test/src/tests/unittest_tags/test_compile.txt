@@ -6,7 +6,15 @@
 *graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_if_else
 *graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_or
 *graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_stack_3050
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_stack_3050_2
+*graalpython.lib-python.3.test.test_compile.TestSourcePositions.test_column_offset_deduplication
+*graalpython.lib-python.3.test.test_compile.TestSourcePositions.test_multiline_assert_rewritten_as_method_call
+*graalpython.lib-python.3.test.test_compile.TestSourcePositions.test_simple_assignment
+*graalpython.lib-python.3.test.test_compile.TestSourcePositions.test_weird_attribute_position_regressions
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_annotation_limit
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_apply_static_swaps
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_apply_static_swaps_2
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_apply_static_swaps_3
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_handling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_order
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_bad_single_statement
@@ -26,6 +34,7 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_indentation
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_lambda_doc
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_leading_newlines
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_line_number_genexp
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_literals_with_leading_zeroes
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_mangling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_merge_code_attrs
@@ -67,6 +76,9 @@
 *graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_except_as
 *graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_except_bare
 *graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_except_qualified
+*graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_except_star_as
+*graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_except_star_finally
+*graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_except_star_qualified
 *graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_try_finally
 *graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_while_else
 *graalpython.lib-python.3.test.test_compile.TestStackSizeStability.test_with

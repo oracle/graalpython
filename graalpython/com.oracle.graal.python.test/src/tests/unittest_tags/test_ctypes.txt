@@ -62,10 +62,13 @@
 *ctypes.test.test_byteswap.Test.test_endian_other
 *ctypes.test.test_byteswap.Test.test_endian_short
 *ctypes.test.test_byteswap.Test.test_slots
+*ctypes.test.test_byteswap.Test.test_struct_field_alignment
 *ctypes.test.test_byteswap.Test.test_struct_fields_1
 *ctypes.test.test_byteswap.Test.test_struct_fields_2
+*ctypes.test.test_byteswap.Test.test_struct_fields_unsupported_byte_order
 *ctypes.test.test_byteswap.Test.test_unaligned_native_struct_fields
 *ctypes.test.test_byteswap.Test.test_unaligned_nonnative_struct_fields
+*ctypes.test.test_byteswap.Test.test_union_fields_unsupported_byte_order
 *ctypes.test.test_callbacks.Callbacks.test_char_p
 *ctypes.test.test_callbacks.Callbacks.test_issue12483
 *ctypes.test.test_callbacks.Callbacks.test_unsupported_restype_1
@@ -191,6 +194,8 @@
 *ctypes.test.test_loading.LoaderTest.test_load_ordinal_functions
 *ctypes.test.test_loading.LoaderTest.test_load_version
 *ctypes.test.test_macholib.MachOTest.test_find
+*ctypes.test.test_macholib.MachOTest.test_framework_info
+*ctypes.test.test_macholib.MachOTest.test_info
 *ctypes.test.test_memfunctions.MemFunctionsTest.test_cast
 *ctypes.test.test_memfunctions.MemFunctionsTest.test_memmove
 *ctypes.test.test_memfunctions.MemFunctionsTest.test_memset

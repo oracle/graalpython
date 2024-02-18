@@ -9,8 +9,14 @@
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_domain_mirror
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_domain_return_ok
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_escape_path
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_evil_local_domain
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_evil_local_domain_2
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_evil_nonlocal_domain
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_expires
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_is_HDN
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_localhost_domain
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_localhost_domain_contents
+*graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_localhost_domain_contents_2
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_missing_final_slash
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_missing_value
 *graalpython.lib-python.3.test.test_http_cookiejar.CookieTests.test_no_return_comment
@@ -47,7 +53,10 @@
 *graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_other_types
 *graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_path_like
 *graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_str
+*graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_cookie_files_are_truncated
+*graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_lwp_filepermissions
 *graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_lwp_valueless_cookie
+*graalpython.lib-python.3.test.test_http_cookiejar.FileCookieJarTests.test_mozilla_filepermissions
 *graalpython.lib-python.3.test.test_http_cookiejar.HeaderTests.test_join_header_words
 *graalpython.lib-python.3.test.test_http_cookiejar.HeaderTests.test_parse_ns_headers
 *graalpython.lib-python.3.test.test_http_cookiejar.HeaderTests.test_parse_ns_headers_special_names

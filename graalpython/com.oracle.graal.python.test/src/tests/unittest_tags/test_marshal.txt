@@ -3,6 +3,7 @@
 *graalpython.lib-python.3.test.test_marshal.BufferTestCase.test_memoryview
 *graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_bad_reader
 *graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_bug_5888452
+*graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_deterministic_sets
 *graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_eof
 *graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_exact_type_match
 *graalpython.lib-python.3.test.test_marshal.BugsTestCase.test_fuzz

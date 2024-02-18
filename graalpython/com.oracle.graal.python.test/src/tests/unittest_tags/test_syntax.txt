@@ -8,8 +8,11 @@
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_continue_outside_loop
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_curly_brace_after_primary_raises_immediately
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_deep_invalid_rule
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_empty_line_after_linecont
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_error_on_parser_stack_overflow
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_error_string_literal
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_except_star_then_except
+*graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_except_then_except_star
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_expression_with_assignment
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_generator_in_function_call
 *graalpython.lib-python.3.test.test_syntax.SyntaxTestCase.test_global_param_err_first

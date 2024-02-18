@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_file_parsing
 *graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_filename_with_url_delimiters
 *graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_guess_all_types
+*graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_guess_known_extensions
 *graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_init_reinitializes
 *graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_init_stability
 *graalpython.lib-python.3.test.test_mimetypes.MimeTypesTestCase.test_keywords_args_api

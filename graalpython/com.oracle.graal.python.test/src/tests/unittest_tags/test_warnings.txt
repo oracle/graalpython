@@ -15,6 +15,8 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_always
 *graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_always_after_default
 *graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_append_duplicate
+*graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_catchwarnings_with_simplefilter_error
+*graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_catchwarnings_with_simplefilter_ignore
 *graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_default
 *graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_error
 *graalpython.lib-python.3.test.test_warnings.__init__.CFilterTests.test_error_after_default
@@ -64,6 +66,8 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_always
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_always_after_default
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_append_duplicate
+*graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_catchwarnings_with_simplefilter_error
+*graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_catchwarnings_with_simplefilter_ignore
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_default
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_error
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_error_after_default
@@ -98,6 +102,8 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning_override
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_showwarning
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_tracemalloc
+*graalpython.lib-python.3.test.test_warnings.__init__._DeprecatedTest.test_RuntimeError
+*graalpython.lib-python.3.test.test_warnings.__init__._DeprecatedTest.test_warning
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_default_action
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_filename_none
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_filter

@@ -22,6 +22,8 @@
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_multi_line_docstring_col_offset_and_lineno_issue16806
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_parse
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_parse_in_error
+*graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_recursion_direct
+*graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_recursion_indirect
 *graalpython.lib-python.3.test.test_ast.ASTHelpers_Test.test_starred_expr_end_position_within_call
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_assert
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_assign
@@ -57,6 +59,7 @@
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_starred
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_subscript
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_try
+*graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_try_star
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_tuple
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_unaryop
 *graalpython.lib-python.3.test.test_ast.ASTValidatorTests.test_while
@@ -67,6 +70,7 @@
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_arguments
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_assignment_expression_feature_version
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_ast_asdl_signature
+*graalpython.lib-python.3.test.test_ast.AST_Tests.test_ast_recursion_limit
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_ast_validation
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_base_classes
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_classattrs
@@ -89,9 +93,12 @@
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_no_fields
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_nodeclasses
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_non_interned_future_from_ast
+*graalpython.lib-python.3.test.test_ast.AST_Tests.test_none_checks
+*graalpython.lib-python.3.test.test_ast.AST_Tests.test_null_bytes
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_parenthesized_with_feature_version
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_pickling
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_positional_only_feature_version
+*graalpython.lib-python.3.test.test_ast.AST_Tests.test_precedence_enum
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_realtype
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_slice
 *graalpython.lib-python.3.test.test_ast.AST_Tests.test_snippets

@@ -80,6 +80,7 @@
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_user_error
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_wait_when_sigchild_ignored
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_zombie_fast_process_del
+*graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test__use_vfork
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_bufsize_equal_one_binary_mode
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_bufsize_equal_one_text_mode
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_bufsize_is_none
@@ -180,6 +181,7 @@
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_wait
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_wait_timeout
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_writes_before_communicate
+*graalpython.lib-python.3.test.test_subprocess.ProcessTestCaseNoPoll.test__use_vfork
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCaseNoPoll.test_bufsize_equal_one_binary_mode
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCaseNoPoll.test_bufsize_equal_one_text_mode
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCaseNoPoll.test_bufsize_is_none
@@ -290,8 +292,10 @@
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_check_output_stdin_with_input_arg
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_check_output_timeout
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_check_zero
+*graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_encoding_warning
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_returncode
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_run_kwargs
+*graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_run_with_an_empty_env
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_run_with_bytes_path_and_arguments
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_run_with_pathlike_path
 *graalpython.lib-python.3.test.test_subprocess.RunFuncTestCase.test_run_with_pathlike_path_and_arguments

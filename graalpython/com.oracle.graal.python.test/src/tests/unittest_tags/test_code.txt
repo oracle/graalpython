@@ -3,8 +3,11 @@
 *graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_in_frozenset
 *graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_in_tuple
 *graalpython.lib-python.3.test.test_code.CodeConstsTest.test_interned_string_with_null
+*graalpython.lib-python.3.test.test_code.CodeLocationTest.test_code_new_empty
 *graalpython.lib-python.3.test.test_code.CodeTest.test_closure_injection
 *graalpython.lib-python.3.test.test_code.CodeTest.test_constructor
 *graalpython.lib-python.3.test.test_code.CodeTest.test_newempty
+*graalpython.lib-python.3.test.test_code.CodeTest.test_qualname
 *graalpython.lib-python.3.test.test_code.CodeTest.test_replace
+*graalpython.lib-python.3.test.test_code.CodeTest.test_shrinking_localsplus
 *graalpython.lib-python.3.test.test_code.CodeWeakRefTest.test_basic

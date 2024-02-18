@@ -1,2 +1,3 @@
 *graalpython.lib-python.3.test.test_lltrace.TestLLTrace.test_lltrace
+*graalpython.lib-python.3.test.test_lltrace.TestLLTrace.test_lltrace_different_module
 *graalpython.lib-python.3.test.test_lltrace.TestLLTrace.test_lltrace_does_not_crash_on_subscript_operator

@@ -26,6 +26,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_bad_packed_length
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_bad_v4_part_in
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_blank_scope_id
+*graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_copy
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_empty_address
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_floats_rejected
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_format
@@ -142,6 +143,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testNth
 *graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testOverlaps
 *graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testPacked
+*graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testPrivateNetworks
 *graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testRepr
 *graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testReservedIpv4
 *graalpython.lib-python.3.test.test_ipaddress.IpaddrUnitTest.testReservedIpv6

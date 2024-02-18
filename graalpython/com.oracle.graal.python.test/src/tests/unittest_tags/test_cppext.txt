@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_cppext.__init__.TestCPPExt.test_build_cpp03
+*graalpython.lib-python.3.test.test_cppext.__init__.TestCPPExt.test_build_cpp11

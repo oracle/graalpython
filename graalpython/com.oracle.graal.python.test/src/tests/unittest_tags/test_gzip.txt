@@ -12,10 +12,13 @@
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_buffered_reader
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_bytes_filename
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_compress
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_compress_correct_level
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_compress_mtime
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_compresslevel_metadata
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_decompress
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_decompress_limited
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_decompress_missing_trailer
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_decompress_truncated_trailer
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_exclusive_write
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_fileobj_from_fdopen
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_fileobj_mode

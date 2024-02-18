@@ -29,6 +29,7 @@
 *graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestABC.test_update_multi_inheritance
 *graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestABC.test_update_new_abstractmethods
 *graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestABC.test_update_non_abc
+*graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestABCWithInitSubclass.test_positional_only_and_kwonlyargs_with_init_subclass
 *graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestABCWithInitSubclass.test_works_with_init_subclass
 *graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractclassmethod_basics
 *graalpython.lib-python.3.test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractproperty_basics

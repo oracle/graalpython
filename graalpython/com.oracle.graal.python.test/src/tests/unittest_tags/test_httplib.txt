@@ -47,6 +47,7 @@
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_send_iter
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_send_type_error
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_send_updating_file
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_simple_httpstatus
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_status_lines
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_too_many_headers
 *graalpython.lib-python.3.test.test_httplib.ExtendedReadTest.test_peek
@@ -113,3 +114,4 @@
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_set_tunnel_host_port_headers
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_tunnel_connect_single_send_connection_setup
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_tunnel_debuglog
+*graalpython.lib-python.3.test.test_httplib.TunnelTests.test_tunnel_leak

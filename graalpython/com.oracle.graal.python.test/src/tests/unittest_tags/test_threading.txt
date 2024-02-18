@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_barrier
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_barrier_10
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_default_timeout
+*graalpython.lib-python.3.test.test_threading.BarrierTests.test_repr
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_reset
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_single_thread
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_timeout
@@ -18,6 +19,7 @@
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_default_value
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_multirelease
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_release_unacquired
+*graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_repr
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_try_acquire
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_try_acquire_contended
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_with
@@ -29,6 +31,7 @@
 *graalpython.lib-python.3.test.test_threading.CRLockTests.test_different_thread
 *graalpython.lib-python.3.test.test_threading.CRLockTests.test_locked_repr
 *graalpython.lib-python.3.test.test_threading.CRLockTests.test_reacquire
+*graalpython.lib-python.3.test.test_threading.CRLockTests.test_recursion_count
 *graalpython.lib-python.3.test.test_threading.CRLockTests.test_release_save_unacquired
 *graalpython.lib-python.3.test.test_threading.CRLockTests.test_release_unacquired
 *graalpython.lib-python.3.test.test_threading.CRLockTests.test_repr
@@ -47,6 +50,7 @@
 *graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_different_thread
 *graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_locked_repr
 *graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_reacquire
+*graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_recursion_count
 *graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_release_save_unacquired
 *graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_release_unacquired
 *graalpython.lib-python.3.test.test_threading.ConditionAsRLockTests.test_repr
@@ -67,6 +71,7 @@
 *graalpython.lib-python.3.test.test_threading.EventTests.test_at_fork_reinit
 *graalpython.lib-python.3.test.test_threading.EventTests.test_is_set
 *graalpython.lib-python.3.test.test_threading.EventTests.test_notify
+*graalpython.lib-python.3.test.test_threading.EventTests.test_repr
 *graalpython.lib-python.3.test.test_threading.EventTests.test_reset_internal_locks
 *graalpython.lib-python.3.test.test_threading.EventTests.test_set_and_clear
 *graalpython.lib-python.3.test.test_threading.EventTests.test_timeout
@@ -76,6 +81,7 @@
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_excepthook_thread_None
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_original_excepthook
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_system_exit
+*graalpython.lib-python.3.test.test_threading.InterruptMainTests.test_can_interrupt_tight_loops
 *graalpython.lib-python.3.test.test_threading.InterruptMainTests.test_interrupt_main_noerror
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_contended
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_destroy
@@ -103,6 +109,7 @@
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_different_thread
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_locked_repr
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_reacquire
+*graalpython.lib-python.3.test.test_threading.PyRLockTests.test_recursion_count
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_release_save_unacquired
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_release_unacquired
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_repr
@@ -121,6 +128,7 @@
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_default_value
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_multirelease
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_release_unacquired
+*graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_repr
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_try_acquire
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_try_acquire_contended
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_with
@@ -132,6 +140,7 @@
 *graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_reinit_tls_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_BoundedSemaphore_limit
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_PyThreadState_SetAsyncExc
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_args_argument
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_boolean_target
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_daemon_param
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_debug_deprecation

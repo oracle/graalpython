@@ -78,6 +78,16 @@
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_transport_eof
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_alertdescription
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_options
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_sslerrornumber
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_sslmethod
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_tlsalerttype
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_tlscontenttype
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_tlsmessagetype
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_tlsversion
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_verifyflags
+*graalpython.lib-python.3.test.test_ssl.TestEnumerations.test_verifymode
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_bpo37428_pha_cert_none
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_internal_chain_client
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_internal_chain_server
@@ -125,6 +135,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1_1
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1_2
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_read_write_after_close_raises_valuerror
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_recv_into_buffer_protocol_len
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_recv_send
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_recv_zero
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_rude_shutdown

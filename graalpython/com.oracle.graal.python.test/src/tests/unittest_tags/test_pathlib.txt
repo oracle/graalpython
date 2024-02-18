@@ -3,6 +3,7 @@
 *graalpython.lib-python.3.test.test_pathlib.NTFlavourTest.test_parse_parts
 *graalpython.lib-python.3.test.test_pathlib.NTFlavourTest.test_parse_parts_common
 *graalpython.lib-python.3.test.test_pathlib.NTFlavourTest.test_splitroot
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_absolute_common
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_chmod
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_chmod_follow_symlinks_true
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_class_getitem
@@ -17,6 +18,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_common
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_dotdot
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_empty_pattern
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_long_symlink
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_many_open_files
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_permissions
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_group
@@ -118,6 +120,8 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_with_name_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_with_stem_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_with_suffix_common
+*graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_absolute
+*graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_absolute_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_chmod
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_chmod_follow_symlinks_true
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_complex_symlinks_absolute
@@ -131,6 +135,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_glob
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_glob_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_glob_dotdot
+*graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_glob_long_symlink
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_glob_many_open_files
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_glob_permissions
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_group
@@ -375,6 +380,8 @@
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathAsPureTest.test_with_stem_common
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathAsPureTest.test_with_suffix
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathAsPureTest.test_with_suffix_common
+*graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_absolute
+*graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_absolute_common
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_chmod
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_chmod_follow_symlinks_true
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_complex_symlinks_absolute
@@ -388,6 +395,7 @@
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_glob
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_glob_common
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_glob_dotdot
+*graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_glob_long_symlink
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_glob_many_open_files
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_glob_permissions
 *graalpython.lib-python.3.test.test_pathlib.WindowsPathTest.test_group

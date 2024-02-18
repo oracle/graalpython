@@ -1,1 +1,2 @@
+*graalpython.lib-python.3.test.test_unpack.TestCornerCases.test_extended_oparg_not_ignored
 *graalpython.lib-python.3.test.test_unpack.TestMain.test_main

@@ -1,8 +1,12 @@
 *graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_class_bases_and_keywords
 *graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_docstrings_negative_cases
 *graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_fstrings
+*graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_lambda_parameters
+*graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_multiquote_joined_string
 *graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_simple_expressions_parens
 *graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_slices
+*graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_star_expr_assign_target
+*graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_star_expr_assign_target_multiple
 *graalpython.lib-python.3.test.test_unparse.CosmeticTestCase.test_unary_op_factor
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_annotations
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_bytes
@@ -18,6 +22,7 @@
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_for_else
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_fstrings
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_fstrings_complicated
+*graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_fstrings_special_chars
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_function_arguments
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_function_type
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_huge_float
@@ -27,6 +32,7 @@
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_fstring_backslash
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_fstring_constant
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_fstring_conversion
+*graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_fstring_value
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_raise
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_yield_from
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_lambda_parentheses
@@ -42,6 +48,7 @@
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_starred_assignment
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_strings
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_try_except_finally
+*graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_try_except_star_finally
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_type_comments
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_type_ignore
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_unary_parens

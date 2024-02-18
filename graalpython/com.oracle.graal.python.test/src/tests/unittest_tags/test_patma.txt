@@ -251,6 +251,7 @@
 *graalpython.lib-python.3.test.test_patma.TestPatma.test_patma_245
 *graalpython.lib-python.3.test.test_patma.TestPatma.test_patma_246
 *graalpython.lib-python.3.test.test_patma.TestPatma.test_patma_247
+*graalpython.lib-python.3.test.test_patma.TestPatma.test_patma_248
 *graalpython.lib-python.3.test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_0
 *graalpython.lib-python.3.test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_1
 *graalpython.lib-python.3.test.test_patma.TestSyntaxErrors.test_attribute_name_repeated_in_class_pattern
@@ -297,6 +298,7 @@
 *graalpython.lib-python.3.test.test_patma.TestTracing.test_only_default_capture
 *graalpython.lib-python.3.test.test_patma.TestTracing.test_only_default_wildcard
 *graalpython.lib-python.3.test.test_patma.TestTracing.test_parser_deeply_nested_patterns
+*graalpython.lib-python.3.test.test_patma.TestTracing.test_unreachable_code
 *graalpython.lib-python.3.test.test_patma.TestTypeErrors.test_accepts_positional_subpatterns_0
 *graalpython.lib-python.3.test.test_patma.TestTypeErrors.test_accepts_positional_subpatterns_1
 *graalpython.lib-python.3.test.test_patma.TestTypeErrors.test_got_multiple_subpatterns_for_attribute_0
