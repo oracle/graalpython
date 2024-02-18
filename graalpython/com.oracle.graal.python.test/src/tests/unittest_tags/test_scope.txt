@@ -1,5 +1,7 @@
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testBoundAndFree
+*graalpython.lib-python.3.test.test_scope.ScopeTests.testCellIsArgAndEscapes
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testCellIsKwonlyArg
+*graalpython.lib-python.3.test.test_scope.ScopeTests.testCellIsLocalAndEscapes
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testCellLeak
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testClassAndGlobal
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testClassNamespaceOverridesClosure

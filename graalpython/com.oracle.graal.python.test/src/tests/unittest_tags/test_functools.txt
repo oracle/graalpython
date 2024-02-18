@@ -34,6 +34,7 @@
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_threaded
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_threaded2
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_threaded3
+*graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_typed_is_not_recursive
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_hash_only_once
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_method
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_no_args
@@ -59,6 +60,7 @@
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_threaded
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_threaded2
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_threaded3
+*graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_typed_is_not_recursive
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_hash_only_once
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_method
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_no_args
@@ -215,8 +217,12 @@
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_staticmethod_register
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_staticmethod_type_ann_register
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_type_ann_register
+*graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_union
+*graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_union_None
+*graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_union_conflict
 *graalpython.lib-python.3.test.test_functools.TestSingleDispatch.test_wrapping_attributes
 *graalpython.lib-python.3.test.test_functools.TestTotalOrdering.test_no_operations_defined
+*graalpython.lib-python.3.test.test_functools.TestTotalOrdering.test_notimplemented
 *graalpython.lib-python.3.test.test_functools.TestTotalOrdering.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestTotalOrdering.test_total_ordering_for_metaclasses_issue_44605
 *graalpython.lib-python.3.test.test_functools.TestTotalOrdering.test_total_ordering_ge

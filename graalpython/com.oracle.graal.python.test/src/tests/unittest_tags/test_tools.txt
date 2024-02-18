@@ -1,4 +1,5 @@
 *unittest.loader.ModuleSkipped.test.test_tools.test_fixcid
+*unittest.loader.ModuleSkipped.test.test_tools.test_freeze
 *unittest.loader.ModuleSkipped.test.test_tools.test_gprof2html
 *unittest.loader.ModuleSkipped.test.test_tools.test_i18n
 *unittest.loader.ModuleSkipped.test.test_tools.test_lll

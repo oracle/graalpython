@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_urlparse.DeprecationTest.test_Quoter_deprecation
 *graalpython.lib-python.3.test.test_urlparse.DeprecationTest.test_splitattr_deprecation
 *graalpython.lib-python.3.test.test_urlparse.DeprecationTest.test_splithost_deprecation
 *graalpython.lib-python.3.test.test_urlparse.DeprecationTest.test_splitnport_deprecation
@@ -18,9 +19,12 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_all
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_anyscheme
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_attributes_bad_port
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_attributes_bad_scheme
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_attributes_without_netloc
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_clear_cache_for_code_coverage
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_default_scheme
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_http_roundtrips
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_invalid_bracketed_hosts
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_issue14072
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_mixed_types_rejected
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_noslash
@@ -38,6 +42,7 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_quote_from_bytes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_result_pairs
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_roundtrips
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_splitting_bracketed_hosts
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_telurl_params
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_unparse_parse
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_unquote_to_bytes
@@ -45,6 +50,7 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_quote_via
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_sequences
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urljoins
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urllib_parse_getattr_failure
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_attributes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_remove_unsafe_bytes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_scoped_IPv6

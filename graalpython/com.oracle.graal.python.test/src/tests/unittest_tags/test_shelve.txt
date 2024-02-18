@@ -56,12 +56,15 @@
 *graalpython.lib-python.3.test.test_shelve.TestBinaryMemShelve.test_write
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_ascii_file_shelf
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_binary_file_shelf
+*graalpython.lib-python.3.test.test_shelve.TestCase.test_bytes_path_file_shelf
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_close
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_default_protocol
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_in_memory_shelf
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_keyencoding
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_mutable_entry
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_open_template
+*graalpython.lib-python.3.test.test_shelve.TestCase.test_pathlib_bytes_path_file_shelf
+*graalpython.lib-python.3.test.test_shelve.TestCase.test_pathlib_path_file_shelf
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_proto2_file_shelf
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_with
 *graalpython.lib-python.3.test.test_shelve.TestCase.test_writeback_also_writes_immediately

@@ -541,6 +541,7 @@
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_open_pipe_with_append
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_openwrapper
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_pickling
+*graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_removed_u_mode
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_warn_on_dealloc
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_warn_on_dealloc_fd
 *graalpython.lib-python.3.test.test_io.PySignalsTest.test_interrupted_read_retry_buffered
@@ -597,6 +598,7 @@
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_readonly_attributes
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_defaults
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_encoding_read
+*graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_errors
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_line_buffering
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_newline
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_write

@@ -13,6 +13,9 @@
 *graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_missing_data
 *graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_missing_index
 *graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_nonascii_filename
+*graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_open_with_bytes_path
+*graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_open_with_pathlib_bytes_path
+*graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_open_with_pathlib_path
 *graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_random
 *graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_readonly_files
 *graalpython.lib-python.3.test.test_dbm_dumb.DumbDBMTestCase.test_str_read

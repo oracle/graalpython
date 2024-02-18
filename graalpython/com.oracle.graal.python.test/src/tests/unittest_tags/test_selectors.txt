@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_register
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_select
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_select_read_write
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_selector
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister
@@ -28,6 +29,7 @@
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_select
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_select_interrupt_exc
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_select_read_write
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_selector
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_unregister
@@ -48,6 +50,7 @@
 *graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_select
 *graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_select_interrupt_exc
 *graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_select_read_write
 *graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_selector
 *graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.EpollSelectorTestCase.test_unregister
@@ -69,6 +72,7 @@
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_select
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_select_interrupt_exc
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_select_read_write
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_selector
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_unregister
@@ -88,6 +92,7 @@
 *graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_select
 *graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_select_interrupt_exc
 *graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_select_read_write
 *graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_selector
 *graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.PollSelectorTestCase.test_unregister
@@ -105,6 +110,7 @@
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_register
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_select
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_select_read_write
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_selector
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister

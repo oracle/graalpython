@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_transform_decimal
 *graalpython.lib-python.3.test.test_unicode.StringModuleTest.test_formatter_field_name_split
 *graalpython.lib-python.3.test.test_unicode.StringModuleTest.test_formatter_parser
+*graalpython.lib-python.3.test.test_unicode.StringModuleTest.test_str_subclass_attr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test___contains__
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_additional_rsplit
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_additional_split
@@ -38,6 +39,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_conversion
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_count
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_endswith
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_exhausted_iterator
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_expandtabs
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_expandtabs_optimization
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_expandtabs_overflows_gracefully
@@ -88,7 +90,9 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_issue8271
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_istitle
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isupper
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_iteration
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_iterators
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_iterators_invocation
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_join
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_join_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_literals
@@ -98,6 +102,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_mul
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_none_arguments
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_partition
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_pickle_iterator
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printable_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printing
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_raiseMemError

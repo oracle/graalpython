@@ -1,9 +1,12 @@
+*graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test__future__imports
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_allmethods
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_builtin_no_child
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_builtin_on_metaclasses
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_builtin_with_child
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_builtin_with_grandchild
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_builtin_with_more_than_four_children
+*graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_fail_help_cli
+*graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_fail_help_output_redirect
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_getpager_with_stdin_none
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_input_strip
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_is_package_when_is_package
@@ -18,6 +21,7 @@
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_splitdoc_with_description
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_stripid
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_synopsis
+*graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_synopsis_sourceless
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_synopsis_sourceless_empty_doc
 *graalpython.lib-python.3.test.test_pydoc.PydocDocTest.test_text_enum_member_with_value_zero
 *graalpython.lib-python.3.test.test_pydoc.PydocImportTest.test_apropos_empty_doc

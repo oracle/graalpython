@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_bug_42008
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_bug_9025
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_choice
+*graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_choice_with_numpy
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_choices
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_choices_algorithms
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_choices_infinite_total
@@ -21,6 +22,7 @@
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_getrandbits
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_guaranteed_stable
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_long_seed
+*graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_mu_sigma_default_args
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_pickling
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_randbelow_logic
 *graalpython.lib-python.3.test.test_random.MersenneTwister_TestBasicOps.test_randbelow_without_getrandbits
@@ -56,6 +58,7 @@
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_bug_42008
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_bug_9025
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_choice
+*graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_choice_with_numpy
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_choices
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_choices_infinite_total
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_choices_negative_total
@@ -64,6 +67,7 @@
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_gauss
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_genrandbits
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_getrandbits
+*graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_mu_sigma_default_args
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_pickling
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_randbelow_logic
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_randbytes
@@ -101,3 +105,5 @@
 *graalpython.lib-python.3.test.test_random.TestModule.test_after_fork
 *graalpython.lib-python.3.test.test_random.TestRandomSubclassing.test_random_subclass_with_kwargs
 *graalpython.lib-python.3.test.test_random.TestRandomSubclassing.test_subclasses_overriding_methods
+*graalpython.lib-python.3.test.test_random.TestRawMersenneTwister.test_bug_41052
+*graalpython.lib-python.3.test.test_random.TestRawMersenneTwister.test_bug_42008

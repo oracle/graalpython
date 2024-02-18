@@ -14,6 +14,7 @@
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_no_argument
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_nonascii_abspath
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_normcase
+*graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_normpath_issue106242
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_normpath_issue5827
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_realpath
 *graalpython.lib-python.3.test.test_ntpath.NtCommonTest.test_relpath_errors

@@ -40,8 +40,10 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_int_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_length_zero_header
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_next_on_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_non_existent_tarfile
@@ -59,6 +61,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_ignore_zeros
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_length_zero_header
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_non_existent_tarfile
@@ -192,8 +195,10 @@
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_int_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_length_zero_header
+*graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_next_on_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_non_existent_tarfile
@@ -209,6 +214,7 @@
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_ignore_zeros
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_length_zero_header
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_non_existent_tarfile
@@ -292,8 +298,10 @@
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_int_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_length_zero_header
+*graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_next_on_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_non_existent_tarfile
@@ -309,6 +317,7 @@
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_ignore_zeros
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_length_zero_header
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_non_existent_tarfile
@@ -382,8 +391,10 @@
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_int_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_length_zero_header
+*graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_next_on_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_non_existent_tarfile
@@ -469,6 +480,7 @@
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_ignore_zeros
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_is_tarfile_keeps_position
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_length_zero_header
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_non_existent_tarfile

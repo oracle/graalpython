@@ -61,6 +61,7 @@
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_unknown_hash
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_usedforsecurity_false
 *graalpython.lib-python.3.test.test_hashlib.HashLibTestCase.test_usedforsecurity_true
+*graalpython.lib-python.3.test.test_hashlib.KDFTests.test_file_digest
 *graalpython.lib-python.3.test.test_hashlib.KDFTests.test_normalized_name
 *graalpython.lib-python.3.test.test_hashlib.KDFTests.test_pbkdf2_hmac_c
 *graalpython.lib-python.3.test.test_hashlib.KDFTests.test_pbkdf2_hmac_py

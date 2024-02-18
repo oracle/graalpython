@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_abstractmethods
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_altmro
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_assign_slice
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_attr_raise_through_property
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_basic_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_binary_operator_override
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_bound_method_repr
@@ -38,6 +39,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_isinst_isclass
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_keyword_arguments
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_keywords
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_load_attr_extended_arg
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_metaclass
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_meth_class_get
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_method_wrapper
@@ -73,6 +75,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_refleaks_in_classmethod___init__
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_refleaks_in_staticmethod___init__
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_repr_as_str
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_repr_with_module_str_subclass
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_rich_comparisons
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_rmul
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_and_no_get

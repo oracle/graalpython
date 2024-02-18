@@ -1,3 +1,6 @@
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_comment_after_machine_line
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_comment_after_machine_line_hash_only
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_comment_after_machine_line_no_space
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_no_space
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_pass_has_hash
@@ -8,8 +11,19 @@
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_file_not_found_explicit
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_file_not_found_in_home
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_home_not_set
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_invalid_tokens
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_macros
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_optional_tokens
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_password_with_internal_hash
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_password_with_leading_hash
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_password_with_trailing_hash
 *graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_security
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_escape
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_internal_hash
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_leading_hash
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_non_ascii
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_quotes
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_trailing_hash
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_token_value_whitespace
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_toplevel_non_ordered_tokens
+*graalpython.lib-python.3.test.test_netrc.NetrcTestCase.test_toplevel_tokens

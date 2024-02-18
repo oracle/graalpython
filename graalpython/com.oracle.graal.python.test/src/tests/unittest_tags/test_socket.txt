@@ -116,6 +116,8 @@
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.testWindowsSpecificConstants
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_SocketType_is_socketobject
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test__sendfile_use_sendfile
+*graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_addressfamily_enum
+*graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_addressinfo_enum
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_csocket_repr
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_dealloc_warn
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_flowinfo
@@ -134,6 +136,7 @@
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_listen_backlog_overflow
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_makefile_invalid_mode
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_makefile_mode
+*graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_msgflag_enum
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_name_closed_socketio
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_pickle
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_repr
@@ -151,6 +154,8 @@
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_socket_fileno_rejects_other_types
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_socket_fileno_requires_socket_fd
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_socket_fileno_requires_valid_fd
+*graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_socket_methods
+*graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_socketkind_enum
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_str_for_enums
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_unknown_socket_family_repr
 *graalpython.lib-python.3.test.test_socket.GeneralModuleTests.test_unusable_closed_socketio
@@ -204,6 +209,7 @@
 *graalpython.lib-python.3.test.test_socket.NetworkConnectionBehaviourTest.testOutsideTimeout
 *graalpython.lib-python.3.test.test_socket.NetworkConnectionNoServer.test_connect
 *graalpython.lib-python.3.test.test_socket.NetworkConnectionNoServer.test_create_connection
+*graalpython.lib-python.3.test.test_socket.NetworkConnectionNoServer.test_create_connection_all_errors
 *graalpython.lib-python.3.test.test_socket.NetworkConnectionNoServer.test_create_connection_timeout
 *graalpython.lib-python.3.test.test_socket.NonBlockingTCPTests.testAccept
 *graalpython.lib-python.3.test.test_socket.NonBlockingTCPTests.testInheritFlagsBlocking

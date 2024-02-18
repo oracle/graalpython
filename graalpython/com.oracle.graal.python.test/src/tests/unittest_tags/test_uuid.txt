@@ -35,6 +35,7 @@
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_exceptions
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_getnode
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_pickle_roundtrip
+*graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_safe_uuid_enum
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_unpickle_previous_python_versions
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_uuid1
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithExtModule.test_uuid1_bogus_return_value
@@ -53,6 +54,7 @@
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_exceptions
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_getnode
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_pickle_roundtrip
+*graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_safe_uuid_enum
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_unpickle_previous_python_versions
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1
 *graalpython.lib-python.3.test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_bogus_return_value

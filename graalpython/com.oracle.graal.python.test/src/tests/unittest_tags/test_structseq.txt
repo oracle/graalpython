@@ -2,10 +2,14 @@
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_concat
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_constructor
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_contains
+*graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_copying
+*graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_copying_with_unnamed_fields
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_eviltuple
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_fields
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_hash
+*graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_pickling
+*graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_pickling_with_unnamed_fields
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_reduce
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_repeat
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_repr

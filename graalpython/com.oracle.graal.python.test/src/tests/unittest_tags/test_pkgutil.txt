@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_missing_spec_attribute
 *graalpython.lib-python.3.test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_spec_attribute_none
 *graalpython.lib-python.3.test.test_pkgutil.ImportlibMigrationTests.test_importer_deprecated
+*graalpython.lib-python.3.test.test_pkgutil.ImportlibMigrationTests.test_issue44061
 *graalpython.lib-python.3.test.test_pkgutil.ImportlibMigrationTests.test_iter_importers_avoids_emulation
 *graalpython.lib-python.3.test.test_pkgutil.ImportlibMigrationTests.test_loader_deprecated
 *graalpython.lib-python.3.test.test_pkgutil.NestedNamespacePackageTest.test_nested
@@ -17,6 +18,7 @@
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilPEP302Tests.test_getdata_pep302
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_getdata_filesys
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_getdata_zipfile
+*graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_issue44061_iter_modules
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_name_resolution
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_unreadable_dir_on_syspath
 *graalpython.lib-python.3.test.test_pkgutil.PkgutilTests.test_walk_packages_raises_on_string_or_bytes_input

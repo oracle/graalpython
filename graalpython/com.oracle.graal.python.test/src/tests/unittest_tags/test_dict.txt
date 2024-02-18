@@ -64,7 +64,9 @@
 *graalpython.lib-python.3.test.test_dict.DictTest.test_splittable_popitem
 *graalpython.lib-python.3.test.test_dict.DictTest.test_splittable_setattr_after_pop
 *graalpython.lib-python.3.test.test_dict.DictTest.test_splittable_setdefault
+*graalpython.lib-python.3.test.test_dict.DictTest.test_splittable_update
 *graalpython.lib-python.3.test.test_dict.DictTest.test_str_nonstr
+*graalpython.lib-python.3.test.test_dict.DictTest.test_string_keys_can_track_values
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_dynamic
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_literals
 *graalpython.lib-python.3.test.test_dict.DictTest.test_track_subtypes

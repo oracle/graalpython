@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInvalidAttrs
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInvalidTraceback
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testKeywordArgs
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testMemoryErrorBigSource
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testNoneClearsTracebackAttr
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testRaising
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testSettingException
@@ -21,6 +22,9 @@
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_MemoryError
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_WindowsError
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_assert_shadowing
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_context_of_exception_in_else_and_finally
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_context_of_exception_in_except_and_finally
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_context_of_exception_in_try_and_finally
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_errno_ENOTDIR
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_error_offset_continuation_characters
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_cleanup_names

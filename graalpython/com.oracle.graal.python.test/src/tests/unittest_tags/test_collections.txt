@@ -65,6 +65,7 @@
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_name_conflicts
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_name_fixer
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_namedtuple_subclass_issue_24931
+*graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_non_generic_subscript
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_odd_sizes
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_pickle
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_readonly

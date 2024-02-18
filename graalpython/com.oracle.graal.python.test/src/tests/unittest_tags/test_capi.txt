@@ -1,5 +1,10 @@
 *test.test_capi.test_codecs.CAPITest.test_decodeutf8
 *test.test_capi.test_codecs.CAPITest.test_decodeutf8stateful
+*test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_simple
+*test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_args
+*test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_closure
+*test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_default
+*test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwarg_default
 *test.test_capi.test_getargs.Boolean_TestCase.test_p
 *test.test_capi.test_getargs.Bytes_TestCase.test_c
 *test.test_capi.test_getargs.Bytes_TestCase.test_w_star

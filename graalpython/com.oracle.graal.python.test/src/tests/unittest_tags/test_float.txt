@@ -36,11 +36,15 @@
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_nan_as_str
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_nan_from_str
 *graalpython.lib-python.3.test.test_float.InfNanTest.test_nan_signs
+*graalpython.lib-python.3.test.test_float.PackTests.test_pack
+*graalpython.lib-python.3.test.test_float.PackTests.test_roundtrip
+*graalpython.lib-python.3.test.test_float.PackTests.test_unpack
 *graalpython.lib-python.3.test.test_float.ReprTestCase.test_repr
 *graalpython.lib-python.3.test.test_float.ReprTestCase.test_short_repr
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_None_ndigits
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_format_specials
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_inf_nan
+*graalpython.lib-python.3.test.test_float.RoundTestCase.test_inf_nan_ndigits
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_large_n
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_matches_float_format
 *graalpython.lib-python.3.test.test_float.RoundTestCase.test_overflow

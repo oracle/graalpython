@@ -9,8 +9,10 @@
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_archive_owner_group
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_tarball
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_tarfile_in_curdir
+*graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_tarfile_rootdir_nodir
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_zipfile
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_zipfile_in_curdir
+*graalpython.lib-python.3.test.test_shutil.TestArchives.test_make_zipfile_rootdir_nodir
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_register_archive_format
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_tarfile_root_owner
 *graalpython.lib-python.3.test.test_shutil.TestArchives.test_tarfile_vs_tar
@@ -110,6 +112,8 @@
 *graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_on_junction
 *graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_on_symlink
 *graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_uses_safe_fd_version_if_available
+*graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_with_dir_fd
+*graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_with_dir_fd_unsupported
 *graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_works_on_bytes
 *graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_works_on_junctions
 *graalpython.lib-python.3.test.test_shutil.TestRmTree.test_rmtree_works_on_symlinks

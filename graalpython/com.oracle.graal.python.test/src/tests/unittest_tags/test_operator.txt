@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_bitwise_and
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_bitwise_or
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_bitwise_xor
+*graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_call
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_concat
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_contains
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_countOf
@@ -46,12 +47,14 @@
 *graalpython.lib-python.3.test.test_operator.PyCOperatorPickleTestCase.test_attrgetter
 *graalpython.lib-python.3.test.test_operator.PyCOperatorPickleTestCase.test_itemgetter
 *graalpython.lib-python.3.test.test_operator.PyCOperatorPickleTestCase.test_methodcaller
+*graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test___all__
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_abs
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_add
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_attrgetter
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_bitwise_and
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_bitwise_or
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_bitwise_xor
+*graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_call
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_concat
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_contains
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_countOf

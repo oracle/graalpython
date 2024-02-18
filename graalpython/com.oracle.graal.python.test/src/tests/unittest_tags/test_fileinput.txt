@@ -14,6 +14,7 @@
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_files_that_dont_end_with_newline
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_inplace_binary_write_mode
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_inplace_encoding_errors
+*graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_invalid_opening_mode
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_iteration_buffering
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_nextfile_oserror_deleting_backup
 *graalpython.lib-python.3.test.test_fileinput.FileInputTests.test_opening_mode

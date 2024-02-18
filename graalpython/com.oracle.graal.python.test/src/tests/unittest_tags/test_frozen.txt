@@ -1,1 +1,3 @@
 *graalpython.lib-python.3.test.test_frozen.TestFrozen.test_frozen
+*graalpython.lib-python.3.test.test_frozen.TestFrozen.test_frozen_submodule_in_unfrozen_package
+*graalpython.lib-python.3.test.test_frozen.TestFrozen.test_unfrozen_submodule_in_frozen_package

@@ -15,10 +15,13 @@
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_get_scheme_names
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_ldshared_value
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_main
+*graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_nt_venv_scheme
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_osx_ext_suffix
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_platform_in_subprocess
+*graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_posix_venv_scheme
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_srcdir
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_srcdir_independent_of_cwd
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_symlink
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_triplet_in_ext_suffix
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_user_similar
+*graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_venv_scheme

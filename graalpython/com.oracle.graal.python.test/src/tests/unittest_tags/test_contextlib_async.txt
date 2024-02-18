@@ -15,6 +15,9 @@
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_trap_second_yield
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_trap_yield_after_throw
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_wrap_runtimeerror
+*graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_decorating_method
+*graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_decorator
+*graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_decorator_with_exception
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_instance_docstring_given_cm_docstring
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_keywords
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_recursive
@@ -29,7 +32,10 @@
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_callback
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_close
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_dont_reraise_RuntimeError
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_enter_async_context
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_enter_async_context_errors
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_enter_context
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_enter_context_errors
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_excessive_nesting
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_exit_exception_chaining_reference
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_exit_exception_chaining_suppress
@@ -38,6 +44,7 @@
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_exit_raise
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_exit_suppress
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_instance_bypass
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_instance_bypass_async
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_instance_docs
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_no_resources
 *graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_pop_all

@@ -9,9 +9,13 @@
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_except_stopiter
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_finally
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_no_reraise
+*graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_non_normalised
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_plain
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_traceback
+*graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_trap_no_yield
+*graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_trap_second_yield
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_trap_yield_after_throw
+*graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_contextmanager_wrap_runtimeerror
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_instance_docstring_given_cm_docstring
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_keywords
 *graalpython.lib-python.3.test.test_contextlib.ContextManagerTestCase.test_param_errors
@@ -26,6 +30,9 @@
 *graalpython.lib-python.3.test.test_contextlib.TestAbstractContextManager.test_enter
 *graalpython.lib-python.3.test.test_contextlib.TestAbstractContextManager.test_exit_is_abstract
 *graalpython.lib-python.3.test.test_contextlib.TestAbstractContextManager.test_structural_subclassing
+*graalpython.lib-python.3.test.test_contextlib.TestChdir.test_exception
+*graalpython.lib-python.3.test.test_contextlib.TestChdir.test_reentrant
+*graalpython.lib-python.3.test.test_contextlib.TestChdir.test_simple
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_contextdecorator
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_contextdecorator_as_mixin
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_contextdecorator_with_exception
@@ -41,6 +48,7 @@
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_close
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_dont_reraise_RuntimeError
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_enter_context
+*graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_enter_context_errors
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_excessive_nesting
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_exit_exception_chaining_reference
 *graalpython.lib-python.3.test.test_contextlib.TestExitStack.test_exit_exception_chaining_suppress

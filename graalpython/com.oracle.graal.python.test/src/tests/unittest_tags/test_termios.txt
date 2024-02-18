@@ -1,0 +1,7 @@
+*graalpython.lib-python.3.test.test_termios.TestFunctions.test_tcdrain
+*graalpython.lib-python.3.test.test_termios.TestFunctions.test_tcflow
+*graalpython.lib-python.3.test.test_termios.TestFunctions.test_tcflush
+*graalpython.lib-python.3.test.test_termios.TestFunctions.test_tcgetattr
+*graalpython.lib-python.3.test.test_termios.TestFunctions.test_tcsendbreak
+*graalpython.lib-python.3.test.test_termios.TestFunctions.test_tcsetattr
+*graalpython.lib-python.3.test.test_termios.TestModule.test_constants

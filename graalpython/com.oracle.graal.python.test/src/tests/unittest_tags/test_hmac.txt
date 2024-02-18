@@ -25,3 +25,4 @@
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_sha512_rfc4231
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_sha_vectors
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_with_digestmod_no_default
+*graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_with_fallback

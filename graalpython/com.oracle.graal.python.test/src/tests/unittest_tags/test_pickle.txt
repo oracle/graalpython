@@ -130,6 +130,8 @@
 *graalpython.lib-python.3.test.test_pickle.CPickleTests.test_incomplete_input
 *graalpython.lib-python.3.test.test_pickle.CPickleTests.test_load_closed_file
 *graalpython.lib-python.3.test.test_pickle.CPickleTests.test_load_from_and_dump_to_file
+*graalpython.lib-python.3.test.test_pickle.CPickleTests.test_pickler_bad_file
+*graalpython.lib-python.3.test.test_pickle.CPickleTests.test_unpickler_bad_file
 *graalpython.lib-python.3.test.test_pickle.CPicklerHookTests.test_pickler_hook
 *graalpython.lib-python.3.test.test_pickle.CPicklerHookTests.test_reducer_override_no_reference_cycle
 *graalpython.lib-python.3.test.test_pickle.CPicklerTests.test_appends_on_non_lists
@@ -590,6 +592,8 @@
 *graalpython.lib-python.3.test.test_pickle.PyPickleTests.test_incomplete_input
 *graalpython.lib-python.3.test.test_pickle.PyPickleTests.test_load_closed_file
 *graalpython.lib-python.3.test.test_pickle.PyPickleTests.test_load_from_and_dump_to_file
+*graalpython.lib-python.3.test.test_pickle.PyPickleTests.test_pickler_bad_file
+*graalpython.lib-python.3.test.test_pickle.PyPickleTests.test_unpickler_bad_file
 *graalpython.lib-python.3.test.test_pickle.PyPicklerHookTests.test_pickler_hook
 *graalpython.lib-python.3.test.test_pickle.PyPicklerHookTests.test_reducer_override_no_reference_cycle
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_appends_on_non_lists

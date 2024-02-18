@@ -42,6 +42,7 @@
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config13_failure
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config14_ok
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config15_ok
+*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config17_ok
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config1_ok
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config2_failure
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config2a_failure
@@ -56,11 +57,15 @@
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config_8_ok
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config_8a_ok
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config_9_ok
+*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config_callable_filter_works
+*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config_filter_method_works
+*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_config_filter_works
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2_with_wrong_fmt
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate3
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_custom_formatter_function_with_validate
+*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_invalid_type_raises
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_namedtuple
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_out_of_order
 *graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_out_of_order_with_dollar_style
@@ -76,6 +81,9 @@
 *graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_config8_ok
 *graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_config_set_handler_names
 *graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_defaults_do_no_interpolation
+*graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_exception_if_confg_file_is_empty
+*graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_exception_if_confg_file_is_invalid
+*graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_exception_if_config_file_does_not_exist
 *graalpython.lib-python.3.test.test_logging.ConfigFileTest.test_logger_disabling
 *graalpython.lib-python.3.test.test_logging.CustomLevelsAndFiltersTest.test_handler_filter
 *graalpython.lib-python.3.test.test_logging.CustomLevelsAndFiltersTest.test_logger_filter
@@ -102,6 +110,7 @@
 *graalpython.lib-python.3.test.test_logging.HandlerTest.test_post_fork_child_no_deadlock
 *graalpython.lib-python.3.test.test_logging.HandlerTest.test_race
 *graalpython.lib-python.3.test.test_logging.IPv6SysLogHandlerTest.test_output
+*graalpython.lib-python.3.test.test_logging.IPv6SysLogHandlerTest.test_udp_reconnection
 *graalpython.lib-python.3.test.test_logging.LastResortTest.test_last_resort
 *graalpython.lib-python.3.test.test_logging.LogRecordFactoryTest.test_logrecord_class
 *graalpython.lib-python.3.test.test_logging.LogRecordTest.test_dict_arg
@@ -141,6 +150,7 @@
 *graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_debug
 *graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_disable
 *graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_error
+*graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_get_level_names_mapping
 *graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_info
 *graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_log
 *graalpython.lib-python.3.test.test_logging.ModuleLevelMiscTest.test_recursion_error
@@ -183,6 +193,7 @@
 *graalpython.lib-python.3.test.test_logging.StreamHandlerTest.test_error_handling
 *graalpython.lib-python.3.test.test_logging.StreamHandlerTest.test_stream_setting
 *graalpython.lib-python.3.test.test_logging.SysLogHandlerTest.test_output
+*graalpython.lib-python.3.test.test_logging.SysLogHandlerTest.test_udp_reconnection
 *graalpython.lib-python.3.test.test_logging.TimedRotatingFileHandlerTest.test_compute_files_to_delete
 *graalpython.lib-python.3.test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_D
 *graalpython.lib-python.3.test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_H
@@ -199,5 +210,6 @@
 *graalpython.lib-python.3.test.test_logging.UnixSocketHandlerTest.test_noserver
 *graalpython.lib-python.3.test.test_logging.UnixSocketHandlerTest.test_output
 *graalpython.lib-python.3.test.test_logging.UnixSysLogHandlerTest.test_output
+*graalpython.lib-python.3.test.test_logging.UnixSysLogHandlerTest.test_udp_reconnection
 *graalpython.lib-python.3.test.test_logging.WarningsTest.test_warnings
 *graalpython.lib-python.3.test.test_logging.WarningsTest.test_warnings_no_handlers
