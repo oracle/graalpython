@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -164,67 +163,10 @@ public abstract class ManagedMethodWrappers {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    static final class MethVarargs extends MethodWrapper {
-
-        public MethVarargs(Object method) {
-            super(method);
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        protected boolean isExecutable() {
-            return true;
-        }
-
-        @ExportMessage
-        public Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
-                        @Exclusive @Cached NativeToPythonNode toJavaNode,
-                        @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
-                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
-                        @Exclusive @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (arguments.length != 1) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, 1, arguments.length);
-                }
-                try {
-                    // convert args
-                    Object varArgs = toJavaNode.execute(arguments[0]);
-                    return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(toJavaNode).getNativeNull().getPtr();
-            } finally {
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER):POINTER";
-        }
-
-    }
-
     /**
      * Creates a wrapper for signature {@code meth(*args, **kwargs)}.
      */
     public static MethodWrapper createKeywords(Object method) {
         return new MethKeywords(method);
     }
-
-    /**
-     * Creates a wrapper for signature {@code meth(*args)}.
-     */
-    public static MethodWrapper createVarargs(Object method) {
-        return new MethVarargs(method);
-    }
-
 }
