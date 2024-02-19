@@ -39,8 +39,7 @@
 
 import array
 import sys
-import _io
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, IS_MANAGED_LAUNCHER
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, IS_MANAGED_LAUNCHER
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -84,9 +83,9 @@ class TestPyObject(CPyExtTestCase):
         lambda: ([], 12, sys.modules),
         resulttype = "PyTypeObject*"
     )
-        
+
     # Below are the PyObject_* identifiers that we know are used in numpy
-    
+
     def is_buffer(x):
         __breakpoint__()
         if (isinstance(x, bytes) or isinstance(x, bytearray) or isinstance(x, array.array)):
@@ -122,14 +121,14 @@ class TestPyObject(CPyExtTestCase):
     )
 
     __PyObject_Call_ARGS = (
-            (len, ((1, 2, 3),), {}),
-            (sum, ((0, 1, 2),), {}),
-            (format, (object(),), {"format_spec": ""}),
-            (sum, ("hello, world",), {}),
-            (kw_fun, (123,), {"c": 456, "b": 789}),
-            (kwonly_fun, tuple(), {"x": 456, "y": 789}),
-            (sum, ("hello, world",), None),
-            (kwonly_fun, tuple(), None),
+        (len, ((1, 2, 3),), {}),
+        (sum, ((0, 1, 2),), {}),
+        (format, (object(),), {"format_spec": ""}),
+        (sum, ("hello, world",), {}),
+        (kw_fun, (123,), {"c": 456, "b": 789}),
+        (kwonly_fun, tuple(), {"x": 456, "y": 789}),
+        (sum, ("hello, world",), None),
+        (kwonly_fun, tuple(), None),
     )
 
     test_PyObject_Call = CPyExtFunction(
@@ -335,24 +334,24 @@ class TestPyObject(CPyExtTestCase):
         lambda: ([], {}, 0, 123, b"ello")
     )
 
-    richcompare_args = lambda: (([], [], 0),  
-                 ([], [], 1),
-                 ([], [], 2),
-                 ([], [], 3),
-                 ([], [], 4),
-                 ([], [], 5),
-                 (12, 24, 0),
-                 (12, 24, 1),
-                 (12, 24, 2),
-                 (12, 24, 3),
-                 (12, 24, 4),
-                 (12, 24, 5),
-                 ("aa", "ba", 0),
-                 ("aa", "ba", 1),
-                 ("aa", "ba", 2),
-                 ("aa", "ba", 3),
-                 ("aa", "ba", 4),
-                 ("aa", "ba", 5))
+    richcompare_args = lambda: (([], [], 0),
+                                ([], [], 1),
+                                ([], [], 2),
+                                ([], [], 3),
+                                ([], [], 4),
+                                ([], [], 5),
+                                (12, 24, 0),
+                                (12, 24, 1),
+                                (12, 24, 2),
+                                (12, 24, 3),
+                                (12, 24, 4),
+                                (12, 24, 5),
+                                ("aa", "ba", 0),
+                                ("aa", "ba", 1),
+                                ("aa", "ba", 2),
+                                ("aa", "ba", 3),
+                                ("aa", "ba", 4),
+                                ("aa", "ba", 5))
 
     def richcompare(args):
         return eval("%r %s %r" % (args[0], ["<", "<=", "==", "!=", ">", ">="][args[2]], args[1]))
@@ -387,10 +386,10 @@ class TestPyObject(CPyExtTestCase):
             return item
 
     __PyObject_GetAttrString_ARGS = (
-            (MyObject(), "foo"),
-            ([], "__len__"),
-            (TypeWithGetattr(), "foo"),
-        )
+        (MyObject(), "foo"),
+        ([], "__len__"),
+        (TypeWithGetattr(), "foo"),
+    )
     test_PyObject_GetAttrString = CPyExtFunction(
         lambda args: getattr(*args),
         lambda: TestPyObject.__PyObject_GetAttrString_ARGS,
@@ -424,7 +423,7 @@ class TestPyObject(CPyExtTestCase):
         argspec="OO",
         resultspec="i",
     )
-    
+
     test_PyObject_HasAttrString = CPyExtFunction(
         lambda args: 1 if hasattr(*args) else 0,
         lambda: (
@@ -436,10 +435,10 @@ class TestPyObject(CPyExtTestCase):
         argspec="Os",
         resultspec="i",
     )
-    
+
     def _ref_hash_not_implemented(args):
         raise TypeError
-    
+
     test_PyObject_HashNotImplemented = CPyExtFunction(
         _ref_hash_not_implemented,
         lambda: (
@@ -451,10 +450,10 @@ class TestPyObject(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
     __PyObject_GetAttr_ARGS = (
-            (MyObject(), "foo"),
-            ([], "__len__"),
-            (TypeWithGetattr(), "foo"),
-        )
+        (MyObject(), "foo"),
+        ([], "__len__"),
+        (TypeWithGetattr(), "foo"),
+    )
     test_PyObject_GetAttr = CPyExtFunction(
         lambda args: getattr(*args),
         lambda: TestPyObject.__PyObject_GetAttr_ARGS,
@@ -494,14 +493,12 @@ class TestPyObject(CPyExtTestCase):
         cmpfunc=lambda x, y: type(x) == staticmethod
     )
 
-    if sys.implementation.name != "graalpy" or __graalpython__.get_platform_id() != 'managed':
-        # TODO: fa GR-51580
-        test_method_def_memcpy = CPyExtFunction(
-            lambda args: args[0].__name__,
-            lambda: (
-                (bin,),
-            ),
-            code="""
+    test_method_def_memcpy = CPyExtFunction(
+        lambda args: args[0].__name__,
+        lambda: (
+            (bin,),
+        ),
+        code="""
             #include <string.h>
     
             // CPython and other don't have this function; so define it
@@ -523,9 +520,193 @@ class TestPyObject(CPyExtTestCase):
                 return NULL;
             }
             """,
-            resultspec="O",
-            argspec="O",
-            arguments=["PyObject* func"],
-            callfunction="wrap_PyCFunction_GetMethodDef",
-            cmpfunc=unhandled_error_compare
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* func"],
+        callfunction="wrap_PyCFunction_GetMethodDef",
+        cmpfunc=unhandled_error_compare
+    )
+    # create function from PyMethodDef
+    # test PyMethodDef is same
+    # test calling m_meth
+
+class TestPyCFunction:
+    def test_PyMethodDef(self):
+        TestPyMethodDef = CPyExtType(
+            "TestPyMethodDef",
+            """
+            #include <assert.h>
+
+            // CPython and other don't have this function; so define it
+            #ifndef GRAALVM_PYTHON
+            #define _PyCFunction_GetMethodDef(OBJ) (((PyCFunctionObject*) (OBJ))->m_ml)
+            #endif
+
+            static PyObject *native_meth_noargs(PyObject *self, PyObject *dummy) {
+                return PyLong_FromLong(789);
+            }
+
+            static PyObject *native_meth_o(PyObject *self, PyObject *arg) {
+                PyObject *one = PyLong_FromLong(1);
+                PyObject *result = PyNumber_Add(arg, one);
+                Py_DECREF(one);
+                return result;
+            }
+
+            static PyObject *native_meth_varargs(PyObject *self, PyObject *args) {
+                Py_INCREF(args);
+                return args;
+            }
+
+            static PyObject *native_meth_keywords(PyObject *self, PyObject *args, PyObject *kwargs) {
+                if (kwargs) {
+                    return PyTuple_Pack(2, args, kwargs);
+                }
+                return PyTuple_Pack(2, args, Py_None);
+            }
+
+            static PyObject *get_name(PyObject *self, PyObject *arg) {
+                if (!PyCFunction_Check(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
+                    return NULL;
+                }
+                PyMethodDef *def = _PyCFunction_GetMethodDef(arg);
+                return PyUnicode_FromString(def->ml_name);
+            }
+
+            static PyObject *get_flags(PyObject *self, PyObject *arg) {
+                if (!PyCFunction_Check(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
+                    return NULL;
+                }
+                PyMethodDef *def = _PyCFunction_GetMethodDef(arg);
+                return PyLong_FromLong(def->ml_flags);
+            }
+
+            static PyObject *call_meth(PyObject *self, PyObject *args) {
+                PyObject *callable, *callable_args, *callable_kwargs = NULL;
+                if (!PyArg_ParseTuple(args, "OO|O:call_meth",
+                                         &callable, &callable_args, &callable_kwargs)) {
+                    PyErr_SetString(PyExc_ValueError, "required args: <callable>, <args_tuple>");
+                    return NULL;
+                }
+                if (!PyCFunction_Check(callable)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
+                    return NULL;
+                }
+                PyMethodDef *def = _PyCFunction_GetMethodDef(callable);
+                // returns a borrowed ref
+                PyObject *callable_self = PyCFunction_GetSelf(callable);
+                if (def->ml_flags == METH_NOARGS) {
+                    return def->ml_meth(callable_self, NULL);
+                } else if (def->ml_flags == METH_O) {
+                    return def->ml_meth(callable_self, PyTuple_GetItem(callable_args, 0));;
+                } else if (def->ml_flags == METH_VARARGS) {
+                    return def->ml_meth(callable_self, callable_args);
+                } else if (def->ml_flags == METH_FASTCALL) {
+                    return ((_PyCFunctionFast) def->ml_meth)(callable_self, PySequence_Fast_ITEMS(callable_args), PyTuple_Size(callable_args));
+                } else if (def->ml_flags == (METH_VARARGS | METH_KEYWORDS)) {
+                    return ((PyCFunctionWithKeywords) def->ml_meth)(callable_self, callable_args, callable_kwargs);
+                } else if (def->ml_flags == (METH_FASTCALL | METH_KEYWORDS)) {
+                    Py_ssize_t nargs =  PyTuple_Size(callable_args);
+                    if (nargs < 0) {
+                        return NULL;
+                    }
+                    Py_ssize_t nkw =  callable_kwargs != NULL ? PyDict_Size(callable_kwargs) : 0;
+                    if (nkw < 0) {
+                        return NULL;
+                    }
+                    PyObject **args_with_kw = (PyObject **) PyMem_Calloc(nargs + nkw, sizeof(PyObject *));
+                    if (args_with_kw == NULL) {
+                        return NULL;
+                    }
+                    for (Py_ssize_t i = 0; i < nargs; i++) {
+                        // borrowed is fine in this case
+                        args_with_kw[i] = PyTuple_GET_ITEM(callable_args, i);
+                    }
+
+                    PyObject *kwnames = NULL;
+                    if (nkw) {
+                        PyObject *keys = PyDict_Keys(callable_kwargs);
+                        if (keys == NULL) {
+                            PyMem_Free(args_with_kw);
+                            return NULL;
+                        }
+                        kwnames = PySequence_Tuple(keys);
+                        if (kwnames == NULL) {
+                            Py_DECREF(keys);
+                            PyMem_Free(args_with_kw);
+                            return NULL;
+                        }
+                        assert(nkw == PyTuple_Size(kwnames));
+                        for (Py_ssize_t i = 0; i < nkw; i++) {
+                            args_with_kw[nargs + i] = PyDict_GetItemWithError(callable_kwargs, PyTuple_GET_ITEM(kwnames, i));
+                        }
+                    }
+                    PyObject *result = ((_PyCFunctionFastWithKeywords) def->ml_meth)(callable_self, args_with_kw, nargs, kwnames);
+                    PyMem_Free(args_with_kw);
+                    Py_XDECREF(kwnames);
+                    return result;
+                } else {
+                    PyErr_SetString(PyExc_ValueError, "<callable> has unsupported signature");
+                    return NULL;
+                }
+            }
+
+            static PyObject *get_doc(PyObject *self, PyObject *arg) {
+                if (!PyCFunction_Check(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
+                    return NULL;
+                }
+                PyMethodDef *def = _PyCFunction_GetMethodDef(arg);
+                return PyUnicode_FromString(def->ml_doc);
+            }
+            """,
+            tp_methods='''
+            {"native_meth_noargs", (PyCFunction)native_meth_noargs, METH_NOARGS, "doc noargs"},
+            {"native_meth_o", (PyCFunction)native_meth_o, METH_O, "doc o"},
+            {"native_meth_varargs", (PyCFunction)native_meth_varargs, METH_VARARGS, "doc varargs"},
+            {"native_meth_keywords", (PyCFunction)native_meth_keywords, METH_VARARGS | METH_KEYWORDS, "doc keywords"},
+            {"get_name", (PyCFunction)get_name, METH_O, ""},
+            {"get_flags", (PyCFunction)get_flags, METH_O, ""},
+            {"call_meth", (PyCFunction)call_meth, METH_VARARGS, ""},
+            {"get_doc", (PyCFunction)get_doc, METH_O, ""}
+            ''',
+            post_ready_code='''
+            PyModule_AddIntMacro(m, METH_NOARGS);
+            PyModule_AddIntMacro(m, METH_O);
+            PyModule_AddIntMacro(m, METH_VARARGS);
+            PyModule_AddIntMacro(m, METH_KEYWORDS);
+            '''
         )
+        m = __import__(TestPyMethodDef.__module__)
+        tester = TestPyMethodDef()
+        assert tester.get_name(tester.native_meth_noargs) == "native_meth_noargs"
+        assert tester.get_flags(tester.native_meth_noargs) == m.METH_NOARGS
+        assert tester.get_doc(tester.native_meth_noargs) == "doc noargs"
+        assert tester.call_meth(tester.native_meth_noargs, tuple()) == 789
+        assert tester.get_name(tester.native_meth_o) == "native_meth_o"
+        assert tester.get_flags(tester.native_meth_o) == m.METH_O
+        assert tester.get_doc(tester.native_meth_o) == "doc o"
+        assert tester.call_meth(tester.native_meth_o, (123,)) == 124
+        assert tester.get_name(tester.native_meth_varargs) == "native_meth_varargs"
+        assert tester.get_flags(tester.native_meth_varargs) == m.METH_VARARGS
+        assert tester.get_doc(tester.native_meth_varargs) == "doc varargs"
+        assert tester.call_meth(tester.native_meth_varargs, (1, 2, "hello", "world")) == (1, 2, "hello", "world")
+        assert tester.get_name(tester.native_meth_keywords) == "native_meth_keywords"
+        assert tester.get_flags(tester.native_meth_keywords) == m.METH_VARARGS | m.METH_KEYWORDS
+        assert tester.get_doc(tester.native_meth_keywords) == "doc keywords"
+        assert tester.call_meth(tester.native_meth_keywords, (1, 2), {"hello": "world"}) == ((1, 2), {"hello": "world"})
+
+        # built-in functions
+
+        # METH_NOARGS
+        assert tester.call_meth(globals, None) is not None
+        # METH_O
+        assert tester.get_name(bin) == "bin"
+        assert tester.get_flags(bin) == m.METH_O
+        assert tester.call_meth(bin, (123, )) == "0b1111011"
+        # METH_VARARGS or METH_FASTCALL
+        assert tester.call_meth(divmod, (123, 5)) == (24, 3)
+        # METH_KEYWORDS
+        # TODO
