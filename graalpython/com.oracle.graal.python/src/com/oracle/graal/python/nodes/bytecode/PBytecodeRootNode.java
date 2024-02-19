@@ -3120,8 +3120,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             // https://github.com/python/cpython/issues/104232
-            Object realResult = result == PNone.NONE ? traceFn : result;
-            pyFrame.setLocalTraceFun(realResult);
+            if (useLocalFn) {
+                Object realResult = result == PNone.NONE ? traceFn : result;
+                pyFrame.setLocalTraceFun(realResult);
+            } else if (result != PNone.NONE) {
+                pyFrame.setLocalTraceFun(result);
+            } else {
+                pyFrame.setLocalTraceFun(null);
+            }
         } catch (Throwable e) {
             threadState.setTraceFun(null, PythonLanguage.get(this));
             throw e;

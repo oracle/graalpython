@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -153,14 +155,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile isCurrentFrameProfile,
                         @Cached MaterializeFrameNode materializeNode) {
-            // Special case because this builtin can be called without going through an invoke node:
-            // we need to sync the location of the frame if and only if 'self' represents the
-            // current frame. If 'self' represents another frame on the stack, the location is
-            // already set
-            if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
-                assert pyFrame == self;
-            }
+            LinenoNode.syncLocationIfNeeded(frame, self, this, inliningTarget, isCurrentFrameProfile, materializeNode);
             return self.getLine();
         }
 
@@ -170,40 +165,45 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
-    public abstract static class LinenoNode extends PythonBuiltinNode {
-        public abstract Object execute(VirtualFrame frame, PFrame self, Object newLineno);
+    public abstract static class LinenoNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object delete(VirtualFrame frame, PFrame self, DescriptorDeleteMarker ignored,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Cached.Exclusive PRaiseNode.Lazy raise) {
+            raise.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
+            return PNone.NONE;
+        }
 
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Bind("this") Node inliningTarget,
-                        @Cached.Shared("isCurrentFrame") @Cached InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode) {
-            syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
-            return self.getLine();
+                        @Cached GetLinenoNode getLinenoNode) {
+            return getLinenoNode.executeInt(frame, self);
         }
 
-        private void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
+        static void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node location, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
             // already set
             if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
+                PFrame pyFrame = materializeNode.execute(frame, location, false, false);
                 assert pyFrame == self;
             }
         }
 
-        @Specialization(guards = "!isNoValue(newLineno)")
+        @SuppressWarnings("truffle-static-method") // this is used for location here
+        @Specialization(guards = {"!isNoValue(newLineno)", "!isDeleteMarker(newLineno)"})
         PNone set(VirtualFrame frame, PFrame self, Object newLineno,
                         @Bind("this") Node inliningTarget,
-                        @Cached.Shared("isCurrentFrame") @Cached InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached.Shared("materialize") @Cached MaterializeFrameNode materializeNode,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached InlinedConditionProfile isCurrentFrameProfile,
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached @Cached.Exclusive PRaiseNode.Lazy raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
-            syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
+            syncLocationIfNeeded(frame, self, this, inliningTarget, isCurrentFrameProfile, materializeNode);
             if (self.isTraceArgument()) {
                 if (isLong.execute(inliningTarget, newLineno)) {
                     try {
