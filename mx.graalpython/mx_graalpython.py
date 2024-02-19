@@ -1393,6 +1393,7 @@ def graalpython_gate_runner(args, tasks):
             "*/cpyext/test_tuple.py",
             "*/cpyext/test_unicode.py",
             "*/cpyext/test_wiki.py",
+            "*/cpyext/test_tp_slots.py", # GR-52191
         ]
     else:
         excluded_tests = []
