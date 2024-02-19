@@ -799,6 +799,11 @@ Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
+// alias, currently used in PyO3
+Py_ssize_t _Py_REFCNT(PyObject *obj) {
+    return PyTruffle_REFCNT(obj);
+}
+
 void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
 #ifndef GRAALVM_PYTHON_LLVM_MANAGED
     PyObject *dest;
@@ -843,6 +848,11 @@ PyTypeObject* PyTruffle_TYPE(PyObject *a) {
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
+// alias, currently used in PyO3
+PyTypeObject* _Py_TYPE(PyObject *obj) {
+    return PyTruffle_TYPE(obj);
+}
+
 Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
     PyVarObject* a = (PyVarObject*)ob;
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
@@ -876,6 +886,11 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
     }
 	return res;
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+}
+
+// alias, currently used in PyO3
+Py_ssize_t _Py_SIZE(PyObject *obj) {
+    return PyTruffle_SIZE(obj);
 }
 
 void PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b) {
