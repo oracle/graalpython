@@ -1664,16 +1664,20 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         public Void visit(ExprTy.Dict node) {
             beginNode(node);
 
-            b.beginMakeDict();
-            for (int i = 0; i < node.keys.length; i++) {
-                if (node.keys[i] == null) {
-                    b.emitLoadConstant(PNone.NO_VALUE);
-                } else {
-                    node.keys[i].accept(this);
+            if (len(node.keys) == 0) {
+                b.emitMakeEmptyDict();
+            } else {
+                b.beginMakeDict();
+                for (int i = 0; i < node.keys.length; i++) {
+                    if (node.keys[i] == null) {
+                        b.emitLoadConstant(PNone.NO_VALUE);
+                    } else {
+                        node.keys[i].accept(this);
+                    }
+                    node.values[i].accept(this);
                 }
-                node.values[i].accept(this);
+                b.endMakeDict();
             }
-            b.endMakeDict();
 
             endNode(node);
             return null;
@@ -1940,8 +1944,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  *   MakeVariadic(a, b),
                  *   UnpackStarred(c),
                  *   MakeVariadic(d, e),
-                 *   MakeVariadic(f),
-                 *   UnpackStarred(g)
+                 *   UnpackStarred(f),
+                 *   MakeVariadic(g)
                  * )
                  * @formatter:on
                  */
@@ -1993,9 +1997,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         public Void visit(ExprTy.Set node) {
             beginNode(node);
 
-            b.beginMakeSet();
-            emitUnstar(node.elements);
-            b.endMakeSet();
+            if (len(node.elements) == 0) {
+                b.emitMakeEmptySet();
+            } else {
+                b.beginMakeSet();
+                emitUnstar(node.elements);
+                b.endMakeSet();
+            }
 
             endNode(node);
             return null;
@@ -3115,7 +3123,18 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endMakeVariadic();
             }
 
-            if (args == null || len(args.kwDefaults) == 0) {
+            boolean hasKeywords = false;
+            if (args != null && len(args.kwDefaults) != 0) {
+                // We only emit keywords with default values. Check if any exist.
+                for (int i = 0; i < args.kwDefaults.length; i++) {
+                    if (args.kwDefaults[i] != null) {
+                        hasKeywords = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasKeywords) {
                 b.emitLoadConstant(PKeyword.EMPTY_KEYWORDS);
             } else {
                 ArgTy[] kwOnlyArgs = args.kwOnlyArgs;
@@ -3592,12 +3611,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             emitPatternNotImplemented("OR");
         }
 
-        private static int lengthOrZero(Object[] p) {
-            return p == null ? 0 : p.length;
-        }
-
         private void patternHelperSequenceUnpack(PatternTy[] patterns, PatternContext pc) {
-            int n = lengthOrZero(patterns);
+            int n = len(patterns);
 
             b.beginBlock();
             // We need to remember the unpacked array, since subject will be overwritten in
@@ -3621,7 +3636,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         }
 
         private void patternUnpackHelper(PatternTy[] patterns, PatternContext pc) {
-            int n = lengthOrZero(patterns);
+            int n = len(patterns);
 
             boolean seenStar = false;
             for (int i = 0; i < n; i++) {
@@ -3659,7 +3674,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
          * etc.
          */
         private void patternHelperSequenceSubscr(PatternTy[] patterns, int star, PatternContext pc) {
-            int n = lengthOrZero(patterns);
+            int n = len(patterns);
 
             b.beginBlock();
             // We need to remember the sequence, since subject will be overwritten in recursive
@@ -3707,7 +3722,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         }
 
         private void doVisitPattern(PatternTy.MatchSequence node, PatternContext pc) {
-            int size = lengthOrZero(node.patterns);
+            int size = len(node.patterns);
             int star = -1;
             boolean onlyWildcard = true;
             boolean starWildcard = false;
