@@ -127,7 +127,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenAttrDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
@@ -693,8 +693,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(getLanguage()), get, set, name, type, set != null));
     }
 
-    public final HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenAttr key, Object type) {
-        return trace(new HiddenKeyDescriptor(getLanguage(), key, type));
+    public final HiddenAttrDescriptor createHiddenAttrDescriptor(HiddenAttr key, Object type) {
+        return trace(new HiddenAttrDescriptor(getLanguage(), key, type));
     }
 
     public final PDecoratedMethod createClassmethod(Object cls) {

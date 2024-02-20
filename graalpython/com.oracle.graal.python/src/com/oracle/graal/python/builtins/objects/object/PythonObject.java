@@ -46,7 +46,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -121,7 +120,7 @@ public class PythonObject extends PythonAbstractObject {
     @TruffleBoundary
     public void setAttribute(Object nameObj, Object value) {
         Object name = assertNoJavaString(nameObj);
-        assert name instanceof TruffleString || name instanceof HiddenKey : name.getClass().getSimpleName();
+        assert name instanceof TruffleString : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
         DynamicObjectLibrary.getUncached().put(getStorage(), name, assertNoJavaString(value));
     }

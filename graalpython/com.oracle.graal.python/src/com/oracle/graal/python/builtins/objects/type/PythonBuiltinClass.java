@@ -53,7 +53,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
 
@@ -74,7 +73,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenKey || !PythonContext.get(null).isCoreInitialized()) {
+        if (!PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
             throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(name), this);

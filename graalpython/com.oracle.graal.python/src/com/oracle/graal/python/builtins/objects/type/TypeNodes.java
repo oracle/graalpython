@@ -148,7 +148,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenAttrDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -2189,7 +2189,7 @@ public abstract class TypeNodes {
                             throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                         }
                         HiddenAttr hiddenSlotAttr = HiddenAttr.createTypeAttrForSlot(toJavaStringNode.execute(mangledName));
-                        HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotAttr, pythonClass);
+                        HiddenAttrDescriptor slotDesc = factory.createHiddenAttrDescriptor(hiddenSlotAttr, pythonClass);
                         pythonClass.setAttribute(mangledName, slotDesc);
                     }
                 }

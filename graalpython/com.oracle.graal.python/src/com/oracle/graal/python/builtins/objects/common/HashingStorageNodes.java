@@ -86,7 +86,6 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -174,10 +173,6 @@ public class HashingStorageNodes {
             // Shortcut for frequent usage with TruffleString. We do not need a frame in such case,
             // because the string's __hash__ does not need it. Some fast-paths avoid even invoking
             // __hash__ for string keys
-            return execute(null, inliningTarget, self, key);
-        }
-
-        public final Object execute(Node inliningTarget, HashingStorage self, HiddenKey key) {
             return execute(null, inliningTarget, self, key);
         }
 

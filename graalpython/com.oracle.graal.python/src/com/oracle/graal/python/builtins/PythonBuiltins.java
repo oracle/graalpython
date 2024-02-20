@@ -130,7 +130,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonBuiltins {
@@ -267,15 +266,11 @@ public abstract class PythonBuiltins {
     }
 
     private void addBuiltinConstantInternal(Object name, Object value) {
-        assert name instanceof TruffleString || name instanceof HiddenKey || name instanceof HiddenAttr;
+        assert name instanceof TruffleString || name instanceof HiddenAttr;
         builtinConstants.put(name, ensureNoJavaString(value));
     }
 
     protected final void addBuiltinConstant(HiddenAttr name, Object value) {
-        addBuiltinConstantInternal(name, value);
-    }
-
-    protected final void addBuiltinConstant(HiddenKey name, Object value) {
         addBuiltinConstantInternal(name, value);
     }
 
@@ -298,7 +293,7 @@ public abstract class PythonBuiltins {
             if (constant instanceof HiddenAttr attr) {
                 HiddenAttr.WriteNode.executeUncached(obj, attr, value);
             } else {
-                assert constant instanceof TruffleString || constant instanceof HiddenKey;
+                assert constant instanceof TruffleString;
                 obj.setAttribute(constant, value);
             }
         }

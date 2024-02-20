@@ -105,7 +105,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor self,
+        static TruffleString doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getAttr().getName());
@@ -127,7 +127,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doHiddenKeyDescriptor(HiddenKeyDescriptor self,
+        static TruffleString doHiddenAttrDescriptor(HiddenAttrDescriptor self,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(self.getAttr().getName(), TS_ENCODING);
         }
@@ -174,7 +174,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, PythonAbstractObject obj,
+        Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached HiddenAttr.ReadNode readNode) {
             Object val = readNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
@@ -199,7 +199,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, PythonAbstractObject obj, Object value,
+        static Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeNode) {
             writeNode.execute(inliningTarget, obj, descr.getAttr(), value);
@@ -233,7 +233,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, PythonAbstractObject obj,
+        Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeNode,
                         @Cached HiddenAttr.ReadNode readNode,

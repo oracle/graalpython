@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,18 +45,18 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.HiddenAttr;
 
-public final class HiddenKeyDescriptor extends PythonBuiltinObject {
-    private final HiddenAttr key;
+public final class HiddenAttrDescriptor extends PythonBuiltinObject {
+    private final HiddenAttr attr;
     private final Object type;
 
-    public HiddenKeyDescriptor(PythonLanguage lang, HiddenAttr key, Object type) {
+    public HiddenAttrDescriptor(PythonLanguage lang, HiddenAttr attr, Object type) {
         super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
-        this.key = key;
+        this.attr = attr;
         this.type = type;
     }
 
     public HiddenAttr getAttr() {
-        return key;
+        return attr;
     }
 
     public Object getType() {

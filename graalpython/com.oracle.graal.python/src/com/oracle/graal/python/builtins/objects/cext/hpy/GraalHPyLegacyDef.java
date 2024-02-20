@@ -204,7 +204,7 @@ public abstract class GraalHPyLegacyDef {
 
         /**
          * The corresponding attribute key (mostly a {@link String} which is the name of a magic
-         * method, or a {@link com.oracle.truffle.api.object.HiddenKey} if it's not exposed to the
+         * method, or a {@link com.oracle.graal.python.nodes.HiddenAttr} if it's not exposed to the
          * user, or {@code null} if unsupported).
          */
         private final TruffleString attributeKey;
