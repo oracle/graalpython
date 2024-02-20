@@ -327,6 +327,7 @@ class ThreadPool():
         sleep = lambda x: x
         start_new_thread = lambda f, args: f(*args)
         maxcnt = 1
+        print("Running single threaded")
 
     @classmethod
     def start(self, function):

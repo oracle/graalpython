@@ -214,6 +214,8 @@ Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 #define JWRAPPER_MP_DELITEM                  43
 #define JWRAPPER_STR                         44
 #define JWRAPPER_REPR                        45
+#define JWRAPPER_DESCR_DELETE                46
+#define JWRAPPER_DELATTRO                    47
 
 
 static inline int get_method_flags_wrapper(int flags) {

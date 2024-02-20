@@ -813,6 +813,7 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
     ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_STR);
     ADD_SLOT_CONV("__getattribute__", cls->tp_getattro, -2, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__setattr__", cls->tp_setattro, -3, JWRAPPER_SETATTRO);
+    ADD_SLOT_CONV("__delattr__", cls->tp_setattro, -3, JWRAPPER_DELATTRO);
     ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);
 
     /* IMPORTANT NOTE: If the class already provides 'tp_richcompare' but this is the default
@@ -833,6 +834,7 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
     ADD_SLOT_CONV("__next__", cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
     ADD_SLOT_CONV("__get__", cls->tp_descr_get, -3, JWRAPPER_DESCR_GET);
     ADD_SLOT_CONV("__set__", cls->tp_descr_set, -3, JWRAPPER_DESCR_SET);
+    ADD_SLOT_CONV("__delete__", cls->tp_descr_set, -2, JWRAPPER_DESCR_DELETE);
     ADD_SLOT_CONV("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
     ADD_SLOT_CONV("__alloc__", cls->tp_alloc, -2, JWRAPPER_ALLOC);
     /* Note: '__new__' was added here previously but we don't do it similar to CPython.

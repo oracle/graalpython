@@ -1991,20 +1991,11 @@ public abstract class CExtNodes {
 
         private static final TruffleLogger LOGGER = CApiContext.getLogger(CreateFunctionNode.class);
 
-        public static Object executeUncached(TruffleString name, Object callable, Object wrapper, Object type, Object flags) {
+        public static Object executeUncached(TruffleString name, Object callable, int wrapper, Object type, Object flags) {
             return CreateFunctionNodeGen.getUncached().execute(null, name, callable, wrapper, type, flags);
         }
 
-        public abstract Object execute(Node inliningTarget, TruffleString name, Object callable, Object wrapper, Object type, Object flags);
-
-        @Specialization(guards = {"!isNoValue(type)", "isNoValue(wrapper)"})
-        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PythonNativeWrapper callable, @SuppressWarnings("unused") PNone wrapper,
-                        @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object flags) {
-            // This can happen if a native type inherits slots from a managed type. Therefore,
-            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
-            // case, we assume that the object is already callable.
-            return callable.getDelegate();
-        }
+        public abstract Object execute(Node inliningTarget, TruffleString name, Object callable, int wrapper, Object type, Object flags);
 
         @Specialization(guards = "!isNoValue(type)")
         @TruffleBoundary
@@ -2022,7 +2013,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isNativeWrapper(callable)"})
         @TruffleBoundary
         static Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             /*
              * This can happen if a native type inherits slots from a managed type. For example, if
              * a native type inherits 'base->tp_richcompare' and this is '__truffle_richcompare__'
@@ -2041,25 +2032,6 @@ public abstract class CExtNodes {
             PythonLanguage language = context.getLanguage();
             PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, context.factory(), doArgAndResultConversion);
             return function != null ? function : resolvedCallable;
-        }
-
-        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
-        static PBuiltinFunction doNativeCallableWithoutWrapper(TruffleString name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper, @SuppressWarnings("unused") Object flags,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-            /*
-             * This can happen if a native type inherits slots from a managed type. Therefore,
-             * something like 'base->tp_new' will be a wrapper of the managed '__new__'. In this
-             * case, we can just return the managed callable since we do also not have a wrapper
-             * that could shuffle or bind arguments.
-             */
-            PythonContext context = PythonContext.get(null);
-            PBuiltinFunction managedCallable = resolveClosurePointer(context, callable, lib);
-            if (managedCallable != null) {
-                return managedCallable;
-            }
-            PythonLanguage language = context.getLanguage();
-            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0, PExternalFunctionWrapper.DIRECT, language, context.factory(), true);
         }
 
         @TruffleBoundary
