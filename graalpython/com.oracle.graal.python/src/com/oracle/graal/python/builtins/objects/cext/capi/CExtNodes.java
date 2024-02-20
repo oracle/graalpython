@@ -953,7 +953,7 @@ public abstract class CExtNodes {
         static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
                                     @Bind("this") Node inliningTarget,
                                     @Cached GetBaseClassNode getBaseClassNode,
-                                    @Cached HiddenAttr.ReadNode readAttrNode,  // TODO: this was createForceType()
+                                    @Cached HiddenAttr.ReadNode readAttrNode,
                                     @Cached CStructAccess.ReadI64Node getTypeMemberNode,
                                     @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);

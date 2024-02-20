@@ -91,7 +91,6 @@ public final class HiddenAttr {
     public static final HiddenAttr GETBUFFER = new HiddenAttr("__getbuffer__");
     public static final HiddenAttr RELEASEBUFFER = new HiddenAttr("__releasebuffer__");
     public static final HiddenAttr DOC = new HiddenAttr(J___DOC__);
-
     public static final HiddenAttr WEAKLIST = new HiddenAttr("__weaklist__");           // _weakref
     public static final HiddenAttr WEAK_REF_QUEUE = new HiddenAttr("weakRefQueue");     // _weakref
     public static final HiddenAttr ENCODER_OBJECT = new HiddenAttr("encoder_object");   // cjkcodecs
@@ -131,8 +130,9 @@ public final class HiddenAttr {
         key = new HiddenKey(keyName);
     }
 
-    public HiddenKey getKeyTodoRemoveThis() {
-        return key;
+    // temporary, will be removed when we have no DynamicObjects and Shapes
+    public static HiddenKey getClassHiddenKey() {
+        return CLASS.key;
     }
 
     public String getName() {

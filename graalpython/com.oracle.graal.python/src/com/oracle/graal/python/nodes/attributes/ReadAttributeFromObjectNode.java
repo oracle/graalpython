@@ -41,8 +41,6 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -67,7 +65,6 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -79,7 +76,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -142,21 +138,15 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    // hidden keys are always on the dynamic object store
-    @Specialization
-    protected static Object readHiddenKey(PythonObject object, HiddenKey key,
-                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
-        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
-    }
-
     // any python object attribute read
-    @Specialization(guards = "!isHiddenKey(key)")
+    @Specialization
     protected static Object readObjectAttribute(PythonObject object, Object key,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
-                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
+                    @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
                     @Exclusive @Cached HashingStorageGetItem getItem) {
+        assert !isHiddenKey(key);
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
@@ -212,10 +202,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
-            if (key instanceof HiddenKey hk) {
-                transferToInterpreter();
-                throw shouldNotReachHere("Attempt to access HiddenKey " + hk + " from a native object");
-            }
+            assert !isHiddenKey(key);
             return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }
