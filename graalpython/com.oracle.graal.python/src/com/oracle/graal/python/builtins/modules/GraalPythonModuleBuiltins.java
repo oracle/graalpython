@@ -521,8 +521,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
             RootNode rootNode = CodeNodes.GetCodeRootNode.executeUncached(func.getCode());
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode r) {
-                r.setPythonInternal(true);
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (rootNode instanceof PBytecodeDSLRootNode r) {
+                    r.setPythonInternal(true);
+                }
             } else if (rootNode instanceof PBytecodeRootNode r) {
                 r.setPythonInternal(true);
             }
@@ -539,8 +541,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CodeNodes.GetCodeRootNode getRootNode) {
             RootNode rootNode = getRootNode.execute(inliningTarget, func.getCode());
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode r) {
-                r.setPythonInternal(true);
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (rootNode instanceof PBytecodeDSLRootNode r) {
+                    r.setPythonInternal(true);
+                }
             } else if (rootNode instanceof PBytecodeRootNode r) {
                 r.setPythonInternal(true);
             }

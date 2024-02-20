@@ -310,7 +310,7 @@ public final class PCode extends PythonBuiltinObject {
         /**
          * NB: This fallback case includes PBytecodeDSLRootNode. The Bytecode DSL stack does not
          * mirror a CPython stack (it's an operand stack for its own instruction set), so the frame
-         * size is our best guess.
+         * size is our best estimate.
          */
         return funcRootNode.getFrameDescriptor().getNumberOfSlots();
     }
@@ -327,14 +327,16 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static Object[] extractConstants(RootNode node) {
         RootNode rootNode = rootNodeForExtraction(node);
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-            BytecodeDSLCodeUnit co = bytecodeDSLRootNode.getCodeUnit();
-            List<Object> constants = new ArrayList<>();
-            for (int i = 0; i < co.constants.length; i++) {
-                Object constant = convertConstantToPythonSpace(rootNode, co.constants[i]);
-                constants.add(constant);
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                BytecodeDSLCodeUnit co = bytecodeDSLRootNode.getCodeUnit();
+                List<Object> constants = new ArrayList<>();
+                for (int i = 0; i < co.constants.length; i++) {
+                    Object constant = convertConstantToPythonSpace(rootNode, co.constants[i]);
+                    constants.add(constant);
+                }
+                return constants.toArray(new Object[0]);
             }
-            return constants.toArray(new Object[0]);
         } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
             BytecodeCodeUnit co = bytecodeRootNode.getCodeUnit();
             Set<Object> bytecodeConstants = new HashSet<>();
@@ -413,8 +415,10 @@ public final class PCode extends PythonBuiltinObject {
 
     private static CodeUnit getCodeUnit(RootNode node) {
         RootNode rootNode = rootNodeForExtraction(node);
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-            return bytecodeDSLRootNode.getCodeUnit();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                return bytecodeDSLRootNode.getCodeUnit();
+            }
         } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
             return bytecodeRootNode.getCodeUnit();
         }
