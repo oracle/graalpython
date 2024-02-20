@@ -152,7 +152,7 @@ public final class HiddenAttr {
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     @GenerateUncached
-    public static abstract class ReadNode extends Node {
+    public abstract static class ReadNode extends Node {
         public abstract Object execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, Object defaultValue);
 
         public final Object executeCached(PythonAbstractObject self, HiddenAttr attr, Object defaultValue) {
@@ -184,7 +184,7 @@ public final class HiddenAttr {
     @GenerateCached
     @GenerateUncached
     @ImportStatic(HiddenAttr.class)
-    public static abstract class WriteNode extends Node {
+    public abstract static class WriteNode extends Node {
         public abstract void execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, Object value);
 
         public final void executeCached(PythonAbstractObject self, HiddenAttr attr, Object value) {

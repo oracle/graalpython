@@ -903,7 +903,8 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Like {@link #lookupNativeMemberInMRO(PythonManagedClass, CFields, HiddenAttr)}, but for i64 values.
+     * Like {@link #lookupNativeMemberInMRO(PythonManagedClass, CFields, HiddenAttr)}, but for i64
+     * values.
      */
     @TruffleBoundary
     public static long lookupNativeI64MemberInMRO(Object cls, CFields nativeMemberName, Object managedMemberName) {
@@ -951,11 +952,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
-                                    @Bind("this") Node inliningTarget,
-                                    @Cached GetBaseClassNode getBaseClassNode,
-                                    @Cached HiddenAttr.ReadNode readAttrNode,
-                                    @Cached CStructAccess.ReadI64Node getTypeMemberNode,
-                                    @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetBaseClassNode getBaseClassNode,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
+                        @Cached CStructAccess.ReadI64Node getTypeMemberNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
             Object current = cls;
@@ -1194,7 +1195,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
-                                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
@@ -1210,8 +1211,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isLong(pointerObject)")
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
-                                     @CachedLibrary(limit = "3") InteropLibrary lib,
-                                     @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;
