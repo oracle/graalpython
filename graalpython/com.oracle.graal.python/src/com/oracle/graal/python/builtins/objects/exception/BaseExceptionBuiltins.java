@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___NOTES__;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_IS_NOT_A_DICT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CAUSE__;
@@ -68,12 +69,15 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -516,6 +520,35 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (state != PNone.NONE) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, STATE_IS_NOT_A_DICT);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "add_note", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class AddNoteNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object addNote(VirtualFrame frame, Object self, Object note,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectSetAttr setAttr,
+                        @Cached ListNodes.AppendNode appendNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!unicodeCheckNode.execute(inliningTarget, note)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOTE_MUST_BE_A_STR_NOT_P, note);
+            }
+            Object notes = lookupAttr.execute(frame, inliningTarget, self, T___NOTES__);
+            if (notes == PNone.NO_VALUE) {
+                notes = factory.createList();
+                setAttr.execute(frame, inliningTarget, self, T___NOTES__, notes);
+            }
+            if (notes instanceof PList notesList) {
+                appendNode.execute(notesList, note);
+            } else {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST);
             }
             return PNone.NONE;
         }

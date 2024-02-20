@@ -70,6 +70,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PySequenceCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 
+    public static boolean executeUncached(Object object) {
+        return PySequenceCheckNodeGen.getUncached().execute(null, object);
+    }
+
     @Specialization
     static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
         return true;

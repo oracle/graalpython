@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,8 +92,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateCached
 @ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
 public abstract class PyObjectLookupAttr extends Node {
-    public static Object executeUncached(Object type, Object name) {
-        return PyObjectLookupAttrNodeGen.getUncached().execute(null, null, type, name);
+    public static Object executeUncached(Object receiver, Object name) {
+        return PyObjectLookupAttrNodeGen.getUncached().execute(null, null, receiver, name);
     }
 
     public final Object executeCached(Frame frame, Object receiver, Object name) {

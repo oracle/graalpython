@@ -70,7 +70,8 @@ public abstract class BuiltinNames {
     public static final String J___DEBUG__ = "__debug__";
     public static final TruffleString T___DEBUG__ = tsLiteral(J___DEBUG__);
 
-    public static final String J___FUTURE__ = "__future__";
+    public static final String J___NOTES__ = "__notes__";
+    public static final TruffleString T___NOTES__ = tsLiteral(J___NOTES__);
 
     // sys
     public static final TruffleString T_TRACEBACKLIMIT = tsLiteral("tracebacklimit");
