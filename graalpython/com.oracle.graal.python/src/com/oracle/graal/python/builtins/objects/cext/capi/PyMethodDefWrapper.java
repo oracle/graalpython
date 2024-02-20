@@ -101,7 +101,7 @@ public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, Tru
                 return kwDefaults[i].getValue();
             }
         }
-        return PyCFunctionWrapper.createCallTargetWrapper(cApiContext, object);
+        return PyCFunctionWrapper.createFromBuiltinFunction(cApiContext, object);
     }
 
     @TruffleBoundary

@@ -141,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -302,15 +303,24 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject}, call = Ignored)
     abstract static class Py_get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static Object get(Object object) {
-            CApiContext cApiContext = getCApiContext(null);
-            if (object instanceof PBuiltinFunction builtinFunction) {
-                return PyMethodDefWrapper.create(cApiContext, builtinFunction);
-            } else if (object instanceof PBuiltinMethod builtinMethod) {
-                return PyMethodDefWrapper.create(cApiContext, builtinMethod);
+        static Object get(PythonBuiltinObject object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            PBuiltinFunction resolved;
+            if (object instanceof PBuiltinMethod builtinMethod) {
+                resolved = builtinMethod.getBuiltinFunction();
+            } else if (object instanceof PBuiltinFunction builtinFunction) {
+                resolved = builtinFunction;
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
             }
-            throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
+            Object methodDefPtr = readNode.execute(inliningTarget, resolved, METHOD_DEF_PTR, null);
+            if (methodDefPtr != null) {
+                return methodDefPtr;
+            }
+            CApiContext cApiContext = getCApiContext(inliningTarget);
+            return PyMethodDefWrapper.create(cApiContext, resolved);
         }
     }
 
@@ -589,13 +599,18 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        static Object get(PBuiltinFunction builtinFunction) {
+        static Object get(PBuiltinFunction builtinFunction,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            Object methodDefPtr = readNode.execute(inliningTarget, builtinFunction, METHOD_DEF_PTR, null);
+            if (methodDefPtr != null) {
+                return methodDefPtr;
+            }
             /*
              * Note: 'PBuiltinFunction' is the only Java class we use to represent a
              * 'method_descriptor' (CPython type 'PyMethodDescr_Type').
              */
-            return PyMethodDefWrapper.create(getCApiContext(null), builtinFunction);
+            return PyMethodDefWrapper.create(getCApiContext(inliningTarget), builtinFunction);
         }
     }
 
