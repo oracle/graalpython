@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeI64MemberInMRO;
+import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeMemberInMRO;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_alloc;
@@ -54,8 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeI64MemberInMRONodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeMemberInMRONodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -197,7 +197,7 @@ public abstract class ToNativeTypeNode {
     }
 
     private static Object lookup(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
-        Object result = LookupNativeMemberInMRONodeGen.getUncached().execute(clazz, member, hiddenName);
+        Object result = lookupNativeMemberInMRO(clazz, member, hiddenName);
         if (result == PNone.NO_VALUE) {
             return PythonContext.get(null).getNativeNull().getPtr();
         }
@@ -205,7 +205,7 @@ public abstract class ToNativeTypeNode {
     }
 
     private static long lookupSize(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
-        return LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, member, hiddenName);
+        return lookupNativeI64MemberInMRO(clazz, member, hiddenName);
     }
 
     private static Object lookup(PythonManagedClass obj, SlotMethodDef slot) {
@@ -269,7 +269,7 @@ public abstract class ToNativeTypeNode {
         if (clazz instanceof PythonBuiltinClass builtin) {
             weaklistoffset = builtin.getType().getWeaklistoffset();
         } else {
-            weaklistoffset = LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
+            weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
         Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
         Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue);

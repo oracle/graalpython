@@ -63,7 +63,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -345,6 +344,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
     /**
      * Materializes a primitive value of a primitive native wrapper to ensure pointer equality.
      */
@@ -856,9 +856,9 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Use this node to lookup a native type member like {@code tp_alloc}.<br>
+     * Use this method to lookup a native type member like {@code tp_alloc}.<br>
      * <p>
-     * This node basically implements the native member inheritance that is done by
+     * This method basically implements the native member inheritance that is done by
      * {@code inherit_special} or other code in {@code PyType_Ready}. In addition, we do a special
      * case for special slots assignment that happens within {@Code type_new_alloc} for heap types.
      * </p>
@@ -869,131 +869,75 @@ public abstract class CExtNodes {
      * case, we need to access the native member.
      * </p>
      */
-    // TODO uncached only -> static method
-    @GenerateUncached
-    @GenerateInline(false) // footprint reduction 44 -> 27
-    public abstract static class LookupNativeMemberInMRONode extends Node {
-
-        public abstract Object execute(PythonManagedClass cls, CFields nativeMemberName, HiddenAttr managedMemberName);
-
-        static boolean isSpecialHeapSlot(PythonManagedClass cls, HiddenAttr key) {
-            return cls instanceof PythonClass && (key == HiddenAttr.ALLOC || key == HiddenAttr.DEL);
-            // mq: not supported yet
-            // key == TypeBuiltins.TYPE_DEALLOC (subtype_dealloc)
-            // key == TypeBuiltins.TYPE_TRAVERSE (subtype_traverse)
-            // key == TypeBuiltins.TYPE_CLEAR (subtype_clear)
+    @TruffleBoundary
+    public static Object lookupNativeMemberInMRO(PythonManagedClass cls, @SuppressWarnings("unused") CFields nativeMemberName, HiddenAttr managedMemberName) {
+        if (cls instanceof PythonClass && (managedMemberName == HiddenAttr.ALLOC || managedMemberName == HiddenAttr.DEL)) {
+            Object func = HiddenAttr.ReadNode.executeUncached(cls, managedMemberName, null);
+            if (func != null) {
+                return func;
+            }
+            PythonObject object = PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject);
+            // We need to point to PyType_GenericAlloc or PyObject_GC_Del
+            func = HiddenAttr.ReadNode.executeUncached(object, managedMemberName, NO_VALUE);
+            HiddenAttr.WriteNode.executeUncached(cls, managedMemberName, func);
+            return func;
         }
-
-        @Specialization(guards = "!isSpecialHeapSlot(cls, managedMemberName)")
-        static Object doSingleContext(PythonManagedClass cls, CFields nativeMemberName, HiddenAttr managedMemberName,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetMroStorageNode getMroNode,
-                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Shared @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached CStructAccess.ReadPointerNode getTypeMemberNode,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-
-            MroSequenceStorage mroStorage = getMroNode.execute(inliningTarget, cls);
-            int n = mroStorage.length();
-
-            for (int i = 0; i < n; i++) {
-                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(inliningTarget, mroStorage, i);
-                if (PGuards.isManagedClass(mroCls)) {
-                    Object result = readAttrNode.execute(inliningTarget, (PythonObject) mroCls, managedMemberName, null);
-                    if (result != null) {
-                        return result;
-                    }
-                } else {
-                    assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
-                    Object result = getTypeMemberNode.readFromObj((PythonNativeClass) mroCls, nativeMemberName);
-                    if (!PGuards.isNullOrZero(result, lib)) {
-                        return result;
-                    }
+        MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(cls);
+        int n = mroStorage.length();
+        for (int i = 0; i < n; i++) {
+            PythonAbstractClass mroCls = (PythonAbstractClass) SequenceStorageNodes.GetItemDynamicNode.executeUncached(mroStorage, i);
+            if (PGuards.isManagedClass(mroCls)) {
+                Object result = HiddenAttr.ReadNode.executeUncached((PythonObject) mroCls, managedMemberName, null);
+                if (result != null) {
+                    return result;
+                }
+            } else {
+                assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
+                Object result = CStructAccess.ReadPointerNode.getUncached().readFromObj((PythonNativeClass) mroCls, nativeMemberName);
+                if (!PGuards.isNullOrZero(result, InteropLibrary.getUncached())) {
+                    return result;
                 }
             }
-
-            return readAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName, NO_VALUE);
         }
-
-        @TruffleBoundary
-        private static Object createSpecialHeapSlot(PythonManagedClass cls, HiddenAttr managedMemberName, Node raisingNode) {
-            Object func;
-            if (managedMemberName == HiddenAttr.ALLOC || managedMemberName == HiddenAttr.DEL) {
-                PythonObject object = PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject);
-                // We need to point to PyType_GenericAlloc or PyObject_GC_Del
-                func = HiddenAttr.ReadNode.executeUncached(object, managedMemberName, NO_VALUE);
-                HiddenAttr.WriteNode.executeUncached(cls, managedMemberName, func);
-            } else {
-                // managedMemberName == TypeBuiltins.TYPE_DEALLOC
-                // managedMemberName == TypeBuiltins.TYPE_CLEAR
-                // managedMemberName == TypeBuiltins.TYPE_TRAVERSE
-                throw PRaiseNode.raiseUncached(raisingNode, SystemError, tsLiteral("not supported yet!"));
-            }
-            return func;
-        }
-
-        @Specialization(guards = "isSpecialHeapSlot(cls, managedMemberName)")
-        static Object doToAllocOrDelManaged(PythonManagedClass cls, @SuppressWarnings("unused") CFields nativeMemberName, HiddenAttr managedMemberName,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached HiddenAttr.ReadNode readAttrNode) {
-            Object func = readAttrNode.execute(inliningTarget, cls, managedMemberName, null);
-            if (func == null) {
-                func = createSpecialHeapSlot(cls, managedMemberName, inliningTarget);
-            }
-            return func;
-        }
+        return HiddenAttr.ReadNode.executeUncached(PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName, NO_VALUE);
     }
 
     /**
-     * Like {@link LookupNativeMemberInMRONode}, but for i64 values.
+     * Like {@link #lookupNativeMemberInMRO(PythonManagedClass, CFields, HiddenAttr)}, but for i64 values.
      */
-    @GenerateUncached
-    @GenerateInline(false) // footprint reduction 48 -> 31
-    public abstract static class LookupNativeI64MemberInMRONode extends Node {
+    @TruffleBoundary
+    public static long lookupNativeI64MemberInMRO(Object cls, CFields nativeMemberName, Object managedMemberName) {
+        assert managedMemberName instanceof HiddenAttr || managedMemberName instanceof TruffleString;
 
-        public abstract long execute(Object cls, CFields nativeMemberName, Object managedMemberName);
+        MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(cls);
+        int n = mroStorage.length();
 
-        @Specialization
-        static long doSingleContext(Object cls, CFields nativeMemberName, Object managedMemberName,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetMroStorageNode getMroNode,
-                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
-                        @Cached CStructAccess.ReadI64Node getTypeMemberNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            assert managedMemberName instanceof HiddenAttr || managedMemberName instanceof TruffleString;
+        for (int i = 0; i < n; i++) {
+            PythonAbstractClass mroCls = (PythonAbstractClass) SequenceStorageNodes.GetItemDynamicNode.executeUncached(mroStorage, i);
 
-            MroSequenceStorage mroStorage = getMroNode.execute(inliningTarget, cls);
-            int n = mroStorage.length();
-
-            for (int i = 0; i < n; i++) {
-                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(inliningTarget, mroStorage, i);
-
-                if (PGuards.isManagedClass(mroCls)) {
-                    Object attr;
-                    if (managedMemberName instanceof HiddenAttr ha) {
-                        attr = readHiddenAttrNode.execute(inliningTarget, (PythonAbstractObject) mroCls, ha, NO_VALUE);
-                    } else {
-                        attr = readAttrNode.execute(mroCls, managedMemberName);
-                    }
-                    if (attr != NO_VALUE) {
-                        return asSizeNode.executeExact(null, inliningTarget, attr);
-                    }
+            if (PGuards.isManagedClass(mroCls)) {
+                Object attr;
+                if (managedMemberName instanceof HiddenAttr ha) {
+                    attr = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) mroCls, ha, NO_VALUE);
                 } else {
-                    assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
-                    return getTypeMemberNode.readFromObj((PythonNativeClass) mroCls, nativeMemberName);
+                    attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, managedMemberName);
                 }
+                if (attr != NO_VALUE) {
+                    return PyNumberAsSizeNode.executeExactUncached(attr);
+                }
+            } else {
+                assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
+                return CStructAccess.ReadI64Node.getUncached().readFromObj((PythonNativeClass) mroCls, nativeMemberName);
             }
-            // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
-            return nativeMemberName == CFields.PyTypeObject__tp_basicsize || nativeMemberName == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
         }
+        // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
+        return nativeMemberName == CFields.PyTypeObject__tp_basicsize || nativeMemberName == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
     }
 
     /**
      * This node is used for lookups of fields that are inherited from the dominant base instead of
      * MRO, such as {@code tp_basicsize}. For MRO lookup, use
-     * {@link LookupNativeI64MemberInMRONode}.
+     * {@link #lookupNativeI64MemberInMRO(Object, CFields, Object)}.
      */
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 44 -> 26
@@ -1007,11 +951,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached HiddenAttr.ReadNode readAttrNode,  // TODO: this was createForceType()
-                        @Cached CStructAccess.ReadI64Node getTypeMemberNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                                    @Bind("this") Node inliningTarget,
+                                    @Cached GetBaseClassNode getBaseClassNode,
+                                    @Cached HiddenAttr.ReadNode readAttrNode,  // TODO: this was createForceType()
+                                    @Cached CStructAccess.ReadI64Node getTypeMemberNode,
+                                    @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
             Object current = cls;
@@ -1250,7 +1194,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
@@ -1266,8 +1210,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isLong(pointerObject)")
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                                     @CachedLibrary(limit = "3") InteropLibrary lib,
+                                     @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;
