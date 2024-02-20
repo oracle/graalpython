@@ -221,10 +221,8 @@ def get_jdk():
     return mx.get_jdk()
 
 
-def full_python(args, **kwargs):
+def full_python(args, env=None):
     """Run python from standalone build (unless kwargs are given). Does not build GraalPython sources automatically."""
-    if kwargs:
-        return python(args, **kwargs)
 
     if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
         args.insert(0, '--python.WithJavaStacktrace=1')
@@ -258,7 +256,7 @@ def full_python(args, **kwargs):
                  "To build it: mx python-jvm\n" +
                  "Alternatively use: mx python --hosted")
 
-    mx.run([graalpy_path] + args)
+    mx.run([graalpy_path] + args, env=env)
 
 
 def handle_debug_arg(args):
@@ -1084,7 +1082,7 @@ def graalpytest(args):
     if args.python:
         return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
     else:
-        return do_run_python(cmd_args, env=env)
+        return full_python(cmd_args, env=env)
 
 
 def _list_graalpython_unittests(paths=None, exclude=None):

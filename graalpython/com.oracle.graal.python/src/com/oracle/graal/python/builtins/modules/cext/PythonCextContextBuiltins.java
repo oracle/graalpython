@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VoidNoReturn;
+import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printPythonLikeStackTrace;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -67,6 +70,18 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextContextBuiltins {
+
+    @CApiBuiltin(ret = VoidNoReturn, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Ignored)
+    abstract static class PyTrufflePrintStacktrace extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static Object stacktrace(TruffleString where, TruffleString msg) {
+            System.err.println(msg.toJavaStringUncached() + where.toJavaStringUncached());
+            printPythonLikeStackTrace();
+            return 0;
+        }
+    }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
     abstract static class PyContextVar_New extends CApiBinaryBuiltinNode {

@@ -964,11 +964,45 @@ PyAPI_FUNC(int64_t *) GraalPy_get_finalize_capi_pointer_array() {
     return reset_func_ptrs;
 }
 
-static void unimplemented(const char* name) {
-	printf("Function not implemented in GraalPy: %s\n", name);
+#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
+
+#include <stdlib.h>
+#include <string.h>
+#include <execinfo.h>
+
+static void print_c_stacktrace() {
+    size_t max_stack_size = 16;
+    void* stack = calloc(sizeof(void*), max_stack_size);
+    if (stack == NULL) {
+        return;
+    }
+
+    size_t stack_size = backtrace(stack, max_stack_size);
+    char** symbols = backtrace_symbols(stack, stack_size);
+    if (symbols == NULL) {
+        free(stack);
+        return;
+    }
+
+	for (size_t i = 0; i < stack_size; i++) {
+		printf ("%s\n", symbols[i]);
+    }
 }
 
-#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); exit(-1);
+#else
+
+static void print_c_stacktrace() {
+    // other platforms are not supported
+}
+
+#endif
+
+static void unimplemented(const char* name) {
+    printf("Native stacktrace:\n");
+    print_c_stacktrace();
+}
+
+#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyTrufflePrintStacktrace(__func__, "Function not implemented in GraalPy: "); exit(-1);
 
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.c.h"
