@@ -180,8 +180,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     protected abstract String getFlagsRepr();
 
     @Override
+    @TruffleBoundary
     public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
         Object name = builtinMethodDescriptor != null ? builtinMethodDescriptor.getName() : callTargetName;
         String ptr = pointer != 0 ? " at 0x" + Long.toHexString(pointer) : "";
         return String.format("PyCFunction(%s, %s)%s", name, getFlagsRepr(), ptr);
