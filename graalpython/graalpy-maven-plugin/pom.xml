@@ -111,5 +111,11 @@ SOFTWARE.
       <artifactId>python-embedding</artifactId>
       <version>${graalpy.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.graalvm.python</groupId>
+      <artifactId>python-launcher</artifactId>
+      <version>${graalpy.version}</version>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
 </project>
