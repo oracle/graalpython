@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
-import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -680,16 +678,6 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleSequence_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int check(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PySequenceCheckNode check) {
-            return intValue(check.execute(inliningTarget, object));
-        }
-    }
-
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     abstract static class PyTruffleSequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
@@ -879,17 +867,6 @@ public final class PythonCextAbstractBuiltins {
             checkNonNullArg(inliningTarget, obj, raiseNode);
             Object attr = getAttrNode.execute(inliningTarget, obj, T_VALUES);
             return listNode.execute(null, callNode.execute(attr));
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyTruffleMapping_Check extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int doPythonObject(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyMappingCheckNode checkNode) {
-            return intValue(checkNode.execute(inliningTarget, object));
         }
     }
 

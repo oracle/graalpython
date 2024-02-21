@@ -1687,10 +1687,6 @@ PyNumber_ToBase(PyObject *n, int base)
 int
 PySequence_Check(PyObject *s)
 {
-    // GraalPy change: upcall for managed
-    if (points_to_py_handle_space(s)) {
-        return GraalPyTruffleSequence_Check(s);
-    }
     if (PyDict_Check(s))
         return 0;
     return Py_TYPE(s)->tp_as_sequence &&
@@ -2297,10 +2293,6 @@ PySequence_Index(PyObject *s, PyObject *o)
 int
 PyMapping_Check(PyObject *o)
 {
-    // GraalPy change: upcall for managed
-    if (points_to_py_handle_space(o)) {
-        return GraalPyTruffleMapping_Check(o);
-    }
     return o && Py_TYPE(o)->tp_as_mapping &&
         Py_TYPE(o)->tp_as_mapping->mp_subscript;
 }
