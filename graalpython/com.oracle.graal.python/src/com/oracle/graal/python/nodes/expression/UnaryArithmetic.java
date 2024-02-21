@@ -176,7 +176,7 @@ public enum UnaryArithmetic {
 
         @Specialization
         public static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(value = "createCallNode(T___POS__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
+                        @Cached(value = "createCallNode(T___POS__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
@@ -215,7 +215,7 @@ public enum UnaryArithmetic {
 
         @Specialization
         public static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(value = "createCallNode(T___NEG__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
+                        @Cached(value = "createCallNode(T___NEG__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
@@ -249,7 +249,7 @@ public enum UnaryArithmetic {
 
         @Specialization
         public static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(value = "createCallNode(T___INVERT__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
+                        @Cached(value = "createCallNode(T___INVERT__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
