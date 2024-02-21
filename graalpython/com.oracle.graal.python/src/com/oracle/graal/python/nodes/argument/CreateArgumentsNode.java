@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -230,15 +230,33 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
-        public abstract Object[] execute(Node inliningTarget, PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject,
-                        Object[] defaults,
-                        PKeyword[] kwdefaults,
-                        boolean methodcall);
+        /**
+         * Creates a {@link PArguments} array from the provided arguments and metadata.
+         *
+         * @param inliningTarget The inlining target.
+         * @param callableOrName This object can either be the function/method object or just a name
+         *            ({@link TruffleString)}. It is primarily used to create error messages. It is
+         *            also used to check if the function
+         * @param userArguments The positional arguments as provided by the caller (must not be
+         *            {@code null} but may be empty).
+         * @param keywords The keyword arguments as provided by the caller (must not be {@code null}
+         *            but may be empty).
+         * @param signature The callee's signature (i.e. specifies how the callee needs to be
+         *            invoked).
+         * @param self The primary (aka. self) object.
+         * @param classObject The class object (if the invoked method is a class method).
+         * @param defaults Array of default values for positional arguments.
+         * @param kwdefaults Array of default values for keyword arguments.
+         * @param methodcall Indicates if this creates arguments for a method call. This is only
+         *            used for creating better error messages.
+         * @return A {@link PArguments} array.
+         */
+        public abstract Object[] execute(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject,
+                        Object[] defaults, PKeyword[] kwdefaults, boolean methodcall);
 
         @Specialization
-        static Object[] doIt(Node inliningTarget, PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults,
-                        PKeyword[] kwdefaults,
-                        boolean methodcall,
+        static Object[] doIt(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults,
+                        PKeyword[] kwdefaults, boolean methodcall,
                         @Cached InlinedIntValueProfile lenProfile,
                         @Cached InlinedIntValueProfile maxPosProfile,
                         @Cached InlinedIntValueProfile numKwdsProfile,
@@ -251,11 +269,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int cachedLen = lenProfile.profile(inliningTarget, userArguments.length);
             int cachedMaxPos = maxPosProfile.profile(inliningTarget, signature.getMaxNumOfPositionalArgs());
             int cachedNumKwds = numKwdsProfile.profile(inliningTarget, signature.getNumOfRequiredKeywords());
-            return createAndCheckArguments(inliningTarget, callable, userArguments, cachedLen, keywords, signature, self, classObject, defaults, kwdefaults, methodcall,
+            return createAndCheckArguments(inliningTarget, callableOrName, userArguments, cachedLen, keywords, signature, self, classObject, defaults, kwdefaults, methodcall,
                             cachedMaxPos, cachedNumKwds, applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
-        private static Object[] createAndCheckArguments(Node inliningTarget, PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self,
+        private static Object[] createAndCheckArguments(Node inliningTarget, Object callableOrName, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self,
                         Object classObject,
                         Object[] defaults, PKeyword[] kwdefaults, boolean methodcall, int co_argcount, int co_kwonlyargcount,
                         ApplyPositionalArguments applyPositional,
@@ -316,12 +334,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             // the called node takes and collect the rest in the keywords.
             if (keywords.length > 0) {
                 // the lazy node acts as a profile
-                applyKeywords(callable, signature, scope_w, keywords, applyKeywords.get(inliningTarget));
+                applyKeywords(callableOrName, signature, scope_w, keywords, applyKeywords.get(inliningTarget));
             }
 
             if (too_many_args) {
                 // the node acts as a profile
-                throw handleTooManyArguments(scope_w, callable, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall, handleTooMany.get(inliningTarget),
+                throw handleTooManyArguments(scope_w, callableOrName, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall, handleTooMany.get(inliningTarget),
                                 self instanceof PythonModule ? 1 : 0);
             }
 
@@ -329,16 +347,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             if (more_filling) {
 
                 // then, fill the normal arguments with defaults_w (if needed)
-                fillDefaults(callable, signature, scope_w, defaults, input_argcount, co_argcount, fillDefaults.get(inliningTarget));
+                fillDefaults(callableOrName, signature, scope_w, defaults, input_argcount, co_argcount, fillDefaults.get(inliningTarget));
 
                 // finally, fill kwonly arguments with w_kw_defs (if needed)
-                fillKwDefaults(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount, fillKwDefaults.get(inliningTarget));
+                fillKwDefaults(callableOrName, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount, fillKwDefaults.get(inliningTarget));
             }
 
             // Now we know that everything is fine, so check compatibility of the enclosing type.
             // If we are calling a built-in method, and it's function has an enclosing type, we
             // need to check if 'self' is a subtype of the function's enclosing type.
-            checkEnclosingTypeNode.execute(inliningTarget, signature, callable, scope_w);
+            checkEnclosingTypeNode.execute(inliningTarget, signature, callableOrName, scope_w);
 
             return scope_w;
         }
@@ -1007,6 +1025,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     protected static TruffleString getName(Object callable) {
+        if (callable instanceof TruffleString ts) {
+            return ts;
+        }
         if (callable instanceof PCode) {
             return ((PCode) callable).getName();
         }
