@@ -1612,4 +1612,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_NEST_BASE_EXCEPTIONS_IN_N = tsLiteral("Cannot nest BaseExceptions in '%N'");
     public static final TruffleString DERIVE_MUST_RETURN_AN_INSTANCE_OF_BASE_EXCEPTION_GROUP = tsLiteral("derive must return an instance of BaseExceptionGroup");
     public static final TruffleString EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES = tsLiteral("expected a function, exception type or tuple of exception types");
+    public static final TruffleString NOTE_MUST_BE_A_STR_NOT_P = tsLiteral("note must be a str, not '%p'");
+    public static final TruffleString CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST = tsLiteral("Cannot add note: __notes__ is not a list");
 }

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTION_GROUP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___NOTES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -70,9 +72,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyErrExceptionMatchesNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -194,7 +200,14 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         ExceptionNodes.SetContextNode.executeUncached(eg, context);
         Object cause = ExceptionNodes.GetCauseNode.executeUncached(orig);
         ExceptionNodes.SetCauseNode.executeUncached(eg, cause);
-        // TODO copy notes
+        Object notes = PyObjectLookupAttr.executeUncached(orig, T___NOTES__);
+        if (notes != PNone.NO_VALUE) {
+            if (PySequenceCheckNode.executeUncached(notes)) {
+                /* Make a copy so the parts have independent notes lists. */
+                PList notesCopy = ListNodes.ConstructListNode.getUncached().execute(null, notes);
+                PyObjectSetAttr.executeUncached(eg, T___NOTES__, notesCopy);
+            }
+        }
         return eg;
     }
 

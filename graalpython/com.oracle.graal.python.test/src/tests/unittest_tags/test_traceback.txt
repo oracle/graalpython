@@ -69,10 +69,14 @@
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_depth_limit
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_nested
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_width_limit
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_with_multiple_notes
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_group_with_notes
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_modulename
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_modulename_not_unicode
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_qualname
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_with_invalid_notes
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_with_multiple_notes
+*graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_exception_with_note
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_message_none
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_simple
 *graalpython.lib-python.3.test.test_traceback.PyExcReportingTests.test_syntax_error_no_lineno
