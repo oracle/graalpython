@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,3 +40,7 @@
  */
 #include "capi.h"
 
+// alias for internal function, currently used in PyO3
+void _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return PyTruffleList_SET_ITEM(a, b, c);
+}

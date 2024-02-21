@@ -35,6 +35,8 @@ function(require_var var)
     endif()
 endfunction()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(MSVC)
     message(FATAL_ERROR "C API cannot be built with MSVC")
 endif()
