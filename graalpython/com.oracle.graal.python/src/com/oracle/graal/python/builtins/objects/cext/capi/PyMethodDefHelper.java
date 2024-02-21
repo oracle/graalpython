@@ -89,9 +89,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  * @param flags The method flags effectively determining the function's signature.
  * @param doc The doc string for the function or method object.
  */
-public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, TruffleString doc) {
+public record PyMethodDefHelper(TruffleString name, Object meth, int flags, TruffleString doc) {
 
-    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefWrapper.class);
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefHelper.class);
 
     private static Object getMethFromBuiltinFunction(CApiContext cApiContext, PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
@@ -117,7 +117,7 @@ public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, Tru
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-        PyMethodDefWrapper pyMethodDef = new PyMethodDefWrapper(builtinFunction.getName(), getMethFromBuiltinFunction(cApiContext, builtinFunction), builtinFunction.getFlags(), doc);
+        PyMethodDefHelper pyMethodDef = new PyMethodDefHelper(builtinFunction.getName(), getMethFromBuiltinFunction(cApiContext, builtinFunction), builtinFunction.getFlags(), doc);
         Object result = cApiContext.getOrAllocateNativePyMethodDef(pyMethodDef);
         // store the PyMethodDef pointer to the built-in function object for fast access
         DynamicObjectLibrary dylib = DynamicObjectLibrary.getFactory().getUncached(builtinFunction);
@@ -128,8 +128,6 @@ public record PyMethodDefWrapper(TruffleString name, Object meth, int flags, Tru
     public static Object create(CApiContext cApiContext, PBuiltinMethod builtinMethod) {
         return create(cApiContext, builtinMethod.getBuiltinFunction());
     }
-
-    // TODO(fa): we probably need constructor methods for PFunction and PMethod as well
 
     /**
      * Allocates a native {@code PyMethodDef} struct and initializes it.

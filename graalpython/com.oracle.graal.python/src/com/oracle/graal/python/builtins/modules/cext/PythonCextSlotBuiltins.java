@@ -113,7 +113,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -320,7 +320,7 @@ public final class PythonCextSlotBuiltins {
                 return methodDefPtr;
             }
             CApiContext cApiContext = getCApiContext(inliningTarget);
-            return PyMethodDefWrapper.create(cApiContext, resolved);
+            return PyMethodDefHelper.create(cApiContext, resolved);
         }
     }
 
@@ -610,7 +610,7 @@ public final class PythonCextSlotBuiltins {
              * Note: 'PBuiltinFunction' is the only Java class we use to represent a
              * 'method_descriptor' (CPython type 'PyMethodDescr_Type').
              */
-            return PyMethodDefWrapper.create(getCApiContext(inliningTarget), builtinFunction);
+            return PyMethodDefHelper.create(getCApiContext(inliningTarget), builtinFunction);
         }
     }
 

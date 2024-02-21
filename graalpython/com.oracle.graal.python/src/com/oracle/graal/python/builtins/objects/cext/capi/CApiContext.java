@@ -200,7 +200,7 @@ public final class CApiContext extends CExtContext {
      * CPython, those are usually statically allocated (or at least immortal) and once hand out a
      * pointer for a {@code PyMethodDef}, we need to ensure that it stays valid until the end.
      */
-    private final HashMap<PyMethodDefWrapper, Object> methodDefinitions = new HashMap<>(4);
+    private final HashMap<PyMethodDefHelper, Object> methodDefinitions = new HashMap<>(4);
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
@@ -685,7 +685,7 @@ public final class CApiContext extends CExtContext {
         pyCFunctionWrappers.clear();
         // free all allocated PyMethodDef structures
         for (Object pyMethodDefPointer : methodDefinitions.values()) {
-            PyMethodDefWrapper.free(pyMethodDefPointer);
+            PyMethodDefHelper.free(pyMethodDefPointer);
         }
     }
 
@@ -865,8 +865,8 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object getOrAllocateNativePyMethodDef(PyMethodDefWrapper pyMethodDef) {
-        Object pyMethodDefPointer = methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefWrapper::allocate);
+    public Object getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
+        Object pyMethodDefPointer = methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);
         assert CApiContext.isPointerObject(pyMethodDefPointer);
         return pyMethodDefPointer;
     }
