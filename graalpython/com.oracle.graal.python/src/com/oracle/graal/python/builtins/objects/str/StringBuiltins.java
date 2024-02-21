@@ -135,6 +135,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -515,15 +516,25 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = "isEqualityOpCode(opCode)")
         static Object doEqNeOp(Object left, Object right, int opCode,
                         @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyUnicodeCheckNode checkLeft,
+                        @Exclusive @Cached PyUnicodeCheckNode checkRight,
                         @Cached StringEqOpHelperNode stringEqOpHelperNode) {
+            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
             return stringEqOpHelperNode.execute(inliningTarget, left, right, opCode == ComparisonOp.NE.opCode);
         }
 
         @Specialization(guards = {"opCode == cachedOp.opCode", "!isEqualityOpCode(opCode)"}, limit = "4")
         static Object doRelOp(Object left, Object right, @SuppressWarnings("unused") int opCode,
                         @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyUnicodeCheckNode checkLeft,
+                        @Exclusive @Cached PyUnicodeCheckNode checkRight,
                         @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
                         @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
+            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
             return stringCmpOpHelperNode.execute(inliningTarget, left, right, cachedOp.intPredicate);
         }
     }
