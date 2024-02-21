@@ -1863,6 +1863,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     @ImportStatic({PGuards.class})
+    @SuppressWarnings("truffle-interpreted-performance")
     public static final class UnpackStarredToLocals {
         @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
         public static void doUnpackSequence(VirtualFrame localFrame, PSequence sequence, int starIndex,
@@ -2949,7 +2950,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ContextManagerExit {
         @Specialization
         public static void doRegular(VirtualFrame frame, PNone none, Object exit, Object contextManager,
-                        @Cached CallQuaternaryMethodNode callExit) {
+                        @Shared @Cached CallQuaternaryMethodNode callExit) {
             callExit.execute(frame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         }
 
@@ -2959,7 +2960,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object exception, Object exit, Object contextManager,
                         @Bind("this") Node inliningTarget,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Cached CallQuaternaryMethodNode callExit,
+                        @Shared @Cached CallQuaternaryMethodNode callExit,
                         @Cached GetClassNode getClass,
                         @Cached ExceptionNodes.GetTracebackNode getTraceback,
                         @Cached PyObjectIsTrueNode isTrue,
@@ -3023,7 +3024,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object doRegular(VirtualFrame frame,
                         PNone none, Object exit, Object contextManager,
-                        @Cached CallQuaternaryMethodNode callExit) {
+                        @Shared @Cached CallQuaternaryMethodNode callExit) {
             return callExit.execute(frame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         }
 
@@ -3033,7 +3034,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object exception, Object exit, Object contextManager,
                         @Bind("this") Node inliningTarget,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Cached CallQuaternaryMethodNode callExit,
+                        @Shared @Cached CallQuaternaryMethodNode callExit,
                         @Cached GetClassNode getClass,
                         @Cached ExceptionNodes.GetTracebackNode getTraceback,
                         @Cached PyObjectIsTrueNode isTrue,
@@ -3056,9 +3057,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class AsyncContextManagerExit {
-        // NB: There is nothing to do after awaiting __exit__(None, None, None), so this
-        // operation is only used for the case where the context manager exits due to an
-        // exception.
+        /**
+         * NB: There is nothing to do after awaiting __exit__(None, None, None), so this operation
+         * is only emitted for the case where the context manager exits due to an exception.
+         */
         @Specialization
         @InliningCutoff
         public static void doExceptional(VirtualFrame frame,
@@ -3268,6 +3270,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @SuppressWarnings("truffle-interpreted-performance")
     public static final class YieldFromSend {
         private static final TruffleString T_SEND = tsLiteral("send");
 
@@ -3336,6 +3339,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @SuppressWarnings("turffle-interpreted-performance")
     public static final class YieldFromThrow {
 
         private static final TruffleString T_CLOSE = tsLiteral("close");
