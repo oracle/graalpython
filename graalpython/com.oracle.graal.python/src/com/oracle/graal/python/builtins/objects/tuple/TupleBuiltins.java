@@ -107,6 +107,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -419,21 +420,26 @@ public final class TupleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
         static Object doPTuple(VirtualFrame frame, PTuple left, PTuple right, @SuppressWarnings("unused") int opCode,
                         @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
-                        @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
+                        @Exclusive @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
             return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
-        @Specialization(guards = {"opCode == cachedOp.opCode", "checkRight.execute(inliningTarget, right)"}, limit = "6", replaces = "doPTuple")
-        static Object doRelOp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int opCode,
+        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6", replaces = "doPTuple")
+        static Object doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int opCode,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
-                        @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
+                        @Cached PyTupleCheckNode checkLeft,
+                        @Cached PyTupleCheckNode checkRight,
                         @Cached GetTupleStorage getLeft,
                         @Cached GetTupleStorage getRight,
-                        @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
+                        @Exclusive @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
+            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
             return cmpNode.execute(frame, getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
         }
 
+        @NeverDefault
         static SequenceStorageNodes.CmpNode createCmpNode(ComparisonOp op) {
             switch (op) {
                 case LE:
