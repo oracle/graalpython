@@ -657,16 +657,6 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyObject_Type extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object type(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClass) {
-            return getClass.execute(inliningTarget, obj);
-        }
-    }
-
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyObject_Format extends CApiBinaryBuiltinNode {
         @Specialization

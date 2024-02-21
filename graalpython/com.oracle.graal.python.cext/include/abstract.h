@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -729,11 +729,13 @@ PyAPI_FUNC(PyObject *) PySequence_Fast(PyObject *o, const char* m);
 #define PySequence_Fast_GET_ITEM(o, i)\
      (PyList_Check(o) ? PyList_GET_ITEM(o, i) : PyTuple_GET_ITEM(o, i))
 
-PyAPI_FUNC(PyObject **) _PySequence_Fast_ITEMS(PyObject *o);
+// GraalPy-specific
+PyAPI_FUNC(PyObject **) PyTruffleSequence_Fast_ITEMS(PyObject *o);
 
 /* Return a pointer to the underlying item array for
    an object returned by PySequence_Fast */
-#define PySequence_Fast_ITEMS(sf) _PySequence_Fast_ITEMS(sf)
+// GraalPy change
+#define PySequence_Fast_ITEMS(sf) PyTruffleSequence_Fast_ITEMS(sf)
 
 /* Return the number of occurrences on value on 'o', that is, return
    the number of keys for which o[key] == value.

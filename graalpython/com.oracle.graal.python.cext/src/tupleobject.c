@@ -1348,7 +1348,7 @@ _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
            if we can optimize for something, it should be the path without the
            upcall. */
         if (UNLIKELY(ob_item == NULL)) {
-            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item(a));
+            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)a));
         }
     } else {
         ob_item = ((PyTupleObject *) a)->ob_item;

@@ -45,10 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_CHECK;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_SIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_OBJECT_SIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -56,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
-import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
@@ -88,9 +83,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
@@ -109,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -504,8 +496,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    public abstract static class PySequence_SetItem extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Ignored)
+    public abstract static class PyTruffleSequence_SetItem extends CApiTernaryBuiltinNode {
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
         static Object setItem(Object obj, Object key, Object value,
                         @Bind("this") Node inliningTarget,
@@ -675,8 +667,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class PySequence_DelItem extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
+    abstract static class PyTruffleSequence_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object run(Object o, Object i,
                         @Bind("this") Node inliningTarget,
@@ -686,21 +678,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PySequence_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int check(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PySequenceCheckNode check) {
-            if (object == PNone.NO_VALUE) {
-                return intValue(false);
-            }
-            return intValue(check.execute(inliningTarget, object));
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class PySequence_GetItem extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
+    abstract static class PyTruffleSequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
         Object doManaged(Object delegate, long position,
                         @Cached PySequenceGetItemNode getItemNode) {
@@ -711,14 +690,13 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "PySequence_Length", ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PySequence_Size extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleSequence_Size extends CApiUnaryBuiltinNode {
 
         // cant use PySequence_Size: PySequence_Size returns the __len__ value also for
         // subclasses of types not accepted by PySequence_Check as long they have an overriden
         // __len__ method
-        @Specialization(guards = "!isNativeObject(obj)")
+        @Specialization
         static Object doSequence(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached IsSameTypeNode isSameType,
@@ -730,13 +708,6 @@ public final class PythonCextAbstractBuiltins {
             } else {
                 return sizeNode.execute(null, inliningTarget, obj);
             }
-        }
-
-        @Specialization(guards = "isNativeObject(obj)")
-        static Object doNative(Object obj,
-                        @Cached PythonToNativeNode toSulongNode,
-                        @Cached PCallCapiFunction callCapiFunction) {
-            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
         }
     }
 
@@ -799,23 +770,18 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyObject_Size extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleObject_Size extends CApiUnaryBuiltinNode {
 
-        @Specialization(guards = "!isNativeObject(obj)")
+        @Specialization
         static int doGenericUnboxed(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode) {
+            // Native objects are handled in C
+            assert !(obj instanceof PythonAbstractNativeObject);
             // TODO: theoretically, it is legal for __LEN__ to return a PythonNativeVoidPtr,
             // which is not handled in c.o.g.p.lib.PyObjectSizeNode at this point
             return sizeNode.execute(null, inliningTarget, obj);
-        }
-
-        @Specialization(guards = {"isNativeObject(obj)"})
-        static Object size(Object obj,
-                        @Cached PythonToNativeNode toSulongNode,
-                        @Cached PCallCapiFunction callCapiFunction) {
-            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
         }
     }
 
@@ -904,31 +870,13 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyMapping_Check extends CApiUnaryBuiltinNode {
-
-        @Specialization(guards = "!isNativeObject(object)")
-        static int doPythonObject(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyMappingCheckNode checkNode) {
-            return intValue(checkNode.execute(inliningTarget, object));
-        }
-
-        @Specialization(guards = "isNativeObject(obj)")
-        static Object doNative(Object obj,
-                        @Cached PythonToNativeNode toSulongNode,
-                        @Cached PCallCapiFunction callCapiFunction) {
-            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyMapping_Size extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleMapping_Size extends CApiUnaryBuiltinNode {
 
         // cant use PyMapping_Check: PyMapping_Size returns the __len__ value also for
         // subclasses of types not accepted by PyMapping_Check as long they have an overriden
         // __len__ method
-        @Specialization(guards = "!isNativeObject(obj)")
+        @Specialization
         static int doMapping(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
@@ -943,13 +891,6 @@ public final class PythonCextAbstractBuiltins {
             } else {
                 return sizeNode.execute(null, inliningTarget, obj);
             }
-        }
-
-        @Specialization(guards = "isNativeObject(obj)")
-        static Object doNative(Object obj,
-                        @Cached PythonToNativeNode toSulongNode,
-                        @Cached PCallCapiFunction callCapiFunction) {
-            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
         }
     }
 

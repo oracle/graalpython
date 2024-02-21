@@ -131,6 +131,8 @@ public abstract class MethodsFlags {
     public static final long AM_SEND = 1L << 57;
 
     public static final long ASYNC_METHODS = AM_AWAIT | AM_AITER | AM_ANEXT | AM_SEND;
+    public static final long SEQUENCE_METHODS = SQ_LENGTH | SQ_ITEM | SQ_ASS_ITEM | SQ_CONCAT | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | SQ_REPEAT | SQ_CONTAINS;
+    public static final long MAPPING_METHODS = MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
 
     // builtins methods flags
 
