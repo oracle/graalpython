@@ -29,15 +29,7 @@
       <artifactId>${symbol_dollar}{graalpy.edition}</artifactId>
       <version>${symbol_dollar}{graalpy.version}</version>
       <type>pom</type>
-    </dependency>
-    <!-- The dependency on python-launcher is only required if the graalpy
-         plugin is used with packages -->
-    <dependency>
-      <groupId>org.graalvm.python</groupId>
-      <artifactId>python-launcher</artifactId>
-      <version>${symbol_dollar}{graalpy.version}</version>
-    </dependency>
-    
+    </dependency>    
     <dependency>
       <groupId>org.graalvm.python</groupId>
       <artifactId>python-embedding</artifactId>
