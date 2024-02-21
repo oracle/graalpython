@@ -272,7 +272,7 @@ index 00000000000..2b3824c8765
 +    ]
 +
 +    BAZEL_ADD_ENV = [
-+        "--repo_env=TF_PYTHON_VERSION=%s" % '3.10',
++        "--repo_env=TF_PYTHON_VERSION=%s" % '3.11',
 +    ]
 +
 +    if args.g:
