@@ -107,7 +107,15 @@ public abstract class ToNativeTypeNode {
     }
 
     private static boolean hasAsyncMethods(PythonManagedClass obj) {
-        return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) > 0;
+        return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) != 0;
+    }
+
+    private static boolean hasSequenceMethods(PythonManagedClass obj) {
+        return (obj.getMethodsFlags() & MethodsFlags.SEQUENCE_METHODS) != 0;
+    }
+
+    private static boolean hasMappingMethods(PythonManagedClass obj) {
+        return (obj.getMethodsFlags() & MethodsFlags.MAPPING_METHODS) != 0;
     }
 
     private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
@@ -175,16 +183,17 @@ public abstract class ToNativeTypeNode {
         Object mem = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_length, getSlot(obj, SlotMethodDef.SQ_LENGTH));
-        // TODO: Heap types defining __add__/__mul__ have sq_concat/sq_repeat == NULL in CPython, so
-        // this may have unintended effects
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_concat, getSlot(obj, SlotMethodDef.SQ_CONCAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_repeat, getSlot(obj, SlotMethodDef.SQ_REPEAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_item, getSlot(obj, SlotMethodDef.SQ_ITEM));
         writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_slice, nullValue);
-        writePointerNode.write(mem, CFields.PySequenceMethods__sq_ass_item, nullValue);
+        writePointerNode.write(mem, CFields.PySequenceMethods__sq_ass_item, getSlot(obj, SlotMethodDef.SQ_ASS_ITEM));
         writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_ass_slice, nullValue);
+        // TODO populate sq_contains
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_contains, nullValue);
+        // TODO populate sq_inplace_concat
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_inplace_concat, nullValue);
+        // TODO populate sq_inplace_repeat
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_inplace_repeat, nullValue);
         return mem;
     }
@@ -203,10 +212,6 @@ public abstract class ToNativeTypeNode {
 
     private static Object lookup(PythonManagedClass obj, SlotMethodDef slot) {
         return LookupNativeSlotNode.executeUncached(obj, slot);
-    }
-
-    private static boolean hasSlot(PythonManagedClass clazz, SlotMethodDef slot) {
-        return LookupNativeSlotNode.executeUncached(clazz, slot) != PythonContext.get(null).getNativeNull().getPtr();
     }
 
     static void initializeType(PythonClassNativeWrapper obj, Object mem, boolean heaptype) {
@@ -270,8 +275,8 @@ public abstract class ToNativeTypeNode {
         }
         Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
         Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue);
-        Object asSequence = (hasSlot(clazz, SlotMethodDef.SQ_LENGTH) || hasSlot(clazz, SlotMethodDef.SQ_ITEM)) ? allocatePySequenceMethods(clazz, nullValue) : nullValue;
-        Object asMapping = hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocatePyMappingMethods(clazz) : nullValue;
+        Object asSequence = hasSequenceMethods(clazz) ? allocatePySequenceMethods(clazz, nullValue) : nullValue;
+        Object asMapping = hasMappingMethods(clazz) ? allocatePyMappingMethods(clazz) : nullValue;
         Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, TypeBuiltins.TYPE_AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, TypeBuiltins.TYPE_DEALLOC));
