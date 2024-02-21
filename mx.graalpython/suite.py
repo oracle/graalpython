@@ -1117,6 +1117,30 @@ suite = {
             ],
         },
 
+        # We generate the POM project twice with different group ids,
+        # because we found some users look into the org.graalvm.python
+        # maven group directly and pick python-language directly as
+        # dependency, which then spells trouble.
+        "PYTHON_COMMUNITY_2": {
+            "type": "pom",
+            "runtimeDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
+                "truffle:TRUFFLE_RUNTIME",
+            ],
+            "description": "GraalPython engine.",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-community",
+                "tag": ["default", "public"],
+            },
+            "license": [
+                "UPL",
+                "MIT",
+                "PSF-License",
+            ],
+        },
+
         "GRAALPYTHON_PROCESSOR": {
             "dependencies": [
                 "com.oracle.graal.python.processor",
