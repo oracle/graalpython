@@ -172,8 +172,8 @@ public abstract class CApiTransitions {
             super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
-            if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer(PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strong ? "strong" : "weak"), Long.toHexString(pointer), referent));
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
             referent.ref = this;
         }
@@ -195,8 +195,11 @@ public abstract class CApiTransitions {
         }
 
         @Override
+        @TruffleBoundary
         public String toString() {
-            return "PythonObjectReference<" + (strongReference == null ? "" : "strong,") + Long.toHexString(pointer) + ">";
+            String type = strongReference != null ? "strong" : "weak";
+            PythonNativeWrapper referent = get();
+            return String.format("PythonObjectReference<0x%x,%s,%s>", pointer, type, referent != null ? referent : "freed");
         }
     }
 
@@ -215,14 +218,16 @@ public abstract class CApiTransitions {
             this.pointer = pointer;
             referent.ref = this;
             assert (pointer & 7) == 0;
-            if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer(PythonUtils.formatJString("new NativeObjectReference<%s> to %s", Long.toHexString(pointer), referent));
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
         }
 
         @Override
+        @TruffleBoundary
         public String toString() {
-            return "NativeObjectReference<" + (get() == null ? "freed," : "") + Long.toHexString(pointer) + ">";
+            PythonAbstractNativeObject referent = get();
+            return String.format("NativeObjectReference<0x%x,%s>", pointer, referent != null ? referent : "freed");
         }
     }
 
@@ -236,8 +241,8 @@ public abstract class CApiTransitions {
             type = storage.getElementType();
             ptr = storage.getPtr();
             size = storage.length();
-            if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer(PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
         }
 
@@ -255,6 +260,18 @@ public abstract class CApiTransitions {
 
         public void setSize(int size) {
             this.size = size;
+        }
+
+        @Override
+        @TruffleBoundary
+        public String toString() {
+            Object ptrStr;
+            try {
+                ptrStr = Long.toHexString(InteropLibrary.getUncached().asPointer(ptr));
+            } catch (UnsupportedMessageException e) {
+                ptrStr = ptr;
+            }
+            return String.format("NativeStorageReference<0x%s, %d>", ptrStr, size);
         }
     }
 
@@ -304,7 +321,7 @@ public abstract class CApiTransitions {
                     }
                     count++;
                     if (entry instanceof PythonObjectReference reference) {
-                        LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
+                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
                         if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
                             assert nativeStubLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
                             nativeStubLookupRemove(context, reference.pointer);
@@ -316,7 +333,7 @@ public abstract class CApiTransitions {
                              */
                             long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
                             if (subNativeRefCount(stubPointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
-                                LOGGER.finer(() -> String.format("freeing native object stub 0x%s", Long.toHexString(stubPointer)));
+                                LOGGER.fine(() -> PythonUtils.formatJString("freeing native object stub 0x%x", stubPointer));
                                 FreeNode.executeUncached(stubPointer);
                             }
                         } else {
@@ -324,13 +341,13 @@ public abstract class CApiTransitions {
                             nativeLookupRemove(context, reference.pointer);
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
-                        LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
+                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
                         nativeLookupRemove(context, reference.pointer);
                         if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
                             referencesToBeFreed.add(reference.pointer);
                         }
                     } else if (entry instanceof NativeStorageReference reference) {
-                        LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeStorageReference %s", reference));
+                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
                         context.nativeStorageReferences.remove(entry);
                         if (reference.type == ListStorageType.Generic) {
                             PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);

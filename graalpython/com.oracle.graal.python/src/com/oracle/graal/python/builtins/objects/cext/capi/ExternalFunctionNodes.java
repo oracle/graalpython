@@ -1135,9 +1135,16 @@ public abstract class ExternalFunctionNodes {
                  * may free the memory after the call returned, we also need to create a
                  * NativeSequenceStorageReference such that the NativeSequenceStorage will not leak.
                  */
-                boolean isNativeSequenceStorage = s instanceof NativeSequenceStorage;
-                if (isNativeSequenceStorage && eagerNativeStorage) {
-                    NativeSequenceStorage nativeSequenceStorage = (NativeSequenceStorage) s;
+                if (s instanceof NativeSequenceStorage nativeSequenceStorage) {
+                    if (nativeSequenceStorage.hasReference()) {
+                        /*
+                         * Not allocated by this root. Note that this can happen even when
+                         * seenNativeArgsTupleStorage is true, because it could have been set by a
+                         * recursive invocation of this root.
+                         */
+                        return true;
+                    }
+                    assert eagerNativeStorage;
                     if (argsTupleWrapper.getRefCount() == MANAGED_REFCNT) {
                         // in this case, the runtime still exclusively owns the memory
                         freeNode.execute(nativeSequenceStorage);
@@ -1145,10 +1152,9 @@ public abstract class ExternalFunctionNodes {
                         // the C ext also created a reference; no exclusive ownership
                         CApiTransitions.registerNativeSequenceStorage(nativeSequenceStorage);
                     }
-                } else {
-                    assert !isNativeSequenceStorage || ((NativeSequenceStorage) s).hasReference();
+                    return true;
                 }
-                return isNativeSequenceStorage;
+                return false;
             } catch (ClassCastException e) {
                 // cut exception edge
                 throw CompilerDirectives.shouldNotReachHere(e);
