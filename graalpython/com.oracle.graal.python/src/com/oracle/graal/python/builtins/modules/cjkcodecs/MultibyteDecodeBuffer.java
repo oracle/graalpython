@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,12 +61,14 @@ public class MultibyteDecodeBuffer {
     protected CharBuffer writer;
     protected PBaseException excobj;
 
+    @TruffleBoundary
     public MultibyteDecodeBuffer(byte[] inbuf) {
         this.inputBuffer = ByteBuffer.wrap(inbuf);
         this.writer = writerInit(inbuf.length);
         this.excobj = null;
     }
 
+    @TruffleBoundary(allowInlining = true)
     protected int getInSize() {
         return inputBuffer.limit();
     }
@@ -76,6 +78,7 @@ public class MultibyteDecodeBuffer {
         setInpos(getInpos() + len);
     }
 
+    @TruffleBoundary(allowInlining = true)
     protected int getInpos() {
         return inputBuffer.position();
     }
@@ -85,6 +88,7 @@ public class MultibyteDecodeBuffer {
         inputBuffer.position(pos);
     }
 
+    @TruffleBoundary(allowInlining = true)
     protected int remaining() {
         return inputBuffer.remaining();
     }
@@ -102,10 +106,12 @@ public class MultibyteDecodeBuffer {
         return factory.createBytes(inputBuffer.array(), getInpos());
     }
 
+    @TruffleBoundary
     protected void replaceInbuf(byte[] inbuf) {
         inputBuffer = ByteBuffer.wrap(inbuf);
     }
 
+    @TruffleBoundary(allowInlining = true)
     protected int getOutpos() {
         return writer.position();
     }
