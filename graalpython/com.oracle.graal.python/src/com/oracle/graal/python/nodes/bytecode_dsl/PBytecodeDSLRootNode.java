@@ -175,11 +175,14 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.BytecodeRootNode;
+import com.oracle.truffle.api.bytecode.EpilogExceptional;
+import com.oracle.truffle.api.bytecode.EpilogReturn;
 import com.oracle.truffle.api.bytecode.GenerateBytecode;
 import com.oracle.truffle.api.bytecode.LocalSetter;
 import com.oracle.truffle.api.bytecode.LocalSetterRange;
 import com.oracle.truffle.api.bytecode.Operation;
 import com.oracle.truffle.api.bytecode.OperationProxy;
+import com.oracle.truffle.api.bytecode.Prolog;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation.Operator;
 import com.oracle.truffle.api.bytecode.Variadic;
@@ -302,29 +305,39 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return "<function op " + co.name + ">";
     }
 
-    @Override
-    public void executeProlog(VirtualFrame frame) {
-        calleeContext.enter(frame);
-    }
-
-    public MaterializedFrame createGeneratorFrame(Object[] arguments) {
-        Object[] generatorFrameArguments = PArguments.create();
-        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
-        PArguments.setGeneratorFrame(arguments, generatorFrame);
-        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
-        // The invoking node will set these two to the correct value only when the callee requests
-        // it, otherwise they stay at the initial value, which we must set to null here
-        PArguments.setException(arguments, null);
-        PArguments.setCallerFrameInfo(arguments, null);
-        return generatorFrame;
-    }
-
-    @Override
-    public void executeEpilog(VirtualFrame frame, Object returnValue, Throwable throwable) {
-        if (throwable != null && throwable instanceof PException pe) {
-            pe.notifyAddedTracebackFrame(!isPythonInternal());
+    @Prolog
+    public static final class EnterCalleeContext {
+        @Specialization
+        public static void doEnter(VirtualFrame frame,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.calleeContext.enter(frame);
         }
-        calleeContext.exit(frame, this);
+    }
+
+    @EpilogReturn
+    public static final class ExitCalleeContext {
+        @Specialization
+        public static Object doExit(VirtualFrame frame, Object returnValue,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.calleeContext.exit(frame, root);
+            return returnValue;
+        }
+    }
+
+    @EpilogExceptional
+    public static final class ExitCalleeContextExceptional {
+        @Specialization
+        public static void doPException(VirtualFrame frame, PException pe,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            pe.notifyAddedTracebackFrame(!root.isPythonInternal());
+            root.calleeContext.exit(frame, root);
+        }
+
+        @Specialization
+        public static void doOther(VirtualFrame frame, AbstractTruffleException ate,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.calleeContext.exit(frame, root);
+        }
     }
 
     @Override
@@ -425,6 +438,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Override
     protected byte[] extractCode() {
         return MarshalModuleBuiltins.serializeCodeUnit(co);
+    }
+
+    public MaterializedFrame createGeneratorFrame(Object[] arguments) {
+        Object[] generatorFrameArguments = PArguments.create();
+        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
+        PArguments.setGeneratorFrame(arguments, generatorFrame);
+        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
+        // The invoking node will set these two to the correct value only when the callee requests
+        // it, otherwise they stay at the initial value, which we must set to null here
+        PArguments.setException(arguments, null);
+        PArguments.setCallerFrameInfo(arguments, null);
+        return generatorFrame;
     }
 
     private static Object checkUnboundCell(PCell cell, int index, PBytecodeDSLRootNode rootNode, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
@@ -3339,7 +3364,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    @SuppressWarnings("turffle-interpreted-performance")
+    @SuppressWarnings("truffle-interpreted-performance")
     public static final class YieldFromThrow {
 
         private static final TruffleString T_CLOSE = tsLiteral("close");

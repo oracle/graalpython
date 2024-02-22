@@ -1538,7 +1538,6 @@ def graalpython_gate_runner(args, tasks):
                 mx.run(["env"])
             run_python_unittests(
                 graalpy_standalone_jvm(),
-                javaAsserts=True,
                 exclude=excluded_tests,
                 nonZeroIsFatal=nonZeroIsFatal,
                 report=report(),
