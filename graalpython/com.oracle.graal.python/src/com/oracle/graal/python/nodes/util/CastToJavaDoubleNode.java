@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -114,6 +115,7 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
+    @InliningCutoff
     static double doNativeObject(Node inliningTarget, PythonAbstractNativeObject x,
                     @Cached GetPythonObjectClassNode getClassNode,
                     @Cached(inline = false) IsSubtypeNode isSubtypeNode,
@@ -144,6 +146,7 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isNumber(obj)")
+    @InliningCutoff
     static double doGeneric(Object obj,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
         Double d = doInterop(obj, interopLibrary);

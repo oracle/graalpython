@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -867,6 +868,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"check.execute(inliningTarget, self)", "acquireLib.hasBuffer(other)"}, limit = "3")
+        @InliningCutoff
         static Object cmp(VirtualFrame frame, Node inliningTarget, Object self, Object other, ComparisonOp op,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyByteArrayCheckNode check,
@@ -893,6 +895,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!check.execute(inliningTarget, self)")
+        @InliningCutoff
         @SuppressWarnings("unused")
         static Object error(VirtualFrame frame, Node inliningTarget, Object self, Object other, ComparisonOp op,
                         @Shared @Cached PyByteArrayCheckNode check,
