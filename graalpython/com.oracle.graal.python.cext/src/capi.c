@@ -877,6 +877,8 @@ PyAPI_FUNC(void*) truffle_get_constant(int entry) {
 void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
+// defined in 'floatobject.c'
+void _PyFloat_InitState(PyInterpreterState* state);
 
 TruffleContext* TRUFFLE_CONTEXT;
 
@@ -900,6 +902,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+    _PyFloat_InitState(NULL);
 
     // TODO: initialize during cext initialization doesn't work at the moment
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
