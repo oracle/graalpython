@@ -156,9 +156,6 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/pystrtod.c": CopyFrom("Python/pystrtod.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystrhex.c": CopyFrom("Python/pystrhex.c"),
     "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
-    # These files take functions from CPython, but they don't follow the same structure, so they are impossible
-    # to meaningfully merge
-    "graalpython/com.oracle.graal.python.cext/src/thread.c": Ignore(),
 
     "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 
