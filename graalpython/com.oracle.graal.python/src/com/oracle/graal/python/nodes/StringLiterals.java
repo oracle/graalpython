@@ -147,4 +147,7 @@ public abstract class StringLiterals {
     public static final String J_OB_REFCNT = "ob_refcnt";
     public static final String J_DEBUG = "debug";
     public static final String J_TRACE = "trace";
+    public static final TruffleString T_READ = tsLiteral("read");
+    public static final TruffleString T_READLINE = tsLiteral("readline");
+    public static final TruffleString T_CODEC = tsLiteral("codec");
 }
