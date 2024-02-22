@@ -45,8 +45,11 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
@@ -55,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -65,6 +69,8 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -178,8 +184,43 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
 
     static void free(Object pointer) {
         CompilerAsserts.neverPartOfCompilation();
-        LOGGER.fine("Freeing PyMethodDef at %s");
-        // TODO(fa): also free 'ml_meth'
+        CStructAccess.ReadPointerNode readPointerNode = CStructAccess.ReadPointerNode.getUncached();
+
+        LOGGER.fine(() -> "Freeing PyMethodDef at " + PythonUtils.formatPointer(pointer));
+
+        Object namePointer = readPointerNode.read(pointer, PyMethodDef__ml_name);
+        Object docPointer = readPointerNode.read(pointer, PyMethodDef__ml_doc);
+
+        // we only read the other fields and decode strings for logging
+        if (LOGGER.isLoggable(Level.FINER)) {
+            CStructAccess.ReadI32Node readIntNode = CStructAccessFactory.ReadI32NodeGen.getUncached();
+            assert !PGuards.isNullOrZero(namePointer, InteropLibrary.getUncached());
+            TruffleString name = FromCharPointerNodeGen.getUncached().execute(namePointer, false);
+            TruffleString doc = null;
+            if (PGuards.isNullOrZero(namePointer, InteropLibrary.getUncached())) {
+                doc = FromCharPointerNodeGen.getUncached().execute(docPointer, false);
+            }
+            int flags = readIntNode.read(pointer, PyMethodDef__ml_flags);
+            Object methPointer = readPointerNode.read(pointer, PyMethodDef__ml_meth);
+            Object meth;
+            InteropLibrary methPointerLib = InteropLibrary.getUncached(methPointer);
+            if (methPointerLib.isPointer(methPointer)) {
+                try {
+                    meth = PythonContext.get(null).getCApiContext().getClosureDelegate(methPointerLib.asPointer(methPointer));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else {
+                // managed case: it is still the wrapper
+                assert methPointer instanceof PythonNativeWrapper;
+                meth = methPointer;
+            }
+            LOGGER.finer(String.format("PyMethodDef(%s, %s, %d, %s) at %s freed.", name, meth, flags, doc, PythonUtils.formatPointer(pointer)));
+        }
+        FreeNode.executeUncached(namePointer);
+        if (PGuards.isNullOrZero(namePointer, InteropLibrary.getUncached())) {
+            FreeNode.executeUncached(docPointer);
+        }
         FreeNode.executeUncached(pointer);
     }
 }
