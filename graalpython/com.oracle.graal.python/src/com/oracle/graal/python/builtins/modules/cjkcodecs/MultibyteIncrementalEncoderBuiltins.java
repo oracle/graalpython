@@ -109,7 +109,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return MultibyteStreamWriterBuiltinsFactory.getFactories();
+        return MultibyteIncrementalEncoderBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
