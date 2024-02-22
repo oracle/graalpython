@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,35 +57,34 @@ PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
 
 
 PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls) {
-    return GraalPyTruffleCMethod_NewEx(ml,
-                                               PyMethodDef_ml_name(ml),
-											   PyMethodDef_ml_meth(ml),
-											   PyMethodDef_ml_flags(ml),
-											   get_method_flags_wrapper(PyMethodDef_ml_flags(ml)),
-                                               self,
-                                               module,
-                                               cls,
-											   PyMethodDef_ml_doc(ml));
+    return GraalPyTruffleCMethod_NewEx(ml, ml->ml_name,
+                                           ml->ml_meth,
+                                           ml->ml_flags,
+                                           get_method_flags_wrapper(ml->ml_flags),
+                                           self,
+                                           module,
+                                           cls,
+                                           ml->ml_doc);
 }
 
 PyCFunction PyCFunction_GetFunction(PyObject *func) {
-	PyMethodDef* def = PyCFunctionObject_m_ml(func);
-	return PyMethodDef_ml_meth(def);
+    PyMethodDef* def = PyCFunctionObject_m_ml(func);
+    return def->ml_meth;
 }
 
 PyObject * PyCFunction_GetSelf(PyObject *func) {
-	PyMethodDef* def = PyCFunctionObject_m_ml(func);
-	return PyMethodDef_ml_flags(def) & METH_STATIC ? NULL : PyCFunctionObject_m_self(func);
+    PyMethodDef* def = PyCFunctionObject_m_ml(func);
+    return def->ml_flags & METH_STATIC ? NULL : PyCFunctionObject_m_self(func);
 }
 
 int PyCFunction_GetFlags(PyObject *func) {
-	PyMethodDef* def = PyCFunctionObject_m_ml(func);
-	return PyMethodDef_ml_flags(def);
+    PyMethodDef* def = PyCFunctionObject_m_ml(func);
+    return def->ml_flags;
 }
 
 PyTypeObject * PyCMethod_GetClass(PyObject *func) {
-	PyMethodDef* def = PyCFunctionObject_m_ml(func);
-	return PyMethodDef_ml_flags(def) & METH_METHOD ? PyCMethodObject_mm_class(func) : NULL;
+    PyMethodDef* def = PyCFunctionObject_m_ml(func);
+    return def->ml_flags & METH_METHOD ? PyCMethodObject_mm_class(func) : NULL;
 }
 
 PyObject* _PyCFunction_GetModule(PyObject *func) {

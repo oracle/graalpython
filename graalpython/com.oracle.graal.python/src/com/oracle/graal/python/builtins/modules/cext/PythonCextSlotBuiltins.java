@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_C_FUNCTION;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyASCIIObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
@@ -112,15 +111,10 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -134,7 +128,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -155,24 +148,19 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -496,102 +484,6 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_doc extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        Object get(PythonObject object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            Object doc = getAttrNode.execute(object, T___DOC__);
-            if (!PGuards.isPNone(doc)) {
-                try {
-                    return new CStringWrapper(castToStringNode.execute(inliningTarget, doc));
-                } catch (CannotCastException e) {
-                    // fall through
-                }
-            }
-            return getNULL();
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_flags extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int get(Object object) {
-            if (object instanceof PBuiltinFunction) {
-                return ((PBuiltinFunction) object).getFlags();
-            } else if (object instanceof PBuiltinMethod) {
-                return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
-            }
-            return 0;
-        }
-    }
-
-    @CApiBuiltin(ret = PY_C_FUNCTION, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_meth extends CApiUnaryBuiltinNode {
-
-        @TruffleBoundary
-        private static Object createFunctionWrapper(Object object) {
-            int flags = Py_get_PyMethodDef_ml_flags.get(object);
-            PythonNativeWrapper wrapper;
-            if (CExtContext.isMethNoArgs(flags)) {
-                wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
-            } else if (CExtContext.isMethO(flags)) {
-                wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
-            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-                wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
-            } else if (CExtContext.isMethVarargs(flags)) {
-                wrapper = PyProcsWrapper.createVarargWrapper(object);
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
-            }
-            return wrapper;
-        }
-
-        @Specialization
-        static Object getMethFromBuiltinFunction(PBuiltinFunction object) {
-            PKeyword[] kwDefaults = object.getKwDefaults();
-            for (int i = 0; i < kwDefaults.length; i++) {
-                if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
-                    return kwDefaults[i].getValue();
-                }
-            }
-            return createFunctionWrapper(object);
-        }
-
-        @Specialization
-        static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
-            return getMethFromBuiltinFunction(object.getBuiltinFunction());
-        }
-
-        @Fallback
-        Object getMeth(Object object) {
-            return createFunctionWrapper(object);
-        }
-    }
-
-    @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_name extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        Object getName(PythonObject object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            Object name = getAttrNode.execute(inliningTarget, object, SpecialAttributeNames.T___NAME__);
-            if (!PGuards.isPNone(name)) {
-                try {
-                    return new CStringWrapper(castToStringNode.execute(inliningTarget, name));
-                } catch (CannotCastException e) {
-                    // fall through
-                }
-            }
-            return getNULL();
         }
     }
 
