@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.modules.functools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.modules.functools.FunctoolsModuleBuiltins.KWD_MARK;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FUNCTOOLS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MAXSIZE_SHOULD_BE_INTEGER_OR_NONE;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_FIRST_ARGUMENT_MUST_BE_CALLABLE;
@@ -78,9 +78,9 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -141,7 +141,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         static Object lruCacheNew(VirtualFrame frame, Object type,
                         Object func, Object maxsize_O, int typed, Object cache_info_type,
                         @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode readAttr,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyIndexCheckNode indexCheck,
                         @Cached PyNumberAsSizeNode numberAsSize,
@@ -185,7 +185,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.misses = obj.hits = 0;
             obj.maxsize = maxsize;
 
-            obj.kwdMark = readAttr.execute(PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS), KWD_MARK);
+            obj.kwdMark = readHiddenAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS), HiddenAttr.KWD_MARK, NO_VALUE);
 
             obj.cacheInfoType = cache_info_type;
             // obj.dict = null;

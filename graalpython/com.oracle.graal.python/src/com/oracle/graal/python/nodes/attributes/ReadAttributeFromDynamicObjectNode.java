@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -81,8 +80,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     public abstract Object execute(Object object, Object key);
 
     public abstract Object execute(Object object, TruffleString key);
-
-    public abstract Object execute(Object object, HiddenKey key);
 
     protected static Object getAttribute(DynamicObject object, TruffleString key) {
         return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
@@ -153,17 +150,12 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected static Object readDirectHidden(DynamicObject dynamicObject, Object key,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
-    }
-
-    @Specialization(guards = "!isHiddenKey(key)", replaces = {"readDirect", "readFinalAttr"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @Specialization(replaces = {"readDirect", "readFinalAttr"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected static Object read(DynamicObject dynamicObject, Object key,
                     @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        assert !isHiddenKey(key);
         return dylib.getOrDefault(dynamicObject, attrKey(inliningTarget, key, castNode), PNone.NO_VALUE);
     }
 }

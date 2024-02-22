@@ -48,12 +48,12 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -125,27 +125,27 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         }
         long vectorcall_offset = readI64.read(pointer, CFields.PyTypeObject__tp_vectorcall_offset);
         if (vectorcall_offset != 0) {
-            writeAttr.execute(clazz, TypeBuiltins.TYPE_VECTORCALL_OFFSET, vectorcall_offset);
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.VECTORCALL_OFFSET, vectorcall_offset);
         }
         Object alloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_alloc);
         if (!PGuards.isNullOrZero(alloc_fun, lib)) {
-            writeAttr.execute(clazz, TypeBuiltins.TYPE_ALLOC, alloc_fun);
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.ALLOC, alloc_fun);
         }
         Object dealloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_dealloc);
         if (!PGuards.isNullOrZero(dealloc_fun, lib)) {
-            writeAttr.execute(clazz, TypeBuiltins.TYPE_DEALLOC, dealloc_fun);
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.DEALLOC, dealloc_fun);
         }
         Object free_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_free);
         if (!PGuards.isNullOrZero(free_fun, lib)) {
-            writeAttr.execute(clazz, TypeBuiltins.TYPE_FREE, free_fun);
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.FREE, free_fun);
         }
         Object clear_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_clear);
         if (!PGuards.isNullOrZero(clear_fun, lib)) {
-            writeAttr.execute(clazz, TypeBuiltins.TYPE_CLEAR, clear_fun);
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.CLEAR, clear_fun);
         }
         Object as_buffer = readPointer.read(pointer, CFields.PyTypeObject__tp_as_buffer);
         if (!PGuards.isNullOrZero(as_buffer, lib)) {
-            writeAttr.execute(clazz, TypeBuiltins.TYPE_AS_BUFFER, as_buffer);
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.AS_BUFFER, as_buffer);
         }
 
         // initialize flags:

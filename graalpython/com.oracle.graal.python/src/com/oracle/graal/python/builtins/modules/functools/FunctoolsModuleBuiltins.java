@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -73,7 +74,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(defineModule = J_FUNCTOOLS)
@@ -82,8 +82,6 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FunctoolsModuleBuiltinsFactory.getFactories();
     }
-
-    protected static final HiddenKey KWD_MARK = new HiddenKey("kwd_mark");
 
     @Override
     public void initialize(Python3Core core) {
@@ -102,7 +100,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                                         "\n" + //
                                         "cache_info_type:    namedtuple class with the fields:\n" + //
                                         "                        hits misses currsize maxsize\n");
-        addBuiltinConstant(KWD_MARK, core.factory().createPythonObject(PythonObject));
+        addBuiltinConstant(HiddenAttr.KWD_MARK, core.factory().createPythonObject(PythonObject));
     }
 
     // functools.reduce(function, iterable[, initializer])

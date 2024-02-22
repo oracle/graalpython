@@ -89,11 +89,18 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
+import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
+import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
+import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_STORAGE;
+import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
+import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
+import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -141,14 +148,12 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -164,14 +169,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -299,8 +302,9 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonObject object,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            Object methodDefPtr = dylib.getOrDefault(object, PythonCextMethodBuiltins.METHOD_DEF_PTR, null);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            Object methodDefPtr = readNode.execute(inliningTarget, object, METHOD_DEF_PTR, null);
             if (methodDefPtr != null) {
                 return methodDefPtr;
             }
@@ -730,20 +734,20 @@ public final class PythonCextSlotBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class GetSliceField extends Node {
-        abstract Object execute(Node inliningTarget, PSlice object, HiddenKey key, Object value);
+        abstract Object execute(Node inliningTarget, PSlice object, HiddenAttr key, Object value);
 
         @Specialization
-        static Object get(Node inliningTarget, PSlice object, HiddenKey key, Object value,
-                        @Cached(inline = false) ReadAttributeFromDynamicObjectNode read,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write,
+        static Object get(Node inliningTarget, PSlice object, HiddenAttr key, Object value,
+                        @Cached HiddenAttr.ReadNode read,
+                        @Cached HiddenAttr.WriteNode write,
                         @Cached PythonCextBuiltins.PromoteBorrowedValue promote) {
-            Object promotedValue = read.execute(object, key);
-            if (promotedValue == PNone.NO_VALUE) {
+            Object promotedValue = read.execute(inliningTarget, object, key, null);
+            if (promotedValue == null) {
                 promotedValue = promote.execute(inliningTarget, value);
                 if (promotedValue == null) {
                     return value;
                 }
-                write.execute(object, key, promotedValue);
+                write.execute(inliningTarget, object, key, promotedValue);
             }
             return promotedValue;
         }
@@ -751,53 +755,49 @@ public final class PythonCextSlotBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_start extends CApiUnaryBuiltinNode {
-        private static final HiddenKey START_KEY = new HiddenKey("promoted_start");
 
         @Specialization
         static Object doStart(PSlice object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
-            return getSliceField.execute(inliningTarget, object, START_KEY, object.getStart());
+            return getSliceField.execute(inliningTarget, object, PROMOTED_START, object.getStart());
         }
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_step extends CApiUnaryBuiltinNode {
-        private static final HiddenKey STEP_KEY = new HiddenKey("promoted_step");
 
         @Specialization
         static Object doStep(PSlice object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
-            return getSliceField.execute(inliningTarget, object, STEP_KEY, object.getStep());
+            return getSliceField.execute(inliningTarget, object, PROMOTED_STEP, object.getStep());
         }
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
     abstract static class Py_get_PySliceObject_stop extends CApiUnaryBuiltinNode {
-        private static final HiddenKey STOP_KEY = new HiddenKey("promoted_stop");
 
         @Specialization
         static Object doStop(PSlice object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
-            return getSliceField.execute(inliningTarget, object, STOP_KEY, object.getStop());
+            return getSliceField.execute(inliningTarget, object, PROMOTED_STOP, object.getStop());
         }
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
     abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
-        private static final HiddenKey DATA_NATIVE_STORAGE = new HiddenKey("native_storage");
-
         @Specialization
         static Object get(PString object,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteByteNode writeByteNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttribute) {
+                        @Cached HiddenAttr.WriteNode writeAttribute) {
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
                 return object.getNativeCharSequence().getPtr();
@@ -836,7 +836,7 @@ public final class PythonCextSlotBuiltins {
              * 
              * TODO it would be nicer if the native char sequence could manage its own memory
              */
-            writeAttribute.execute(object, DATA_NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));
+            writeAttribute.execute(inliningTarget, object, NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));
             return ptr;
         }
     }
@@ -896,10 +896,19 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_as_buffer extends CApiBinaryBuiltinNode {
 
+        @Specialization
+        static Object setBuiltinClassType(PythonBuiltinClassType clazz, Object bufferProcs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
+            writeAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupType(clazz), AS_BUFFER, bufferProcs);
+            return PNone.NO_VALUE;
+        }
+
         @Specialization(guards = "isPythonClass(object)")
-        static Object set(Object object, Object bufferProcs,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, TypeBuiltins.TYPE_AS_BUFFER, bufferProcs);
+        static Object set(PythonAbstractObject object, Object bufferProcs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
+            writeAttrNode.execute(inliningTarget, object, AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
         }
     }

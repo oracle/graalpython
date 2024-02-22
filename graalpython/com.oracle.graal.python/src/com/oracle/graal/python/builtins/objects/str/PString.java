@@ -45,15 +45,12 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
 public final class PString extends PSequence {
-    public static final HiddenKey INTERNED = new HiddenKey("_interned");
-
     private TruffleString materializedValue;
     private NativeCharSequence nativeCharSequence;
 

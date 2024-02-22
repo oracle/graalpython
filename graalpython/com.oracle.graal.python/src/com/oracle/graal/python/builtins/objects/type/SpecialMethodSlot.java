@@ -71,7 +71,7 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONT
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_LENGTH;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
-import static com.oracle.graal.python.lib.GetMethodsFlagsNode.METHODS_FLAGS;
+import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
@@ -173,6 +173,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.lib.GetMethodsFlagsNodeGen;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
@@ -643,7 +644,7 @@ public enum SpecialMethodSlot {
                 assumption.invalidate("methods flags have changed after class creation");
             }
             if (cls instanceof PythonAbstractNativeObject nclass) {
-                DynamicObjectLibrary.getUncached().putLong(nclass, METHODS_FLAGS, flags | flag);
+                HiddenAttr.WriteNode.executeUncached(nclass, METHODS_FLAGS, flags | flag);
             }
         }
     }

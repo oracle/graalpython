@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIS
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
+import static com.oracle.graal.python.nodes.HiddenAttr.DEFAULT_TIMEOUT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
@@ -65,7 +66,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -76,9 +76,9 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -106,7 +106,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -147,7 +146,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
+                        @Exclusive @Cached HiddenAttr.ReadNode readNode,
                         @Cached GilNode gil,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
@@ -176,7 +175,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 }
                 try {
                     posixLib.setInheritable(context.getPosixSupport(), fd, false);
-                    sockInit(context, posixLib, readNode, self, fd, family, type, proto);
+                    sockInit(inliningTarget, context, posixLib, readNode, self, fd, family, type, proto);
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -199,7 +198,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
+                        @Exclusive @Cached HiddenAttr.ReadNode readNode,
                         @Cached PyLongAsIntNode asIntNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -235,21 +234,21 @@ public final class SocketBuiltins extends PythonBuiltins {
                 } else {
                     proto = 0;
                 }
-                sockInit(context, posixLib, readNode, self, fd, family, type, proto);
+                sockInit(inliningTarget, context, posixLib, readNode, self, fd, family, type, proto);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
 
-        private static void sockInit(PythonContext context, PosixSupportLibrary posixLib, ReadAttributeFromObjectNode readNode, PSocket self, int fd, int family, int type, int proto)
-                        throws PosixException {
+        private static void sockInit(Node inliningTarget, PythonContext context, PosixSupportLibrary posixLib, HiddenAttr.ReadNode readNode,
+                        PSocket self, int fd, int family, int type, int proto) throws PosixException {
             self.setFd(fd);
             self.setFamily(family);
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
             self.setType(type);
             self.setProto(proto);
-            long defaultTimeout = (long) readNode.execute(context.lookupBuiltinModule(T__SOCKET), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
+            long defaultTimeout = (long) readNode.execute(inliningTarget, context.lookupBuiltinModule(T__SOCKET), DEFAULT_TIMEOUT, null);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
                 posixLib.setBlocking(context.getPosixSupport(), fd, false);

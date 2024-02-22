@@ -127,7 +127,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenAttrDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
@@ -219,6 +219,7 @@ import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -252,7 +253,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -693,8 +693,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(getLanguage()), get, set, name, type, set != null));
     }
 
-    public final HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, Object type) {
-        return trace(new HiddenKeyDescriptor(getLanguage(), key, type));
+    public final HiddenAttrDescriptor createHiddenAttrDescriptor(HiddenAttr key, Object type) {
+        return trace(new HiddenAttrDescriptor(getLanguage(), key, type));
     }
 
     public final PDecoratedMethod createClassmethod(Object cls) {

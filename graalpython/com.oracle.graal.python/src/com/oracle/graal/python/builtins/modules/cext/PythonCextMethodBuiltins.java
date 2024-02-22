@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -67,7 +68,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextMethodBuiltins {
@@ -77,7 +77,7 @@ public final class PythonCextMethodBuiltins {
      * because the C program may expect to get its pointer back when accessing m_ml member of
      * methods.
      */
-    public static final HiddenKey METHOD_DEF_PTR = new HiddenKey("method_def_ptr");
+    public static final HiddenAttr METHOD_DEF_PTR = HiddenAttr.METHOD_DEF_PTR;
 
     @GenerateInline
     @GenerateCached(false)
@@ -93,20 +93,21 @@ public final class PythonCextMethodBuiltins {
         static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object cls, Object doc,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Cached CreateFunctionNode createFunctionNode,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             Object f = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, PNone.NO_VALUE, flags);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
-            dylib.put(func.getStorage(), T___NAME__, name);
-            dylib.put(func.getStorage(), T___DOC__, doc);
+            dylib.put(func, T___NAME__, name);
+            dylib.put(func, T___DOC__, doc);
             PBuiltinMethod method;
             if (cls != PNone.NO_VALUE) {
                 method = factory.createBuiltinMethod(self, func, cls);
             } else {
                 method = factory.createBuiltinMethod(self, func);
             }
-            dylib.put(method.getStorage(), T___MODULE__, module);
-            dylib.put(method.getStorage(), METHOD_DEF_PTR, methodDefPtr);
+            dylib.put(method, T___MODULE__, module);
+            writeHiddenAttrNode.execute(inliningTarget, method, METHOD_DEF_PTR, methodDefPtr);
             return method;
         }
     }

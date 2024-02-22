@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,12 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.HiddenAttr;
 
-public abstract class HiddenAttributes {
-    public static final HiddenKey ID_KEY = new HiddenKey("object_id");
-    public static final HiddenKey DICT = new HiddenKey("ob_dict");
-    public static final HiddenKey CLASS = new HiddenKey("ob_type");
+public final class HiddenAttrDescriptor extends PythonBuiltinObject {
+    private final HiddenAttr attr;
+    private final Object type;
+
+    public HiddenAttrDescriptor(PythonLanguage lang, HiddenAttr attr, Object type) {
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
+        this.attr = attr;
+        this.type = type;
+    }
+
+    public HiddenAttr getAttr() {
+        return attr;
+    }
+
+    public Object getType() {
+        return type;
+    }
 }

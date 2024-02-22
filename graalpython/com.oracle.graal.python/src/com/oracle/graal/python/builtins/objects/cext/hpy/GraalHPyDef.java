@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,21 +120,16 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * A container class for mirroring definitions of {@code hpydef.h}
  */
 public abstract class GraalHPyDef {
-
-    public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
-    public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
-    public static final HiddenKey TYPE_HPY_BUILTIN_SHAPE = new HiddenKey("hpy_builtin_shape");
 
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;
@@ -339,8 +334,8 @@ public abstract class GraalHPyDef {
 
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
-        HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, TypeBuiltins.TYPE_GETBUFFER),
-        HPY_BF_RELEASEBUFFER(2, HPySlotWrapper.RELEASEBUFFER, TypeBuiltins.TYPE_RELEASEBUFFER),
+        HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, HiddenAttr.GETBUFFER),
+        HPY_BF_RELEASEBUFFER(2, HPySlotWrapper.RELEASEBUFFER, HiddenAttr.RELEASEBUFFER),
         HPY_MP_ASS_SUBSCRRIPT(3, HPySlotWrapper.OBJOBJARGPROC, T___SETITEM__, T___DELITEM__),
         HPY_MP_LENGTH(4, HPySlotWrapper.LENFUNC, T___LEN__),
         HPY_MP_SUBSCRIPT(5, HPySlotWrapper.BINARYFUNC, T___GETITEM__),
@@ -406,7 +401,7 @@ public abstract class GraalHPyDef {
 
         /**
          * The corresponding attribute key (mostly a {@link TruffleString} which is the name of a
-         * magic method, or a {@link HiddenKey} if it's not exposed to the user, or {@code null} if
+         * magic method, or a {@link HiddenAttr} if it's not exposed to the user, or {@code null} if
          * unsupported).
          */
         @CompilationFinal(dimensions = 1) private final Object[] attributeKeys;
@@ -417,7 +412,7 @@ public abstract class GraalHPyDef {
         /**
          * Common case: one slot causes the creation of one attribute.
          */
-        HPySlot(int value, HPySlotWrapper signature, HiddenKey attributeKey) {
+        HPySlot(int value, HPySlotWrapper signature, HiddenAttr attributeKey) {
             this.value = value;
             this.attributeKeys = new Object[]{attributeKey};
             this.signatures = new HPySlotWrapper[]{signature};

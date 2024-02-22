@@ -76,6 +76,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_SLOTS;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemE
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.PyTruffleType_AddGetSet;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.PyTruffleType_AddMember;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -158,13 +160,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -222,7 +224,6 @@ import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1015,12 +1016,12 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer}, call = Ignored)
     abstract static class PyTruffle_Set_Native_Slots extends CApiTernaryBuiltinNode {
-        static final HiddenKey NATIVE_SLOTS = new HiddenKey("__native_slots__");
 
         @Specialization
         static int doPythonClass(PythonClass pythonClass, Object nativeGetSets, Object nativeMembers,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(pythonClass, NATIVE_SLOTS, new Object[]{nativeGetSets, nativeMembers});
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.WriteNode writeAttrNode) {
+            writeAttrNode.execute(inliningTarget, pythonClass, NATIVE_SLOTS, new Object[]{nativeGetSets, nativeMembers});
             return 0;
         }
     }
@@ -1100,8 +1101,8 @@ public final class PythonCextBuiltins {
             int mroLength = mro.length();
             for (int i = 0; i < mroLength; i++) {
                 PythonAbstractClass kls = mro.getItemNormalized(i);
-                Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(kls, PyTruffle_Set_Native_Slots.NATIVE_SLOTS);
-                if (value != PNone.NO_VALUE) {
+                Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
+                if (value != null) {
                     Object[] tuple = (Object[]) value;
                     assert tuple.length == 2;
                     l.add(tuple[idx]);

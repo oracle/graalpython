@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -129,7 +130,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonBuiltins {
@@ -266,11 +266,11 @@ public abstract class PythonBuiltins {
     }
 
     private void addBuiltinConstantInternal(Object name, Object value) {
-        assert name instanceof TruffleString || name instanceof HiddenKey;
+        assert name instanceof TruffleString || name instanceof HiddenAttr;
         builtinConstants.put(name, ensureNoJavaString(value));
     }
 
-    protected final void addBuiltinConstant(HiddenKey name, Object value) {
+    protected final void addBuiltinConstant(HiddenAttr name, Object value) {
         addBuiltinConstantInternal(name, value);
     }
 
@@ -290,9 +290,12 @@ public abstract class PythonBuiltins {
         for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
             Object constant = assertNoJavaString(entry.getKey());
             Object value = assertNoJavaString(entry.getValue());
-            assert constant instanceof TruffleString || constant instanceof HiddenKey;
-            assert !(value instanceof String);
-            obj.setAttribute(constant, value);
+            if (constant instanceof HiddenAttr attr) {
+                HiddenAttr.WriteNode.executeUncached(obj, attr, value);
+            } else {
+                assert constant instanceof TruffleString;
+                obj.setAttribute(constant, value);
+            }
         }
     }
 

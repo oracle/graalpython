@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import java.util.ArrayList;
@@ -38,20 +37,19 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonObject extends PythonAbstractObject {
-    public static final HiddenKey DICT = HiddenAttributes.DICT;
     public static final byte CLASS_CHANGED_FLAG = 0b1;
     /**
      * Indicates that the object doesn't allow {@code __dict__}, but may have slots
@@ -86,8 +84,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     private boolean consistentStorage(Object pythonClass) {
-        DynamicObjectLibrary dylib = DynamicObjectLibrary.getUncached();
-        Object constantClass = dylib.getOrDefault(this, CLASS, null);
+        Object constantClass = HiddenAttr.ReadNode.executeUncached(this, HiddenAttr.CLASS, null);
         if (constantClass == null) {
             return true;
         }
@@ -100,18 +97,8 @@ public class PythonObject extends PythonAbstractObject {
         return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
     }
 
-    public void setPythonClass(Object cls, DynamicObjectLibrary dylib) {
-        // n.b.: the CLASS property is usually a constant property that is stored in the shape
-        // in
-        // single-context-mode. If we change it for the first time, there's an implicit shape
-        // transition
-        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
-        dylib.put(this, CLASS, cls);
-    }
-
-    public void setDict(DynamicObjectLibrary dylib, PDict dict) {
-        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
-        dylib.put(this, DICT, dict);
+    public void setDict(Node inliningTarget, HiddenAttr.WriteNode writeNode, PDict dict) {
+        writeNode.execute(inliningTarget, this, HiddenAttr.DICT, dict);
     }
 
     @NeverDefault
@@ -133,7 +120,7 @@ public class PythonObject extends PythonAbstractObject {
     @TruffleBoundary
     public void setAttribute(Object nameObj, Object value) {
         Object name = assertNoJavaString(nameObj);
-        assert name instanceof TruffleString || name instanceof HiddenKey : name.getClass().getSimpleName();
+        assert name instanceof TruffleString : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
         DynamicObjectLibrary.getUncached().put(getStorage(), name, assertNoJavaString(value));
     }
@@ -166,7 +153,7 @@ public class PythonObject extends PythonAbstractObject {
     @Override
     public String toString() {
         String className = "unknown";
-        Object storedPythonClass = DynamicObjectLibrary.getUncached().getOrDefault(this, CLASS, null);
+        Object storedPythonClass = HiddenAttr.ReadNode.executeUncached(this, HiddenAttr.CLASS, null);
         if (storedPythonClass instanceof PythonManagedClass) {
             className = ((PythonManagedClass) storedPythonClass).getQualName().toJavaStringUncached();
         } else if (storedPythonClass instanceof PythonBuiltinClassType) {

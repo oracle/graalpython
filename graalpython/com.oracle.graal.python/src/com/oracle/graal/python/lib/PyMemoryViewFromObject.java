@@ -43,8 +43,9 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -55,11 +56,10 @@ import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -132,29 +132,37 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,
+                    @Cached InlinedConditionProfile isBuiltinClassTypeProfile,
                     @Cached GetClassNode getClassNode,
-                    @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
-                    @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
+                    @Cached HiddenAttr.ReadNode readGetBufferNode,
+                    @Cached HiddenAttr.ReadNode readReleaseBufferNode,
                     @Cached CallNode callNode,
                     @Shared @Cached PythonObjectFactory factory,
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                     @Cached TruffleString.CodePointLengthNode lengthNode,
                     @Cached TruffleString.CodePointAtIndexNode atIndexNode,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
-        if (hasSlotProfile.profile(inliningTarget, getBufferAttr != PNone.NO_VALUE)) {
+        Object typeObj = getClassNode.execute(inliningTarget, object);
+        assert typeObj instanceof PythonBuiltinClassType || typeObj instanceof PythonAbstractObject;
+        PythonAbstractObject type;
+        if (isBuiltinClassTypeProfile.profile(inliningTarget, typeObj instanceof PythonBuiltinClassType)) {
+            type = PythonContext.get(inliningTarget).lookupType((PythonBuiltinClassType) typeObj);
+        } else {
+            type = (PythonAbstractObject) typeObj;
+        }
+        Object getBufferAttr = readGetBufferNode.execute(inliningTarget, type, HiddenAttr.GETBUFFER, null);
+        if (hasSlotProfile.profile(inliningTarget, getBufferAttr != null)) {
             // HPy object with buffer slot
             Object result = callNode.execute(getBufferAttr, object, BufferFlags.PyBUF_FULL_RO);
             if (!(result instanceof CExtPyBuffer)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw CompilerDirectives.shouldNotReachHere("The internal " + TypeBuiltins.TYPE_GETBUFFER + " is expected to return a CExtPyBuffer object.");
+                throw CompilerDirectives.shouldNotReachHere("The internal " + HiddenAttr.GETBUFFER + " is expected to return a CExtPyBuffer object.");
             }
             CExtPyBuffer cBuffer = (CExtPyBuffer) result;
 
-            Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
+            Object releaseBufferAttr = readReleaseBufferNode.execute(inliningTarget, type, HiddenAttr.RELEASEBUFFER, null);
             BufferLifecycleManager bufferLifecycleManager = null;
-            if (releaseBufferAttr != PNone.NO_VALUE) {
+            if (releaseBufferAttr != null) {
                 bufferLifecycleManager = new NativeBufferLifecycleManagerFromSlot(cBuffer, object, releaseBufferAttr);
             }
 

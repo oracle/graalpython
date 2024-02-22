@@ -56,11 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_DICTOFFSET;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_WEAKLISTOFFSET;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -83,6 +78,10 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_F
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
+import static com.oracle.graal.python.nodes.HiddenAttr.BASICSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
+import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
+import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -120,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -150,7 +148,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenAttrDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -182,6 +180,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -192,9 +191,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -248,7 +245,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -276,8 +272,8 @@ public abstract class TypeNodes {
         @Specialization
         long doBuiltinClassType(PythonBuiltinClassType clazz,
                         @Bind("this") Node inliningTarget,
-                        @Shared("read") @Cached ReadAttributeFromDynamicObjectNode readHiddenFlagsNode,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode,
+                        @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
+                        @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
             return doManaged(PythonContext.get(this).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
         }
@@ -285,17 +281,17 @@ public abstract class TypeNodes {
         @Specialization
         long doManaged(PythonManagedClass clazz,
                         @Bind("this") Node inliningTarget,
-                        @Shared("read") @Cached ReadAttributeFromDynamicObjectNode readHiddenFlagsNode,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode,
+                        @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
+                        @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
 
-            Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
-            if (profile.profile(inliningTarget, flagsObject != PNone.NO_VALUE)) {
+            Object flagsObject = readHiddenFlagsNode.execute(inliningTarget, clazz, HiddenAttr.FLAGS, null);
+            if (profile.profile(inliningTarget, flagsObject != null)) {
                 // we have it under control; it must be a long
                 return (long) flagsObject;
             }
             long flags = computeFlags(clazz);
-            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
+            writeHiddenFlagsNode.execute(inliningTarget, clazz, HiddenAttr.FLAGS, flags);
             return flags;
         }
 
@@ -332,7 +328,7 @@ public abstract class TypeNodes {
                 if (mroEntry instanceof PythonAbstractNativeObject) {
                     result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, CStructAccess.ReadI64Node.getUncached()));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
-                    long flags = doManaged((PythonManagedClass) mroEntry, null, ReadAttributeFromDynamicObjectNode.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(),
+                    long flags = doManaged((PythonManagedClass) mroEntry, null, HiddenAttr.ReadNode.getUncached(), HiddenAttr.WriteNode.getUncached(),
                                     InlinedCountingConditionProfile.getUncached());
                     result = setFlags(result, flags);
                 }
@@ -512,15 +508,15 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void doPBCT(Node inliningTarget, PythonBuiltinClassType clazz, long flags,
-                        @Shared("write") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
-            doManaged(PythonContext.get(inliningTarget).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
+        static void doPBCT(Node inliningTarget, PythonBuiltinClassType clazz, long flags,
+                        @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode) {
+            doManaged(inliningTarget, PythonContext.get(inliningTarget).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
         }
 
         @Specialization
-        static void doManaged(PythonManagedClass clazz, long flags,
-                        @Shared("write") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
-            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
+        static void doManaged(Node inliningTarget, PythonManagedClass clazz, long flags,
+                        @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode) {
+            writeHiddenFlagsNode.execute(inliningTarget, clazz, HiddenAttr.FLAGS, flags);
         }
 
         @Specialization
@@ -1841,21 +1837,19 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getTpDictNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
+                        @Cached HiddenAttr.ReadNode readAttrNode) {
             Object tpDictObj = getTpDictNode.readFromObj(clazz, CFields.PyTypeObject__tp_dict);
             if (tpDictObj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) tpDictObj).getInstanceShape();
             }
-            if (tpDictObj instanceof PDict) {
-                HashingStorage dictStorage = ((PDict) tpDictObj).getDictStorage();
-                if (dictStorage instanceof DynamicObjectStorage) {
-                    Object instanceShapeObj = lib.getOrDefault(((DynamicObjectStorage) dictStorage).getStore(), PythonNativeClass.INSTANCESHAPE, PNone.NO_VALUE);
-                    if (instanceShapeObj != PNone.NO_VALUE) {
-                        return (Shape) instanceShapeObj;
-                    }
-                    throw CompilerDirectives.shouldNotReachHere("instanceshape object is not a shape");
+            if (tpDictObj instanceof PDict dict) {
+                Object instanceShapeObj = readAttrNode.execute(inliningTarget, dict, HiddenAttr.INSTANCESHAPE, PNone.NO_VALUE);
+                if (instanceShapeObj != PNone.NO_VALUE) {
+                    return (Shape) instanceShapeObj;
                 }
+                throw CompilerDirectives.shouldNotReachHere("instanceshape object is not a shape");
             }
             // TODO(fa): track unique shape per native class in language?
             throw CompilerDirectives.shouldNotReachHere("custom dicts for native classes are unsupported");
@@ -2194,8 +2188,8 @@ public abstract class TypeNodes {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                         }
-                        HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
-                        HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
+                        HiddenAttr hiddenSlotAttr = HiddenAttr.createTypeAttrForSlot(toJavaStringNode.execute(mangledName));
+                        HiddenAttrDescriptor slotDesc = factory.createHiddenAttrDescriptor(hiddenSlotAttr, pythonClass);
                         pythonClass.setAttribute(mangledName, slotDesc);
                     }
                 }
@@ -2270,11 +2264,6 @@ public abstract class TypeNodes {
                             l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
                             WeakRefModuleBuiltinsFactory.class);
             setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, factory);
-        }
-
-        @TruffleBoundary
-        private static HiddenKey createTypeKey(String name) {
-            return PythonLanguage.get(null).typeHiddenKeys.computeIfAbsent(name, HiddenKey::new);
         }
 
         private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {
@@ -2506,7 +2495,7 @@ public abstract class TypeNodes {
         @Specialization
         long lookup(Object cls,
                         @Cached CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_basicsize, TYPE_BASICSIZE);
+            return lookup.execute(cls, PyTypeObject__tp_basicsize, BASICSIZE);
         }
     }
 
@@ -2521,9 +2510,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_BASICSIZE, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, BASICSIZE, value);
         }
     }
 
@@ -2538,9 +2527,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long lookup(Object cls,
+        static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_itemsize, TYPE_ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
+            return lookup.execute(cls, PyTypeObject__tp_itemsize, ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
         }
 
         private static int getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
@@ -2573,9 +2562,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_ITEMSIZE, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, ITEMSIZE, value);
         }
     }
 
@@ -2590,9 +2579,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long lookup(Object cls,
+        static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_dictoffset, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
+            return lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
         }
 
         private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
@@ -2618,9 +2607,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_DICTOFFSET, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, DICTOFFSET, value);
         }
     }
 
@@ -2635,9 +2624,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long lookup(Object cls,
+        static long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_weaklistoffset, TYPE_WEAKLISTOFFSET, PythonBuiltinClassType::getWeaklistoffset);
+            return lookup.execute(cls, PyTypeObject__tp_weaklistoffset, WEAKLISTOFFSET, PythonBuiltinClassType::getWeaklistoffset);
         }
     }
 
@@ -2652,9 +2641,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        void set(PythonManagedClass cls, long value,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
-            write.execute(cls, TYPE_WEAKLISTOFFSET, value);
+        static void set(Node inliningTarget, PythonManagedClass cls, long value,
+                        @Cached HiddenAttr.WriteNode write) {
+            write.execute(inliningTarget, cls, WEAKLISTOFFSET, value);
         }
     }
 

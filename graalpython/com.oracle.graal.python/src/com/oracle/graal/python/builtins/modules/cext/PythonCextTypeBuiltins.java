@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
+import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyObjectSetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
@@ -90,10 +92,10 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictSetDefault;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -168,8 +170,9 @@ public final class PythonCextTypeBuiltins {
         static PDict doGeneric(PythonNativeClass nativeClass) {
             PythonLanguage language = PythonLanguage.get(null);
             Store nativeTypeStore = new Store(language.getEmptyShape());
-            DynamicObjectLibrary.getUncached().put(nativeTypeStore, PythonNativeClass.INSTANCESHAPE, language.getShapeForClass(nativeClass));
-            return PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
+            PDict dict = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
+            HiddenAttr.WriteNode.executeUncached(dict, HiddenAttr.INSTANCESHAPE, language.getShapeForClass(nativeClass));
+            return dict;
         }
     }
 
@@ -246,6 +249,7 @@ public final class PythonCextTypeBuiltins {
         @Specialization(guards = "isClassOrStaticMethod(flags)")
         static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Cached(inline = false) PythonObjectFactory factory,
+                        @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
             Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
@@ -257,19 +261,19 @@ public final class PythonCextTypeBuiltins {
             }
             dylib.put(function, T___NAME__, name);
             dylib.put(function, T___DOC__, doc);
-            dylib.put(function, PythonCextMethodBuiltins.METHOD_DEF_PTR, methodDefPtr);
+            writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDefPtr);
             return function;
         }
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
         static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Cached PyObjectSetAttrNode setattr,
-                        @Cached(inline = false) WriteAttributeToObjectNode write,
+                        @Exclusive @Cached HiddenAttr.WriteNode writeNode,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
             Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
             setattr.execute(inliningTarget, func, T___NAME__, name);
             setattr.execute(inliningTarget, func, T___DOC__, doc);
-            write.execute(func, PythonCextMethodBuiltins.METHOD_DEF_PTR, methodDefPtr);
+            writeNode.execute(inliningTarget, (PythonAbstractObject) func, METHOD_DEF_PTR, methodDefPtr);
             return func;
         }
     }

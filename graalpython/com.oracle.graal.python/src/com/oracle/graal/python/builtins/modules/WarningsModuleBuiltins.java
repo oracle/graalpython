@@ -47,6 +47,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
+import static com.oracle.graal.python.nodes.HiddenAttr.DEFAULTACTION;
+import static com.oracle.graal.python.nodes.HiddenAttr.FILTERS;
+import static com.oracle.graal.python.nodes.HiddenAttr.FILTERS_VERSION;
+import static com.oracle.graal.python.nodes.HiddenAttr.ONCEREGISTRY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_CLEAR;
@@ -100,6 +104,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -137,21 +142,14 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__WARNINGS)
 public final class WarningsModuleBuiltins extends PythonBuiltins {
-    private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
-    private static final HiddenKey FILTERS = new HiddenKey("filters");
-    private static final HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");
-    private static final HiddenKey ONCEREGISTRY = new HiddenKey("_onceregistry");
     private static final TruffleString T___WARNINGREGISTRY__ = tsLiteral("__warningregistry__");
 
     private static final String J_WARN = "warn";
@@ -211,7 +209,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     static final class WarningsModuleNode extends Node {
-        @Child DynamicObjectLibrary warningsModuleLib;
+        @Child HiddenAttr.ReadNode readHiddenAttrNode;
+        @Child HiddenAttr.WriteNode writeHiddenAttrNode;
         @Child CastToTruffleStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PyObjectRichCompareBool.EqNode eqNode;
@@ -253,13 +252,20 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             return PythonContext.get(this);
         }
 
-        private DynamicObjectLibrary getWarnLib() {
-            if (warningsModuleLib == null) {
+        private HiddenAttr.ReadNode getReadHiddenAttrNode() {
+            if (readHiddenAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                warningsModuleLib = insert(DynamicObjectLibrary.getFactory().createDispatched(1));
+                readHiddenAttrNode = insert(HiddenAttr.ReadNode.create());
             }
-            return warningsModuleLib;
+            return readHiddenAttrNode;
+        }
+
+        private HiddenAttr.WriteNode getWriteHiddenAttrNode() {
+            if (writeHiddenAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeHiddenAttrNode = insert(HiddenAttr.WriteNode.create());
+            }
+            return writeHiddenAttrNode;
         }
 
         private PyObjectRichCompareBool.EqNode getEqNode() {
@@ -456,35 +462,32 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         // _Warnings_GetState split up
 
         /**
-         * May be on the fast path, depending on the passed library.
+         * May be on the fast path, depending on the passed node, which must be either cached or
+         * uncached.
          */
-        private static long getStateFiltersVersion(PythonModule warningsModule, DynamicObjectLibrary dylib) {
-            try {
-                return dylib.getLongOrDefault(warningsModule, FILTERS_VERSION, 0);
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+        private static long getStateFiltersVersion(PythonModule warningsModule, HiddenAttr.ReadNode readHiddenAttrNode) {
+            return (long) readHiddenAttrNode.executeCached(warningsModule, FILTERS_VERSION, 0L);
         }
 
         /**
          * On fast path.
          */
         private Object getStateFilters(PythonModule warningsModule) {
-            return getWarnLib().getOrDefault(warningsModule, FILTERS, null);
+            return getReadHiddenAttrNode().executeCached(warningsModule, FILTERS, null);
         }
 
         /**
          * On slow path.
          */
         private static Object getStateOnceRegistry(PythonModule warningsModule) {
-            return DynamicObjectLibrary.getUncached().getOrDefault(warningsModule, ONCEREGISTRY, null);
+            return HiddenAttr.ReadNode.executeUncached(warningsModule, ONCEREGISTRY, null);
         }
 
         /**
          * On fast path.
          */
         private Object getStateDefaultAction(PythonModule warningsModule) {
-            return getWarnLib().getOrDefault(warningsModule, DEFAULTACTION, null);
+            return getReadHiddenAttrNode().executeCached(warningsModule, DEFAULTACTION, null);
         }
 
         /**
@@ -590,7 +593,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         private TruffleString getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
             Object filters = getWarningsAttr(frame, T_FILTERS);
             if (filters != null) {
-                getWarnLib().put(_warnings, FILTERS, filters);
+                getWriteHiddenAttrNode().executeCached(_warnings, FILTERS, filters);
             } else {
                 filters = getStateFilters(_warnings);
             }
@@ -646,7 +649,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * The variant of alreadyWarned that should not set and that must be on the fast path.
          */
         private boolean alreadyWarnedShouldNotSet(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key) {
-            return alreadyWarned(frame, _warnings, registry, key, false, getEqNode(), getCallMethodNode(), getDictGetItemNode(), getSetItemNode(), getIsTrueNode(), getWarnLib());
+            return alreadyWarned(frame, _warnings, registry, key, false, getEqNode(), getCallMethodNode(), getDictGetItemNode(), getSetItemNode(), getIsTrueNode(), getReadHiddenAttrNode());
         }
 
         /**
@@ -655,7 +658,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private static boolean alreadyWarnedShouldSet(PythonModule _warnings, PDict registry, Object key) {
             return alreadyWarned(null, _warnings, registry, key, true, PyObjectRichCompareBool.EqNode.getUncached(), PyObjectCallMethodObjArgs.getUncached(), PyDictGetItem.getUncached(),
-                            PyObjectSetItem.getUncached(), PyObjectIsTrueNode.getUncached(), DynamicObjectLibrary.getUncached());
+                            PyObjectSetItem.getUncached(), PyObjectIsTrueNode.getUncached(), HiddenAttr.ReadNode.getUncached());
         }
 
         /**
@@ -663,9 +666,9 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PyObjectRichCompareBool.EqNode eqNode,
                         PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode,
-                        DynamicObjectLibrary warnLib) {
+                        HiddenAttr.ReadNode readHiddenAttrNode) {
             Object versionObj = getItem.executeCached(frame, registry, T_VERSION);
-            long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
+            long stateFiltersVersion = getStateFiltersVersion(_warnings, readHiddenAttrNode);
             if (versionObj == null || !eqNode.compareCached(frame, stateFiltersVersion, versionObj)) {
                 callMethod.executeCached(frame, registry, T_CLEAR);
                 setItem.executeCached(frame, registry, T_VERSION, stateFiltersVersion);
@@ -1083,16 +1086,13 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_filters_mutated", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class FiltersMutated extends PythonBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         static PNone mutate(PythonModule self,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
-            long version = 0;
-            try {
-                version = dylib.getLongOrDefault(self, FILTERS_VERSION, 0);
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            dylib.putLong(self, FILTERS_VERSION, version + 1);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
+            long version = (long) readHiddenAttrNode.execute(inliningTarget, self, FILTERS_VERSION, 0L);
+            writeHiddenAttrNode.execute(inliningTarget, self, FILTERS_VERSION, version + 1);
             return PNone.NONE;
         }
     }

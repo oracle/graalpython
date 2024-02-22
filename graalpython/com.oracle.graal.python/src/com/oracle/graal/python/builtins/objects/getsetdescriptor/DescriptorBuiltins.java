@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,13 +54,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -79,7 +79,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -106,10 +105,10 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor self,
+        static TruffleString doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getKey().getName());
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getAttr().getName());
         }
 
         @TruffleBoundary
@@ -128,9 +127,9 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doHiddenKeyDescriptor(HiddenKeyDescriptor self,
+        static TruffleString doHiddenAttrDescriptor(HiddenAttrDescriptor self,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(self.getKey().getName(), TS_ENCODING);
+            return fromJavaStringNode.execute(self.getAttr().getName(), TS_ENCODING);
         }
     }
 
@@ -142,7 +141,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
             executeInternal(inliningTarget, descrType, name, obj);
         }
 
-        public void execute(Node inliningTarget, Object descrType, HiddenKey name, Object obj) {
+        public void execute(Node inliningTarget, Object descrType, HiddenAttr name, Object obj) {
             executeInternal(inliningTarget, descrType, name, obj);
         }
 
@@ -175,13 +174,14 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, Object obj,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            Object val = readNode.execute(obj, descr.getKey());
+        Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            Object val = readNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
             if (val != PNone.NO_VALUE) {
                 return val;
             }
-            throw getRaiseNode().raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getKey().getName());
+            throw getRaiseNode().raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getAttr().getName());
         }
     }
 
@@ -199,9 +199,11 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, Object obj, Object value,
-                        @Cached WriteAttributeToObjectNode writeNode) {
-            return writeNode.execute(obj, descr.getKey(), value);
+        static Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.WriteNode writeNode) {
+            writeNode.execute(inliningTarget, obj, descr.getAttr(), value);
+            return true;
         }
     }
 
@@ -231,17 +233,17 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, Object obj,
+        Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached HiddenAttr.WriteNode writeNode,
+                        @Cached HiddenAttr.ReadNode readNode,
                         @Cached InlinedConditionProfile profile) {
             // PyMember_SetOne - Check if the attribute is set.
-            if (profile.profile(inliningTarget, readNode.execute(obj, descr.getKey()) != PNone.NO_VALUE)) {
-                writeNode.execute(obj, descr.getKey(), PNone.NO_VALUE);
+            if (profile.profile(inliningTarget, readNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE) != PNone.NO_VALUE)) {
+                writeNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
                 return PNone.NONE;
             }
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getKey().getName());
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getAttr().getName());
         }
     }
 

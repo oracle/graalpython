@@ -8,7 +8,7 @@ from pickle import PickleBuffer
 import weakref
 import unittest
 
-from test.support import import_helper
+from test.support import import_helper, impl_detail
 
 
 class B(bytes):
@@ -64,6 +64,7 @@ class PickleBufferTest(unittest.TestCase):
         # Idempotency
         pb.release()
 
+    @impl_detail("finalization", graalpy=False)
     def test_cycle(self):
         b = B(b"foo")
         pb = PickleBuffer(b)

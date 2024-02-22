@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_HASHLIB;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_HASHLIB;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -101,7 +103,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -123,8 +124,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "shake_128", "SHAKE128",
                     "shake_256", "SHAKE256");
 
-    private static final String CONSTRUCTORS = "_constructors";
-    private static final HiddenKey ORIGINAL_CONSTRUCTORS = new HiddenKey(CONSTRUCTORS);
+    public static final String J_CONSTRUCTORS = "_constructors";
     private static final String[] DIGEST_ALIASES = new String[]{
                     "md5", "_md5",
                     "sha1", "_sha1",
@@ -162,15 +162,15 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(algos));
 
         EconomicMapStorage storage = EconomicMapStorage.create();
-        addBuiltinConstant(CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
-        addBuiltinConstant(ORIGINAL_CONSTRUCTORS, storage);
+        addBuiltinConstant(J_CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
+        addBuiltinConstant(HiddenAttr.ORIGINAL_CONSTRUCTORS, storage);
         super.initialize(core);
     }
 
     private void addDigestAlias(PythonModule self, Object mod, ReadAttributeFromDynamicObjectNode readNode, EconomicMapStorage storage, String digest) {
         TruffleString tsDigest = toTruffleStringUncached(digest);
         Object function = readNode.execute(mod, tsDigest);
-        if (function != PNone.NO_VALUE) {
+        if (function != NO_VALUE) {
             self.setAttribute(toTruffleStringUncached(OPENSSL_PREFIX + digest), function);
             HashingStorageNodes.HashingStorageSetItem.executeUncached(storage, function, tsDigest);
         }
@@ -181,7 +181,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
-        EconomicMapStorage storage = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
+        EconomicMapStorage storage = (EconomicMapStorage) HiddenAttr.ReadNode.executeUncached(self, HiddenAttr.ORIGINAL_CONSTRUCTORS, NO_VALUE);
         Object sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
@@ -278,7 +278,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(digestmod)")
         static Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
                         @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
@@ -288,7 +288,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // cast guaranteed in our initialize
-            EconomicMapStorage constructors = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
+            EconomicMapStorage constructors = (EconomicMapStorage) readHiddenAttrNode.execute(inliningTarget, self, HiddenAttr.ORIGINAL_CONSTRUCTORS, NO_VALUE);
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize

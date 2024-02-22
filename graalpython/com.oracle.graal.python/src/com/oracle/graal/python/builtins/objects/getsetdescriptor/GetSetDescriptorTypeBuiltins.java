@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,7 +95,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(HiddenKeyDescriptor self) {
+        static Object doHiddenAttrDescriptor(HiddenAttrDescriptor self) {
             return self.getType();
         }
     }
@@ -112,11 +112,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString repr(HiddenKeyDescriptor descr,
+        TruffleString repr(HiddenAttrDescriptor descr,
                         @Bind("this") Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getKey().getName(), getName.execute(inliningTarget, descr.getType()));
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getAttr().getName(), getName.execute(inliningTarget, descr.getType()));
         }
     }
 
@@ -145,11 +145,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(obj)")
-        static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
+        static Object doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrGetNode getNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
             return getNode.execute(frame, descr, obj);
         }
     }
@@ -167,11 +167,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, Object value,
+        static Object doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor descr, Object obj, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrSetNode setNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
             return setNode.execute(frame, descr, obj, value);
         }
     }
@@ -190,11 +190,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj,
+        static Object doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrDeleteNode deleteNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
             return deleteNode.execute(frame, descr, obj);
         }
     }

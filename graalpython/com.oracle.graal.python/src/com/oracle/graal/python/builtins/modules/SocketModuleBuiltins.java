@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
+import static com.oracle.graal.python.nodes.HiddenAttr.DEFAULT_TIMEOUT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ZERO;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -89,11 +90,10 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -135,15 +135,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__SOCKET)
 public final class SocketModuleBuiltins extends PythonBuiltins {
-
-    public static HiddenKey DEFAULT_TIMEOUT_KEY = new HiddenKey("default_timeout");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -193,7 +190,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         PythonModule module = core.lookupBuiltinModule(T__SOCKET);
-        module.setAttribute(DEFAULT_TIMEOUT_KEY, -1L);
+        HiddenAttr.WriteNode.executeUncached(module, DEFAULT_TIMEOUT, -1L);
         if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java")) {
             module.setAttribute(toTruffleStringUncached(PosixConstants.AF_UNIX.name), PNone.NO_VALUE);
         }
@@ -235,9 +232,10 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetDefaultTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object get(PythonModule module,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            long timeout = (long) readNode.execute(module, DEFAULT_TIMEOUT_KEY);
+        static Object get(PythonModule module,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            long timeout = (long) readNode.execute(inliningTarget, module, DEFAULT_TIMEOUT, null);
             return timeout < 0 ? PNone.NONE : TimeUtils.pyTimeAsSecondsDouble(timeout);
         }
     }
@@ -246,12 +244,12 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetDefaultTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object set(VirtualFrame frame, PythonModule module, Object value,
+        static Object set(VirtualFrame frame, PythonModule module, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
-                        @Cached WriteAttributeToObjectNode writeNode) {
+                        @Cached HiddenAttr.WriteNode writeNode) {
             long timeout = parseTimeoutNode.execute(frame, inliningTarget, value);
-            writeNode.execute(module, DEFAULT_TIMEOUT_KEY, timeout);
+            writeNode.execute(inliningTarget, module, DEFAULT_TIMEOUT, timeout);
             return PNone.NONE;
         }
     }

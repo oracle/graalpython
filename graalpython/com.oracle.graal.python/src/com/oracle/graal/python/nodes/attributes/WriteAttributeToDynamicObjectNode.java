@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -66,8 +65,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline(false) // Should be reconsidered during anticipated refactoring from DOM library
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
-
-    public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
     public abstract boolean execute(Object primary, TruffleString key, Object value);
 
@@ -89,18 +86,12 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return true;
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static boolean writeDirectHidden(DynamicObject dynamicObject, HiddenKey key, Object value,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        dylib.put(dynamicObject, key, value);
-        return true;
-    }
-
-    @Specialization(guards = "!isHiddenKey(key)", replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @Specialization(replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
     static boolean write(DynamicObject dynamicObject, Object key, Object value,
                     @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        assert !isHiddenKey(key);
         dylib.put(dynamicObject, attrKey(inliningTarget, key, castNode), value);
         return true;
     }

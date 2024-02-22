@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,17 +53,18 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
@@ -76,13 +77,13 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization(guards = {"object.getShape() == cachedShape", "hasNoDict(cachedShape)"}, limit = "1")
     static PDict getNoDictCachedShape(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape) {
-        assert doPythonObject(object, DynamicObjectLibrary.getUncached()) == null;
+        assert getDictUncached(object) == null;
         return null;
     }
 
     @Specialization(guards = "hasNoDict(object.getShape())", replaces = "getNoDictCachedShape")
     static PDict getNoDict(@SuppressWarnings("unused") PythonObject object) {
-        assert doPythonObject(object, DynamicObjectLibrary.getUncached()) == null;
+        assert getDictUncached(object) == null;
         return null;
     }
 
@@ -102,15 +103,16 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }
 
-    protected PDict getDictUncached(PythonObject object) {
-        return (PDict) DynamicObjectLibrary.getUncached().getOrDefault(object, PythonObject.DICT, null);
+    protected static PDict getDictUncached(PythonObject object) {
+        return (PDict) HiddenAttr.ReadNode.executeUncached(object, HiddenAttr.DICT, null);
     }
 
     @Specialization(replaces = "getConstant")
     @InliningCutoff
     static PDict doPythonObject(PythonObject object,
-                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return (PDict) dylib.getOrDefault(object, PythonObject.DICT, null);
+                    @Bind("this") Node inliningTarget,
+                    @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
+        return (PDict) readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.DICT, null);
     }
 
     @Specialization

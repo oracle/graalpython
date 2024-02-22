@@ -77,7 +77,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
-import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -132,7 +132,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -371,7 +370,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
-    public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
+    public final ConcurrentHashMap<String, HiddenAttr> typeHiddenAttrs = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_ATTRS);
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
@@ -954,7 +953,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public Shape getShapeForClass(PythonAbstractClass klass) {
         if (isSingleContext()) {
-            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
+            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.getClassHiddenKey(), klass, 0).build();
         } else {
             return getEmptyShape();
         }
@@ -969,7 +968,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Shape shape = builtinTypeInstanceShapes[ordinal];
         if (shape == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0);
+            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.getClassHiddenKey(), type, 0);
             if (!type.isBuiltinWithDict()) {
                 shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
             }

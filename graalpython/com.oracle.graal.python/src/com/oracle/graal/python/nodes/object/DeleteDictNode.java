@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -53,9 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @GenerateUncached
 @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
@@ -64,13 +63,14 @@ public abstract class DeleteDictNode extends PNodeWithContext {
 
     @Specialization
     static void doPythonObject(PythonObject object,
-                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
                     @Bind("this") Node inliningTarget,
+                    @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+                    @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                     @Cached HashingStorageCopy copyNode,
                     @Cached PythonObjectFactory factory) {
         /* There is no special handling for class MROs because type.__dict__ cannot be deleted. */
         assert !PGuards.isPythonClass(object);
-        PDict oldDict = (PDict) dylib.getOrDefault(object, PythonObject.DICT, null);
+        PDict oldDict = (PDict) readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.DICT, null);
         if (oldDict != null) {
             HashingStorage storage = oldDict.getDictStorage();
             if (storage instanceof DynamicObjectStorage && ((DynamicObjectStorage) storage).getStore() == object) {
@@ -87,7 +87,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
          * is that the current values won't get garbage collected.
          */
         PDict newDict = factory.createDict();
-        object.setDict(dylib, newDict);
+        object.setDict(inliningTarget, writeHiddenAttrNode, newDict);
     }
 
     @NeverDefault
