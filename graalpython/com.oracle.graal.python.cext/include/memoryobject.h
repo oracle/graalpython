@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -21,9 +21,9 @@ PyAPI_DATA(PyTypeObject) PyMemoryView_Type;
 
 #ifndef Py_LIMITED_API
 /* Get a pointer to the memoryview's private copy of the exporter's buffer. */
-#define PyMemoryView_GET_BUFFER(op) (_PyMemoryView_GetBuffer((PyObject *)(op)))
+#define PyMemoryView_GET_BUFFER(op) (&((PyMemoryViewObject *)(op))->view)
 /* Get a pointer to the exporting object (this may be NULL!). */
-#define PyMemoryView_GET_BASE(op) (_PyMemoryView_GetBuffer((PyObject *)(op))->obj)
+#define PyMemoryView_GET_BASE(op) (((PyMemoryViewObject *)(op))->view.obj)
 #endif
 
 PyAPI_FUNC(PyObject *) PyMemoryView_FromObject(PyObject *base);
@@ -70,10 +70,6 @@ typedef struct {
     PyObject *weakreflist;
     Py_ssize_t ob_array[1];       /* shape, strides, suboffsets */
 } PyMemoryViewObject;
-
-
-PyAPI_FUNC(Py_buffer *) _PyMemoryView_GetBuffer(PyObject *op);
-
 #endif
 
 #ifdef __cplusplus

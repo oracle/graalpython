@@ -278,8 +278,8 @@ int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
 void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* MEMORYVIEW */
-int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags);
-void memoryview_releasebuffer(PyMemoryViewObject *self, Py_buffer *view);
+int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
+void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 
 static void initialize_bufferprocs() {
     static PyBufferProcs bytes_as_buffer = {
@@ -297,8 +297,8 @@ static void initialize_bufferprocs() {
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
-        (getbufferproc)memoryview_getbuffer,         /* bf_getbuffer */
-        (releasebufferproc)memoryview_releasebuffer, /* bf_releasebuffer */
+        (getbufferproc)memory_getbuf,         /* bf_getbuffer */
+        (releasebufferproc)memory_releasebuf, /* bf_releasebuffer */
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);

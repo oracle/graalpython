@@ -548,7 +548,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_AsInt", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyLong_FromTime_t", ret = PyObject, args = {TIME_T}, call = CImpl)
     @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
-    @CApiBuiltin(name = "_PyMemoryView_GetBuffer", ret = PY_BUFFER_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyModule_CreateInitialized", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallFunction_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = CImpl)
