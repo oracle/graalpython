@@ -19,16 +19,16 @@ See the [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
 As of GraalVM for JDK 21, the Python runtime (GraalPy) is available as a standalone distribution. 
 
-A GraalPy standalone built on top of Oracle GraalVM (Oracle GraalPy) is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, which permits use by any user including commercial and production use. Redistribution is permitted as long as it is not for a fee.
-Oracle GraalPy provides the best experience: it comes with additional optimizations, is significantly faster and more memory-efficient.
+A GraalPy standalone built on top of Oracle GraalVM is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, which permits use by any user including commercial and production use. Redistribution is permitted as long as it is not for a fee.
+This distribution comes with additional proprietary optimizations, is significantly faster and more memory-efficient.
 
 A GraalPy standalone built on top of GraalVM Community Edition (GraalPy Community) is fully open-source.
 To distinguish between them, GraalPy Community has the suffix `-community` in the name.
 
 ```bash
-# Oracle GraalPy
+# GraalPy
 graalpy-<version>-<os>-<arch>.tar.gz
-# GraalPy Community
+# GraalPy Community Edition
 graalpy-community-<version>-<os>-<arch>.tar.gz
 ```
 

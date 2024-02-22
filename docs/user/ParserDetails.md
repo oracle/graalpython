@@ -80,7 +80,7 @@ communicate these options to GraalPy, these options are made available as langua
 Note that a Python context will not enable writing _.pyc_ files by default.
 The `graalpy` launcher enables it by default, but if this is desired in the embedding use case, care should be taken to ensure that the _\_\_pycache\_\__ location is properly managed and the files in that location are secured against manipulation in the same way as the source code files (_.py_) from which they were derived.
 
-Note also that to upgrade the application sources to Oracle GraalPy, old _.pyc_
+Note also that to upgrade the application sources to GraalPy, old _.pyc_
 files must be removed by the embedder as required.
 
 ## Security Considerations

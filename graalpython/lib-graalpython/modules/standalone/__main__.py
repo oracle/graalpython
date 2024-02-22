@@ -484,7 +484,7 @@ def main(args):
         default=[],
     )
     parser_bin.add_argument(
-        "-ce", action="store_true", help="Use GraalPy Community Edition instead of Oracle GraalPy"
+        "-ce", action="store_true", help="Use only fully open source bits from GraalPy Community Edition"
     )
 
     parser_app = subparsers.add_parser(
