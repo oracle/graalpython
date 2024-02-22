@@ -84,7 +84,7 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
         return MultibyteCodecBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"$self", "errors"}, doc = "encode($self, /, input, errors=None)\n" + //
+    @Builtin(name = "encode", minNumOfPositionalArgs = 2, parameterNames = {"$self", "input", "errors"}, doc = "encode($self, /, input, errors=None)\n" + //
                     "--\n\nReturn an encoded string version of `input\'.\n" + //
                     "\n\'errors\' may be given to set a different error handling scheme. Default is\n" + //
                     "\'strict\' meaning that encoding errors raise a UnicodeEncodeError. Other possible\n" + //
