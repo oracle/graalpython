@@ -277,6 +277,7 @@ graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyrig
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/src/abstract.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/bytearrayobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/call.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/capsule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/codeobject.c,python.copyright
