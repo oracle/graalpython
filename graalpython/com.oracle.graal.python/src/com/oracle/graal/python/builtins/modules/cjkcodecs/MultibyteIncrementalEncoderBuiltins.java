@@ -296,7 +296,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setstate", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "setstate($self, state, /)\n--\n\n")
+    @Builtin(name = "setstate", parameterNames = {"$self", "state"}, doc = "setstate($self, state, /)\n--\n\n")
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
