@@ -2355,6 +2355,7 @@ class TestSpecial(unittest.TestCase):
         else:
             raise Exception('Exception not raised.')
 
+    @support.impl_detail("finalization", graalpy=False)
     def test_missing_exceptions_reset(self):
         import gc
         import weakref
