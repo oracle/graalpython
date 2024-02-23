@@ -1,11 +1,14 @@
 [[rules]]
-version = '== 0.29.30'
-patch = 'wheel-Cython-0.29.30.patch'
+version = '== 0.29.37'
+patch = 'Cython-0.29.37.patch'
 subdir = 'src'
 
 [[rules]]
-# pin 0.29.32
-install-priority = 10
 version = '== 0.29.32'
 patch = 'Cython-0.29.32.patch'
+subdir = 'src'
+
+[[rules]]
+version = '== 0.29.30'
+patch = 'wheel-Cython-0.29.30.patch'
 subdir = 'src'
