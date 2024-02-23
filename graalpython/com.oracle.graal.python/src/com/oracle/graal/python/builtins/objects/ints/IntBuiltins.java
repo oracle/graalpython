@@ -123,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2648,8 +2649,13 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
         static Object doCached(Object left, Object right, @SuppressWarnings("unused") int opCode,
                         @Bind("this") Node inliningTarget,
+                        @Cached PyLongCheckNode checkLeft,
+                        @Cached PyLongCheckNode checkRight,
                         @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
                         @Cached RichCompareHelperNode cmpNode) {
+            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
             return cmpNode.execute(inliningTarget, left, right, cachedOp);
         }
     }
