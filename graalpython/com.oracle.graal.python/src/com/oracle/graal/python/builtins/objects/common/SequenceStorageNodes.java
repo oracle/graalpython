@@ -1720,6 +1720,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(replaces = "doGenericLenCached")
+        @InliningCutoff
         static byte[] doGeneric(Node inliningTarget, SequenceStorage s,
                         @Shared("getItemNode") @Cached GetItemScalarNode getItemNode,
                         @Shared @Cached CastToJavaByteNode castToByteNode) {

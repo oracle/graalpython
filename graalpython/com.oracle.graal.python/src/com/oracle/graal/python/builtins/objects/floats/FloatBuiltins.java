@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.floats.FloatUtils.PFloatUnboxing;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
@@ -106,6 +107,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -147,8 +149,13 @@ public final class FloatBuiltins extends PythonBuiltins {
         try {
             return cast.execute(inliningTarget, obj);
         } catch (CannotCastException e) {
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "float", obj);
+            throw raiseWrongSelf(obj);
         }
+    }
+
+    @InliningCutoff
+    private static PException raiseWrongSelf(Object obj) {
+        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "float", obj);
     }
 
     @GenerateCached(false)
@@ -733,6 +740,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @TypeSystemReference(PFloatUnboxing.class)
     public abstract static class ComparisonHelperNode extends Node {
 
         @FunctionalInterface
@@ -753,6 +761,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "doDD", limit = "1")
+        @InliningCutoff
         static boolean doOO(Node inliningTarget, Object aObj, Object bObj, Op op,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
                         @Exclusive @Cached CastToJavaDoubleNode cast) {
@@ -762,6 +771,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doDI")
+        @InliningCutoff
         static boolean doOI(Node inliningTarget, Object aObj, int b, Op op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
@@ -769,6 +779,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         static boolean doOL(Node inliningTarget, Object aObj, long b, Op op,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
@@ -777,6 +788,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         static boolean doOPInt(Node inliningTarget, Object aObj, PInt b, Op op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
@@ -784,6 +796,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         static boolean doOB(Node inliningTarget, Object aObj, boolean b, Op op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
