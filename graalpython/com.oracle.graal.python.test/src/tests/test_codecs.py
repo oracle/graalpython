@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -861,6 +861,18 @@ class CharmapEncodeTest(unittest.TestCase):
 
     def test_encode_dict_err_xmlcharrefreplace(self):
         self.assertEqual((b'\x00\r\x0c\x0b\n\x0e\r\x0c\x0b\x0b\x0e\x01', 4), codecs.charmap_encode('abcd', 'xmlcharrefreplace', codecs.charmap_build('ad0123456789#&;')))
+
+
+class MultibyteCodecTest(unittest.TestCase):
+
+    # just a smoke test
+    def test_encode(self):
+        import _codecs_tw
+        codec = _codecs_tw.getcodec('big5')
+
+        self.assertEqual((b'', 0), codec.encode(""))
+        self.assertRaises(TypeError, codec.encode)
+        self.assertRaises(UnicodeEncodeError, codec.encode, '\xffff')
 
 
 if __name__ == '__main__':
