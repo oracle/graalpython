@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -87,8 +88,8 @@ public final class PickleUtils {
     public static final TruffleString T_CP_REVERSE_IMPORT_MAPPING = StringUtils.cat(T_MOD_COMPAT_PICKLE, T_DOT, T_ATTR_REVERSE_IMPORT_MAPPING);
     public static final TruffleString T_METHOD_ENCODE = tsLiteral("encode");
     public static final TruffleString T_METHOD_PARTIAL = tsLiteral("partial");
-    public static final TruffleString T_METHOD_READ = tsLiteral("read");
-    public static final TruffleString T_METHOD_READLINE = tsLiteral("readline");
+    public static final TruffleString T_METHOD_READ = StringLiterals.T_READ;
+    public static final TruffleString T_METHOD_READLINE = StringLiterals.T_READLINE;
     public static final TruffleString T_METHOD_READINTO = tsLiteral("readinto");
     public static final TruffleString T_METHOD_PEEK = tsLiteral("peek");
     public static final TruffleString T_METHOD_WRITE = tsLiteral("write");

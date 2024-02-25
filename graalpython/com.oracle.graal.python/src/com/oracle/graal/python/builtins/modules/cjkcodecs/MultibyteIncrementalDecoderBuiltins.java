@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeError;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
 import java.util.List;
@@ -71,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -95,14 +95,12 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return MultibyteStreamWriterBuiltinsFactory.getFactories();
+        return MultibyteIncrementalDecoderBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBinaryBuiltinNode {
-
-        private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
         static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
@@ -119,7 +117,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
             MultibyteIncrementalDecoderObject self = factory.createMultibyteIncrementalDecoderObject(type);
 
-            Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
+            Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
