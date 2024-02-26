@@ -278,8 +278,8 @@ int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
 void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* MEMORYVIEW */
-int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags);
-void memoryview_releasebuffer(PyMemoryViewObject *self, Py_buffer *view);
+int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
+void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 
 static void initialize_bufferprocs() {
     static PyBufferProcs bytes_as_buffer = {
@@ -297,8 +297,8 @@ static void initialize_bufferprocs() {
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
-        (getbufferproc)memoryview_getbuffer,         /* bf_getbuffer */
-        (releasebufferproc)memoryview_releasebuffer, /* bf_releasebuffer */
+        (getbufferproc)memory_getbuf,         /* bf_getbuffer */
+        (releasebufferproc)memory_releasebuf, /* bf_releasebuffer */
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
@@ -877,6 +877,8 @@ PyAPI_FUNC(void*) truffle_get_constant(int entry) {
 void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
+// defined in 'floatobject.c'
+void _PyFloat_InitState(PyInterpreterState* state);
 
 TruffleContext* TRUFFLE_CONTEXT;
 
@@ -900,6 +902,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+    _PyFloat_InitState(NULL);
 
     // TODO: initialize during cext initialization doesn't work at the moment
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));

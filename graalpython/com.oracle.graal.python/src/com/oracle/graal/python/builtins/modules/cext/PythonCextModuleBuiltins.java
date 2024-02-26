@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -50,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CFunctionNewExMethodNode;
@@ -69,13 +68,16 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -87,15 +89,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextModuleBuiltins {
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {}, call = Ignored)
-    abstract static class _PyTruffleModule_GetAndIncMaxModuleNumber extends CApiNullaryBuiltinNode {
-
-        @Specialization
-        long doIt() {
-            return getCApiContext().getAndIncMaxModuleNumber();
-        }
-    }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
@@ -156,10 +149,30 @@ public final class PythonCextModuleBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object getName(Object o,
+        static Object getName(PythonModule module,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttrNode) {
-            return lookupAttrNode.execute(null, inliningTarget, o, T___NAME__);
+                        @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
+                        @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
+                        // CPython reads from the module dict directly
+                        @Cached ReadAttributeFromObjectNode read,
+                        @Cached WriteAttributeToObjectNode write) {
+            /*
+             * Even thought the function returns a new reference, CPython assumes that the unicode
+             * object returned from this function is still kept alive by the module's dict after a
+             * decref, see PyModule_GetName. So we have to store the promoted string.
+             */
+            Object nameAttr = read.execute(module, T___NAME__);
+            if (!pyUnicodeCheckNode.execute(inliningTarget, nameAttr)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.NAMELESS_MODULE);
+            }
+            Object promotedName = promoteBorrowedValue.execute(inliningTarget, nameAttr);
+            if (promotedName == null) {
+                return nameAttr;
+            } else {
+                write.execute(module, T___NAME__, promotedName);
+                return promotedName;
+            }
         }
     }
 

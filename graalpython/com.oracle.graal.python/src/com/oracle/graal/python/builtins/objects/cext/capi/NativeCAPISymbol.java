@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
@@ -128,7 +127,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_OBJECT_GENERIC_GET_DICT("_PyObject_GenericGetDict", PyObject, PyObject),
     FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict", Int, PyObject, PyObject, Pointer),
     FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObject, PyTypeObject),
-    FUN_ADD_NATIVE_SLOTS("PyTruffle_Type_AddSlots", ArgDescriptor.Void, PyTypeObject, Pointer, UINT64_T, Pointer, UINT64_T),
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
     FUN_GET_BUFFER_R("get_buffer_r", Int, PyObject, Pointer),
     FUN_GET_BUFFER_RW("get_buffer_rw", Int, PyObject, Pointer),

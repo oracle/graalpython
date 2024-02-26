@@ -65,8 +65,8 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -160,9 +160,6 @@ public final class CApiContext extends CExtContext {
      */
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
-    /** same as {@code moduleobject.c: max_module_number} */
-    private long maxModuleNumber;
-
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, Object> extensions = new HashMap<>(4);
 
@@ -224,10 +221,6 @@ public final class CApiContext extends CExtContext {
             assert CApiGuards.isSmallInteger(value);
             primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
-    }
-
-    public long getAndIncMaxModuleNumber() {
-        return maxModuleNumber++;
     }
 
     @TruffleBoundary
