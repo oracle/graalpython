@@ -1,0 +1,70 @@
+From c02f6cd637b6285744caba1ed8553ffb2147dad9 Mon Sep 17 00:00:00 2001
+From: Tim Felgentreff <tim.felgentreff@oracle.com>
+Date: Fri, 23 Feb 2024 13:35:07 +0100
+Subject: [PATCH] Use graalpy patched pyo3
+
+---
+ src/rust/Cargo.lock | 12 ++++--------
+ src/rust/Cargo.toml |  2 +-
+ 2 files changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/src/rust/Cargo.lock b/src/rust/Cargo.lock
+index 02b8e8c..10c675f 100644
+--- a/src/rust/Cargo.lock
++++ b/src/rust/Cargo.lock
+@@ -406,8 +406,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3"
+ version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d41d50a7271e08c7c8a54cd24af5d62f73ee3a6f6a314215281ebdec421d5752"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.15.2.graalpy#879575fc39d7378dec0e56ce4480b1ae5744c34f"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+@@ -422,8 +421,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-build-config"
+ version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "779239fc40b8e18bc8416d3a37d280ca9b9fb04bda54b98037bb6748595c2410"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.15.2.graalpy#879575fc39d7378dec0e56ce4480b1ae5744c34f"
+ dependencies = [
+  "once_cell",
+ ]
+@@ -431,8 +429,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-macros"
+ version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "00b247e8c664be87998d8628e86f282c25066165f1f8dda66100c48202fdb93a"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.15.2.graalpy#879575fc39d7378dec0e56ce4480b1ae5744c34f"
+ dependencies = [
+  "pyo3-macros-backend",
+  "quote",
+@@ -442,8 +439,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-macros-backend"
+ version = "0.15.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5a8c2812c412e00e641d99eeb79dd478317d981d938aa60325dfa7157b607095"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.15.2.graalpy#879575fc39d7378dec0e56ce4480b1ae5744c34f"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-build-config",
+diff --git a/src/rust/Cargo.toml b/src/rust/Cargo.toml
+index d557fc0..147455c 100644
+--- a/src/rust/Cargo.toml
++++ b/src/rust/Cargo.toml
+@@ -7,7 +7,7 @@ publish = false
+ 
+ [dependencies]
+ once_cell = "1"
+-pyo3 = { version = "0.15.2" }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.15.2.graalpy" }
+ asn1 = { version = "0.13.0", default-features = false }
+ pem = "1.1"
+ chrono = { version = "0.4.22", default-features = false, features = ["alloc", "clock"] }
+-- 
+2.34.1
+
