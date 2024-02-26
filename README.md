@@ -116,11 +116,6 @@ To run Jython scripts, you will need a GraalPy distribution running on the JVM s
 
 </details>
 
-## Current Status
-
-![](docs/mcd.svg)
-![](docs/performance.svg)
-
 ## Aims and Benefits of GraalPy
 
 * **Convenient, low-overhead integration with Java and other languages.**
@@ -138,12 +133,37 @@ To run Jython scripts, you will need a GraalPy distribution running on the JVM s
 
     GraalPy can usually execute pure Python code faster than CPython.
     We see a geomean speedup of 4 on the [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/) over CPython.
+    
 
 * **Support C extensions**
 
     GraalPy supports most of the public [CPython C API](https://docs.python.org/3/c-api/index.html) as well as the [HPy API](https://hpyproject.org/).
     It supports many native libraries including PyTorch, Tensorflow, SciPy, as well many other data science and machine learning libraries from the rich Python ecosystem.
     Performance when C extensions are involved is close to CPython, but can vary a lot depending on the specific interactions of C extension code and Python code.
+    
+## Current Status
+
+Compatibility and performance is very good for many use cases, especially in the data science and machine learning space.
+For example, models from [Hugging Face](https://huggingface.co/) like Stable Diffusion or GPT that use [PyTorch](https://pytorch.org/) usually just work.
+
+<figure>
+
+![](docs/mcd.svg)
+<figcaption>
+
+To check out if packages you use work, we have created a [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/).
+</figcaption>
+</figure>
+
+<figure>
+
+![](docs/performance.svg)
+<figcaption>
+
+Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython, Jython, and GraalPy.
+Installation was done via [Pyenv](https://github.com/pyenv/pyenv).
+Geomean was calculated on pair-wise intersection of benchmarks that run on CPython & Jython or CPython & GraalPy.
+</figcaption> </figure>
 
 ## Python on the JVM
 
@@ -154,6 +174,16 @@ Python objects support the same [interoperability protocol](docs/user/Interopera
 There are also [many options](docs/user/PythonNativeimages.md) to tweak GraalPy for GraalVM Native Images to reduce footprint.
 When embedded into Java, GraalPy also emulates many of the Python [OS interfaces](docs/user/OsInterface.md#java-backend) with standard Java APIs, so embedders have full control over standard streams, file system, or socket access.
 
+<figure>
+
+![](docs/jbang.png)
+<figcaption><small>
+
+[Java embedding](https://github.com/timfel/graalpy-jbang) using [JBang](https://www.jbang.dev/)
+</small>
+</figcaption>
+</figure>
+
 ## Migration from CPython
 
 GraalPy should in many cases work as a drop-in replacement for CPython.
@@ -161,6 +191,17 @@ You can use `pip` to install packages as usual.
 However, packages with C code usually do not provide binaries for GraalPy, so they will be automatically compiled during installation.
 This means that build tools have to be available and installation may take longer.
 We provide [Github actions](scripts/wheelbuilder) to help you build binary packages with the correct dependencies.
+Thanks to our integration with GraalVM Native Image, we can deploy Python applications as [standalone binary](docs/user/PythonStandaloneBinaries.md), all dependencies included.
+
+<figure>
+
+![](docs/standalone.png)
+<figcaption><small>
+
+[Standalone Python app binary](https://github.com/timfel/racing-all-afternoon) based on work by [Joey Navarro](https://github.com/josephnavarro/racing-all-afternoon)
+</small>
+</figcaption>
+</figure>
 
 ## Migration from Jython
 
@@ -171,6 +212,9 @@ We describe the current status of the compatibility mode [here](docs/user/Jython
 
 ## Documentation
 
+![](docs/reference.webp)
+
+We have [Quick Reference Sheet](https://www.graalvm.org/uploads/quick-references/GraalPy_v1/quick-reference-graalpy-v1(eu_a4).pdf) to help you get started quickly.
 More user documentation is available in [docs/user](docs/user).
 
 ## Contact
@@ -190,5 +234,5 @@ Please consult the [security guide](./SECURITY.md) for our responsible security 
 
 ## License
 
-This GraalVM implementation of Python is Copyright (c) 2017, 2023 Oracle and/or its affiliates and is made available to you under the terms the Universal Permissive License v 1.0 as shown at [https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/).
+This GraalVM implementation of Python is Copyright (c) 2017, 2024 Oracle and/or its affiliates and is made available to you under the terms the Universal Permissive License v 1.0 as shown at [https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/).
 This implementation is in part derived from and contains additional code from 3rd parties, the copyrights and licensing of which is detailed in the [LICENSE](./LICENSE.txt) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
