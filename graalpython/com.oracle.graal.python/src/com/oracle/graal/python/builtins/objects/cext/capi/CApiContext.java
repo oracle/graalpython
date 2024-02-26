@@ -817,6 +817,11 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    @TruffleBoundary
+    public Object findExtension(TruffleString filename, TruffleString name) {
+        return extensions.get(Pair.create(filename, name));
+    }
+
     @ExportLibrary(InteropLibrary.class)
     static final class GetBuiltin implements TruffleObject {
 

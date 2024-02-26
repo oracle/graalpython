@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
@@ -314,18 +315,21 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object run(PythonContext context, ModuleSpec spec) throws IOException, ApiInitException, ImportException {
-            Object existingModule = findExtensionObject(spec);
+            Object existingModule = findExtension(context, spec);
             if (existingModule != null) {
                 return existingModule;
             }
             return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode());
         }
 
-        @SuppressWarnings({"static-method", "unused"})
-        private Object findExtensionObject(ModuleSpec spec) {
-            // TODO: to avoid initializing an extension module twice, keep an internal dict
-            // and possibly return from there, i.e., _PyImport_FindExtensionObject(name, path)
-            return null;
+        private Object findExtension(PythonContext context, ModuleSpec spec) {
+            // TODO check m_size
+            // TODO populate m_copy
+            CApiContext cApiContext = context.getCApiContext();
+            if (cApiContext == null) {
+                return null;
+            }
+            return cApiContext.findExtension(spec.path, spec.name);
         }
 
         private CheckFunctionResultNode getCheckResultNode() {
