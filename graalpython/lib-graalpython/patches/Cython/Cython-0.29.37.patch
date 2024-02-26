@@ -154,7 +154,7 @@ index 099b3c4..0692df0 100644
          cval = ((PyComplexObject *)o)->cval;
      else
 diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
-index aaa8a8e..907edb6 100644
+index aaa8a8e..152e9dc 100644
 --- a/Cython/Utility/Coroutine.c
 +++ b/Cython/Utility/Coroutine.c
 @@ -531,8 +531,7 @@ static int __Pyx_PyGen__FetchStopIterationValue(CYTHON_UNUSED PyThreadState *$lo
@@ -177,15 +177,6 @@ index aaa8a8e..907edb6 100644
      Py_DECREF(ev);
  #else
      {
-@@ -1303,7 +1301,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
-         _Py_NewReference(self);
-         __Pyx_SET_REFCNT(self, refcnt);
-     }
--#if CYTHON_COMPILING_IN_CPYTHON
-+#if CYTHON_COMPILING_IN_CPYTHON && !GRAALVM_PYTHON
-     assert(PyType_IS_GC(Py_TYPE(self)) &&
-            _Py_AS_GC(self)->gc.gc_refs != _PyGC_REFS_UNTRACKED);
- 
 diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
 index 93f577f..5dac1d7 100644
 --- a/Cython/Utility/CythonFunction.c
@@ -203,10 +194,59 @@ index 93f577f..5dac1d7 100644
  #endif
      else if (PyMethod_Check(method)) {
 diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
-index cfff606..4c64e6c 100644
+index cfff606..4a6a6ea 100644
 --- a/Cython/Utility/ModuleSetupCode.c
 +++ b/Cython/Utility/ModuleSetupCode.c
-@@ -599,7 +599,7 @@ class __Pyx_FakeReference {
+@@ -186,6 +186,48 @@
+   #undef CYTHON_USE_EXC_INFO_STACK
+   #define CYTHON_USE_EXC_INFO_STACK 0
+ 
++#elif defined(GRAALVM_PYTHON)
++  #define CYTHON_COMPILING_IN_PYPY 0
++  #define CYTHON_COMPILING_IN_PYSTON 0
++  #define CYTHON_COMPILING_IN_CPYTHON 0
++  #define CYTHON_COMPILING_IN_NOGIL 0
++
++  #undef CYTHON_USE_TYPE_SLOTS
++  #define CYTHON_USE_TYPE_SLOTS 0
++  #undef CYTHON_USE_PYTYPE_LOOKUP
++  #define CYTHON_USE_PYTYPE_LOOKUP 0
++  #undef CYTHON_USE_ASYNC_SLOTS
++  #define CYTHON_USE_ASYNC_SLOTS 0
++  #undef CYTHON_USE_PYLIST_INTERNALS
++  #define CYTHON_USE_PYLIST_INTERNALS 0
++  #undef CYTHON_USE_UNICODE_INTERNALS
++  #define CYTHON_USE_UNICODE_INTERNALS 0
++  #undef CYTHON_USE_UNICODE_WRITER
++  #define CYTHON_USE_UNICODE_WRITER 0
++  #undef CYTHON_USE_PYLONG_INTERNALS
++  #define CYTHON_USE_PYLONG_INTERNALS 0
++  #undef CYTHON_AVOID_BORROWED_REFS
++  #define CYTHON_AVOID_BORROWED_REFS 1
++  #undef CYTHON_ASSUME_SAFE_MACROS
++  #define CYTHON_ASSUME_SAFE_MACROS 0
++  #undef CYTHON_UNPACK_METHODS
++  #define CYTHON_UNPACK_METHODS 0
++  #undef CYTHON_FAST_THREAD_STATE
++  #define CYTHON_FAST_THREAD_STATE 0
++  #undef CYTHON_FAST_PYCALL
++  #define CYTHON_FAST_PYCALL 0
++  #ifndef CYTHON_PEP489_MULTI_PHASE_INIT
++    #define CYTHON_PEP489_MULTI_PHASE_INIT 1
++  #endif
++  #undef CYTHON_USE_TP_FINALIZE
++  #define CYTHON_USE_TP_FINALIZE 0
++  #undef CYTHON_USE_DICT_VERSIONS
++  #define CYTHON_USE_DICT_VERSIONS 0
++  #undef CYTHON_USE_EXC_INFO_STACK
++  #define CYTHON_USE_EXC_INFO_STACK 0
++  #undef CYTHON_UPDATE_DESCRIPTOR_DOC
++  #define CYTHON_UPDATE_DESCRIPTOR_DOC 0
++
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+@@ -599,7 +641,7 @@ class __Pyx_FakeReference {
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno) PyFrame_SetLineNumber(frame, lineno)
  #else
    #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
@@ -215,7 +255,7 @@ index cfff606..4c64e6c 100644
  #endif
  
  #if !CYTHON_FAST_THREAD_STATE || PY_VERSION_HEX < 0x02070000
-@@ -846,11 +846,7 @@ static CYTHON_INLINE void * PyThread_tss_get(Py_tss_t *key) {
+@@ -846,11 +888,7 @@ static CYTHON_INLINE void * PyThread_tss_get(Py_tss_t *key) {
    #define __Pyx_PyType_AsAsync(obj) NULL
  #endif
  #ifndef __Pyx_PyAsyncMethodsStruct
@@ -228,7 +268,7 @@ index cfff606..4c64e6c 100644
  #endif
  
  
-@@ -1084,7 +1080,7 @@ PyEval_InitThreads();
+@@ -1084,7 +1122,7 @@ PyEval_InitThreads();
  static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
      #if PY_VERSION_HEX >= 0x030700A1
      static PY_INT64_T main_interpreter_id = -1;
@@ -238,45 +278,9 @@ index cfff606..4c64e6c 100644
          main_interpreter_id = current_id;
          return (unlikely(current_id == -1)) ? -1 : 0;
 diff --git a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
-index 5c4d9e1..44f4f43 100644
+index 5c4d9e1..4cdd29a 100644
 --- a/Cython/Utility/ObjectHandling.c
 +++ b/Cython/Utility/ObjectHandling.c
-@@ -716,7 +716,7 @@ bad:
- 
- /////////////// SliceTupleAndList.proto ///////////////
- 
--#if CYTHON_COMPILING_IN_CPYTHON
-+#if 0 // CYTHON_COMPILING_IN_CPYTHON
- static CYTHON_INLINE PyObject* __Pyx_PyList_GetSlice(PyObject* src, Py_ssize_t start, Py_ssize_t stop);
- static CYTHON_INLINE PyObject* __Pyx_PyTuple_GetSlice(PyObject* src, Py_ssize_t start, Py_ssize_t stop);
- #else
-@@ -726,7 +726,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyTuple_GetSlice(PyObject* src, Py_ssize_t
- 
- /////////////// SliceTupleAndList ///////////////
- 
--#if CYTHON_COMPILING_IN_CPYTHON
-+#if 0 // CYTHON_COMPILING_IN_CPYTHON
- static CYTHON_INLINE void __Pyx_crop_slice(Py_ssize_t* _start, Py_ssize_t* _stop, Py_ssize_t* _length) {
-     Py_ssize_t start = *_start, stop = *_stop, length = *_length;
-     if (start < 0) {
-@@ -1151,7 +1151,7 @@ static PyObject *__Pyx__GetNameInClass(PyObject *nmspace, PyObject *name) {
- 
- /////////////// SetNameInClass.proto ///////////////
- 
--#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030500A1
-+#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030500A1 && CYTHON_USE_UNICODE_INTERNALS
- // Identifier names are always interned and have a pre-calculated hash value.
- #define __Pyx_SetNameInClass(ns, name, value) \
-     (likely(PyDict_CheckExact(ns)) ? _PyDict_SetItem_KnownHash(ns, name, value, ((PyASCIIObject *) name)->hash) : PyObject_SetItem(ns, name, value))
-@@ -1200,7 +1200,7 @@ static CYTHON_INLINE PyObject *__Pyx__GetModuleGlobalName(PyObject *name)
- {
-     PyObject *result;
- #if !CYTHON_AVOID_BORROWED_REFS
--#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030500A1
-+#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030500A1 && CYTHON_USE_UNICODE_INTERNALS
-     // Identifier names are always interned and have a pre-calculated hash value.
-     result = _PyDict_GetItem_KnownHash($moddict_cname, name, ((PyASCIIObject *) name)->hash);
-     __PYX_UPDATE_DICT_CACHE($moddict_cname, result, *dict_cached_value, *dict_version)
 @@ -1591,8 +1591,8 @@ static int __Pyx_TryUnpackUnboundCMethod(__Pyx_CachedCFunction* target) {
      #endif
      {
@@ -289,7 +293,7 @@ index 5c4d9e1..44f4f43 100644
  #endif
      return 0;
 diff --git a/Cython/Utility/StringTools.c b/Cython/Utility/StringTools.c
-index 98b5e26..0f44675 100644
+index 98b5e26..140b80f 100644
 --- a/Cython/Utility/StringTools.c
 +++ b/Cython/Utility/StringTools.c
 @@ -183,7 +183,7 @@ static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int
@@ -297,7 +301,7 @@ index 98b5e26..0f44675 100644
  
  static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int equals) {
 -#if CYTHON_COMPILING_IN_PYPY
-+#if 1 //CYTHON_COMPILING_IN_PYPY
++#if CYTHON_COMPILING_IN_PYPY || GRAALVM_PYTHON
      return PyObject_RichCompareBool(s1, s2, equals);
  #else
  #if PY_MAJOR_VERSION < 3
@@ -306,7 +310,7 @@ index 98b5e26..0f44675 100644
  
  static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int equals) {
 -#if CYTHON_COMPILING_IN_PYPY
-+#if 1 // CYTHON_COMPILING_IN_PYPY
++#if CYTHON_COMPILING_IN_PYPY || GRAALVM_PYTHON
      return PyObject_RichCompareBool(s1, s2, equals);
  #else
      if (s1 == s2) {
