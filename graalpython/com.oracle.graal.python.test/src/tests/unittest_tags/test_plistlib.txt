@@ -55,3 +55,5 @@
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlibDeprecated.test_bytes_deprecated
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlibDeprecated.test_dataobject_deprecated
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlibDeprecated.test_io_deprecated
+*graalpython.lib-python.3.test.test_plistlib.TestPlutil.test_lint_status
+*graalpython.lib-python.3.test.test_plistlib.TestPlutil.test_octal_and_hex
