@@ -682,6 +682,27 @@ class TestPyCFunction:
                 PyMethodDef *def = _PyCFunction_GetMethodDef(arg);
                 return PyUnicode_FromString(def->ml_doc);
             }
+
+            static PyObject *new_meth(PyObject *self, PyObject *args) {
+                PyObject *callable_type = NULL, *callable_self, *callable;
+                if (!PyArg_ParseTuple(args, "OO:new_meth",
+                                         &callable_self, &callable)) {
+                                         // &PyType_Type, &callable_type, &callable_self, &callable)) {
+                    PyErr_SetString(PyExc_ValueError, "required args: <type>, <self>, <callable>");
+                    return NULL;
+                }
+                PyMethodDef *def;
+                if (PyCFunction_Check(callable)) {
+                    def = _PyCFunction_GetMethodDef(callable);
+                } else if (PyObject_TypeCheck(callable, &PyMethodDescr_Type)) {
+                    def = PyMethodDescrObject_GetMethod(callable);
+                } else {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function) "
+                                                     "nor a PyMethodDescrObject (i.e. method_descriptor)");
+                    return NULL;
+                }
+                return PyCMethod_New(def, callable_self, NULL, (PyTypeObject *)callable_type);
+            }
             """,
             tp_methods='''
             {"native_meth_noargs", (PyCFunction)native_meth_noargs, METH_NOARGS, "doc noargs"},
@@ -692,7 +713,8 @@ class TestPyCFunction:
             {"get_flags", (PyCFunction)get_flags, METH_O, ""},
             {"call_meth", (PyCFunction)call_meth, METH_VARARGS, ""},
             {"call_meth_descr", (PyCFunction)call_meth_descr, METH_VARARGS, ""},
-            {"get_doc", (PyCFunction)get_doc, METH_O, ""}
+            {"get_doc", (PyCFunction)get_doc, METH_O, ""},
+            {"new_meth", (PyCFunction)new_meth, METH_VARARGS, ""}
             ''',
             post_ready_code='''
             PyModule_AddIntMacro(m, METH_NOARGS);
@@ -737,3 +759,20 @@ class TestPyCFunction:
         assert tester.call_meth_descr(str.center, "abc", (10, )) == "   abc    "
         assert tester.call_meth_descr(str.center, "abc", (10, "-")) == "---abc----"
         assert tester.call_meth_descr(str.format, "{a}{b}{c}", tuple(), {"a": "a", "b": "b", "c": "c"}) == "abc"
+
+        # create new methods from PyMethodDef
+        m0 = tester.new_meth("abc", str.center)
+        assert type(m0) is type(bin)
+        assert m0(10) == "   abc    "
+        assert m0(10, "-") == "---abc----"
+
+        # str.lower is a unary builtin
+        m1 = tester.new_meth("ABC", str.lower)
+        assert type(m1) is type(bin)
+        assert m1() == "abc"
+
+        # str.splitlines is a binary builtin with an optional arg
+        m2 = tester.new_meth("line0\nline1", str.splitlines)
+        assert type(m2) is type(bin)
+        assert m2() == ['line0', 'line1']
+        assert m2(True) == ['line0\n', 'line1']
