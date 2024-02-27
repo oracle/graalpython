@@ -61,9 +61,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -112,6 +111,7 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -647,9 +647,26 @@ public abstract class ExternalFunctionNodes {
             if (flags < 0) {
                 flags = 0;
             }
+            int numDefaults = -1;
             RootCallTarget callTarget;
             if (callable instanceof RootCallTarget) {
                 callTarget = (RootCallTarget) callable;
+                /*
+                 * Special case for built-in functions:
+                 *
+                 * Built-in functions may appear as {@link CExtContext#METH_VARARGS} but we
+                 * implement them as nodes where the specializations have a fixed arity and then
+                 * sometimes allow optional arguments (specified with {@link
+                 * Builtin#minNumOfPositionalArgs()}, {@link Builtin#maxNumOfPositionalArgs()}, and
+                 * similar). This is usually not a problem because if the built-in function is
+                 * called via the function object, this will provide the correct number of default
+                 * values. In this case, the call target of the built-in function will be called
+                 * directly. So, we need to manually provide the number of default values (which is
+                 * {@link PNone#NO_VALUE} to indicate that the argument is missing).
+                 */
+                if (callTarget.getRootNode() instanceof BuiltinFunctionRootNode builtinFunctionRootNode) {
+                    numDefaults = PythonBuiltins.numDefaults(builtinFunctionRootNode.getBuiltin());
+                }
             } else if (callable instanceof BuiltinMethodDescriptor builtinMethodDescriptor) {
                 /*
                  * If we see a built-in method descriptor here, it was originally retrieved by a
@@ -657,21 +674,18 @@ public abstract class ExternalFunctionNodes {
                  * also its call target.
                  */
                 callTarget = language.getDescriptorCallTarget(builtinMethodDescriptor);
-                assert callTarget != null;
+                // again: special case for built-in functions
+                numDefaults = PythonBuiltins.numDefaults(builtinMethodDescriptor.getBuiltinAnnotation());
             } else {
                 callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
                 if (callTarget == null) {
                     return null;
                 }
             }
-            Object[] defaults;
-            int numDefaults = sig == DELITEM ? 1 : 0;
-            if (numDefaults > 0) {
-                defaults = new Object[numDefaults];
-                Arrays.fill(defaults, PNone.NO_VALUE);
-            } else {
-                defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
+            if (numDefaults == -1) {
+                numDefaults = sig == DELITEM ? 1 : 0;
             }
+            Object[] defaults = PBuiltinFunction.generateDefaults(numDefaults);
 
             // ensure that 'callable' is executable via InteropLibrary
             Object boundCallable = NativeCExtSymbol.ensureExecutable(callable, sig);

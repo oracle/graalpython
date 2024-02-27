@@ -453,8 +453,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     assert builtinMethodDescriptor == null;
                     assert callTarget != null;
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null, getDefaults(numDefaults),
-                                    PKeyword.EMPTY_KEYWORDS, false);
+                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
+                                    PBuiltinFunction.generateDefaults(numDefaults), PKeyword.EMPTY_KEYWORDS, false);
                     result = invokeNode.execute(inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
@@ -467,17 +467,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
-        }
-
-        /**
-         * Creates the array for default values. This will reuse
-         * {@link PythonUtils#EMPTY_OBJECT_ARRAY} if {@link #numDefaults} is {@code 0}.
-         */
-        static Object[] getDefaults(int numDefaults) {
-            if (numDefaults == 0) {
-                return PythonUtils.EMPTY_OBJECT_ARRAY;
-            }
-            return PBuiltinFunction.generateDefaults(numDefaults);
         }
 
         @Override
@@ -494,6 +483,9 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionKeywordsWrapper extends PyCFunctionWrapper {
 
+        /**
+         * see {@link PyCFunctionVarargsWrapper#numDefaults}
+         */
         private final int numDefaults;
 
         PyCFunctionKeywordsWrapper(RootCallTarget callTarget, Signature signature, int numDefaults) {
@@ -531,7 +523,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null, PyCFunctionVarargsWrapper.getDefaults(numDefaults),
+                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null, PBuiltinFunction.generateDefaults(numDefaults),
                                     PKeyword.EMPTY_KEYWORDS, false);
                     Object result = invokeNode.execute(inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
