@@ -540,6 +540,7 @@ class TestPyCFunction:
             // CPython and other don't have this function; so define it
             #ifndef GRAALVM_PYTHON
             #define _PyCFunction_GetMethodDef(OBJ) (((PyCFunctionObject*) (OBJ))->m_ml)
+            #define PyMethodDescrObject_GetMethod(OBJ) (((PyMethodDescrObject *) (OBJ))->d_method)
             #endif
 
             static PyObject *native_meth_noargs(PyObject *self, PyObject *dummy) {
@@ -583,20 +584,7 @@ class TestPyCFunction:
                 return PyLong_FromLong(def->ml_flags);
             }
 
-            static PyObject *call_meth(PyObject *self, PyObject *args) {
-                PyObject *callable, *callable_args, *callable_kwargs = NULL;
-                if (!PyArg_ParseTuple(args, "OO|O:call_meth",
-                                         &callable, &callable_args, &callable_kwargs)) {
-                    PyErr_SetString(PyExc_ValueError, "required args: <callable>, <args_tuple>");
-                    return NULL;
-                }
-                if (!PyCFunction_Check(callable)) {
-                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
-                    return NULL;
-                }
-                PyMethodDef *def = _PyCFunction_GetMethodDef(callable);
-                // returns a borrowed ref
-                PyObject *callable_self = PyCFunction_GetSelf(callable);
+            static PyObject *_call_PyCFunction(PyMethodDef *def, PyObject *callable_self, PyObject *callable_args, PyObject *callable_kwargs) {
                 if (def->ml_flags == METH_NOARGS) {
                     return def->ml_meth(callable_self, NULL);
                 } else if (def->ml_flags == METH_O) {
@@ -652,6 +640,39 @@ class TestPyCFunction:
                     return NULL;
                 }
             }
+            
+            static PyObject *call_meth(PyObject *self, PyObject *args) {
+                PyObject *callable, *callable_args, *callable_kwargs = NULL;
+                if (!PyArg_ParseTuple(args, "OO|O:call_meth",
+                                         &callable, &callable_args, &callable_kwargs)) {
+                    PyErr_SetString(PyExc_ValueError, "required args: <callable>, <args_tuple> [, <kwargs>]");
+                    return NULL;
+                }
+                if (!PyCFunction_Check(callable)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function) ");
+                    return NULL;
+                }
+                PyMethodDef *def = _PyCFunction_GetMethodDef(callable);
+                // returns a borrowed ref
+                PyObject *callable_self = PyCFunction_GetSelf(callable);
+                return _call_PyCFunction(def, callable_self, callable_args, callable_kwargs);
+            }
+
+            static PyObject *call_meth_descr(PyObject *self, PyObject *args) {
+                PyObject *callable, *callable_self, *callable_args, *callable_kwargs = NULL;
+                if (!PyArg_ParseTuple(args, "OOO|O:call_meth",
+                                         &callable, &callable_self, &callable_args, &callable_kwargs)) {
+                    PyErr_SetString(PyExc_ValueError, "required args: <callable>, <self>, <args_tuple> [, <kwargs>]");
+                    return NULL;
+                }
+                if (!PyObject_TypeCheck(callable, &PyMethodDescr_Type)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyMethodDescrObject (i.e. method_descriptor)");
+                    return NULL;
+                }
+                PyMethodDef *def = PyMethodDescrObject_GetMethod(callable);
+                // returns a borrowed ref
+                return _call_PyCFunction(def, callable_self, callable_args, callable_kwargs);
+            }
 
             static PyObject *get_doc(PyObject *self, PyObject *arg) {
                 if (!PyCFunction_Check(arg)) {
@@ -670,6 +691,7 @@ class TestPyCFunction:
             {"get_name", (PyCFunction)get_name, METH_O, ""},
             {"get_flags", (PyCFunction)get_flags, METH_O, ""},
             {"call_meth", (PyCFunction)call_meth, METH_VARARGS, ""},
+            {"call_meth_descr", (PyCFunction)call_meth_descr, METH_VARARGS, ""},
             {"get_doc", (PyCFunction)get_doc, METH_O, ""}
             ''',
             post_ready_code='''
@@ -710,3 +732,8 @@ class TestPyCFunction:
         assert tester.call_meth(divmod, (123, 5)) == (24, 3)
         # METH_KEYWORDS
         # TODO
+
+        # built-in methods
+        assert tester.call_meth_descr(str.center, "abc", (10, )) == "   abc    "
+        assert tester.call_meth_descr(str.center, "abc", (10, "-")) == "---abc----"
+        assert tester.call_meth_descr(str.format, "{a}{b}{c}", tuple(), {"a": "a", "b": "b", "c": "c"}) == "abc"
