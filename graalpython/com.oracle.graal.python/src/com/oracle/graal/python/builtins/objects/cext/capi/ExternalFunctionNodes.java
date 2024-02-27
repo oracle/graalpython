@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -628,7 +629,9 @@ public abstract class ExternalFunctionNodes {
          * @param language The Python language object.
          * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
          * @param name The name of the method.
-         * @param callable The native function pointer.
+         * @param callable A reference denoting executable code. Currently, there are three
+         *            representations for that: (1) a native function pointer, (2) a
+         *            {@link RootCallTarget}, and (3) a {@link BuiltinMethodDescriptor}.
          * @param enclosingType The type the function belongs to (needed for checking of
          *            {@code self}).
          * @param factory Just an instance of {@link PythonObjectFactory} to create the function
@@ -644,9 +647,22 @@ public abstract class ExternalFunctionNodes {
             if (flags < 0) {
                 flags = 0;
             }
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
-            if (callTarget == null) {
-                return null;
+            RootCallTarget callTarget;
+            if (callable instanceof RootCallTarget) {
+                callTarget = (RootCallTarget) callable;
+            } else if (callable instanceof BuiltinMethodDescriptor builtinMethodDescriptor) {
+                /*
+                 * If we see a built-in method descriptor here, it was originally retrieved by a
+                 * slot lookup. This means, the slot was already properly registered and therefore
+                 * also its call target.
+                 */
+                callTarget = language.getDescriptorCallTarget(builtinMethodDescriptor);
+                assert callTarget != null;
+            } else {
+                callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
+                if (callTarget == null) {
+                    return null;
+                }
             }
             Object[] defaults;
             int numDefaults = sig == DELITEM ? 1 : 0;

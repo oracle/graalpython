@@ -1982,7 +1982,7 @@ public abstract class CExtNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
+        public static Object resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
             if (lib.isPointer(callable)) {
                 long pointer;
                 try {
@@ -1991,9 +1991,9 @@ public abstract class CExtNodes {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 Object delegate = context.getCApiContext().getClosureDelegate(pointer);
-                if (delegate instanceof PBuiltinFunction function) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
-                    return function;
+                if (delegate != null) {
+                    LOGGER.fine(() -> PythonUtils.formatJString("resolved closure pointer %d 0x%x to %s", pointer, pointer, delegate));
+                    return delegate;
                 }
             }
             return null;

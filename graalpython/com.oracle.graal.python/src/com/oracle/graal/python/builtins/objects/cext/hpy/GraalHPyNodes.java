@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIFunction
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -160,6 +161,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1285,10 +1287,22 @@ public abstract class GraalHPyNodes {
                     if (attributeKey != null) {
                         if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
                             Object interopPFuncPtr = context.nativeToInteropPointer(pfuncPtr);
-                            PBuiltinFunction method = CreateFunctionNode.resolveClosurePointer(context.getContext(), interopPFuncPtr, lib);
-                            if (method == null) {
+                            PBuiltinFunction method;
+                            Object resolved = CreateFunctionNode.resolveClosurePointer(context.getContext(), interopPFuncPtr, lib);
+                            if (resolved instanceof PBuiltinFunction builtinFunction) {
+                                method = builtinFunction;
+                            } else {
+                                Object callable;
+                                if (resolved instanceof RootCallTarget || resolved instanceof BuiltinMethodDescriptor) {
+                                    callable = resolved;
+                                } else {
+                                    assert resolved == null;
+                                    // the pointer is not a closure pointer, so we assume it is a
+                                    // native function pointer
+                                    callable = interopPFuncPtr;
+                                }
                                 PythonLanguage lang = PythonLanguage.get(raiseNode);
-                                method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, interopPFuncPtr, enclosingType, 0, slot.getSignature(), lang, factory, true);
+                                method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, callable, enclosingType, 0, slot.getSignature(), lang, factory, true);
                             }
                             writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
                         } else {

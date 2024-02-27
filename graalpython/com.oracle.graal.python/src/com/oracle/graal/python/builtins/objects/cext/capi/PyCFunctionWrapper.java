@@ -201,6 +201,15 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         // try to use the BuiltinMethodDescriptor if available
         BuiltinMethodDescriptor builtinMethodDescriptor = BuiltinMethodDescriptor.get(builtinFunction);
         if (builtinMethodDescriptor != null) {
+            /*
+             * If we create a PyCFunctionWrapper for a BuiltinMethodDescriptor, we need to register
+             * the call target because it may happen that the wrapper is used to create another
+             * 'builtin_function_or_method' or 'method_descriptor' in which case we need to have the
+             * call target available.
+             */
+            if (CExtContext.isMethNoArgs(flags) || CExtContext.isMethO(flags)) {
+                cApiContext.getContext().getLanguage().registerBuiltinDescriptorCallTarget(builtinMethodDescriptor, builtinFunction.getCallTarget());
+            }
             if (CExtContext.isMethNoArgs(flags)) {
                 return cApiContext.getOrCreatePyCFunctionWrapper(builtinMethodDescriptor, PyCFunctionUnaryWrapper::new);
             } else if (CExtContext.isMethO(flags)) {
