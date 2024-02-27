@@ -1373,7 +1373,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static boolean extraivars(Object type, Object base, Object typeSlots) {
-            if (type instanceof PythonNativeClass || base instanceof PythonNativeClass) {
+            if (NeedsNativeAllocationNode.executeUncached(type) || NeedsNativeAllocationNode.executeUncached(base)) {
                 // https://github.com/python/cpython/blob/v3.10.8/Objects/typeobject.c#L2218
                 long tSize = GetBasicSizeNode.executeUncached(type);
                 long bSize = GetBasicSizeNode.executeUncached(base);
@@ -1384,18 +1384,21 @@ public abstract class TypeNodes {
                     return tSize != bSize || tItemSize != bItemSize;
                 }
 
-                long tDictOffset = GetDictOffsetNode.executeUncached(type);
-                long bDictOffset = GetDictOffsetNode.executeUncached(base);
-                // TODO check Py_TPFLAGS_HEAPTYPE flag
-                if (tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-
-                long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
-                long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
-                // TODO check Py_TPFLAGS_HEAPTYPE flag
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
+                if ((GetTypeFlagsNode.executeUncached(type) & HEAPTYPE) != 0) {
+                    long tDictOffset = GetDictOffsetNode.executeUncached(type);
+                    long bDictOffset = GetDictOffsetNode.executeUncached(base);
+                    long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
+                    long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
+                    if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
+                        tSize -= SIZEOF_PY_OBJECT_PTR;
+                    }
+                    if (tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
+                        tSize -= SIZEOF_PY_OBJECT_PTR;
+                    }
+                    // Check weaklist again in case it precedes dict
+                    if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
+                        tSize -= SIZEOF_PY_OBJECT_PTR;
+                    }
                 }
 
                 return tSize != bSize;
