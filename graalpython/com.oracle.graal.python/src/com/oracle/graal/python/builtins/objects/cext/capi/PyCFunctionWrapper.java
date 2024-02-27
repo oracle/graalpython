@@ -115,9 +115,10 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         assert signature != null;
         this.callTarget = callTarget;
         this.signature = signature;
-        this.callTargetName = PythonUtils.toTruffleStringUncached(callTarget.getRootNode().getName());
+        String ctName = callTarget.getRootNode().getName();
+        this.callTargetName = PythonUtils.toTruffleStringUncached(ctName);
         this.builtinMethodDescriptor = null;
-        this.timing = CApiTiming.create(false, this);
+        this.timing = CApiTiming.create(false, ctName);
         this.skipSelf = false;
     }
 
@@ -127,7 +128,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         this.signature = null;
         this.callTargetName = null;
         this.builtinMethodDescriptor = builtinMethodDescriptor;
-        this.timing = CApiTiming.create(false, this);
+        this.timing = CApiTiming.create(false, builtinMethodDescriptor.getName());
         this.skipSelf = builtinMethodDescriptor.getEnclosingType() == null && !builtinMethodDescriptor.getBuiltinAnnotation().declaresExplicitSelf();
     }
 
@@ -180,12 +181,16 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
     protected abstract String getFlagsRepr();
 
+    @TruffleBoundary
+    private static String toString(Object name, String flagsRepr, long pointer) {
+        String ptr = pointer != 0 ? " at 0x" + Long.toHexString(pointer) : "";
+        return String.format("PyCFunction(%s, %s)%s", name, flagsRepr, ptr);
+    }
+
     @Override
     @TruffleBoundary
     public String toString() {
-        Object name = builtinMethodDescriptor != null ? builtinMethodDescriptor.getName() : callTargetName;
-        String ptr = pointer != 0 ? " at 0x" + Long.toHexString(pointer) : "";
-        return String.format("PyCFunction(%s, %s)%s", name, getFlagsRepr(), ptr);
+        return PyCFunctionWrapper.toString(builtinMethodDescriptor != null ? builtinMethodDescriptor.getName() : callTargetName, getFlagsRepr(), pointer);
     }
 
     /**
