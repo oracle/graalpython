@@ -1,27 +1,84 @@
 # GraalPy, the GraalVM Implementation of Python
 
 GraalPy is a high-performance implementation of the [Python](https://www.python.org/) language for the JVM built on [GraalVM](https://www.graalvm.org/) technology.
+GraalPy has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
+
+![](docs/showcase.png)<sup>
+[Java embedding](https://github.com/timfel/graalpy-jbang) using [JBang](https://www.jbang.dev/) — [Standalone binary](https://github.com/timfel/racing-all-afternoon) of Python a game by [Joey Navarro](https://github.com/josephnavarro/racing-all-afternoon) with all dependencies included.
+</sup>
+
+## Benefits of GraalPy
+
+* **Low-overhead integration with Java and other languages.**
+
+    GraalPy [integrates](docs/user/Interoperability.md) with Java, JavaScript, Ruby, and other languages on GraalVM JDK, Oracle JDK, or OpenJDK.
+    You can easily add GraalPy to your Java application using [Maven build tools](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application).
+    JVM tools such as VisualVM or JFR work as you would expect.
+    Native Image compilation using GraalVM Native Image is [well supported](docs/user/PythonNativeimages.md).
+    Python's low-level [OS APIs](docs/user/OsInterface.md#java-backend) are emulated, so Java code can intercept standard streams, file system and socket access, or subprocess execution.
+
+* **Compatible with the Python ecosystem**
+
+    GraalPy supports many libraries including PyTorch, Tensorflow, SciPy.
+    For example, models from [Hugging Face](https://huggingface.co/) like Stable Diffusion or GPT that use [PyTorch](https://pytorch.org/) usually just work.
+    We run the CPython test suite on every commit and are passing ~85% of it.
+    We also run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
+    To see if packages you use work, we have created a [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/).
+    ![](docs/mcd.svg)<sup>
+    For more than 96% of the top PyPI packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all tests those top packages.
+    </sup>
+
+* **Run Python code faster**
+
+    GraalPy usually executes pure Python code faster than CPython after JIT compilation.
+    Performance when C extensions are involved is close to CPython, but can vary a lot depending on the specific interactions of C extension code and Python code.
+    We see a geomean speedup of ~4 on the [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/) over CPython.
+    ![](docs/performance.svg)<sup>
+    Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython, Jython, and GraalPy.
+    Installation of each done via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
+    Geomean speedup was calculated pair-wise against CPython on the intersection of benchmarks that run on both interpreters.
+    </sup>
 
 ## Getting Started
 
 <details>
 <summary><strong>Embedding GraalPy in Java</strong></summary>
 
-GraalPy is [available on Maven Central](https://central.sonatype.com/artifact/org.graalvm.polyglot/python) for inclusion in Java projects:
+GraalPy is [available on Maven Central](https://central.sonatype.com/artifact/org.graalvm.polyglot/python) for inclusion in Java projects.
+Refer to our [embedding documentation](https://www.graalvm.org/latest/reference-manual/embed-languages/) for more details.
 
-```
-<dependency>
-    <groupId>org.graalvm.polyglot</groupId>
-    <artifactId>python</artifactId>
-    <version>23.1.2</version>
-    <type>pom</type>
-</dependency>
-```
+* Maven
+  ```xml
+  <dependency>
+      <groupId>org.graalvm.polyglot</groupId>
+      <artifactId>polyglot</artifactId>
+      <version>23.1.2</version>
+  </dependency>
+  <dependency>
+      <groupId>org.graalvm.polyglot</groupId>
+      <artifactId>python</artifactId>
+      <version>23.1.2</version>
+      <type>pom</type>
+  </dependency>
+  ```
+
+* Gradle
+  ```kotlin
+  implementation("org.graalvm.polyglot:polyglot:23.1.2")
+  implementation("org.graalvm.polyglot:python:23.1.2")
+  ```
 
 </details>
 
 <details>
 <summary><strong>Replacing CPython with GraalPy</strong></summary>
+
+GraalPy should in many cases work as a drop-in replacement for CPython.
+You can use `pip` to install packages as usual.
+Packages with C code usually do not provide binaries for GraalPy, so they will be automatically compiled during installation.
+This means that build tools have to be available and installation will take longer.
+We provide [Github actions](scripts/wheelbuilder) to help you build binary packages with the correct dependencies.
+Thanks to our integration with GraalVM Native Image, we can deploy Python applications as [standalone binary](docs/user/PythonStandaloneBinaries.md), all dependencies included.
 
 * Linux
 
@@ -87,6 +144,10 @@ The _setup-python_ action supports GraalPy:
 <summary><strong>Migrating Jython Scripts to GraalPy</strong></summary>
 
 To run Jython scripts, you will need a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
+Most existing Jython code that uses Java integration will be based on a stable Jython release&mdash;however, these are only available in Python 2.x versions.
+First, to migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
+To facilitate migration from Jython, GraalPy provides a mode that is "mostly compatible" with some of Jython's features, minus of course that Jython implements Python 2.7 and we implement Python 3+.
+We describe the current status of the compatibility mode [here](docs/user/Jython.md).
 
 * Linux
   
@@ -115,100 +176,6 @@ To run Jython scripts, you will need a GraalPy distribution running on the JVM s
   3. Run your scripts with `graalpy --python.EmulateJython`.
 
 </details>
-
-## Aims and Benefits of GraalPy
-
-* **Convenient, low-overhead integration with Java and other languages.**
-
-    Java, JavaScript, Ruby, and other languages that run on the JVM can be used [conveniently with GraalPy](docs/user/Interoperability.md).
-    GraalPy also integrates with JVM tools such as VisualVM or JFR, and comes with [profilers, memory samplers, and debuggers](docs/user/Tooling.md) provided as part of GraalVM's Truffle framework.
-    
-* **Compatible with the Python ecosystem**
-
-    We run the CPython test suite on every commit and are passing ~75% of it.
-    We also run the tests of the [top 600 PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
-    For more than 96% of the top 600 packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all test cases in those top 600 packages.
-
-* **Run Python code faster**
-
-    GraalPy can usually execute pure Python code faster than CPython.
-    We see a geomean speedup of 4 on the [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/) over CPython.
-    
-
-* **Support C extensions**
-
-    GraalPy supports most of the public [CPython C API](https://docs.python.org/3/c-api/index.html) as well as the [HPy API](https://hpyproject.org/).
-    It supports many native libraries including PyTorch, Tensorflow, SciPy, as well many other data science and machine learning libraries from the rich Python ecosystem.
-    Performance when C extensions are involved is close to CPython, but can vary a lot depending on the specific interactions of C extension code and Python code.
-    
-## Current Status
-
-Compatibility and performance is very good for many use cases, especially in the data science and machine learning space.
-For example, models from [Hugging Face](https://huggingface.co/) like Stable Diffusion or GPT that use [PyTorch](https://pytorch.org/) usually just work.
-
-<figure>
-
-![](docs/mcd.svg)
-<figcaption>
-
-To check out if packages you use work, we have created a [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/).
-</figcaption>
-</figure>
-
-<figure>
-
-![](docs/performance.svg)
-<figcaption>
-
-Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython, Jython, and GraalPy.
-Installation was done via [Pyenv](https://github.com/pyenv/pyenv).
-Geomean was calculated on pair-wise intersection of benchmarks that run on CPython & Jython or CPython & GraalPy.
-</figcaption> </figure>
-
-## Python on the JVM
-
-GraalPy is a first-class citizen of the JVM ecosystem that you can easily embed in your Java applications.
-You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
-You can easily add GraalPy to your Java application using [Maven build tools](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application).
-Python objects support the same [interoperability protocol](docs/user/Interoperability.md) as other GraalVM languages and behave naturally in Java.
-There are also [many options](docs/user/PythonNativeimages.md) to tweak GraalPy for GraalVM Native Images to reduce footprint.
-When embedded into Java, GraalPy also emulates many of the Python [OS interfaces](docs/user/OsInterface.md#java-backend) with standard Java APIs, so embedders have full control over standard streams, file system, or socket access.
-
-<figure>
-
-![](docs/jbang.png)
-<figcaption><small>
-
-[Java embedding](https://github.com/timfel/graalpy-jbang) using [JBang](https://www.jbang.dev/)
-</small>
-</figcaption>
-</figure>
-
-## Migration from CPython
-
-GraalPy should in many cases work as a drop-in replacement for CPython.
-You can use `pip` to install packages as usual.
-However, packages with C code usually do not provide binaries for GraalPy, so they will be automatically compiled during installation.
-This means that build tools have to be available and installation may take longer.
-We provide [Github actions](scripts/wheelbuilder) to help you build binary packages with the correct dependencies.
-Thanks to our integration with GraalVM Native Image, we can deploy Python applications as [standalone binary](docs/user/PythonStandaloneBinaries.md), all dependencies included.
-
-<figure>
-
-![](docs/standalone.png)
-<figcaption><small>
-
-[Standalone Python app binary](https://github.com/timfel/racing-all-afternoon) based on work by [Joey Navarro](https://github.com/josephnavarro/racing-all-afternoon)
-</small>
-</figcaption>
-</figure>
-
-## Migration from Jython
-
-Most existing Jython code that uses Java integration will be based on a stable Jython release&mdash;however, these are only available in Python 2.x versions.
-First, to migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
-To facilitate migration from Jython, GraalPy provides a mode that is "mostly compatible" with some of Jython's features, minus of course that Jython implements Python 2.7 and we implement Python 3+.
-We describe the current status of the compatibility mode [here](docs/user/Jython.md).
 
 ## Documentation
 
