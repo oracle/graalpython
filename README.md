@@ -7,37 +7,37 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 [Java embedding](https://github.com/timfel/graalpy-jbang) using [JBang](https://www.jbang.dev/) — [Standalone binary](https://github.com/timfel/racing-all-afternoon) of Python a game by [Joey Navarro](https://github.com/josephnavarro/racing-all-afternoon) with all dependencies included.
 </sup>
 
-## Benefits of GraalPy
+## Why GraalPy?
 
-* **Low-overhead integration with Java and other languages.**
+**Low-overhead integration with Java and other languages.**
 
-    GraalPy [integrates](docs/user/Interoperability.md) with Java, JavaScript, Ruby, and other languages on GraalVM JDK, Oracle JDK, or OpenJDK.
-    You can easily add GraalPy to your Java application using [Maven build tools](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application).
-    JVM tools such as VisualVM or JFR work as you would expect.
-    Native Image compilation using GraalVM Native Image is [well supported](docs/user/PythonNativeimages.md).
-    Python's low-level [OS APIs](docs/user/OsInterface.md#java-backend) are emulated, so Java code can intercept standard streams, file system and socket access, or subprocess execution.
+* [Interoperate](docs/user/Interoperability.md) with Java, JavaScript, Ruby, and other languages on GraalVM JDK, Oracle JDK, or OpenJDK
+* Easy to use with [Maven build tools](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application)
+* Monitor Python execution with JVM tools such as [VisualVM](http://visualvm.org/) or JFR
+* GraalVM Native Image [compilation is well supported](docs/user/PythonNativeimages.md)
+* Manage Python libraries' system access thanks to GraalPy's [Java-based emulation of Python OS APIs](docs/user/OsInterface.md#java-backend)
 
-* **Compatible with the Python ecosystem**
+**Compatible with the Python ecosystem**
 
-    GraalPy supports many libraries including PyTorch, Tensorflow, SciPy.
-    For example, models from [Hugging Face](https://huggingface.co/) like Stable Diffusion or GPT that use [PyTorch](https://pytorch.org/) usually just work.
-    We run the CPython test suite on every commit and are passing ~85% of it.
-    We also run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
-    To see if packages you use work, we have created a [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/).
-    ![](docs/mcd.svg)<sup>
-    For more than 96% of the top PyPI packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all tests those top packages.
-    </sup>
+* Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
+* Access many [PyPI packages](https://pypi.org/) including *NumPy*, *PyTorch*, *Tensorflow*, and *SciPy*
+* Run models such as Stable Diffusion or GPT from [Hugging Face](https://huggingface.co/)
+* See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
+![](docs/mcd.svg)<sup>
+We run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
+For more than 96% of the top PyPI packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all tests those top packages.
+</sup>
 
-* **Run Python code faster**
+**Runs Python code faster**
 
-    GraalPy usually executes pure Python code faster than CPython after JIT compilation.
-    Performance when C extensions are involved is close to CPython, but can vary a lot depending on the specific interactions of C extension code and Python code.
-    We see a geomean speedup of ~4 on the [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/) over CPython.
-    ![](docs/performance.svg)<sup>
-    Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython, Jython, and GraalPy.
-    Installation of each done via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
-    Geomean speedup was calculated pair-wise against CPython on the intersection of benchmarks that run on both interpreters.
-    </sup>
+* Pure Python code is often faster than on CPython thanks to JIT compilation
+* C extensions performance is close to CPython but varies depending on the specific interactions of native and Python code
+* Geomean speedup of ~4 on the [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/) over CPython
+![](docs/performance.svg)<sup>
+Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython, Jython, and GraalPy.
+Installation of each done via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
+Geomean speedup was calculated pair-wise against CPython on the intersection of benchmarks that run on both interpreters.
+</sup>
 
 ## Getting Started
 
@@ -143,11 +143,10 @@ The _setup-python_ action supports GraalPy:
 <details>
 <summary><strong>Migrating Jython Scripts to GraalPy</strong></summary>
 
-To run Jython scripts, you will need a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
 Most existing Jython code that uses Java integration will be based on a stable Jython release&mdash;however, these are only available in Python 2.x versions.
-First, to migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
-To facilitate migration from Jython, GraalPy provides a mode that is "mostly compatible" with some of Jython's features, minus of course that Jython implements Python 2.7 and we implement Python 3+.
-We describe the current status of the compatibility mode [here](docs/user/Jython.md).
+To migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
+GraalPy also provides a [special mode](docs/user/Jython.md) to facilitate migration.
+To run Jython scripts, you need to use a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
 
 * Linux
   
