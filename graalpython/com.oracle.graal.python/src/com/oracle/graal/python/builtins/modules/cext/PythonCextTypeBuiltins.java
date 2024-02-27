@@ -253,6 +253,8 @@ public final class PythonCextTypeBuiltins {
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
             Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+            assert func instanceof PythonAbstractObject;
+            writeHiddenAttrNode.execute(inliningTarget, (PythonAbstractObject) func, METHOD_DEF_PTR, methodDefPtr);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
                 function = factory.createClassmethodFromCallableObj(func);
@@ -261,7 +263,6 @@ public final class PythonCextTypeBuiltins {
             }
             dylib.put(function, T___NAME__, name);
             dylib.put(function, T___DOC__, doc);
-            writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDefPtr);
             return function;
         }
 
