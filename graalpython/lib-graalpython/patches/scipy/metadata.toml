@@ -1,26 +1,9 @@
 [[rules]]
-version = '== 1.4.1'
-patch = 'scipy-1.4.1.patch'
-dist-type = 'sdist'
-
-[[rules]]
-version = '== 1.7.3'
-patch = 'scipy-1.7.3.patch'
-dist-type = 'sdist'
-
-[[rules]]
-version = '== 1.8.1'
-patch = 'scipy-1.8.1.patch'
-dist-type = 'sdist'
-
-[[rules]]
 version = '== 1.9.3'
 patch = 'scipy-1.9.3.patch'
 dist-type = 'sdist'
 
 [[rules]]
-# pin to 1.10.1
-install-priority = 10
 version = '== 1.10.1'
 patch = 'scipy-1.10.1.patch'
 dist-type = 'sdist'
