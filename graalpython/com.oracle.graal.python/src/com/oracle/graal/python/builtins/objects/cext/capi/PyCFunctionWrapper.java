@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -65,7 +67,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -213,9 +214,11 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         } else if (CExtContext.isMethO(flags)) {
             return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionBinaryWrapper(k, signature));
         } else if (CExtContext.isMethVarargs(flags)) {
-            return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionVarargsWrapper(k, signature));
+            int numDefaults = builtinFunction.getDefaults().length;
+            return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionVarargsWrapper(k, signature, numDefaults));
         } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-            return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionKeywordsWrapper(k, signature));
+            int numDefaults = builtinFunction.getDefaults().length;
+            return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionKeywordsWrapper(k, signature, numDefaults));
         } else {
             throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
@@ -398,8 +401,22 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionVarargsWrapper extends PyCFunctionWrapper {
 
-        PyCFunctionVarargsWrapper(RootCallTarget callTarget, Signature signature) {
+        /**
+         * Built-in functions may appear as {@link CExtContext#METH_VARARGS} but we implement them
+         * as nodes where the specializations have a fixed arity and then sometimes allow optional
+         * arguments (specified with {@link Builtin#minNumOfPositionalArgs()},
+         * {@link Builtin#maxNumOfPositionalArgs()}, and similar). This is usually not a problem
+         * because if the built-in function is called via the function object, this will provide the
+         * correct number of default values. In this case, the call target of the built-in function
+         * will be called directly. So, we need to manually provide the number of default values
+         * (which is {@link PNone#NO_VALUE} to indicate that the argument is missing).
+         */
+        private final int numDefaults;
+
+        PyCFunctionVarargsWrapper(RootCallTarget callTarget, Signature signature, int numDefaults) {
             super(callTarget, signature);
+            assert numDefaults >= 0;
+            this.numDefaults = numDefaults;
         }
 
         @ExportMessage
@@ -427,8 +444,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     assert builtinMethodDescriptor == null;
                     assert callTarget != null;
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
-                                    PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
+                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null, getDefaults(numDefaults),
+                                    PKeyword.EMPTY_KEYWORDS, false);
                     result = invokeNode.execute(inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
@@ -441,6 +458,17 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
+        }
+
+        /**
+         * Creates the array for default values. This will reuse
+         * {@link PythonUtils#EMPTY_OBJECT_ARRAY} if {@link #numDefaults} is {@code 0}.
+         */
+        static Object[] getDefaults(int numDefaults) {
+            if (numDefaults == 0) {
+                return PythonUtils.EMPTY_OBJECT_ARRAY;
+            }
+            return PBuiltinFunction.generateDefaults(numDefaults);
         }
 
         @Override
@@ -457,8 +485,12 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionKeywordsWrapper extends PyCFunctionWrapper {
 
-        PyCFunctionKeywordsWrapper(RootCallTarget callTarget, Signature signature) {
+        private final int numDefaults;
+
+        PyCFunctionKeywordsWrapper(RootCallTarget callTarget, Signature signature, int numDefaults) {
             super(callTarget, signature);
+            assert numDefaults >= 0;
+            this.numDefaults = numDefaults;
         }
 
         @ExportMessage
@@ -490,8 +522,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null,
-                                    PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
+                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null, PyCFunctionVarargsWrapper.getDefaults(numDefaults),
+                                    PKeyword.EMPTY_KEYWORDS, false);
                     Object result = invokeNode.execute(inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
