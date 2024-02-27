@@ -12,16 +12,13 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 **Low-overhead integration with Java and other languages.**
 
 * [Interoperate](docs/user/Interoperability.md) with Java, JavaScript, Ruby, and other languages on GraalVM JDK, Oracle JDK, or OpenJDK
-* Easy to use with [Maven build tools](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application)
-* Monitor Python execution with JVM tools such as [VisualVM](http://visualvm.org/) or JFR
-* GraalVM Native Image [compilation is well supported](docs/user/PythonNativeimages.md)
+* Use JVM tools like [Maven](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application), JFR, or [GraalVM Native Image](docs/user/PythonNativeimages.md)
 * Manage Python libraries' system access thanks to GraalPy's [Java-based emulation of Python OS APIs](docs/user/OsInterface.md#java-backend)
 
 **Compatible with the Python ecosystem**
 
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
-* Access many [PyPI packages](https://pypi.org/) including *NumPy*, *PyTorch*, *Tensorflow*, and *SciPy*
-* Run models such as Stable Diffusion or GPT from [Hugging Face](https://huggingface.co/)
+* Install [packages](https://pypi.org/) like *NumPy*, *PyTorch*, *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 * See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
 ![](docs/mcd.svg)<sup>
 We run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
@@ -30,9 +27,9 @@ For more than 96% of the top PyPI packages, there is at least one recent version
 
 **Runs Python code faster**
 
-* Pure Python code is often faster than on CPython thanks to JIT compilation
-* C extensions performance is close to CPython but varies depending on the specific interactions of native and Python code
-* Geomean speedup of ~4 on the [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/) over CPython
+* Pure Python code is often faster than on CPython after to JIT compilation
+* C extension performance is near CPython, but varies depending on the specific interactions of native and Python code
+* GraalPy is ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/)
 ![](docs/performance.svg)<sup>
 Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython, Jython, and GraalPy.
 Installation of each done via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
@@ -178,10 +175,11 @@ To run Jython scripts, you need to use a GraalPy distribution running on the JVM
 
 ## Documentation
 
-![](docs/reference.webp)
+Our [Quick Reference Sheet](https://www.graalvm.org/uploads/quick-references/GraalPy_v1/quick-reference-graalpy-v1(eu_a4).pdf) should help you get started.
+More GraalPy-specific user documentation is available in [docs/user](docs/user).
+General documentation about [polyglot programming](https://www.graalvm.org/latest/reference-manual/polyglot-programming/) and [language embedding](https://www.graalvm.org/latest/reference-manual/embed-languages/) is available on the GraalVM website.
 
-We have [Quick Reference Sheet](https://www.graalvm.org/uploads/quick-references/GraalPy_v1/quick-reference-graalpy-v1(eu_a4).pdf) to help you get started quickly.
-More user documentation is available in [docs/user](docs/user).
+![](docs/reference.webp)
 
 ## Contact
 
