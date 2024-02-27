@@ -1957,6 +1957,16 @@ public abstract class CExtNodes {
             return function != null ? function : managedCallable;
         }
 
+        @Specialization
+        @TruffleBoundary
+        static PBuiltinFunction doPyCFunctionWrapper(TruffleString name, PyCFunctionWrapper wrapper, int signature, Object type, int flags) {
+            Object delegate = wrapper.getDelegate();
+            assert !(delegate instanceof PythonAbstractObject);
+            PythonContext context = PythonContext.get(null);
+            PythonLanguage language = context.getLanguage();
+            return PExternalFunctionWrapper.createWrapperFunction(name, delegate, type, flags, signature, language, context.factory(), false);
+        }
+
         @Specialization(guards = {"!isNativeWrapper(callable)"})
         @TruffleBoundary
         static Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
