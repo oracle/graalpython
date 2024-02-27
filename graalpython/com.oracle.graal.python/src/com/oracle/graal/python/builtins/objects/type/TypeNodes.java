@@ -176,7 +176,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1266,21 +1265,20 @@ public abstract class TypeNodes {
         }
     }
 
-    // TODO this should not rely on attribute lookup
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     abstract static class InstancesOfTypeHaveWeakrefsNode extends PNodeWithContext {
-        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object type);
+        public abstract boolean execute(Node inliningTarget, Object type);
 
         public static boolean executeUncached(Object type) {
-            return InstancesOfTypeHaveWeakrefsNodeGen.getUncached().execute(null, null, type);
+            return InstancesOfTypeHaveWeakrefsNodeGen.getUncached().execute(null, type);
         }
 
         @Specialization
-        static boolean doGeneric(VirtualFrame frame, Node inliningTarget, Object type,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.execute(frame, inliningTarget, type, T___WEAKREF__) != PNone.NO_VALUE;
+        static boolean doGeneric(Node inliningTarget, Object type,
+                        @Cached GetWeakListOffsetNode getWeakListOffsetNode) {
+            return getWeakListOffsetNode.execute(inliningTarget, type) != 0;
         }
     }
 
@@ -2124,7 +2122,7 @@ public abstract class TypeNodes {
             ctx.mayAddDict = !hasDictNode.execute(base);
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
             boolean hasItemSize = getItemSize.execute(inliningTarget, base) != 0;
-            ctx.mayAddWeak = !hasWeakrefsNode.execute(frame, inliningTarget, base) && !hasItemSize;
+            ctx.mayAddWeak = !hasWeakrefsNode.execute(inliningTarget, base) && !hasItemSize;
 
             if (ctx.slotsObject == null) {
                 if (ctx.mayAddDict) {
