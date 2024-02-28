@@ -515,6 +515,20 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return factory.createComplex(left - right.getReal(), -right.getImag());
         }
 
+        @Specialization
+        static PComplex doComplexPInt(PComplex left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() - right.doubleValueWithOverflow(inliningTarget), left.getImag());
+        }
+
+        @Specialization
+        static PComplex doComplexPInt(PInt left, PComplex right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.doubleValueWithOverflow(inliningTarget) - right.getReal(), -right.getImag());
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         static PNotImplemented doComplex(Object left, Object right) {
