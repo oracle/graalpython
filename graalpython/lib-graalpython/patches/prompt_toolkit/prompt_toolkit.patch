@@ -1,0 +1,53 @@
+diff --git a/prompt_toolkit/application/application.py b/prompt_toolkit/application/application.py
+index d463781..c92b492 100644
+--- a/prompt_toolkit/application/application.py
++++ b/prompt_toolkit/application/application.py
+@@ -1597,29 +1597,31 @@ def _restore_sigint_from_ctypes() -> Generator[None, None, None]:
+     # The following functions are part of the stable ABI since python 3.2
+     # See: https://docs.python.org/3/c-api/sys.html#c.PyOS_getsig
+     # Inline import: these are not available on Pypy.
+-    try:
+-        from ctypes import c_int, c_void_p, pythonapi
+-    except ImportError:
+-        # Any of the above imports don't exist? Don't do anything here.
+-        yield
+-        return
+ 
+-    # PyOS_sighandler_t PyOS_getsig(int i)
+-    pythonapi.PyOS_getsig.restype = c_void_p
+-    pythonapi.PyOS_getsig.argtypes = (c_int,)
++    # GraalPy change: avoid PyOS_getsig
++    # try:
++    #     from ctypes import c_int, c_void_p, pythonapi
++    # except ImportError:
++    #     # Any of the above imports don't exist? Don't do anything here.
++    #     yield
++    #     return
+ 
+-    # PyOS_sighandler_t PyOS_setsig(int i, PyOS_sighandler_t h)
+-    pythonapi.PyOS_setsig.restype = c_void_p
+-    pythonapi.PyOS_setsig.argtypes = (
+-        c_int,
+-        c_void_p,
+-    )
++    # # PyOS_sighandler_t PyOS_getsig(int i)
++    # pythonapi.PyOS_getsig.restype = c_void_p
++    # pythonapi.PyOS_getsig.argtypes = (c_int,)
++
++    # # PyOS_sighandler_t PyOS_setsig(int i, PyOS_sighandler_t h)
++    # pythonapi.PyOS_setsig.restype = c_void_p
++    # pythonapi.PyOS_setsig.argtypes = (
++    #     c_int,
++    #     c_void_p,
++    # )
+ 
+     sigint = signal.getsignal(signal.SIGINT)
+-    sigint_os = pythonapi.PyOS_getsig(signal.SIGINT)
++    # sigint_os = pythonapi.PyOS_getsig(signal.SIGINT)
+ 
+     try:
+         yield
+     finally:
+         signal.signal(signal.SIGINT, sigint)
+-        pythonapi.PyOS_setsig(signal.SIGINT, sigint_os)
++        # pythonapi.PyOS_setsig(signal.SIGINT, sigint_os)
